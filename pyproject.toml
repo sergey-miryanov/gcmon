@@ -54,6 +54,7 @@ pytest-repeat = "^0.9.4"
 perfetto = "^0.58.2"
 protobuf = "^7.35"
 pytest-codspeed = "^5.0.3"
+rust-just = "^1.58"
 
 [tool.poetry.urls]
 Homepage = "https://github.com/sergey-miryanov/gcmon"
