@@ -84,6 +84,9 @@ Branch off `main`. Then, before you submit:
 
 1. Run the tests and the checkers above **before changing anything**, so you
    know the tree was green when you started.
+```bash
+poetry run just check
+```
 2. Make the change, and keep it to what the issue names. Neighbouring problems
    you spot belong in the pull request description, not in the diff.
 3. Add tests covering it.
@@ -92,5 +95,8 @@ Branch off `main`. Then, before you submit:
    whichever of `Breaking changes`, `Features` or `Bugfixes` fits. Internal
    work needs no entry.
 6. Run the tests and the checkers again.
+```bash
+poetry run just check
+```
 
 Then say what you changed and how you checked it, in your own words.

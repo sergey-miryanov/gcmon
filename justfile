@@ -14,6 +14,9 @@ default:
 install:
     poetry install --all-groups --all-extras
 
+# Run the linters, the type checkers and the tests
+check: lint typecheck architecture test
+
 # Run the test suite
 test:
     poetry run pytest -q --basetemp=.temp
