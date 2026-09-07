@@ -26,7 +26,7 @@ subinterpreter id happens to equal the pid.
 `perfetto_format._emit_thread_descriptor` builds the descriptor with
 
 ```python
-tid=pid if iid == 0 else iid,
+tid = (pid if iid == 0 else iid,)
 ```
 
 It is the only tid gcmon publishes. A loss row is a plain custom track with no

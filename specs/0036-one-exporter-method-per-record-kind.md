@@ -85,6 +85,7 @@ ADR-0011 has the monitor report the whole live set once per tick, and
 ```python
 type ExportRecord = TGCStatsInfo | TInstantMsg | TLossMsg | RssSample
 
+
 class EventsExporter(ABC):
     @abstractmethod
     def add(self, pid: int, record: ExportRecord) -> None: ...
