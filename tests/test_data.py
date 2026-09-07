@@ -48,17 +48,18 @@ class TestNewIncrementalRoundTrip:
 
     _FIELDS: ClassVar[dict[str, int | float]] = {
         "old_work": 900,
-        "next_gen": 1,
+        "auto_collect": 1,
         "aging_threshold": 4,
         "aging_spaces": 2,
         "aging_next": 3,
         "survivor_count": 250,
+        "heap_size_stop": 2048,
         "increment_size": 500,
     }
 
     def _record(self) -> TMapping:
         return {
-            "gen": 0,
+            "gen": 1,
             "iid": 1,
             "ts_start": 1_000_000,
             "ts_stop": 2_000_000,

@@ -88,12 +88,13 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
 
     if has_new_incremental(item):
         pause_data["old_work"] = item.old_work
-        pause_data["next_gen"] = item.next_gen
+        pause_data["auto_collect"] = item.auto_collect
         pause_data["aging_threshold"] = item.aging_threshold
         pause_data["aging_spaces"] = item.aging_spaces
         pause_data["aging_next"] = item.aging_next
         pause_data["survivor_count"] = item.survivor_count
-        if item.next_gen == 1:
+        pause_data["heap_size_stop"] = item.heap_size_stop
+        if gen == 1:
             pause_data["increment_size"] = item.increment_size
 
     events: list[TraceEvent] = []
@@ -240,9 +241,10 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
             Counter(track, "aging_threshold", f"Thread {iid} aging_threshold", ts_start_ns, item.aging_threshold),
             Counter(track, "aging_spaces", f"Thread {iid} aging_spaces", ts_start_ns, item.aging_spaces),
             Counter(track, "aging_next", f"Thread {iid} aging_next", ts_start_ns, item.aging_next),
+            Counter(track, "heap_size_stop", f"Thread {iid} heap_size_stop", ts_start_ns, item.heap_size_stop),
         ]
         events.extend(new_inc_counters)
-        if item.next_gen == 1:
+        if gen == 1:
             events.append(
                 Counter(
                     track, "new_increment_size", f"Thread {iid} new_increment_size", ts_start_ns, item.increment_size

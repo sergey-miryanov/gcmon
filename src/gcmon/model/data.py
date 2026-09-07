@@ -33,11 +33,12 @@ class GCStatsInfo(msgspec.Struct):
     ts_delete_garbage_stop: int | None = None
     deleted_garbage_count: int | None = None
     old_work: int | None = None
-    next_gen: int | None = None
+    auto_collect: int | None = None
     aging_threshold: int | None = None
     aging_spaces: int | None = None
     aging_next: int | None = None
     survivor_count: int | None = None
+    heap_size_stop: int | None = None
 
 
 class InstantMsg(msgspec.Struct):

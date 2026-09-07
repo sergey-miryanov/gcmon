@@ -75,7 +75,7 @@ class TestNewIncrementalCounters:
     generation. ADR-0004 has the reasoning, from ``heap_size``.
     """
 
-    _GAUGES = ("old_work", "survivor_count", "aging_threshold", "aging_spaces", "aging_next")
+    _GAUGES = ("old_work", "survivor_count", "aging_threshold", "aging_spaces", "aging_next", "heap_size_stop")
 
     def _counters(self, **extra: int) -> dict[str, Counter]:
         events = convert_item_to_trace_format(proc(100), create_mock_new_incremental_item(**extra))
@@ -109,11 +109,11 @@ class TestNewIncrementalCounters:
         assert self._counters(iid=1)["old_work"].display_name == "Thread 1 old_work"
 
     def test_increment_size_is_counted_only_for_the_young_generation(self) -> None:
-        assert "new_increment_size" in self._counters(next_gen=1)
-        assert "new_increment_size" not in self._counters(next_gen=2)
+        assert "new_increment_size" in self._counters(gen=1)
+        assert "new_increment_size" not in self._counters(gen=2)
 
     def test_the_increment_size_counter_carries_the_records_value(self) -> None:
-        counter = self._counters(next_gen=1, increment_size=4096)["new_increment_size"]
+        counter = self._counters(gen=1, increment_size=4096)["new_increment_size"]
         assert counter.value == 4096
         assert counter.display_name == "Thread 0 new_increment_size"
 
@@ -121,7 +121,7 @@ class TestNewIncrementalCounters:
         """``heap_size`` is on the slice args for per-pause SQL (ADR-0004);
         these answer the same kind of question."""
         args = self._pause_args()
-        for metric in (*self._GAUGES, "next_gen"):
+        for metric in (*self._GAUGES, "auto_collect"):
             assert metric in args
 
     def test_a_standard_build_record_carries_none_of_them(self) -> None:

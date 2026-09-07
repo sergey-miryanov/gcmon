@@ -81,22 +81,23 @@ __all__ = [
 
 _COUNTER_RANKS: dict[str, int] = {
     "heap_size": 0,
-    "rss": 1,
-    "collected": 2,
-    "uncollectable": 3,
-    "candidates": 4,
-    "duration": 5,
-    "increment_size": 6,
-    "alive_size": 7,
-    "finalized_garbage_count": 8,
-    "deleted_garbage_count": 9,
-    "clear_weakrefs_count": 10,
-    "old_work": 20,
-    "aging_threshold": 22,
-    "aging_spaces": 23,
-    "aging_next": 24,
-    "survivor_count": 25,
-    "new_increment_size": 26,
+    "heap_size_stop": 1,
+    "rss": 2,
+    "collected": 20,
+    "uncollectable": 21,
+    "candidates": 22,
+    "duration": 23,
+    "increment_size": 24,
+    "alive_size": 25,
+    "finalized_garbage_count": 26,
+    "deleted_garbage_count": 27,
+    "clear_weakrefs_count": 28,
+    "old_work": 40,
+    "aging_threshold": 41,
+    "aging_spaces": 42,
+    "aging_next": 43,
+    "survivor_count": 44,
+    "new_increment_size": 45,
 }
 
 # A counter an interpreter owns that is nonetheless drawn a level up, beside
@@ -106,7 +107,7 @@ _COUNTER_RANKS: dict[str, int] = {
 #
 # `rss` is not here: a `ProcessTrack` owns it, so parenting it to the process
 # row is its identity rather than a policy.
-_TOPLEVEL_COUNTER_METRICS: frozenset[str] = frozenset({"heap_size", "old_work"})
+_TOPLEVEL_COUNTER_METRICS: frozenset[str] = frozenset({"heap_size", "heap_size_stop", "old_work"})
 
 _COUNTER_GROUP_NAME: str = "GC Metrics"
 

@@ -98,12 +98,13 @@ class THandleResurrectedInfo(Protocol):
 
 class TNewIncrementalInfo(Protocol):
     old_work: int
-    next_gen: int
+    auto_collect: int
     aging_threshold: int
     aging_spaces: int
     aging_next: int
     survivor_count: int
     increment_size: int
+    heap_size_stop: int
 
 
 class TInstantMsg(Protocol):
@@ -221,6 +222,7 @@ def to_mapping(item: TItem) -> JsonlRecord:
         }
 
     if is_gc_stats(item):
+        gen = item.gen
         m: JsonlRecord = {
             "gen": item.gen,
             "iid": item.iid,
@@ -270,12 +272,13 @@ def to_mapping(item: TItem) -> JsonlRecord:
 
         if has_new_incremental(item):
             m["old_work"] = item.old_work
-            m["next_gen"] = item.next_gen
+            m["auto_collect"] = item.auto_collect
             m["aging_threshold"] = item.aging_threshold
             m["aging_spaces"] = item.aging_spaces
             m["aging_next"] = item.aging_next
             m["survivor_count"] = item.survivor_count
-            if item.next_gen == 1:
+            m["heap_size_stop"] = item.heap_size_stop
+            if gen == 1:
                 m["increment_size"] = item.increment_size
 
         return m

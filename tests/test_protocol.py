@@ -251,9 +251,9 @@ class TestHasGuards:
 
 
 class TestToMappingPartial:
-    def _make_item(self, **extra: int) -> GCStatsInfo:
+    def _make_item(self, gen: int = 0, **extra: int) -> GCStatsInfo:
         return GCStatsInfo(
-            gen=0,
+            gen=gen,
             iid=1,
             ts_start=1_000_000,
             ts_stop=2_000_000,
@@ -373,21 +373,24 @@ class TestToMappingPartial:
     def test_new_incremental_only(self) -> None:
         """The new collector's gauges carry no timestamps of their own."""
         item = self._make_item(
+            gen=1,
             old_work=900,
-            next_gen=1,
+            auto_collect=1,
             aging_threshold=4,
             aging_spaces=2,
             aging_next=3,
             survivor_count=250,
+            heap_size_stop=2048,
             increment_size=500,
         )
         result = to_mapping(item)
         assert result["old_work"] == 900
-        assert result["next_gen"] == 1
+        assert result["auto_collect"] == 1
         assert result["aging_threshold"] == 4
         assert result["aging_spaces"] == 2
         assert result["aging_next"] == 3
         assert result["survivor_count"] == 250
+        assert result["heap_size_stop"] == 2048
         assert result["increment_size"] == 500
         assert "ts_fill_increment_start" not in result
         assert "alive_size" not in result

@@ -236,7 +236,7 @@ class TestNewIncrementalCounterTracks:
     """Where the new collector's gauges hang, driven through the converter."""
 
     def _parents(self, state: PerfettoTrackState) -> dict[str, int]:
-        events = convert_item_to_trace_format(proc(100), create_mock_new_incremental_item(next_gen=1))
+        events = convert_item_to_trace_format(proc(100), create_mock_new_incremental_item(gen=1))
         descriptors, _ = convert_trace_events_to_perfetto(events, state, sequence_id=1)
         parents: dict[str, int] = {}
         for d in descriptors:

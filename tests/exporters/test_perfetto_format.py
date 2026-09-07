@@ -489,9 +489,9 @@ class TestConvertItemToPerfettoPackets:
                 break
         assert duration_track_uuid is not None
 
-        # Find the matching TrackDescriptor and assert rank=4 (per-gen rank
-        # for `duration` in the new layout) plus parent resolves to a track
-        # named "GC Metrics".
+        # Find the matching TrackDescriptor and assert its parent resolves
+        # to a track named "GC Metrics". The rank itself is not asserted: only
+        # the relative order of the table carries meaning (ADR-0003).
         descriptors: dict[int, tuple[int, int, str]] = {}
         for p in descriptors_packets:
             packet = TracePacket()
@@ -505,8 +505,7 @@ class TestConvertItemToPerfettoPackets:
                 td.name,
             )
         assert duration_track_uuid in descriptors
-        parent, rank, _ = descriptors[duration_track_uuid]
-        assert rank == 5
+        parent, _, _ = descriptors[duration_track_uuid]
         assert parent != 0
         assert descriptors[parent][2] == "GC Metrics"
 
