@@ -9,6 +9,7 @@ from pathlib import Path
 from types import ModuleType
 from typing import override
 
+import msgspec
 from perfetto.protos.perfetto.trace.perfetto_trace_pb2 import Trace, TracePacket
 from perfetto.trace_processor import TraceProcessor, TraceProcessorConfig
 
@@ -50,6 +51,7 @@ __all__ = [
     "create_jsonl_record",
     "create_mock_incremental_item",
     "create_mock_loss_item",
+    "create_mock_new_incremental_item",
     "create_mock_stats_item",
     "interpreter_track",
     "loss_track",
@@ -359,6 +361,37 @@ def create_mock_incremental_item(
         ts_delete_garbage_start=ts_delete_garbage_start,
         ts_delete_garbage_stop=ts_delete_garbage_stop,
         deleted_garbage_count=deleted_garbage_count,
+    )
+
+
+def create_mock_new_incremental_item(
+    gen: int = 0,
+    iid: int = 0,
+    increment_size: int | None = 1000,
+    old_work: int | None = 900,
+    auto_collect: int | None = 1,
+    aging_threshold: int | None = 4,
+    aging_spaces: int | None = 2,
+    aging_next: int | None = 3,
+    survivor_count: int | None = 250,
+    heap_size_stop: int | None = 51_380_224,
+) -> GCStatsInfo:
+    """A record from a build running the new incremental collector.
+
+    It carries no fill-increment timestamps. The two collectors do not run in
+    one interpreter, and no record trips both guards.
+    """
+    return msgspec.structs.replace(
+        create_mock_incremental_item(gen=gen, iid=iid, increment_size=increment_size),
+        ts_fill_increment_start=None,
+        ts_fill_increment_stop=None,
+        old_work=old_work,
+        auto_collect=auto_collect,
+        aging_threshold=aging_threshold,
+        aging_spaces=aging_spaces,
+        aging_next=aging_next,
+        survivor_count=survivor_count,
+        heap_size_stop=heap_size_stop,
     )
 
 

@@ -23,7 +23,13 @@ A trace carries these, on one track per interpreter:
   Resurrected, Clear Weakrefs, Delete Garbage.
 - **Counter tracks** per generation, `G{gen}`, carrying `collected`,
   `candidates`, `duration` and `uncollectable`, with `Thread {iid} heap_size`
-  as a process-level counter beside them, one per interpreter.
+  as a process-level counter beside them, one per interpreter. A build running
+  the new incremental collector adds more, one series per interpreter and not
+  per generation: `Thread {iid} old_work` beside `heap_size`, and
+  `survivor_count`, `aging_threshold`, `aging_spaces`, `aging_next` and
+  `new_increment_size` inside the group, each with the same `Thread {iid}`
+  prefix. `new_increment_size` plots the `increment_size` field, and only for
+  a run whose `next_gen` is 1.
 - **Counter Y-axis sharing**: one metric shares an axis across generations, so
   `G0 collected`, `G1 collected` and `G2 collected` line up.
 - **`GC Loss` track**: one row per interpreter, `GC Loss {iid}`, under that
@@ -199,6 +205,12 @@ terminal), each line is a JSON object holding one GC record:
 | `finalized_garbage_count` | Objects this run finalized | Custom build |
 | `deleted_garbage_count` | Objects this run deleted | Custom build |
 | `clear_weakrefs_count` | Weakrefs this run cleared | Custom build |
+| `old_work` | Work the collector carries into the next increment | Custom build |
+| `next_gen` | Generation the next collection will run | Custom build |
+| `survivor_count` | Objects that survived this run | Custom build |
+| `aging_threshold` | Threshold an object ages past before promotion | Custom build |
+| `aging_spaces` | Aging spaces the collector keeps | Custom build |
+| `aging_next` | Aging space the next run will use | Custom build |
 
 > **Note:** fields marked **Custom build** need the instrumented CPython
 > build, as the [sub-step slices](#perfetto-output) do.

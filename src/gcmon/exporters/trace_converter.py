@@ -16,6 +16,7 @@ from ..model.protocol import (
     has_handle_weakrefs,
     has_incremental,
     has_mark_alive,
+    has_new_incremental,
     is_gc_stats,
     is_instant,
     is_loss,
@@ -84,6 +85,17 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
 
     if has_clear_weakrefs(item):
         pause_data["clear_weakrefs_count"] = item.clear_weakrefs_count
+
+    if has_new_incremental(item):
+        pause_data["old_work"] = item.old_work
+        pause_data["auto_collect"] = item.auto_collect
+        pause_data["aging_threshold"] = item.aging_threshold
+        pause_data["aging_spaces"] = item.aging_spaces
+        pause_data["aging_next"] = item.aging_next
+        pause_data["survivor_count"] = item.survivor_count
+        pause_data["heap_size_stop"] = item.heap_size_stop
+        if gen == 1:
+            pause_data["increment_size"] = item.increment_size
 
     events: list[TraceEvent] = []
     # Ahead of the sub-phases nested inside it, so its BEGIN wins the tie
@@ -221,6 +233,23 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
             item.heap_size,
         )
     )
+
+    if has_new_incremental(item):
+        new_inc_counters = [
+            Counter(track, "old_work", f"Thread {iid} old_work", ts_start_ns, item.old_work),
+            Counter(track, "survivor_count", f"Thread {iid} survivor_count", ts_start_ns, item.survivor_count),
+            Counter(track, "aging_threshold", f"Thread {iid} aging_threshold", ts_start_ns, item.aging_threshold),
+            Counter(track, "aging_spaces", f"Thread {iid} aging_spaces", ts_start_ns, item.aging_spaces),
+            Counter(track, "aging_next", f"Thread {iid} aging_next", ts_start_ns, item.aging_next),
+            Counter(track, "heap_size_stop", f"Thread {iid} heap_size_stop", ts_start_ns, item.heap_size_stop),
+        ]
+        events.extend(new_inc_counters)
+        if gen == 1:
+            events.append(
+                Counter(
+                    track, "new_increment_size", f"Thread {iid} new_increment_size", ts_start_ns, item.increment_size
+                )
+            )
 
     return events
 

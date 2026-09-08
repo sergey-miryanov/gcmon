@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 import msgspec
 import pytest
 
@@ -38,6 +40,49 @@ class TestInstantMsg:
         assert msg.type == "i"
         assert msg.name == "test event"
         assert msg.ts == 12345
+
+
+class TestNewIncrementalRoundTrip:
+    """A JSONL capture has to carry the new collector's gauges, or `combine`
+    drops them between the run and the trace built from it."""
+
+    _FIELDS: ClassVar[dict[str, int | float]] = {
+        "old_work": 900,
+        "auto_collect": 1,
+        "aging_threshold": 4,
+        "aging_spaces": 2,
+        "aging_next": 3,
+        "survivor_count": 250,
+        "heap_size_stop": 2048,
+        "increment_size": 500,
+    }
+
+    def _record(self) -> TMapping:
+        return {
+            "gen": 1,
+            "iid": 1,
+            "ts_start": 1_000_000,
+            "ts_stop": 2_000_000,
+            "heap_size": 1024,
+            "collections": 5,
+            "collected": 50,
+            "uncollectable": 0,
+            "candidates": 10,
+            "duration": 0.005,
+            **self._FIELDS,
+        }
+
+    def test_every_field_decodes(self) -> None:
+        result = from_mapping(self._record())
+        assert isinstance(result, GCStatsInfo)
+        for name, value in self._FIELDS.items():
+            assert getattr(result, name) == value, name
+
+    def test_a_decoded_record_encodes_back_unchanged(self) -> None:
+        """``msgspec`` drops a field the struct does not declare, without
+        raising."""
+        record = self._record()
+        assert to_mapping(from_mapping(record)) == record
 
 
 class TestFromMapping:

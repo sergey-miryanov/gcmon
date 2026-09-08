@@ -13,13 +13,18 @@ from gcmon.model.protocol import (
     has_handle_weakrefs,
     has_incremental,
     has_mark_alive,
+    has_new_incremental,
     has_pause_ts,
     is_gc_stats,
     is_instant,
     is_loss,
     to_mapping,
 )
-from tests.helpers import create_mock_stats_item
+from tests.helpers import (
+    create_mock_incremental_item,
+    create_mock_new_incremental_item,
+    create_mock_stats_item,
+)
 
 
 @pytest.fixture
@@ -77,7 +82,7 @@ class TestHasGuards:
                 uncollectable=0,
                 candidates=0,
                 duration=0.0,
-                increment_size=500,
+                ts_fill_increment_start=100,
             )
         )
 
@@ -224,11 +229,31 @@ class TestHasGuards:
     def test_has_delete_garbage_false(self) -> None:
         assert not has_delete_garbage(create_mock_stats_item())
 
+    def test_has_new_incremental_true(self) -> None:
+        assert has_new_incremental(
+            GCStatsInfo(
+                gen=0,
+                iid=0,
+                ts_start=0,
+                ts_stop=0,
+                heap_size=0,
+                collections=0,
+                collected=0,
+                uncollectable=0,
+                candidates=0,
+                duration=0.0,
+                old_work=900,
+            )
+        )
+
+    def test_has_new_incremental_false(self) -> None:
+        assert not has_new_incremental(create_mock_stats_item())
+
 
 class TestToMappingPartial:
-    def _make_item(self, **extra: int) -> GCStatsInfo:
+    def _make_item(self, gen: int = 0, **extra: int) -> GCStatsInfo:
         return GCStatsInfo(
-            gen=0,
+            gen=gen,
             iid=1,
             ts_start=1_000_000,
             ts_stop=2_000_000,
@@ -262,6 +287,7 @@ class TestToMappingPartial:
         assert "finalized_garbage_count" not in result
         assert "deleted_garbage_count" not in result
         assert "clear_weakrefs_count" not in result
+        assert "old_work" not in result
 
     def test_mark_alive_only(self) -> None:
         item = self._make_item(
@@ -284,6 +310,7 @@ class TestToMappingPartial:
         assert "finalized_garbage_count" not in result
         assert "deleted_garbage_count" not in result
         assert "clear_weakrefs_count" not in result
+        assert "old_work" not in result
 
     def test_deduce_unreachable_only(self) -> None:
         item = self._make_item(
@@ -304,6 +331,7 @@ class TestToMappingPartial:
         assert "finalized_garbage_count" not in result
         assert "deleted_garbage_count" not in result
         assert "clear_weakrefs_count" not in result
+        assert "old_work" not in result
 
     def test_finalize_garbage_only(self) -> None:
         item = self._make_item(
@@ -315,6 +343,7 @@ class TestToMappingPartial:
         assert result["finalized_garbage_count"] == 42
         assert "deleted_garbage_count" not in result
         assert "clear_weakrefs_count" not in result
+        assert "old_work" not in result
 
     def test_delete_garbage_only(self) -> None:
         item = self._make_item(
@@ -328,6 +357,7 @@ class TestToMappingPartial:
         assert result["deleted_garbage_count"] == 13
         assert "finalized_garbage_count" not in result
         assert "clear_weakrefs_count" not in result
+        assert "old_work" not in result
 
     def test_clear_weakrefs_only(self) -> None:
         item = self._make_item(
@@ -338,6 +368,32 @@ class TestToMappingPartial:
         assert result["ts_clear_weakrefs_stop"] == 1_007_000
         assert result["clear_weakrefs_count"] == 7
         assert "finalized_garbage_count" not in result
+        assert "deleted_garbage_count" not in result
+
+    def test_new_incremental_only(self) -> None:
+        """The new collector's gauges carry no timestamps of their own."""
+        item = self._make_item(
+            gen=1,
+            old_work=900,
+            auto_collect=1,
+            aging_threshold=4,
+            aging_spaces=2,
+            aging_next=3,
+            survivor_count=250,
+            heap_size_stop=2048,
+            increment_size=500,
+        )
+        result = to_mapping(item)
+        assert result["old_work"] == 900
+        assert result["auto_collect"] == 1
+        assert result["aging_threshold"] == 4
+        assert result["aging_spaces"] == 2
+        assert result["aging_next"] == 3
+        assert result["survivor_count"] == 250
+        assert result["heap_size_stop"] == 2048
+        assert result["increment_size"] == 500
+        assert "ts_fill_increment_start" not in result
+        assert "alive_size" not in result
         assert "deleted_garbage_count" not in result
 
     def test_all_partial_phases(self) -> None:
@@ -484,6 +540,17 @@ class TestIsLoss:
         first."""
         assert is_gc_stats(loss_item) is False
         assert is_instant(loss_item) is False
+
+
+class TestTheTwoIncrementalGuardsAreDisjoint:
+    def test_no_record_trips_both(self) -> None:
+        """The two collectors do not run in one interpreter. Both write
+        ``increment_size`` to the pause args under a rule of their own, and
+        neither rule sees the other's records."""
+        old = create_mock_incremental_item()
+        new = create_mock_new_incremental_item()
+        assert has_incremental(old) and not has_new_incremental(old)
+        assert has_new_incremental(new) and not has_incremental(new)
 
 
 class TestGuardsAreMutuallyExclusive:

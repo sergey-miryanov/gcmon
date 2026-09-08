@@ -17,6 +17,7 @@ __all__ = [
     "TLossMsg",
     "TMapping",
     "TMarkAliveInfo",
+    "TNewIncrementalInfo",
     "TScalar",
     "TValue",
     "has_clear_weakrefs",
@@ -27,6 +28,7 @@ __all__ = [
     "has_handle_weakrefs",
     "has_incremental",
     "has_mark_alive",
+    "has_new_incremental",
     "has_pause_ts",
     "is_gc_stats",
     "is_instant",
@@ -94,6 +96,17 @@ class THandleResurrectedInfo(Protocol):
     ts_handle_resurrected_stop: int
 
 
+class TNewIncrementalInfo(Protocol):
+    old_work: int
+    auto_collect: int
+    aging_threshold: int
+    aging_spaces: int
+    aging_next: int
+    survivor_count: int
+    increment_size: int
+    heap_size_stop: int
+
+
 class TInstantMsg(Protocol):
     type: str
     name: str
@@ -135,7 +148,7 @@ def has_pause_ts(item: object) -> TypeGuard[TGCStatsInfo]:
 
 
 def has_incremental(item: object) -> TypeGuard[TIncrementalInfo]:
-    return getattr(item, "increment_size", None) is not None
+    return getattr(item, "ts_fill_increment_start", None) is not None
 
 
 def has_mark_alive(item: object) -> TypeGuard[TMarkAliveInfo]:
@@ -164,6 +177,10 @@ def has_clear_weakrefs(item: object) -> TypeGuard[TClearWeakrefsInfo]:
 
 def has_delete_garbage(item: object) -> TypeGuard[TDeleteGarbageInfo]:
     return getattr(item, "ts_delete_garbage_start", None) is not None
+
+
+def has_new_incremental(item: object) -> TypeGuard[TNewIncrementalInfo]:
+    return getattr(item, "old_work", None) is not None
 
 
 def is_gc_stats(item: object) -> TypeGuard[TGCStatsInfo]:
@@ -205,6 +222,7 @@ def to_mapping(item: TItem) -> JsonlRecord:
         }
 
     if is_gc_stats(item):
+        gen = item.gen
         m: JsonlRecord = {
             "gen": item.gen,
             "iid": item.iid,
@@ -251,6 +269,17 @@ def to_mapping(item: TItem) -> JsonlRecord:
             m["ts_delete_garbage_start"] = item.ts_delete_garbage_start
             m["ts_delete_garbage_stop"] = item.ts_delete_garbage_stop
             m["deleted_garbage_count"] = item.deleted_garbage_count
+
+        if has_new_incremental(item):
+            m["old_work"] = item.old_work
+            m["auto_collect"] = item.auto_collect
+            m["aging_threshold"] = item.aging_threshold
+            m["aging_spaces"] = item.aging_spaces
+            m["aging_next"] = item.aging_next
+            m["survivor_count"] = item.survivor_count
+            m["heap_size_stop"] = item.heap_size_stop
+            if gen == 1:
+                m["increment_size"] = item.increment_size
 
         return m
 

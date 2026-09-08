@@ -1,6 +1,8 @@
 import pytest
 
-from gcmon.exporters.trace_converter import duration_text, seen_text
+from gcmon.exporters.trace_converter import convert_item_to_trace_format, duration_text, seen_text
+from gcmon.model.trace_event import Counter, Slice
+from tests.helpers import create_mock_new_incremental_item, create_mock_stats_item, proc
 
 
 class TestDurationText:
@@ -64,3 +66,65 @@ class TestSeenText:
         percentage says how bad the blindness was, not how much there was to
         be blind about."""
         assert seen_text(2, 98).endswith("(2 of 100)")
+
+
+class TestNewIncrementalCounters:
+    """The gauges the new incremental collector reports.
+
+    Each is a property of one interpreter's collector state, not of a
+    generation. ADR-0004 has the reasoning, from ``heap_size``.
+    """
+
+    _GAUGES = ("old_work", "survivor_count", "aging_threshold", "aging_spaces", "aging_next", "heap_size_stop")
+
+    def _counters(self, **extra: int) -> dict[str, Counter]:
+        events = convert_item_to_trace_format(proc(100), create_mock_new_incremental_item(**extra))
+        return {e.metric: e for e in events if isinstance(e, Counter)}
+
+    def _pause_args(self, **extra: int) -> dict[str, object]:
+        events = convert_item_to_trace_format(proc(100), create_mock_new_incremental_item(**extra))
+        pause = next(e for e in events if isinstance(e, Slice) and e.name.startswith("GC Pause"))
+        return dict(pause.args)
+
+    def test_every_gauge_gets_a_counter(self) -> None:
+        counters = self._counters()
+        for metric in self._GAUGES:
+            assert metric in counters, f"{metric} has no counter"
+
+    def test_the_display_name_repeats_the_metric(self) -> None:
+        """The display name is the track identity; the metric keys the rank
+        and the shared y axis (ADR-0005). A track whose halves disagree is
+        queried under one name and read under another."""
+        counters = self._counters()
+        for metric in self._GAUGES:
+            assert counters[metric].display_name == f"Thread 0 {metric}"
+
+    def test_one_series_per_interpreter_not_per_generation(self) -> None:
+        for gen in (0, 1, 2):
+            counters = self._counters(gen=gen)
+            for metric in self._GAUGES:
+                assert counters[metric].display_name == f"Thread 0 {metric}"
+
+    def test_two_interpreters_get_separate_tracks(self) -> None:
+        assert self._counters(iid=1)["old_work"].display_name == "Thread 1 old_work"
+
+    def test_increment_size_is_counted_only_for_the_young_generation(self) -> None:
+        assert "new_increment_size" in self._counters(gen=1)
+        assert "new_increment_size" not in self._counters(gen=2)
+
+    def test_the_increment_size_counter_carries_the_records_value(self) -> None:
+        counter = self._counters(gen=1, increment_size=4096)["new_increment_size"]
+        assert counter.value == 4096
+        assert counter.display_name == "Thread 0 new_increment_size"
+
+    def test_the_gauges_reach_the_pause_args(self) -> None:
+        """``heap_size`` is on the slice args for per-pause SQL (ADR-0004);
+        these answer the same kind of question."""
+        args = self._pause_args()
+        for metric in (*self._GAUGES, "auto_collect"):
+            assert metric in args
+
+    def test_a_standard_build_record_carries_none_of_them(self) -> None:
+        events = convert_item_to_trace_format(proc(100), create_mock_stats_item())
+        metrics = {e.metric for e in events if isinstance(e, Counter)}
+        assert metrics.isdisjoint({*self._GAUGES, "new_increment_size"})
