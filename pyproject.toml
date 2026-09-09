@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "gcmon"
-version = "0.6.0"
+version = "0.7.0"
 description = "Zero-overhead GC monitoring for Python - read garbage collection events from another process without modifying it."
 readme = "README.md"
 license = "MIT"
