@@ -83,13 +83,13 @@ as the collector runs them. The shape, which is the decision:
 
 ```python
 class Phase(NamedTuple):
-    key: str            # "mark_alive": the METRICS key and the --stats row identity
-    label: str          # "Mark Alive": slice name; "(gen)" is appended at the call site
-    category: str       # "gc.mark.alive"
-    present: str        # the field whose presence means the target reported this phase
-    start: str          # may name *another* phase's stop field
+    key: str  # "mark_alive": the METRICS key and the --stats row identity
+    label: str  # "Mark Alive": slice name; "(gen)" is appended at the call site
+    category: str  # "gc.mark.alive"
+    present: str  # the field whose presence means the target reported this phase
+    start: str  # may name *another* phase's stop field
     stop: str
-    args: tuple[str, ...] = ()          # record fields carried onto the slice's args
+    args: tuple[str, ...] = ()  # record fields carried onto the slice's args
     gens: frozenset[int] | None = None  # None means every generation
 ```
 
