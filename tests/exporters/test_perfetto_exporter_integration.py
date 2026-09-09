@@ -820,6 +820,31 @@ class TestTrackDescriptors:
         for iid in (0, 1, 2):
             assert f"Thread {iid}" in rows, f"missing 'Thread {iid}' in DEFAULT_PID's threads; got {sorted(rows)}"
 
+    def test_thread_tid_follows_the_row_pid_for_interpreter_zero(
+        self,
+        trace_processor: TraceProcessor,
+    ) -> None:
+        """``thread.tid`` is the interpreter id, except under interpreter 0,
+        which takes its process's row pid instead (ADR-0011). Row pids count
+        from 1 and so meet the interpreter ids: the first process writes tid
+        1 for both ``Thread 0`` and ``Thread 1``, and the trace processor
+        reads a tid equal to the pid as a main thread, both times.
+        """
+        rows = list(
+            trace_processor.query(
+                "SELECT p.name AS pname, th.name AS tname, th.tid AS tid, th.is_main_thread AS is_main "
+                "FROM thread th JOIN process p ON th.upid = p.upid "
+                "WHERE p.name LIKE 'Process %' ORDER BY p.name, th.name"
+            )
+        )
+
+        assert [(r.pname, r.tname, r.tid, r.is_main) for r in rows] == [
+            (f"Process {DEFAULT_PID}", "Thread 0", 1, 1),
+            (f"Process {DEFAULT_PID}", "Thread 1", 1, 1),
+            (f"Process {DEFAULT_PID}", "Thread 2", 2, 0),
+            (f"Process {_SECOND_PID}", "Thread 0", 2, 1),
+        ], f"unexpected thread rows: {[dict(r.__dict__) for r in rows]}"
+
 
 class TestDiagnosticTrackSchema:
     """Diagnostic: dump the track table to understand what columns are
@@ -840,11 +865,6 @@ class TestDiagnosticTrackSchema:
         rows = list(trace_processor.query("SELECT * FROM process"))
         for r in rows:
             print(f"PROCESS {dict(r.__dict__)}")
-
-    def test_dump_thread_table(self, trace_processor: TraceProcessor) -> None:
-        rows = list(trace_processor.query("SELECT * FROM thread"))
-        for r in rows:
-            print(f"THREAD {dict(r.__dict__)}")
 
 
 class TestInstantEvents:
