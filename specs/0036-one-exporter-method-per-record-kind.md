@@ -150,8 +150,7 @@ file and an already-open stream.
 
 ## 5. Seams and testing decisions
 
-- **Seam:** the on-disk file, through
-  `tests/exporters/test_jsonl_exporter.py`, `test_chrome_trace_exporter.py`
+- **Seam:** the on-disk file, through `tests/exporters/test_jsonl_exporter.py`
   and `test_perfetto_exporter.py`, plus the JSONL leg of
   `tests/test_convert_cmd.py`. That is the highest seam available and the
   correct one: the contract this must not break is the file, not the class
@@ -168,11 +167,10 @@ file and an already-open stream.
   processor, since a round-trip through our own constant is equally happy with
   a right and a wrong field number
   ([ADR-0014](../docs/adr/0014-perfetto-integration-test-strategy.md)).
-- **Prior art:** `tests/exporters/test_combined_exporter.py` for the fan-out
-  assertions; `tests/test_convert_cmd.py` for the JSONL round-trip; the
-  chrome↔perfetto content-equivalence test in
-  `tests/test_convert_cmd_perfetto.py`; `MockExporter` in `tests/helpers.py`,
-  which is the existing test adapter and which shrinks with the interface.
+- **Prior art:** `tests/test_convert_cmd.py` for the JSONL round-trip;
+  `tests/test_convert_cmd_perfetto.py` for what a trace means read back
+  through the trace processor; `MockExporter` in `tests/helpers.py`, which is
+  the existing test adapter and which shrinks with the interface.
 - **Cases:**
   1. Every record kind reaches every exporter that handles it, and the file is
      byte-identical to today's for a fixed input on all five formats.
