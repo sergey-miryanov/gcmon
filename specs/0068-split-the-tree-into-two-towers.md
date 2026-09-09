@@ -89,7 +89,10 @@ sits in `cli.analyze`, which has it.
 `cli`, where `main.py` reaches both. `ROOT_CLI` is unchanged and stays `cli`:
 `__init__.py` and `__main__.py` belong to neither tower. `layer_of` tries the
 two-segment name before the head, so `cli.monitor.run_cmd` answers
-`cli.monitor` and `cli.main` answers `cli`.
+`cli.monitor` and `cli.main` answers `cli`. A directory under `cli/` the table
+does not name places nothing rather than falling back to `cli`, which is
+permitted every layer: that fallback is how an offline command written into
+`cli/report/` would import `monitoring` and pass.
 
 `FOLDED` stops parking a question and answers one, because `pyperf/hook.py`
 imports `control` and runs inside the target (ADR-0023). A tower is defined by

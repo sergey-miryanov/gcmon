@@ -172,8 +172,9 @@ file and an already-open stream.
   through the trace processor; `MockExporter` in `tests/helpers.py`, which is
   the existing test adapter and which shrinks with the interface.
 - **Cases:**
-  1. Every record kind reaches every exporter that handles it, and the file is
-     byte-identical to today's for a fixed input on all five formats.
+  1. Every record kind reaches every exporter that handles it, and the output
+     is byte-identical to today's for a fixed input on all three formats: the
+     file for `perfetto` and `jsonl`, the stream for `stdout`.
   2. GC records, loss windows and instant events all reach the JSONL file when
      the buffer never hits the flush threshold and `close()` is what drains
      it, the path each of the three duplicated blocks owns today. *(carried

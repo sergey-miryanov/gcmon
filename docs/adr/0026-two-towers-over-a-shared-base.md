@@ -1,6 +1,6 @@
 # ADR-0026: Split the package into a monitor tower and an analysis tower
 
-- **Status:** Accepted, unbuilt (spec 0068)
+- **Status:** Accepted
 - **Date:** 2026-09-02
 
 ## Context
@@ -59,7 +59,9 @@ target never sees.
   they cannot drift apart.
 - The layer table in `tests/architecture/test_layering.py` carries the towers,
   and `layer_of` answers `cli.monitor`, `cli.analyze` or `cli.shared` by
-  subdirectory, trying the two-segment name before the head.
+  subdirectory, trying the two-segment name before the head. A directory under
+  `cli/` it does not name is placed nowhere, so `unplaced` fails on it and no
+  new directory is handed the CLI's permissions by sitting still.
 
 ## Consequences
 
