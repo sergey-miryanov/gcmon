@@ -9,7 +9,6 @@ Provides various export formats for GC events:
 from .exporter import EventsExporter
 from .exporter_factory import EventsExporterFactory
 from .jsonl_exporter import JsonlExporter
-from .jsonl_io import convert_jsonl_to_trace_format
 from .perfetto_exporter import PerfettoExporter
 from .stdout_exporter import StdoutExporter
 
@@ -19,5 +18,4 @@ __all__ = [
     "JsonlExporter",
     "PerfettoExporter",
     "StdoutExporter",
-    "convert_jsonl_to_trace_format",
 ]

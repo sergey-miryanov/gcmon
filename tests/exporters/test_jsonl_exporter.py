@@ -2,8 +2,8 @@
 
 import json
 
+from gcmon.analysis.jsonl_io import read_jsonl
 from gcmon.exporters import JsonlExporter
-from gcmon.exporters.jsonl_io import read_jsonl
 from gcmon.model.data import GCStatsInfo
 from tests.conftest import DEFAULT_PID
 from tests.data_helpers import create_instant_msg

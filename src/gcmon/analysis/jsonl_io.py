@@ -5,6 +5,7 @@ from pathlib import Path
 
 import msgspec
 
+from ..exporters.trace_converter import convert_to_trace_format
 from ..model.data import from_mapping
 from ..model.protocol import (
     JsonlRecord,
@@ -24,7 +25,6 @@ from ..model.protocol import (
     to_mapping,
 )
 from ..model.trace_event import TraceEvent
-from .trace_converter import convert_to_trace_format
 
 __all__ = [
     "convert_jsonl_to_trace_format",

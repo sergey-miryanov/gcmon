@@ -20,7 +20,7 @@ from typing import Any, Protocol
 import pytest
 from perfetto.trace_processor import TraceProcessor
 
-from gcmon.exporters.jsonl_io import read_jsonl
+from gcmon.analysis.jsonl_io import read_jsonl
 from gcmon.exporters.trace_converter import convert_to_trace_format
 from gcmon.model.trace_event import Slice, TraceEvent
 from tests.helpers import create_mock_incremental_item, create_mock_stats_item, open_trace_processor

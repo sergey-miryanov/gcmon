@@ -46,6 +46,7 @@
 ### Internal
 
 - `gcmon.TraceExporter` is gone from the public surface
+- `gcmon.exporters` no longer re-exports `combine_files` or `convert_jsonl_to_trace_format`
 - Removed OS from the coverage report name
 - Stability, correctness and performance improvements
 

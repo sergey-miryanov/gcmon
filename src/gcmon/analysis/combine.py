@@ -3,10 +3,10 @@
 from pathlib import Path
 
 from ..exporters.encoder import ProtobufEventEncoder
-from ..exporters.jsonl_io import normalize_jsonl_timestamps, read_jsonl, write_jsonl
 from ..exporters.trace_converter import convert_to_trace_format
 from ..model.protocol import TItem
 from ..model.trace_event import Slice, TraceEvent
+from .jsonl_io import normalize_jsonl_timestamps, read_jsonl, write_jsonl
 
 __all__ = [
     "combine_files",

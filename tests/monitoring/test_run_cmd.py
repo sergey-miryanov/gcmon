@@ -14,7 +14,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from gcmon.exporters.jsonl_io import read_jsonl
+from gcmon.analysis.jsonl_io import read_jsonl
 from tests.helpers import assert_valid_perfetto_trace
 
 # =============================================================================

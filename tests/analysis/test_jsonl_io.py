@@ -7,7 +7,7 @@ import msgspec
 import pytest
 
 from gcmon.analysis.combine import combine_files
-from gcmon.exporters.jsonl_io import (
+from gcmon.analysis.jsonl_io import (
     convert_jsonl_to_trace_format,
     json_to_item,
     normalize_jsonl_timestamps,

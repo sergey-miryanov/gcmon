@@ -13,7 +13,7 @@ import msgspec
 import pytest
 from pytest_codspeed import BenchmarkFixture
 
-from gcmon.exporters.jsonl_io import (
+from gcmon.analysis.jsonl_io import (
     convert_jsonl_to_trace_format,
     read_jsonl,
     write_jsonl,
