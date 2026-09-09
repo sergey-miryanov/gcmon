@@ -196,9 +196,9 @@ decision. A consumer running several queries over one file should not reopen
 it once per query.
 
 Depends on spec 0059, without which the offline table cannot say which process
-held a pid and would drop a distinction the live table makes, and on spec
-0068, which creates the tower the reader lives in and the extra it needs. Spec
-0063 depends on this one.
+held a pid and would drop a distinction the live table makes. Spec 0068 landed
+the tower the reader lives in; the `analysis` extra is this spec's to declare.
+Spec 0063 depends on this one.
 
 Nothing here touches the hook. Spec 0064 already took the replay out of
 `pyperf/hook.py`, so this spec writes the shared implementation rather than

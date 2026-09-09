@@ -101,4 +101,3 @@ whose only caller is `combine_files`. The module is analysis-side entire.
   `layer_of`.
 - `src/gcmon/analysis/`, `src/gcmon/cli/monitor/`, `src/gcmon/cli/analyze/`,
   `src/gcmon/cli/shared/`.
-- Spec 0068 is the move itself.
