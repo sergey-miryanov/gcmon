@@ -146,8 +146,8 @@ defaults to 1.0 s, independent of the 0.1 s GC poll rate.
   hands the instant to the monitor and then to the sampler; the monitor
   collects the live pids and reports liveness
   ([ADR-0017](0017-monitor-owns-the-pid-lifecycle.md)).
-  `src/gcmon/cli/commands/monitoring_base.py` constructs the sampler.
-- `src/gcmon/cli/_env.py` reads `GCMON_RSS` and `GCMON_RSS_INTERVAL`.
+  `src/gcmon/cli/monitor/loop_runner.py` constructs the sampler.
+- `src/gcmon/cli/monitor/_env.py` reads `GCMON_RSS` and `GCMON_RSS_INTERVAL`.
 - Tests: `tests/test_rss_sampler.py` (interval timing, live-pid filtering,
   injected sampler, psutil-unavailable fallback);
   `tests/exporters/test_buffered_exporter.py` (`iid = -1` emits no

@@ -5,7 +5,7 @@ import logging
 import os
 from pathlib import Path
 
-from gcmon.cli._env import (
+from gcmon.cli.monitor._env import (
     ENV_CONTROL_NAME,
     ENV_DURATION,
     ENV_FLUSH_THRESHOLD,

@@ -13,7 +13,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from gcmon.cli.commands.monitoring_options import MonitoringOptions
+from gcmon.cli.monitor.monitoring_options import MonitoringOptions
 from gcmon.stats.streaming_stats import PauseTotals
 from gcmon.stats.views import TableFormat
 from tests.helpers import DefaultsValue
@@ -147,7 +147,7 @@ def monitoring_options() -> Callable[..., MonitoringOptions]:
 
 
 @pytest.fixture
-def mock_monitoring_base_deps() -> Generator[dict[str, MagicMock]]:
+def mock_loop_runner_deps() -> Generator[dict[str, MagicMock]]:
     """Patch all dependencies for run_monitoring_loop.
 
     Returns dict of mocks that tests can customize (e.g. deps["StreamingStats"].return_value.count.return_value = 0).
@@ -167,7 +167,7 @@ def mock_monitoring_base_deps() -> Generator[dict[str, MagicMock]]:
     with ExitStack() as stack:
         deps: dict[str, Any] = {}
         for name in patch_targets:
-            deps[name] = stack.enter_context(patch(f"gcmon.cli.commands.monitoring_base.{name}"))
+            deps[name] = stack.enter_context(patch(f"gcmon.cli.monitor.loop_runner.{name}"))
         mock_control_instance = MagicMock()
         mock_control_instance.address = "/tmp/test-address"
         deps["ControlServer"].return_value = mock_control_instance

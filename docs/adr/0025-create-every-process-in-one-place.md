@@ -170,7 +170,7 @@ wait behind it.
   [ADR-0017](0017-monitor-owns-the-pid-lifecycle.md)'s prune.
 - `src/gcmon/control/control_server.py` resolves the pid on the wire through
   the protocol and drops what resolves to nothing.
-- `src/gcmon/cli/commands/monitoring_base.py` builds the one registry a run
+- `src/gcmon/cli/monitor/loop_runner.py` builds the one registry a run
   has, before the target starts, because the control server has to be
   listening by then.
 - `tests/test_process.py` pins the struct to the pair, the ordering and the

@@ -115,11 +115,11 @@ def test_main_subcommands_dispatch(monkeypatch: pytest.MonkeyPatch, tmp_path: Pa
         calls.append("combine")
         return 0
 
-    monkeypatch.setattr("gcmon.cli.commands.monitor_cmd.cmd_monitor", mock_monitor)
+    monkeypatch.setattr("gcmon.cli.monitor.monitor_cmd.cmd_monitor", mock_monitor)
     assert cli.main(["monitor", "12345"]) == 0
     assert calls == ["monitor"]
 
-    monkeypatch.setattr("gcmon.cli.commands.run_cmd.cmd_run", mock_run)
+    monkeypatch.setattr("gcmon.cli.monitor.run_cmd.cmd_run", mock_run)
     assert cli.main(["run", "-m", "timeit"]) == 0
     assert calls == ["monitor", "run"]
 

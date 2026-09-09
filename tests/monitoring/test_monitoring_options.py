@@ -8,8 +8,8 @@ from pathlib import Path
 
 import pytest
 
-from gcmon.cli._env import ENV_RATE
-from gcmon.cli.commands.monitoring_options import (
+from gcmon.cli.monitor._env import ENV_RATE
+from gcmon.cli.monitor.monitoring_options import (
     RSS_CAPABLE_FORMATS,
     MonitoringOptions,
     add_monitoring_options,

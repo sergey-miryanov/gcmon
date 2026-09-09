@@ -4,7 +4,7 @@ import logging
 import os
 from contextlib import ExitStack
 
-from gcmon.cli.commands.monitoring_options import MonitoringOptions
+from gcmon.cli.monitor.monitoring_options import MonitoringOptions
 from gcmon.control.control_server import ControlServer
 from gcmon.exporters import EventsExporterFactory
 from gcmon.monitoring.events_reader import RemoteEventsReader

@@ -156,7 +156,7 @@ file and an already-open stream.
   `tests/test_convert_cmd.py`. That is the highest seam available and the
   correct one: the contract this must not break is the file, not the class
   structure. The RSS warning is observed at
-  `tests/monitoring/test_monitoring_base.py`.
+  `tests/monitoring/test_loop_runner.py`.
 - **New seam needed:** none. Do **not** assert on `__mro__`, on which class
   holds the buffer, or on the method count; that pins the implementation this
   spec exists to make free to change. *(carried from 0029)*

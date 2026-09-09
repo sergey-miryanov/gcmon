@@ -5,8 +5,8 @@ import logging
 import sys
 from argparse import Namespace
 
-from gcmon.cli.commands.monitoring_base import run_monitoring_loop
-from gcmon.cli.commands.monitoring_options import add_monitoring_options, get_monitoring_options
+from gcmon.cli.monitor.loop_runner import run_monitoring_loop
+from gcmon.cli.monitor.monitoring_options import add_monitoring_options, get_monitoring_options
 from gcmon.cli.shared.parser_factory import ParserFactory
 from gcmon.monitoring.child_process_runner import ChildProcessRunner
 from gcmon.monitoring.target_process import ProcessFactory

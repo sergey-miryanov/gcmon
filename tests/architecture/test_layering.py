@@ -95,9 +95,9 @@ def layer_of(module: str) -> str | None:
     `cli/monitor/` is `cli.monitor`. The two-segment name is tried before the
     head, because `cli` at the head would hand a tower every permission the
     CLI has. Two rules make the directory answer without exceptions in the
-    tree. `commands` is part of `cli`, which is otherwise the package root,
-    where `__init__.py` and `__main__.py` have to live, and `pyperf` is part
-    of the monitor tower: both are entry points.
+    tree. The package root, where `__init__.py` and `__main__.py` have to
+    live, is `cli`, and `pyperf` is part of the monitor tower: both are entry
+    points.
 
     Nothing else is placed. A directory that is not a layer and a module at
     the root that is neither the CLI's nor a shim both come back None, and
@@ -232,8 +232,10 @@ class TestTheLayerOfAModule:
         assert layer_of("support.set_on_exit") == "support"
         assert layer_of("exporters.exporter") == "exporters"
 
-    def test_the_subcommands_are_part_of_the_cli(self) -> None:
-        assert layer_of("cli.commands.run_cmd") == "cli"
+    def test_a_directory_under_the_cli_that_is_not_a_tower_is_the_cli(self) -> None:
+        """The table knows three names under `cli/`. Anything else there falls
+        back to the head, and `main.py` reaches every layer."""
+        assert layer_of("cli.helpers.thing") == "cli"
 
     def test_the_two_modules_the_root_must_hold_are_cli(self) -> None:
         assert layer_of("__init__") == "cli"

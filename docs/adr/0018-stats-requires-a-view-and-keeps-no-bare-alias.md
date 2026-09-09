@@ -135,8 +135,8 @@ capture that prints no table at the end.
 
 ## Implementation
 
-`src/gcmon/cli/commands/monitoring_options.py` declares `--stats` and refuses
-a bad `GCMON_STATS`; `src/gcmon/cli/_env.py` reads the raw value. The refusal
+`src/gcmon/cli/monitor/monitoring_options.py` declares `--stats` and refuses
+a bad `GCMON_STATS`; `src/gcmon/cli/monitor/_env.py` reads the raw value. The refusal
 does not sit with the reading, because every `get_env_*` runs while the parser
 is being built, before logging is configured. The options builder turns it
 down instead, alongside `rate`, `duration` and `flush_threshold`, once logging

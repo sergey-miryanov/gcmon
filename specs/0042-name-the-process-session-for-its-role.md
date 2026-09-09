@@ -120,7 +120,7 @@ question is now answerable from the code rather than blocked on anything.
 
 ## 5. Seams and testing decisions
 
-- **Seam:** `tests/monitoring/test_monitoring_base.py`, at the monitoring
+- **Seam:** `tests/monitoring/test_loop_runner.py`, at the monitoring
   entry point, the highest seam that can observe the change, because what
   these types are *for* is being handed to that function and started.
   `tests/test_child_process_runner.py` and
@@ -131,7 +131,7 @@ question is now answerable from the code rather than blocked on anything.
   entry point and assert the observable difference is only the one that should
   exist: the exit code. A test asserting that a class implements a protocol
   proves the type checker ran; assert behaviour instead.
-- **Prior art:** `tests/monitoring/test_monitoring_base.py` for driving the
+- **Prior art:** `tests/monitoring/test_loop_runner.py` for driving the
   entry point with a substituted session; `tests/monitoring/conftest.py` for
   the existing fakes; `tests/test_child_process_runner.py` for the spawn
   adapter's lifecycle.

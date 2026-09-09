@@ -231,8 +231,8 @@ class TestCmdRunUnit:
     def mock_monitoring_loop_and_runner(self) -> Generator[tuple[MagicMock, MagicMock, MagicMock]]:
 
         with (
-            patch("gcmon.cli.commands.run_cmd.run_monitoring_loop", return_value=0) as mock_loop,
-            patch("gcmon.cli.commands.run_cmd.ChildProcessRunner") as mock_runner_cls,
+            patch("gcmon.cli.monitor.run_cmd.run_monitoring_loop", return_value=0) as mock_loop,
+            patch("gcmon.cli.monitor.run_cmd.ChildProcessRunner") as mock_runner_cls,
         ):
             mock_runner = MagicMock()
             mock_runner.returncode = 0
@@ -261,7 +261,7 @@ class TestCmdRunUnit:
 
     def test_cmd_run_both_targets(self, caplog: pytest.LogCaptureFixture) -> None:
         """Test cmd_run rejects both -m and -s specified."""
-        from gcmon.cli.commands import run_cmd
+        from gcmon.cli.monitor import run_cmd
 
         args = self._make_run_args(module_name="timeit", script="script.py")
 
@@ -272,7 +272,7 @@ class TestCmdRunUnit:
 
     def test_cmd_run_no_target(self, caplog: pytest.LogCaptureFixture) -> None:
         """Test cmd_run rejects neither -m nor -s specified."""
-        from gcmon.cli.commands import run_cmd
+        from gcmon.cli.monitor import run_cmd
 
         args = self._make_run_args()
 
@@ -284,7 +284,7 @@ class TestCmdRunUnit:
     def test_cmd_run_module_mode(self, mock_monitoring_loop_and_runner: tuple[MagicMock, MagicMock, MagicMock]) -> None:
         """Test cmd_run passes factory with correct params for module mode."""
         mock_loop, mock_runner_cls, mock_runner = mock_monitoring_loop_and_runner
-        from gcmon.cli.commands import run_cmd
+        from gcmon.cli.monitor import run_cmd
 
         args = self._make_run_args(module_name="timeit", script_args=["-n", "1"])
 
@@ -304,7 +304,7 @@ class TestCmdRunUnit:
     def test_cmd_run_script_mode(self, mock_monitoring_loop_and_runner: tuple[MagicMock, MagicMock, MagicMock]) -> None:
         """Test cmd_run passes factory with correct params for script mode."""
         mock_loop, mock_runner_cls, mock_runner = mock_monitoring_loop_and_runner
-        from gcmon.cli.commands import run_cmd
+        from gcmon.cli.monitor import run_cmd
 
         args = self._make_run_args(script="myscript.py", script_args=["arg1"])
 
@@ -323,27 +323,27 @@ class TestCmdRunUnit:
 
     def test_cmd_run_subprocess_returncode(self) -> None:
         """Test non-zero subprocess returncode is propagated from run_monitoring_loop."""
-        from gcmon.cli.commands import run_cmd
+        from gcmon.cli.monitor import run_cmd
 
         args = self._make_run_args(module_name="timeit")
 
-        with patch("gcmon.cli.commands.run_cmd.run_monitoring_loop", return_value=42):
+        with patch("gcmon.cli.monitor.run_cmd.run_monitoring_loop", return_value=42):
             result = run_cmd.cmd_run(args)
             assert result == 42
 
     def test_cmd_run_returns_monitoring_loop_failure(self) -> None:
         """Test monitoring loop failure (1) is propagated."""
-        from gcmon.cli.commands import run_cmd
+        from gcmon.cli.monitor import run_cmd
 
         args = self._make_run_args(module_name="timeit")
 
-        with patch("gcmon.cli.commands.run_cmd.run_monitoring_loop", return_value=1):
+        with patch("gcmon.cli.monitor.run_cmd.run_monitoring_loop", return_value=1):
             result = run_cmd.cmd_run(args)
             assert result == 1
 
     def test_cmd_run_validation_failure(self, caplog: pytest.LogCaptureFixture) -> None:
         """Test cmd_run returns 1 when get_monitoring_options fails."""
-        from gcmon.cli.commands import run_cmd
+        from gcmon.cli.monitor import run_cmd
 
         args = self._make_run_args(module_name="timeit", rate=0)
 

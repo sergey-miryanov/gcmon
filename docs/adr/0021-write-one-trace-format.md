@@ -139,10 +139,10 @@ new output format is a second `EventEncoder` implementation.
 
 ## Implementation
 
-- `src/gcmon/cli/commands/monitoring_options.py` holds `FORMATS`, which the
+- `src/gcmon/cli/monitor/monitoring_options.py` holds `FORMATS`, which the
   parser's `choices` and the `GCMON_FORMAT` refusal both read, and
   `RSS_CAPABLE_FORMATS`.
-- `src/gcmon/cli/_env.py` holds the `GCMON_FORMAT` reading and the default
+- `src/gcmon/cli/monitor/_env.py` holds the `GCMON_FORMAT` reading and the default
   output path.
 - `src/gcmon/cli/analyze/convert_cmd.py` holds `combine`'s arguments.
 - `src/gcmon/exporters/combine.py` holds the two output paths and the

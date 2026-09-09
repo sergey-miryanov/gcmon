@@ -14,7 +14,7 @@ from tests.monitoring.conftest import MonitorArgsFactory
 
 @pytest.fixture
 def mock_monitoring_loop() -> Generator[MagicMock]:
-    with patch("gcmon.cli.commands.monitor_cmd.run_monitoring_loop") as mock:
+    with patch("gcmon.cli.monitor.monitor_cmd.run_monitoring_loop") as mock:
         yield mock
 
 
@@ -26,7 +26,7 @@ def mock_monitoring_loop() -> Generator[MagicMock]:
 def test_cmd_monitor_connect_failure(
     caplog: pytest.LogCaptureFixture, monitor_args: MonitorArgsFactory, mock_monitoring_loop: MagicMock
 ) -> None:
-    from gcmon.cli.commands import monitor_cmd
+    from gcmon.cli.monitor import monitor_cmd
 
     mock_monitoring_loop.return_value = 1
     result = monitor_cmd.cmd_monitor(monitor_args())
@@ -49,7 +49,7 @@ class TestCmdMonitorFormat:
         extra_kwargs: dict[str, int],
         mock_monitoring_loop: MagicMock,
     ) -> None:
-        from gcmon.cli.commands import monitor_cmd
+        from gcmon.cli.monitor import monitor_cmd
 
         args = monitor_args(format=fmt, output=Path("test.jsonl"), duration=0.05, **extra_kwargs)
         mock_monitoring_loop.return_value = 0
@@ -75,7 +75,7 @@ class TestCmdMonitorValidation:
         override: dict[str, int],
         expected_msg: str,
     ) -> None:
-        from gcmon.cli.commands import monitor_cmd
+        from gcmon.cli.monitor import monitor_cmd
 
         result = monitor_cmd.cmd_monitor(monitor_args(**override))
         assert result == 1
@@ -83,14 +83,14 @@ class TestCmdMonitorValidation:
 
 
 def test_cmd_monitor_quiet_mode(monitor_args: MonitorArgsFactory, mock_monitoring_loop: MagicMock) -> None:
-    from gcmon.cli.commands import monitor_cmd
+    from gcmon.cli.monitor import monitor_cmd
 
     mock_monitoring_loop.return_value = 0
     assert monitor_cmd.cmd_monitor(monitor_args(verbose=0, duration=0.05)) == 0
 
 
 def test_cmd_monitor_self_pid(monitor_args: MonitorArgsFactory, mock_monitoring_loop: MagicMock) -> None:
-    from gcmon.cli.commands import monitor_cmd
+    from gcmon.cli.monitor import monitor_cmd
 
     mock_monitoring_loop.return_value = 0
     result = monitor_cmd.cmd_monitor(monitor_args(pid=-1, duration=0.05))
