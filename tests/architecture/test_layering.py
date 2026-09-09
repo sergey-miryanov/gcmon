@@ -99,6 +99,11 @@ def layer_of(module: str) -> str | None:
     live, is `cli`, and `pyperf` is part of the monitor tower: both are entry
     points.
 
+    A directory under `cli/` that the table does not name is placed nowhere
+    rather than falling back to `cli`, which is permitted every layer. That
+    fallback is how an offline command written into `cli/report/` would import
+    `monitoring` and pass; `unplaced` fails on it instead.
+
     Nothing else is placed. A directory that is not a layer and a module at
     the root that is neither the CLI's nor a shim both come back None, and
     `unplaced` is what turns that into a failure.
@@ -106,6 +111,8 @@ def layer_of(module: str) -> str | None:
     parts = module.split(".")
     if len(parts) > 1 and ".".join(parts[:2]) in ALLOWED:
         return ".".join(parts[:2])
+    if len(parts) > 2 and parts[0] == "cli":
+        return None
     head = parts[0]
     if head in ALLOWED:
         return head
@@ -232,10 +239,17 @@ class TestTheLayerOfAModule:
         assert layer_of("support.set_on_exit") == "support"
         assert layer_of("exporters.exporter") == "exporters"
 
-    def test_a_directory_under_the_cli_that_is_not_a_tower_is_the_cli(self) -> None:
-        """The table knows three names under `cli/`. Anything else there falls
-        back to the head, and `main.py` reaches every layer."""
-        assert layer_of("cli.helpers.thing") == "cli"
+    def test_a_directory_under_the_cli_that_is_not_a_tower_places_nothing(self) -> None:
+        """`cli` is permitted every layer, so falling back to it would hand a
+        new directory the reach the towers exist to withdraw. An offline
+        command written into `cli/report/` would import `monitoring` and pass.
+        """
+        assert layer_of("cli.report.report_cmd") is None
+
+    def test_a_module_directly_under_the_cli_is_still_the_cli(self) -> None:
+        """Two segments is a module in `cli/` itself, not a directory."""
+        assert layer_of("cli.main") == "cli"
+        assert layer_of("cli._version") == "cli"
 
     def test_the_two_modules_the_root_must_hold_are_cli(self) -> None:
         assert layer_of("__init__") == "cli"
