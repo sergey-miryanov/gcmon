@@ -2,46 +2,50 @@
 
 ## WIP
 
+## Version 0.7.0 (2026-09-09)
+
 ### Breaking changes
 
-- The modules moved into layers, so every deep import path changed and the old ones are gone. `from gcmon import ...` still gives the same names
-- `--format chrome`, `--format trace` and `--format chrome+perfetto` are parse errors: the flag takes `perfetto`, `jsonl` or `stdout`. A `.json` capture from an earlier release still opens in the Perfetto UI
-- The default output is `gcmon.pftrace`, where it was `gcmon.json`. `--format jsonl` still defaults to `gcmon.jsonl`
-- `GCMON_FORMAT` refuses a word `--format` would refuse and stops the run, where it used to fall back to the default without saying so
-- A run that read no records writes no file, where it used to write an empty `gcmon.json`
-- The pyperf hook spawns no monitor and publishes no GC metrics. Running the suite under `gcmon run` with `--inherit-environ=GCMON_CONTROL_ADDRESS` is required now, and the first worker fails the run when no monitor is listening
+- Every deep import path changed and the old ones are gone. `from gcmon import ...` still gives the same names
+- Drop Chrome Trace format support
+- The default output is `gcmon.pftrace`
+- `GCMON_FORMAT` takes the same words as `--format`, and any other value stops the run
+- A run that read no records and watched no process writes no file, where it used to write an empty `gcmon.json`
+- The pyperf hook spawns no monitor and publishes no GC metrics: the suite needs `gcmon run` with `--inherit-environ=GCMON_CONTROL_ADDRESS`
 - The pyperf hook's metadata keys `gc_pause_*` and `gc_heap_size_p99` are gone
 - The pyperf hook's `GCMON_PYPERF_HOOK_OUTPUT` and `GCMON_PYPERF_HOOK_TEMP_DIR` environment variables are gone
-- `gcmon combine` reads JSONL only: `--input-format` is gone, `--output-format` takes `perfetto` or `jsonl` and defaults to `perfetto`. Handed a `.json` from an earlier release, it names the Chrome format instead of reporting malformed JSON
+- `gcmon combine` reads JSONL only: `--input-format` is gone
 - A compressed `.pftrace` needs Perfetto v58 or newer to open. An older Perfetto shows an empty timeline rather than refusing the file
-- A `heap_size` counter track is named `Thread {iid} heap_size`, where it was `heap_size`. Two interpreters in one process drew two sibling rows under the same name; a PerfettoSQL query matching `name = 'heap_size'` now matches nothing. `rss` is unchanged
-- A JSONL capture carries no `tid`, on any kind of line. It was `iid` again on a GC record and `-2 - iid` on a loss one; derive it from `iid` if you read it. gcmon still reads a capture that has it
-- `gcmon combine` writes no command line, on the process descriptor or the track description. It used to read whatever process held that PID on the machine running the conversion
-- A `process` row's `pid` in a Perfetto trace is one gcmon writes per process, not the operating system's, so a PerfettoSQL query matching `pid = 12345` matches nothing. The `pid` annotation on the `Lifetime` bar and on the `Processes` span carries the operating system's PID, and so does the row's name
-- A process track carries no `Start Process` instant. The `Lifetime` slice on the same row keeps the row rendered, so a PerfettoSQL query matching `name = 'Start Process'` matches nothing. It opens at gcmon's first observation of the process, at or before the timestamp the instant carried
+- A `heap_size` counter track is named `Thread {iid} heap_size`, where it was `heap_size`
+- A JSONL capture carries no `tid`, on any kind of line. It was `iid` on a GC record and `-2 - iid` on a loss one
+- `gcmon combine` writes no command line
+- A `process` row's `pid` in a Perfetto trace is one gcmon writes per process, not the operating system's. The operating system's PID is the row's name and the `pid` annotation on the `Lifetime` bar and on the `Processes` span
+- A process track carries no `Start Process` instant
 
 ### Features
 
-- A Perfetto trace is compressed: the same events in a file several times smaller. It opens the same way, and there is nothing to run first
-- `ControlClient.instant_msg` takes a `ts`, so an instant captured in a hot path can be sent after it and still land where it happened
+- A Perfetto trace is written compressed: the same events in a smaller file, and Perfetto opens it directly
+- `ControlClient.instant_msg` takes a `ts`: an instant captured in a hot path can be sent after it and still land where it happened
 - The pyperf hook marks where each benchmark ran: `gcmon:`-prefixed begin and end marks per measured region
-- Each process that held a reused PID gets its own slice on the `Processes` track, the second named `Process 12345#2`, matching the `--stats` block. Every slice carries a `pid_epoch` annotation, so a PerfettoSQL query reads the number without parsing the name, and a `clipped` annotation saying whether an overlapping process cut this one's drawn width short
-- Each process that held a reused PID draws its own rows: a `Process 12345#2` process track beside `Process 12345`, with its own pause row, `GC Loss` row and counters. In PerfettoSQL the two are separate `upid`s, and a per-process figure is a `GROUP BY`
-- Each process track draws a `Lifetime` slice over the interval gcmon watched that process. Click it and the args say what the process was running, which process on the PID it is, how many of its interpreters collected, and how much of it gcmon read: records sampled against records lost, with the GC pause inside the lost ones. It keeps the observed width where the same process's `Processes` slice was cut short by an overlapping one, so the row says how long gcmon watched rather than only that the process existed
-- A process gcmon polled and read no collections from draws a row of its own, with its command line and a `Lifetime` bar over the interval it was watched. It used to reach the trace as a `Processes` slice and nothing else, indistinguishable in the UI from a process gcmon never reached
-- A trace from a run that was killed rather than stopped still shows a row for every process gcmon had finished with. Their rows are written as gcmon lets go of each pid, not at the end of the run; a process still running when the kill lands has no row, and neither does the `Processes` track
+- Each process that held a reused PID gets its own slice on the `Processes` track, the second named `Process 12345#2`, matching the `--stats` block
+- Every `Processes` slice carries a `pid_epoch` annotation with the number in its name, and a `clipped` annotation saying whether an overlapping process cut its drawn width short
+- A reused PID draws a full set of rows per process, each with its own `upid`
+- Each process track draws a `Lifetime` slice over the interval gcmon watched that process. An overlapping process clips the `Processes` slice, never the `Lifetime` one
+- A `Lifetime` slice's args name the program, which process on the PID it is, how many of its interpreters collected, and how much of it gcmon read: records sampled against records lost, with the GC pause inside the lost ones
+- A process gcmon polled without reading a collection draws a row of its own, where it used to reach the trace as a `Processes` slice and nothing else
+- A trace from a run that was killed rather than stopped still shows a row for every process gcmon had finished with. A process still running when the kill lands has no row, and neither does the `Processes` track
 
 ### Bugfixes
 
 - `gcmon` with no subcommand prints a usage message and exits 2, where it used to print an `AttributeError` traceback
 - An instant sent close to the end of a run reaches the trace, where the last one a client sent could be dropped without a word
 - A `Processes` slice names the program its own process was running. A reused PID used to put the first process's command line on every slice of that PID, and a process that exited before the first flush got none at all
-- A `Processes` slice covers only the process it names, where a reused PID used to draw one slice spanning both and the stretch between them
-- A process track names the program its own process was running and opens when that process started. A reused PID used to draw one track for both processes, showing the first one's command line and stamped before the second existed
-- A child that leaves the process tree and comes back draws each of its collections once. gcmon re-reads the ring it returns holding, and the records it had already drawn used to be drawn a second time
-- A process's row ends where gcmon last read it. A record read after gcmon let go of a pid used to stretch that process's span past the last poll that saw it
-- A PID the operating system handed out three or more times draws a row per process. The third process on a PID used to land on the second one's row and the fifth on the fourth's, leaving one row with two `Lifetime` bars, a name from the later process and a start stamp from the earlier
-- The process tracks sort by when gcmon first observed each process, and no two of them share a position. A trace holding more than one process could put two rows at the same rank and leave their order to the UI. The order was by first event timestamp before, so a process gcmon read no collections from had no place in it
+- A `Processes` slice covers only the process it names, where a reused PID used to draw one slice spanning both processes and the stretch between them
+- A process track names the program its own process was running and opens when that process started, where a reused PID used to carry the first process's command line and a start stamp from before the second existed
+- A child that leaves the process tree and comes back draws each of its collections once, where the records it had already drawn used to be drawn a second time
+- A process's span ends at the last poll that read that process, where a record arriving after it used to stretch the span further
+- The process tracks sort by when gcmon first observed each process, where the order was by first event timestamp and a process gcmon polled without reading a collection had no place in it
+- No two process tracks share a position, where two rows could land at the same rank and leave their order to the UI
 
 ### Internal
 
