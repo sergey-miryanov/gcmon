@@ -44,10 +44,10 @@ jobs:
           cache-prefix: release
 
       - name: Build distribution
-        run: poetry build
+        run: poetry run just build
 
       - name: Validate built distributions
-        run: poetry run twine check dist/*
+        run: poetry run just check-dist
 
       - name: Publish to PyPI
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && (github.event.inputs.dry_run != 'true')
@@ -59,7 +59,7 @@ jobs:
         id: changelog
         env:
           TAG: ${{ github.ref_name }}
-        run: python .github/scripts/extract_changelog.py "$TAG"
+        run: poetry run just changelog "$TAG"
 
       - name: Create GitHub Release
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && (github.event.inputs.dry_run != 'true')
