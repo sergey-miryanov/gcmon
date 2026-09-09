@@ -25,7 +25,7 @@ track_descriptor {
   name: "Thread 0"
   thread {
     pid: 1
-    tid: 1
+    tid: 0
     thread_name: "Thread 0"
   }
   parent_uuid: 1
@@ -177,7 +177,7 @@ track_descriptor {
   name: "Thread 0"
   thread {
     pid: 2
-    tid: 2
+    tid: 0
     thread_name: "Thread 0"
   }
   parent_uuid: 15
@@ -329,7 +329,7 @@ track_descriptor {
   name: "Thread 0"
   thread {
     pid: 3
-    tid: 3
+    tid: 0
     thread_name: "Thread 0"
   }
   parent_uuid: 29

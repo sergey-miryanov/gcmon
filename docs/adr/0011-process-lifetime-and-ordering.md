@@ -119,8 +119,12 @@ from its own first observation.** The trace processor keys process identity on
 do not reliably draw a row each.
 
 **A row is written under a pid gcmon counts from 1, not the operating
-system's.** The thread descriptor follows the row pid, interpreter 0's `tid`
-included: a `tid` equal to the pid is what marks a main thread.
+system's.** The thread descriptor carries that pid, and the `tid` beside it is
+the interpreter id, interpreter 0 included. The trace processor keys a thread
+to its process on the descriptor's pid, so the `tid` is free to name the
+interpreter a query is after. What it gives up is `thread.is_main_thread`,
+which the trace processor reads off a `tid` equal to the pid, and which no
+query of gcmon's asks for.
 
 **Every process draws a full set of rows of its own**: process track, thread
 track per interpreter, `GC Loss` track, counter group and `Lifetime` slice,

@@ -22,6 +22,10 @@ gcmon traces use the standard Perfetto schema:
   - `upid`, the trace processor's own key and the one to group by; `pid`, one
     gcmon writes per process, not the operating system's; `name`
     (`"Process 12345"`); `start_ts`
+- **`thread`**: one row per interpreter, plus one per process that the trace
+  processor adds itself
+  - `utid`, its own key; `upid`, the process it belongs to; `tid`, the
+    interpreter id; `name` (`"Thread 0"`)
 - **`slice`**: GC pauses and sub-steps
   - `name` (`"GC Pause(0)"`), `ts` and `dur` in nanoseconds, `arg_set_id`
 - **`counter`**: counter samples
@@ -43,6 +47,12 @@ gcmon traces use the standard Perfetto schema:
 > per process row, counted from 1. A PID handed on has an entry per process.
 > The `debug.pid` annotation on the `Processes` span and on the `Lifetime` bar
 > carries the operating system's PID, and so does the row's name.
+
+> **Note:** `thread.tid` is the interpreter id, the same number as a GC
+> slice's `debug.iid` annotation. The trace processor makes a thread of its
+> own per process, with the row's `pid` for a `tid`; it has no name, no
+> `thread_track` and no slices. Counting interpreters means filtering on
+> `thread.name`.
 
 ## Example: Replicating the Stats Table
 

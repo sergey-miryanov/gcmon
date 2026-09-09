@@ -120,14 +120,16 @@ def _emit_thread_descriptor(
     state.mark_track(track)
     iid = track.iid
     # The row's pid, not the operating system's, so this thread lands under
-    # its own process (ADR-0011). Interpreter 0 takes it as its `tid` too: a
-    # `tid` equal to the pid is what marks a main thread.
+    # its own process (ADR-0011). The `tid` beside it is the interpreter id
+    # for every interpreter: it names a synthetic interpreter, not an
+    # operating-system thread, so interpreter 0 takes no main-thread
+    # treatment.
     row_pid = state.get_row_pid(track.process)
     desc = build_track_descriptor(
         state.get_track_uuid(track),
         f"Thread {iid}",
         pid=row_pid,
-        tid=row_pid if iid == 0 else iid,
+        tid=iid,
         parent_uuid=state.get_process_track_uuid(track.process),
         sibling_order_rank=0,
         thread_name=f"Thread {iid}",

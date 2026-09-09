@@ -2,6 +2,10 @@
 
 ## WIP
 
+### Bugfixes
+
+- Every thread row in a Perfetto trace carries its interpreter id as the `tid`, where the main interpreter used to carry the process row's `pid`
+
 ## Version 0.7.0 (2026-09-09)
 
 ### Breaking changes
