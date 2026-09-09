@@ -6,7 +6,6 @@ Provides various export formats for GC events:
 - StdoutExporter: JSONL to stdout
 """
 
-from .combine import combine_files
 from .exporter import EventsExporter
 from .exporter_factory import EventsExporterFactory
 from .jsonl_exporter import JsonlExporter
@@ -20,6 +19,5 @@ __all__ = [
     "JsonlExporter",
     "PerfettoExporter",
     "StdoutExporter",
-    "combine_files",
     "convert_jsonl_to_trace_format",
 ]

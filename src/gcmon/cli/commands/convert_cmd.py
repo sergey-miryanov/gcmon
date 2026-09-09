@@ -6,8 +6,8 @@ import logging
 from argparse import Namespace
 from pathlib import Path
 
+from gcmon.analysis.combine import combine_files
 from gcmon.cli.shared.parser_factory import ParserFactory
-from gcmon.exporters.combine import combine_files
 
 logger = logging.getLogger("gcmon")
 

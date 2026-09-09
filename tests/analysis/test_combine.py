@@ -7,7 +7,7 @@ import msgspec
 import pytest
 from perfetto.protos.perfetto.trace.perfetto_trace_pb2 import TrackEvent
 
-from gcmon.exporters.combine import _normalize_trace_timestamps, _starts_at, combine_files
+from gcmon.analysis.combine import _normalize_trace_timestamps, _starts_at, combine_files
 from gcmon.exporters.jsonl_io import (
     convert_jsonl_to_trace_format,
     normalize_jsonl_timestamps,

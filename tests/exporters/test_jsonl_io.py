@@ -6,7 +6,7 @@ from pathlib import Path
 import msgspec
 import pytest
 
-from gcmon.exporters.combine import combine_files
+from gcmon.analysis.combine import combine_files
 from gcmon.exporters.jsonl_io import (
     convert_jsonl_to_trace_format,
     json_to_item,
