@@ -39,6 +39,17 @@ into the GitHub release notes verbatim, so every line reaches users and a new
 - **`### Documentation` is for new user-facing pages.** Correcting an existing
   one is internal work and falls under the standing line.
 - **Entries take the one-line shape of their neighbours.**
+- **One entry, one claim.** A bullet carrying two splits into two. Length is
+  the symptom, not the rule: compressing a double entry keeps the fault and
+  only loses words.
+- **A fact appears once in a release.** `Breaking changes` says what is gone,
+  `Features` what exists now, `Bugfixes` what was wrong. Before an entry
+  stands, look for its object in the other two sections.
+- **An entry names a defect the previous release could reach.** Date it
+  against the tag. Code written and fixed inside one cycle reached no
+  operator, and joins the standing `### Internal` line.
+- **The claim gets checked against the code.** An entry states behaviour, and
+  the source or the test says whether that behaviour is what ships.
 
 ## Docstrings and comments
 
@@ -63,9 +74,11 @@ Links run from an ADR to a page, never back: a page names no ADR and no spec.
   bound. They date the text to the machine that produced them.
 - The journey. What was searched, what broke, what was tried. The decision is
   the part worth keeping, and the record already holds it.
-- A clause after the claim opening with *so*, *since*, *which is what* or
-  *rather than*. This holds outside `docs/adr/`; a record's reasoning is what
-  the record is for.
+- A clause after the claim giving its reason or its use, whatever it opens
+  with: *so*, *since*, *which is what*, *rather than*, or no marker at all. "A
+  per-process figure is a `GROUP BY`" is the reader being told how to use the
+  result. This holds outside `docs/adr/`; a record's reasoning is what the
+  record is for.
 - A literary phrase where a standard term exists. "Case and surrounding space
   are forgiven" is "case-insensitive, surrounding whitespace stripped".
 - The document justifying its own existence. "Worth recording because", "this
@@ -101,14 +114,21 @@ that trims one does damage that reads like tidying.
 
 ## Checking an edit
 
-Two tests on anything a trimming pass rewrote, before it stands.
+Three tests on anything a trimming pass rewrote, before it stands.
+
+Read it once, at reading speed. A backtrack fails it. Three constructions
+cause most of them: a preposition stranded between the subject and its verb
+("a process gcmon polled and read no collections from draws a row"), a pronoun
+whose referent changes mid-sentence ("a process's row ends where gcmon last
+read it"), and a term defined by itself ("refuses a word `--format` would
+refuse").
 
 Strike each word the pass added. If the sentence still parses and still claims
 what it claimed, the word was filler and goes. Then put back each phrase the
 pass replaced. If the old wording was sound and said the same, the old wording
 wins. A shorter version that dropped a claim does not win on length.
 
-Repair fails both tests and stays: the subject a split run-on needs, the verb
+Repair fails the last two tests and stays: the subject a split run-on needs, the verb
 that replaces a nominalisation, the article that makes a sentence grammatical.
 A passage that ends longer than it began was not trimmed.
 
