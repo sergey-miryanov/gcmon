@@ -43,4 +43,4 @@ jobs:
         uses: CodSpeedHQ/action@373d6868929f444bc08d901fd0eb0ad52a8875ea # v5.2.1
         with:
           mode: simulation
-          run: poetry run pytest tests/benchmarks -m "benchmark" --codspeed
+          run: poetry run just bench

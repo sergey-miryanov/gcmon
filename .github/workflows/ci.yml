@@ -39,7 +39,7 @@ jobs:
 
       - name: Lint with ruff
         run: |
-          poetry run ruff check src
+          poetry run just lint
 
       # Every tracked Markdown file but `CHANGELOG.md`, which is one bullet
       # per line and stays that way. A CRLF file fails here too: the script
@@ -66,7 +66,7 @@ jobs:
 
       - name: Type check with mypy
         run: |
-          poetry run mypy src tests
+          poetry run just typecheck-mypy
 
   pyrefly:
     runs-on: ubuntu-latest
@@ -85,7 +85,7 @@ jobs:
 
       - name: Type check with pyrefly
         run: |
-          poetry run pyrefly check src tests
+          poetry run just typecheck-pyrefly
 
   architecture:
     runs-on: ubuntu-latest
@@ -105,7 +105,7 @@ jobs:
       # Deselected from the default run, which is why it takes a job of its own.
       - name: Check the layers
         run: |
-          poetry run pytest -m architecture
+          poetry run just architecture
 
   test:
     runs-on: ${{ matrix.os }}
@@ -140,7 +140,7 @@ jobs:
 
       - name: Build distribution
         run: |
-          poetry build
+          poetry run just build
 
       - name: Create directories
         run: |
@@ -150,7 +150,7 @@ jobs:
 
       - name: Run tests
         run: |
-          poetry run pytest -q --basetemp=.temp --cov=src/gcmon --cov-report=xml:coverage.xml --cov-report=term-missing --cov-branch --junitxml=reports/tests.xml
+          poetry run just coverage
 
       - name: Upload test results
         if: always()
@@ -189,10 +189,10 @@ jobs:
         shell: bash
       - name: Run stress-tests for control
         run: |
-          poetry run pytest --basetemp=.temp -k "control" -s --count 40
+          poetry run just stress-control
       - name: Run stress-tests
         run: |
-          poetry run pytest --basetemp=.temp -m stress --count 20
+          poetry run just stress-threads
 
   fuzz-test:
     if: github.ref_name != 'main' && !startsWith(github.ref_name, 'release/')
@@ -218,4 +218,4 @@ jobs:
       # same trace. Widen coverage by raising TRIALS in the test instead.
       - name: Run fuzz-tests
         run: |
-          poetry run pytest --basetemp=.temp -m fuzz
+          poetry run just fuzz
