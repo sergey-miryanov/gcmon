@@ -17,8 +17,8 @@ from gcmon.analysis.jsonl_io import (
 from gcmon.model.data import GCStatsInfo, LossMsg
 from gcmon.model.protocol import has_incremental
 from gcmon.model.trace_event import Counter, Slice
+from tests.analysis.conftest import make_inc_item, make_inc_jsonl_record
 from tests.data_helpers import create_instant_msg
-from tests.exporters.conftest import make_inc_item, make_inc_jsonl_record
 from tests.helpers import (
     JsonlRecord,
     assert_valid_perfetto_trace,

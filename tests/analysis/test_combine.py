@@ -22,8 +22,8 @@ from gcmon.model.trace_event import (
     Slice,
     TraceEvent,
 )
+from tests.analysis.conftest import make_inc_jsonl_record
 from tests.data_helpers import create_instant_msg
-from tests.exporters.conftest import make_inc_jsonl_record
 from tests.helpers import (
     assert_valid_perfetto_trace,
     create_jsonl_record,
