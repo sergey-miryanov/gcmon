@@ -145,9 +145,9 @@ new output format is a second `EventEncoder` implementation.
 - `src/gcmon/cli/monitor/_env.py` holds the `GCMON_FORMAT` reading and the default
   output path.
 - `src/gcmon/cli/analyze/convert_cmd.py` holds `combine`'s arguments.
-- `src/gcmon/exporters/combine.py` holds the two output paths and the
+- `src/gcmon/analysis/combine.py` holds the two output paths and the
   normalization split.
-- `src/gcmon/exporters/jsonl_io.py` holds the Chrome-file check.
+- `src/gcmon/analysis/jsonl_io.py` holds the Chrome-file check.
 - Tests: `tests/monitoring/test_monitor_cmd.py` and
   `tests/monitoring/test_monitoring_options.py` cover the refusals;
   `tests/test_convert_cmd.py` covers `combine`'s arguments and what it writes;

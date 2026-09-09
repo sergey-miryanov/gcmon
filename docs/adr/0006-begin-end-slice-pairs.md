@@ -77,5 +77,5 @@ derivable from a complete event.
 - `src/gcmon/model/trace_event.py` holds the begin and end event types and
   their factories.
 - `src/gcmon/exporters/trace_converter.py` emits the pairs.
-- `src/gcmon/exporters/combine.py` normalizes timestamps across `"B"`, `"E"`,
+- `src/gcmon/analysis/combine.py` normalizes timestamps across `"B"`, `"E"`,
   `"C"` and `"I"`.

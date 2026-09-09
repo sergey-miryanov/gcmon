@@ -247,7 +247,7 @@ survives the ring wrapping.
 - `src/gcmon/stats/streaming_stats.py` records every gap.
 - `tests/test_loss.py` and `tests/test_loss_replay.py` check the arithmetic
   against synthetic sessions and a real capture replayed behind a simulated
-  ring. `tests/exporters/test_combine_loss_round_trip.py` resolves the loss
+  ring. `tests/analysis/test_combine_loss_round_trip.py` resolves the loss
   row as a stack, live and through `combine`.
   `tests/exporters/test_perfetto_loss_track.py`, marked `fuzz`, settles the
   track layout against the real trace processor per
