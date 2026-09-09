@@ -1,4 +1,4 @@
-"""Environment variable helpers for CLI defaults."""
+"""Environment variable helpers for the monitor commands' defaults."""
 
 import math
 import os

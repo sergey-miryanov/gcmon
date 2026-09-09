@@ -1,4 +1,4 @@
-"""Tests for `run_monitoring_loop`, the loop both monitor commands drive."""
+"""Tests for `run_monitoring_loop`."""
 
 from unittest.mock import ANY, MagicMock
 

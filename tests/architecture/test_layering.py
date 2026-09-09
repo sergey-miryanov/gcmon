@@ -27,15 +27,14 @@ ALLOWED: dict[str, frozenset[str]] = {
     "exporters": frozenset({"model", "support"}),
     "stats": frozenset({"model", "support"}),
     "cli.shared": frozenset(),
-    # The monitor tower, which runs beside a live process.
+    # The monitor tower.
     "control": frozenset({"model", "exporters", "support"}),
     "monitoring": frozenset({"model", "exporters", "stats", "control", "support"}),
     "cli.monitor": frozenset({"model", "exporters", "stats", "control", "monitoring", "support", "cli.shared"}),
-    # The analysis tower, which reads a file gcmon already wrote.
+    # The analysis tower.
     "analysis": frozenset({"model", "exporters", "support"}),
     "cli.analyze": frozenset({"model", "exporters", "stats", "analysis", "support", "cli.shared"}),
-    # The one place both towers are reachable, because it assembles the parser
-    # from both.
+    # The one place both towers are reachable.
     "cli": frozenset(
         {
             "model",
@@ -54,9 +53,7 @@ ALLOWED: dict[str, frozenset[str]] = {
 """What each layer may import. The table lives here because it is a statement
 about the architecture, and this is where such a statement can fail.
 
-`analysis` is denied `stats`: it reads and writes files and computes nothing,
-and the fold from records into a table sits in `cli.analyze` above it. See
-ADR-0026."""
+`analysis` is denied `stats`; ADR-0026 holds the argument."""
 
 ROOT_CLI = frozenset({"__init__", "__main__"})
 """The two modules that cannot live anywhere else.
@@ -69,10 +66,9 @@ module from being handed the CLI's permissions by default."""
 FOLDED: dict[str, str] = {"pyperf": "cli.monitor"}
 """A directory that is part of a layer named for somewhere else.
 
-The pyperf hook is an entry point into gcmon exactly as the console script is,
-and nothing below imports it, so it is not a layer of its own. It belongs to
-the monitor tower because it runs inside the target (ADR-0023), which is the
-side of the capture file a tower is defined by (ADR-0026)."""
+The pyperf hook is an entry point into gcmon as the console script is, and
+nothing below imports it, so it is not a layer of its own. It belongs to the
+monitor tower because it runs inside the target (ADR-0023, ADR-0026)."""
 
 
 @dataclass(frozen=True)
@@ -99,14 +95,10 @@ def layer_of(module: str) -> str | None:
     live, is `cli`, and `pyperf` is part of the monitor tower: both are entry
     points.
 
-    A directory under `cli/` that the table does not name is placed nowhere
-    rather than falling back to `cli`, which is permitted every layer. That
-    fallback is how an offline command written into `cli/report/` would import
-    `monitoring` and pass; `unplaced` fails on it instead.
-
-    Nothing else is placed. A directory that is not a layer and a module at
-    the root that is neither the CLI's nor a shim both come back None, and
-    `unplaced` is what turns that into a failure.
+    Nothing else is placed. A directory that is not a layer, a module at the
+    root that is neither the CLI's nor a shim, and a directory under `cli/`
+    the table does not name all come back None, and `unplaced` is what turns
+    that into a failure.
     """
     parts = module.split(".")
     if len(parts) > 1 and ".".join(parts[:2]) in ALLOWED:
@@ -240,10 +232,8 @@ class TestTheLayerOfAModule:
         assert layer_of("exporters.exporter") == "exporters"
 
     def test_a_directory_under_the_cli_that_is_not_a_tower_places_nothing(self) -> None:
-        """`cli` is permitted every layer, so falling back to it would hand a
-        new directory the reach the towers exist to withdraw. An offline
-        command written into `cli/report/` would import `monitoring` and pass.
-        """
+        """`cli` is permitted every layer, so an offline command written into
+        `cli/report/` would import `monitoring` and pass the walk."""
         assert layer_of("cli.report.report_cmd") is None
 
     def test_a_module_directly_under_the_cli_is_still_the_cli(self) -> None:
@@ -256,8 +246,6 @@ class TestTheLayerOfAModule:
         assert layer_of("__main__") == "cli"
 
     def test_a_tower_under_the_cli_answers_for_itself(self) -> None:
-        """The two-segment name is tried first. `cli` at the head would
-        otherwise hand a tower every permission the CLI has."""
         assert layer_of("cli.monitor.run_cmd") == "cli.monitor"
         assert layer_of("cli.analyze.convert_cmd") == "cli.analyze"
         assert layer_of("cli.shared.parser_factory") == "cli.shared"
@@ -266,7 +254,7 @@ class TestTheLayerOfAModule:
         assert layer_of("cli.main") == "cli"
 
     def test_the_pyperf_hook_is_monitor_tower_code(self) -> None:
-        """It runs inside the target, beside a live process."""
+        """It runs inside the target."""
         assert layer_of("pyperf.hook") == "cli.monitor"
 
     def test_a_directory_that_is_not_a_layer_places_nothing(self) -> None:
@@ -306,8 +294,7 @@ class TestAnImportThatCrossesTheWrongWay:
 
 
 class TestAnImportThatCrossesBetweenTheTowers:
-    """The permission the split exists to withdraw, which the tree cannot
-    supply either: no module has moved into a tower yet."""
+    """The crossings the towers exist to prevent. The real tree holds none."""
 
     def test_the_analysis_tower_may_not_reach_a_live_process(self) -> None:
         assert violations([Import("analysis.combine", "monitoring.monitor", 5)], layer_of, ALLOWED) == [
@@ -328,8 +315,7 @@ class TestAnImportThatCrossesBetweenTheTowers:
         ]
 
     def test_the_analysis_layer_computes_nothing(self) -> None:
-        """`stats` is reached from `cli.analyze` above it, so that the fold
-        from records into a table has one home."""
+        """`stats` is reached from `cli.analyze` above it (ADR-0026)."""
         assert violations([Import("analysis.jsonl_io", "stats.streaming_stats", 4)], layer_of, ALLOWED) == [
             "analysis.jsonl_io:4 imports stats.streaming_stats: analysis may not import stats"
         ]

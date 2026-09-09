@@ -70,9 +70,10 @@ target never sees.
   modules that hold them into `analysis`, which `exporters` may not import.
   `gcmon` itself is unchanged: the root belongs to `cli` by direction and
   reaches every layer.
-- The towers' tests do not separate. A monitor-tower test reads back what
-  `JsonlExporter` wrote by calling `read_jsonl`, which is analysis-tower code;
-  the layer walk reads `src/` only, and one distribution ships both.
+- No boundary is enforced between the towers' tests. A monitor-tower test
+  reads back what `JsonlExporter` wrote by calling `read_jsonl`, which is
+  analysis-tower code; the layer walk reads `src/` only, and one distribution
+  ships both.
 - A third tower is now cheap to argue for and expensive to add by accident.
   The table names two, and a directory that belongs to neither has to say
   which it is.

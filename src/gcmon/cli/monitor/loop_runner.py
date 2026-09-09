@@ -1,4 +1,4 @@
-"""Shared monitoring logic for run and monitor commands."""
+"""The monitoring loop `monitor` and `run` both drive."""
 
 import logging
 import os

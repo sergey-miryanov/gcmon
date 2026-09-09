@@ -1,4 +1,4 @@
-"""Shared monitoring options for CLI commands."""
+"""The options `monitor` and `run` share."""
 
 import argparse
 import logging
