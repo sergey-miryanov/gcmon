@@ -231,7 +231,7 @@ Each extra degrades gracefully when absent; no other trace data is affected.
 
 ```bash
 # Monitor a running process by PID (default Perfetto format)
-gcmon 12345
+gcmon monitor 12345
 
 # Run a Python script with GC monitoring
 gcmon run -s my_script.py
@@ -240,7 +240,7 @@ gcmon run -s my_script.py
 gcmon monitor 12345 -o trace.pftrace --stats=total
 
 # Perfetto binary output with RSS tracking
-gcmon 12345 --format perfetto -o trace.pftrace --rss
+gcmon monitor 12345 --format perfetto -o trace.pftrace --rss
 
 # Combine multiple JSONL captures (e.g. different runs or builds) into one trace
 gcmon combine trace1.jsonl trace2.jsonl -o combined.pftrace -n

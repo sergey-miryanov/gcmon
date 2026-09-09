@@ -10,10 +10,10 @@ RSS samples; `--rss` logs a warning when combined with them.
 
 ```bash
 # Enable RSS tracking with Perfetto output (default 1s interval)
-gcmon 12345 --format perfetto -o trace.pftrace --rss
+gcmon monitor 12345 --format perfetto -o trace.pftrace --rss
 
 # Custom sampling interval
-gcmon 12345 --format perfetto --rss --rss-interval 0.5
+gcmon monitor 12345 --format perfetto --rss --rss-interval 0.5
 ```
 
 ## The `[cmdline]` extra

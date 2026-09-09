@@ -32,7 +32,6 @@ This file holds the open set and the order to take it in. The other two:
 | [0040](0040-derive-the-monitoring-options-from-one-table.md) | Feature (cleanup) | M | gcmon declares every monitoring option three times, and echoes a rejected configuration to the log as though it had accepted it |
 | [0042](0042-name-the-process-session-for-its-role.md) | Feature (cleanup) | S | The monitored-process seam carries the name of a role it does not fill, and its two adapters do not have the same shape |
 | [0044](0044-torn-reads-and-reordered-publishes.md) | Bug (correctness) | S | **Blocked on upstream.** A pause slice can read one inter-collection interval too long, and a hole inside one poll's records reaches no loss window; both are races in the target that every filter gcmon has passes |
-| [0047](0047-the-no-subcommand-form-has-never-worked.md) | Bug (reporting) | XS | `gcmon 12345`, the form the README opens with, exits 2; the branch in `main` that would dispatch it is unreachable |
 | [0050](0050-name-the-poll-interval-for-what-it-is.md) | Feature (ergonomics) | S | `--rate` is a duration in seconds under a name that means a frequency, and gcmon echoes `Rate: 0.1s` back |
 | [0051](0051-key-the-running-rings-by-pid.md) | Feature (efficiency) | S | Asking `StreamingStats` about one process walks every process's rings; `low_coverage` does it once per polled pid per tick, and on a healthy run it never stops |
 | [0052](0052-a-recycled-pid-can-be-read-through-a-stale-attachment.md) | Bug (correctness) | S | A pid the OS reissues between two ticks is read through the attachment gcmon still holds, so an unrelated process's memory reaches the trace as plausible records; only Linux is exposed |
@@ -52,7 +51,6 @@ one; [RETIRED.md](RETIRED.md) says which.
 | 0025 | The only outage, and the fix is one word |
 | 0050 | Unblocked: 0049 landed, and taking this next edits the help text and the advisory once |
 | 0027 | Needs an answer from trace-processor before anyone can settle it either way |
-| 0047 | XS, and the command that fails is the one the README opens with |
 | 0052 | Silent, and what it produces is indistinguishable from a real measurement |
 | 0030 | |
 | 0035 | 0039 landed, and the nine `Metric` classes it replaces are a module named for the table |

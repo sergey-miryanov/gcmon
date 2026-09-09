@@ -1,7 +1,6 @@
 # CLI Usage
 
-`gcmon` takes three subcommands: `monitor`, `run` and `combine`. Without one
-it monitors.
+`gcmon` requires one of three subcommands: `monitor`, `run` and `combine`.
 
 ## What you'll see
 
@@ -9,7 +8,7 @@ gcmon stays quiet by default: it writes the trace to a file and exits when the
 target ends or you press `Ctrl+C`. `-v` follows progress:
 
 ```bash
-$ gcmon 12345 -v
+$ gcmon monitor 12345 -v
 [INFO] monitoring PID 12345 (perfetto trace → gcmon.pftrace)
 [INFO] collected 42 GC events so far
 ...
@@ -27,14 +26,13 @@ Monitor a running process by PID.
 
 ```bash
 # Until interrupted, Perfetto format
-gcmon 12345
 gcmon monitor 12345
 
-gcmon 12345 -o gc_trace.pftrace
-gcmon 12345 -d 30 -v
+gcmon monitor 12345 -o gc_trace.pftrace
+gcmon monitor 12345 -d 30 -v
 
 # 100 polls a second
-gcmon 12345 --output trace.pftrace --rate 0.01
+gcmon monitor 12345 --output trace.pftrace --rate 0.01
 ```
 
 ## run
