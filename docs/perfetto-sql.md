@@ -22,8 +22,8 @@ gcmon traces use the standard Perfetto schema:
   - `upid`, the trace processor's own key and the one to group by; `pid`, one
     gcmon writes per process, not the operating system's; `name`
     (`"Process 12345"`); `start_ts`
-- **`thread`**: one row per interpreter, plus one per process that the trace
-  processor adds itself
+- **`thread`**: one row per interpreter, plus a nameless row for each process
+  whose row `pid` no interpreter id meets
   - `utid`, its own key; `upid`, the process it belongs to; `tid`, the
     interpreter id; `name` (`"Thread 0"`)
 - **`slice`**: GC pauses and sub-steps
@@ -49,10 +49,12 @@ gcmon traces use the standard Perfetto schema:
 > carries the operating system's PID, and so does the row's name.
 
 > **Note:** `thread.tid` is the interpreter id, the same number as a GC
-> slice's `debug.iid` annotation. The trace processor makes a thread of its
-> own per process, with the row's `pid` for a `tid`; it has no name, no
-> `thread_track` and no slices. Counting interpreters means filtering on
-> `thread.name`.
+> slice's `debug.iid` annotation. Every process also keeps a thread whose
+> `tid` is the row's `pid`, which is the one `thread.is_main_thread` marks.
+> Row pids count from 1 and interpreter ids from 0, so that thread is an
+> interpreter where the two meet, and a row with no name, no `thread_track`
+> and no slices where they do not. The flag says nothing about the interpreter
+> it lands on. Count interpreters by filtering on `thread.name`.
 
 ## Example: Replicating the Stats Table
 

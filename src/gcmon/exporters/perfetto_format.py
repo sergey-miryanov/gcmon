@@ -120,10 +120,9 @@ def _emit_thread_descriptor(
     state.mark_track(track)
     iid = track.iid
     # The row's pid, not the operating system's, so this thread lands under
-    # its own process (ADR-0011). The `tid` beside it is the interpreter id
-    # for every interpreter: it names a synthetic interpreter, not an
-    # operating-system thread, so interpreter 0 takes no main-thread
-    # treatment.
+    # its own process (ADR-0011). The `tid` beside it is the interpreter id,
+    # a synthetic namespace of gcmon's rather than an operating-system thread
+    # id, and the two numberings meet where an iid equals the row pid.
     row_pid = state.get_row_pid(track.process)
     desc = build_track_descriptor(
         state.get_track_uuid(track),

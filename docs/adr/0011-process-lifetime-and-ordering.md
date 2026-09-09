@@ -122,9 +122,12 @@ do not reliably draw a row each.
 system's.** The thread descriptor carries that pid, and the `tid` beside it is
 the interpreter id, interpreter 0 included. The trace processor keys a thread
 to its process on the descriptor's pid, so the `tid` is free to name the
-interpreter a query is after. What it gives up is `thread.is_main_thread`,
-which the trace processor reads off a `tid` equal to the pid, and which no
-query of gcmon's asks for.
+interpreter a query is after. What it costs is `thread.is_main_thread`: the
+trace processor sets that flag from a `tid` equal to the pid, so it lands on
+whichever interpreter's id meets the row pid and on a row of the trace
+processor's own in every other process. gcmon asks nothing of the flag, and
+the alternative was a `tid` that means an interpreter in one row and a pid in
+another.
 
 **Every process draws a full set of rows of its own**: process track, thread
 track per interpreter, `GC Loss` track, counter group and `Lifetime` slice,

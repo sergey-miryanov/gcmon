@@ -826,8 +826,7 @@ class TestTrackDescriptors:
     ) -> None:
         """``thread.tid`` is the interpreter id for every interpreter, so a
         query attributes GC activity to one without asking which row it is
-        (ADR-0011). No interpreter reads as a main thread, since that flag
-        is the trace processor's own reading of a ``tid`` equal to the pid.
+        (ADR-0011).
         """
         rows = list(
             trace_processor.query(
@@ -844,29 +843,32 @@ class TestTrackDescriptors:
             (f"Process {_SECOND_PID}", "Thread 0", 0),
         ], f"unexpected thread rows: {[dict(r.__dict__) for r in rows]}"
 
-    def test_the_trace_processor_adds_a_main_thread_row_of_its_own(
+    def test_the_trace_processor_keeps_a_thread_whose_tid_is_the_pid(
         self,
         trace_processor: TraceProcessor,
     ) -> None:
-        """A process descriptor gives the trace processor a thread whose
-        ``tid`` is the pid. gcmon writes no such interpreter, so that row
-        stays nameless and draws nothing; a process whose row pid meets one
-        of its interpreter ids lends it that interpreter's row instead.
-        Reading `thread` directly is the only way to meet it: it carries no
-        ``thread_track``, so no slice or counter joins back to it.
+        """A process descriptor gives the trace processor a thread carrying
+        the row's pid as its ``tid``, and that is the thread it calls the
+        process's main one. Row pids count from 1 and interpreter ids from 0,
+        so it is an interpreter of gcmon's wherever the two numberings meet,
+        and a nameless row with no ``thread_track`` wherever they do not.
+        Which interpreter it lands on says nothing about that interpreter.
         """
         rows = list(
             trace_processor.query(
-                "SELECT p.name AS pname, th.tid AS tid, (tt.id IS NULL) AS untracked "
+                "SELECT p.name AS pname, COALESCE(th.name, '') AS tname, th.tid AS tid, "
+                "(tt.id IS NULL) AS untracked "
                 "FROM thread th JOIN process p ON th.upid = p.upid "
                 "LEFT JOIN thread_track tt ON tt.utid = th.utid "
-                "WHERE th.name IS NULL AND p.name LIKE 'Process %'"
+                "WHERE th.is_main_thread = 1 AND p.name LIKE 'Process %' "
+                "ORDER BY p.name, th.tid"
             )
         )
 
-        assert [(r.pname, r.tid, r.untracked) for r in rows] == [(f"Process {_SECOND_PID}", 2, 1)], (
-            f"unexpected nameless thread rows: {[dict(r.__dict__) for r in rows]}"
-        )
+        assert [(r.pname, r.tname, r.tid, r.untracked) for r in rows] == [
+            (f"Process {DEFAULT_PID}", "Thread 1", 1, 0),
+            (f"Process {_SECOND_PID}", "", 2, 1),
+        ], f"unexpected main-thread rows: {[dict(r.__dict__) for r in rows]}"
 
 
 class TestDiagnosticTrackSchema:
