@@ -16,7 +16,7 @@ hook runs inside the target
 ([ADR-0023](0023-the-pyperf-hook-annotates-and-does-not-drive.md)), and a
 runtime dependency on that path is one the benchmarked application inherits.
 `monitor` and `run` read the target from outside and hand it nothing.
-[ADR-0026](0026-two-towers-over-a-shared-base.md) narrows this argument to the
+[ADR-0026](0026-two-subsystems-over-a-shared-base.md) narrows this argument to the
 hook.
 
 The slice of the Perfetto wire format gcmon needs is small: varints,

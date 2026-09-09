@@ -1,4 +1,4 @@
-# ADR-0026: Split the package into a monitor tower and an analysis tower
+# ADR-0026: Split the package into a monitor and an analysis subsystem
 
 - **Status:** Accepted
 - **Date:** 2026-09-02
@@ -34,34 +34,38 @@ target never sees.
 
 ## Decision
 
-- The package is two towers over a shared base.
-- The base is `support`, `model`, `stats` and `exporters`. Each tower's row in
-  the table says which of the four it takes: `analysis` reads and writes files
-  and takes three, and `stats` is reached from `cli.analyze` above it.
-- A tower is defined by which side of the capture file it sits on. `pyperf`
-  and `control` are monitor-tower code because they run beside a live process,
-  whatever they import.
-- A dependency the analysis tower takes is not one the target inherits.
+- The package is two subsystems over a shared base.
+- The base is `support`, `model`, `stats` and `exporters`. Each subsystem's
+  row in the table says which of the four it takes: `analysis` reads and
+  writes files and takes three, and `stats` is reached from `cli.analyze`
+  above it.
+- A subsystem is defined by which side of the capture file it sits on.
+  `pyperf` and `control` are monitor-subsystem code because they run beside a
+  live process, whatever they import.
+- A dependency the analysis subsystem takes is not one the target inherits.
   ADR-0001's argument against `perfetto` in the runtime tree therefore narrows
   to the pyperf hook, and `perfetto` may serve the analysis path.
-- The monitor tower is `control`, `monitoring`, `pyperf` and `cli.monitor`.
-- The analysis tower is `analysis` and `cli.analyze`.
-- **Neither tower imports the other.** `cli` itself, meaning `main.py` and the
-  two root modules, is the one place both are reachable, because it assembles
-  the parser from both.
-- `cli.shared` holds what both towers' parsers need, and imports nothing. It
-  exists so that a tower never imports `cli`, where `main.py` reaches both.
+- The monitor subsystem is `control`, `monitoring`, `pyperf` and
+  `cli.monitor`.
+- The analysis subsystem is `analysis` and `cli.analyze`.
+- **Neither subsystem imports the other.** `cli` itself, meaning `main.py` and
+  the two root modules, is the one place both are reachable, because it
+  assembles the parser from both.
+- `cli.shared` holds what both subsystems' parsers need, and imports nothing.
+  It exists so that a subsystem never imports `cli`, where `main.py` reaches
+  both.
 - `analysis` holds what consumes a file gcmon wrote: `combine`, `jsonl_io`,
   and the tracefile reader spec 0061 adds. `combine` writes a trace as its
   output, and belongs here regardless, because what it reads is a capture.
 - `stats` stays in the base. The live statistics table and the offline one are
   the same accumulation, and spec 0061 exists in the shape it does so that
   they cannot drift apart.
-- The layer table in `tests/architecture/test_layering.py` carries the towers,
-  and `layer_of` answers `cli.monitor`, `cli.analyze` or `cli.shared` by
-  subdirectory, trying the two-segment name before the head. A directory under
-  `cli/` it does not name is placed nowhere, so `unplaced` fails on it and no
-  new directory is handed the CLI's permissions by sitting still.
+- The layer table in `tests/architecture/test_layering.py` carries the
+  subsystems, and `layer_of` answers `cli.monitor`, `cli.analyze` or
+  `cli.shared` by subdirectory, trying the two-segment name before the head. A
+  directory under `cli/` it does not name is placed nowhere, so `unplaced`
+  fails on it and no new directory is handed the CLI's permissions by sitting
+  still.
 
 ## Consequences
 
@@ -70,13 +74,13 @@ target never sees.
   modules that hold them into `analysis`, which `exporters` may not import.
   `gcmon` itself is unchanged: the root belongs to `cli` by direction and
   reaches every layer.
-- No boundary is enforced between the towers' tests. A monitor-tower test
-  reads back what `JsonlExporter` wrote by calling `read_jsonl`, which is
-  analysis-tower code; the layer walk reads `src/` only, and one distribution
-  ships both.
-- A third tower is now cheap to argue for and expensive to add by accident.
-  The table names two, and a directory that belongs to neither has to say
-  which it is.
+- No boundary is enforced between the subsystems' tests. A monitor-subsystem
+  test reads back what `JsonlExporter` wrote by calling `read_jsonl`, which is
+  analysis-subsystem code; the layer walk reads `src/` only, and one
+  distribution ships both.
+- A third subsystem is now cheap to argue for and expensive to add by
+  accident. The table names two, and a directory that belongs to neither has
+  to say which it is.
 
 ## Alternatives considered
 
@@ -85,13 +89,13 @@ Rejected because `cli`'s permission to import every layer is exactly the
 import the split exists to prevent: an analysis command reaching into
 `monitoring` would still pass.
 
-**Two distributions**, one per tower. Rejected. gcmon is pure Python, so
+**Two distributions**, one per subsystem. Rejected. gcmon is pure Python, so
 splitting buys no per-platform wheel and no build simplification, and the
 layer test is the stronger boundary of the two: it fails on the offending
 import, at the line, in the commit that wrote it, where packaging fails at
 install time on someone else's machine.
 
-**Splitting `jsonl_io` between the towers**, keeping the write half in
+**Splitting `jsonl_io` between the subsystems**, keeping the write half in
 `exporters`. Rejected because there is nothing to split. `JsonlExporter`
 serializes through `model.protocol.to_mapping` and never calls `write_jsonl`,
 whose only caller is `combine_files`. The module is analysis-side entire.

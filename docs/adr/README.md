@@ -96,4 +96,4 @@ module is neither.
 | [0023](0023-the-pyperf-hook-annotates-and-does-not-drive.md) | Mark the benchmark from the pyperf hook, and drive nothing | Accepted | model, pyperf |
 | [0024](0024-an-event-names-the-track-it-is-drawn-on.md) | An event names the track it is drawn on, and the encoder derives the rest | Accepted | exporters, model |
 | [0025](0025-create-every-process-in-one-place.md) | Create every process in one place, and carry it instead of a pid | Accepted | cli, control, exporters, model, monitoring |
-| [0026](0026-two-towers-over-a-shared-base.md) | Split the package into a monitor tower and an analysis tower | Accepted, unbuilt | analysis, cli, exporters, monitoring |
+| [0026](0026-two-subsystems-over-a-shared-base.md) | Split the package into a monitor and an analysis subsystem | Accepted | analysis, cli, exporters, monitoring |

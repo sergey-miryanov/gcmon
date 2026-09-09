@@ -43,8 +43,11 @@ of the target's ring is a **record**; one thing written into a trace is an
 **event**. gcmon identifies an interpreter by its **iid** and publishes that
 as a Perfetto `tid`. An interval whose records the target overwrote before
 gcmon read them is a **loss window** or a **blind interval**, never "missing
-data". A `Processes`-track slice is a **span**. Timestamps are nanoseconds
-inside gcmon, and the encoder converts them
+data". A `Processes`-track slice is a **span**. A group of layers on one side
+of the capture file is a **subsystem**
+([ADR-0026](../docs/adr/0026-two-subsystems-over-a-shared-base.md)), never a
+tower, a side or a half. Timestamps are nanoseconds inside gcmon, and the
+encoder converts them
 ([ADR-0009](../docs/adr/0009-nanoseconds-canonical-time-unit.md)). Link the
 ADRs a spec must not contradict in its header, and if implementing it
 overturns one, amend the ADR rather than the code alone.

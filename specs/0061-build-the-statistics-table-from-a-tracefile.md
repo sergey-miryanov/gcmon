@@ -8,9 +8,9 @@
 - **Respects:**
   [ADR-0001](../docs/adr/0001-hand-rolled-perfetto-protobuf-encoder.md) (the
   encoder is hand-rolled and `perfetto` stays out of the *monitoring*
-  runtime), [ADR-0026](../docs/adr/0026-two-towers-over-a-shared-base.md) (the
-  reader and `report` are analysis-tower code, and why `perfetto` on the
-  analysis path is not the decision ADR-0001 took),
+  runtime), [ADR-0026](../docs/adr/0026-two-subsystems-over-a-shared-base.md)
+  (the reader and `report` are analysis-subsystem code, and why `perfetto` on
+  the analysis path is not the decision ADR-0001 took),
   [ADR-0009](../docs/adr/0009-nanoseconds-canonical-time-unit.md) (nanoseconds
   inside gcmon),
   [ADR-0016](../docs/adr/0016-the-ring-is-the-statistics-unit.md) (the ring is
@@ -99,7 +99,7 @@ already returns. Folding a capture's records back into a `StreamingStats`
 becomes the single path from records to a table, and it lives in
 `cli/analyze/`: the layer table gives `analysis` `model`, `exporters` and
 `support`, and `stats` is reached from the command above it
-([ADR-0026](../docs/adr/0026-two-towers-over-a-shared-base.md)).
+([ADR-0026](../docs/adr/0026-two-subsystems-over-a-shared-base.md)).
 `pyperf/hook.py` carried a private `_replay` doing exactly that; spec 0064
 left it with no caller, since the hook marks the benchmark and computes
 nothing, and it was deleted rather than left to rot. Recover it from git
@@ -197,8 +197,8 @@ it once per query.
 
 Depends on spec 0059, without which the offline table cannot say which process
 held a pid and would drop a distinction the live table makes. Spec 0068 landed
-the tower the reader lives in; the `analysis` extra is this spec's to declare.
-Spec 0063 depends on this one.
+the subsystem the reader lives in; the `analysis` extra is this spec's to
+declare. Spec 0063 depends on this one.
 
 Nothing here touches the hook. Spec 0064 already took the replay out of
 `pyperf/hook.py`, so this spec writes the shared implementation rather than

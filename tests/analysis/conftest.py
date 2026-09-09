@@ -1,4 +1,4 @@
-"""Record builders for the analysis tower's tests."""
+"""Record builders for the analysis subsystem's tests."""
 
 from __future__ import annotations
 
