@@ -123,7 +123,7 @@ choices stay `["jsonl", "chrome", "perfetto"]`.
 
 ## Implementation
 
-- `src/gcmon/cli/commands/convert_cmd.py` holds the `--output-format` choices
+- `src/gcmon/cli/analyze/convert_cmd.py` holds the `--output-format` choices
   and the `chrome → jsonl` rejection.
 - `src/gcmon/exporters/combine.py` combines the inputs: the `jsonl → jsonl`
   fast path, per-file normalization in the load loop, and the `perfetto`

@@ -165,7 +165,7 @@ def _args(inputs: list[Path], output: Path, **overrides: object) -> Namespace:
 
 
 def test_cmd_combine_basic(make_jsonl_file: JsonlFileFactory, tmp_path: Path) -> None:
-    from gcmon.cli.commands import convert_cmd
+    from gcmon.cli.analyze import convert_cmd
 
     input_file = make_jsonl_file("input.jsonl", [create_jsonl_record()])
     output = tmp_path / "output.pftrace"
@@ -179,7 +179,7 @@ def test_cmd_combine_basic(make_jsonl_file: JsonlFileFactory, tmp_path: Path) ->
 def test_cmd_combine_file_not_found(
     caplog: pytest.LogCaptureFixture, tmp_path: Path, output_format: str, output_name: str
 ) -> None:
-    from gcmon.cli.commands import convert_cmd
+    from gcmon.cli.analyze import convert_cmd
 
     args = _args([tmp_path / "nonexistent.jsonl"], tmp_path / output_name, output_format=output_format)
 
@@ -195,7 +195,7 @@ def test_cmd_combine_invalid_json(
     output_format: str,
     output_name: str,
 ) -> None:
-    from gcmon.cli.commands import convert_cmd
+    from gcmon.cli.analyze import convert_cmd
 
     input_file = make_raw_file("invalid.jsonl", "not valid json")
     args = _args([input_file], tmp_path / output_name, output_format=output_format)

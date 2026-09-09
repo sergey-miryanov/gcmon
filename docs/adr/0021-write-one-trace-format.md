@@ -144,7 +144,7 @@ new output format is a second `EventEncoder` implementation.
   `RSS_CAPABLE_FORMATS`.
 - `src/gcmon/cli/_env.py` holds the `GCMON_FORMAT` reading and the default
   output path.
-- `src/gcmon/cli/commands/convert_cmd.py` holds `combine`'s arguments.
+- `src/gcmon/cli/analyze/convert_cmd.py` holds `combine`'s arguments.
 - `src/gcmon/exporters/combine.py` holds the two output paths and the
   normalization split.
 - `src/gcmon/exporters/jsonl_io.py` holds the Chrome-file check.

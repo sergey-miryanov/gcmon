@@ -7,8 +7,8 @@ from collections.abc import Sequence
 from typing import Any
 
 from ._version import installed_version
+from .analyze import add_combine_parser
 from .commands import (
-    add_combine_parser,
     add_monitor_parser,
     add_run_parser,
 )

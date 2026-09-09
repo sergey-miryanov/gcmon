@@ -123,7 +123,7 @@ def test_main_subcommands_dispatch(monkeypatch: pytest.MonkeyPatch, tmp_path: Pa
     assert cli.main(["run", "-m", "timeit"]) == 0
     assert calls == ["monitor", "run"]
 
-    monkeypatch.setattr("gcmon.cli.commands.convert_cmd.cmd_combine", mock_combine)
+    monkeypatch.setattr("gcmon.cli.analyze.convert_cmd.cmd_combine", mock_combine)
     assert cli.main(["combine", str(tmp_path / "in.jsonl"), "-o", str(tmp_path / "out.pftrace")]) == 0
     assert calls == ["monitor", "run", "combine"]
 
