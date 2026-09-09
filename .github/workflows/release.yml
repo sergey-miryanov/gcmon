@@ -38,7 +38,7 @@ jobs:
           persist-credentials: false
           ref: ${{ github.event_name == 'workflow_dispatch' && inputs.ref || github.ref }}
 
-      - uses: ./.github/actions/setup
+      - uses: $/.github/actions/setup
         with:
           python-version: "3.15"
           cache-prefix: release
