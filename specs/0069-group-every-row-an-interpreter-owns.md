@@ -1,8 +1,12 @@
 # 0069: Group every row an interpreter owns under one track
 
 - **Status:** **Pinned**
-  (`TestTrackDescriptors::test_thread_tid_is_the_interpreter_id`,
-  `TestTrackDescriptors::test_the_trace_processor_keeps_a_thread_whose_tid_is_the_pid`)
+  (`TestTrackDescriptors::test_gcmon_writes_no_thread_row_of_its_own`,
+  `TestTrackDescriptors::test_no_slice_is_drawn_on_a_thread_track`). The two
+  tests it was pinned by asserted the shape this spec removes:
+  `test_thread_tid_is_the_interpreter_id` went with the claim, and
+  `test_the_trace_processor_keeps_a_thread_whose_tid_is_the_pid` became the
+  first of the two above.
 - **Kind:** bug (reporting)
 - **Effort:** L
 - **Origin:** the review of spec 0027's landing, 2026-09-09, and the grilling
@@ -184,7 +188,11 @@ order to build it in.
 - **Seam:** the trace processor, via
   `tests/exporters/test_perfetto_exporter_integration.py`. It is the highest
   seam that can see the change and the only one that says what the trace means
-  rather than what bytes were written.
+  rather than what bytes were written. **With one exception**: step 1 on its
+  own is invisible there. The trace processor builds no `track` row for a
+  descriptor whose whole subtree carries no event, so the two groups do not
+  exist in a trace until step 5 moves `GC Metrics` inside them. Built as two
+  commits, the first is asserted on the wire and the second at this seam.
 - **New seam needed:** none.
 - **What makes a good test here:** assert the path a reader takes. A pause
   reaches its process through `process_track`; a counter reaches its
