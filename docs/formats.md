@@ -25,8 +25,9 @@ A trace carries these, on one track per interpreter:
   Deduce Unreachable, Handle Weakrefs Callbacks, Finalize Garbage, Handle
   Resurrected, Clear Weakrefs, Delete Garbage.
 - **Counter tracks** per generation, `G{gen}`, carrying `collected`,
-  `candidates`, `duration` and `uncollectable`, with `Thread {iid} heap_size`
-  as a process-level counter beside them, one per interpreter.
+  `candidates`, `duration` and `uncollectable`, inside that interpreter's
+  `GC Metrics` group, with `heap_size` beside the group rather than inside
+  it, one per interpreter.
 - **Counter Y-axis sharing**: one metric shares an axis across generations, so
   `G0 collected`, `G1 collected` and `G2 collected` line up.
 - **`GC Loss` track**: one row per interpreter, `GC Loss`, under that

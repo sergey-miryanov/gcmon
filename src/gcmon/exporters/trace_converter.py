@@ -208,15 +208,13 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
     )
 
     events.append(
-        # Qualified unconditionally, interpreter 0 included. gcmon writes a
-        # counter descriptor the first time it sees that metric, batch by
-        # batch; when interpreter 0's goes out, interpreter 1 may not have
-        # produced a record yet, so no rule of the form "qualify only when
-        # there is a sibling" is implementable in a streaming writer.
+        # Unqualified: the row hangs off the interpreter's own group, so no
+        # two of them share a parent and the name does not have to tell them
+        # apart (ADR-0027).
         Counter(
             track,
             "heap_size",
-            f"Thread {iid} heap_size",
+            "heap_size",
             ts_start_ns,
             item.heap_size,
         )

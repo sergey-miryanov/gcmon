@@ -65,14 +65,14 @@ class TestCounterTrackYAxisShareKey:
     def test_heap_size_has_no_share_key(self) -> None:
         state = PerfettoTrackState()
         events: list[TraceEvent] = [
-            Counter(interpreter_track(100, 0), "heap_size", "Thread 0 heap_size", 1_000, 4096),
+            Counter(interpreter_track(100, 0), "heap_size", "heap_size", 1_000, 4096),
         ]
         descriptors, _ = convert_trace_events_to_perfetto(
             events,
             state,
             sequence_id=1,
         )
-        assert _counter_track_y_axis_share_key(descriptors, "Thread 0 heap_size") is None
+        assert _counter_track_y_axis_share_key(descriptors, "heap_size") is None
 
     def test_uncollectable_share_key_emitted_when_nonzero(self) -> None:
         state = PerfettoTrackState()

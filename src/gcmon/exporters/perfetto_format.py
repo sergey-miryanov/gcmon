@@ -93,14 +93,17 @@ _COUNTER_RANKS: dict[str, int] = {
     "clear_weakrefs_count": 10,
 }
 
-# A counter an interpreter owns that is nonetheless drawn a level up, beside
-# the process's own counters rather than inside its `GC Metrics` group
-# (ADR-0004). The process track is OS-scoped, so the trace processor drops
-# `sibling_order_rank` for these and their position in the UI is a heuristic.
+# A counter an interpreter owns that is nonetheless drawn a level up, on the
+# interpreter's own group rather than inside its `GC Metrics` group
+# (ADR-0004, as ADR-0027 leaves it).
 #
 # `rss` is not here: a `ProcessTrack` owns it, so parenting it to the process
 # row is its identity rather than a policy.
 _TOPLEVEL_COUNTER_METRICS: frozenset[str] = frozenset({"heap_size"})
+
+# Where such a counter sits inside the interpreter group. See
+# `_COUNTER_GROUP_RANK` for the ladder.
+_TOPLEVEL_COUNTER_RANK: int = 2
 
 _COUNTER_GROUP_NAME: str = "GC Metrics"
 # Last inside the interpreter group. ADR-0027 ranks the rows it holds as the
@@ -245,16 +248,18 @@ def _emit_counter_track_descriptor(
 ) -> tuple[int, list[bytes]]:
     """Build a counter track descriptor if not already emitted.
 
-    A counter the process owns, and one an interpreter owns whose metric is in
-    ``_TOPLEVEL_COUNTER_METRICS``, hangs off the process track and renders at
-    the top level. Every other counter hangs off its owner's GC Metrics group,
-    where the trace processor and the UI honor its ``_COUNTER_RANKS`` entry.
+    A counter the process owns hangs off the process track. One an
+    interpreter owns whose metric is in ``_TOPLEVEL_COUNTER_METRICS`` hangs
+    off that interpreter's group, beside its pause and loss rows rather than
+    inside its GC Metrics group. Every other counter hangs off the GC Metrics
+    group, where the trace processor and the UI honor its ``_COUNTER_RANKS``
+    entry.
 
     *display_name* is the track name on the wire and identifies the track
     within *track*; *metric* is what the rank and the shared y axis are keyed
     on, so ``G0 collected`` and ``G1 collected`` share a scale.
     """
-    if isinstance(track, ProcessTrack) or metric in _TOPLEVEL_COUNTER_METRICS:
+    if isinstance(track, ProcessTrack):
         if state.has_counter_track(track, display_name):
             return state.get_or_create_counter_track_uuid(track, display_name), []
         ctr_uuid = state.get_or_create_counter_track_uuid(track, display_name)
@@ -266,6 +271,19 @@ def _emit_counter_track_descriptor(
             sibling_order_rank=_COUNTER_RANKS.get(metric, 0),
         )
         return ctr_uuid, [build_trace_packet(sequence_id, track_descriptor=desc)]
+    if metric in _TOPLEVEL_COUNTER_METRICS:
+        interpreter_uuid, packets = _emit_interpreter_group_descriptors(track, state, sequence_id)
+        if state.has_counter_track(track, display_name):
+            return state.get_or_create_counter_track_uuid(track, display_name), packets
+        ctr_uuid = state.get_or_create_counter_track_uuid(track, display_name)
+        desc = build_track_descriptor(
+            ctr_uuid,
+            display_name,
+            parent_uuid=interpreter_uuid,
+            is_counter=True,
+            sibling_order_rank=_TOPLEVEL_COUNTER_RANK,
+        )
+        return ctr_uuid, [*packets, build_trace_packet(sequence_id, track_descriptor=desc)]
     group_uuid, group_packets = _emit_counter_group_descriptor(track, state, sequence_id)
     if state.has_counter_track(track, display_name):
         ctr_uuid = state.get_or_create_counter_track_uuid(track, display_name)

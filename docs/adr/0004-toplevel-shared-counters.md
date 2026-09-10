@@ -10,9 +10,10 @@
 > every display name, and a counter a `ProcessTrack` owns parents to the
 > process track by construction. Three things below still hold: one
 > `heap_size` series per `(pid, iid)` and one `rss` per pid, `heap_size` drawn
-> a level up with the dropped-rank trade-off that costs, and `heap_size`
-> staying on the `GC Pause(N)` slice args. A `heap_size` track is named
-> `Thread {iid} heap_size` now.
+> outside the `GC Metrics` group, and `heap_size` staying on the
+> `GC Pause(N)` slice args. It is drawn on its interpreter's own group rather
+> than a level up beside the process, so the rank it carries there is honored
+> ([ADR-0027](0027-group-every-row-an-interpreter-owns.md)).
 
 ## Context
 

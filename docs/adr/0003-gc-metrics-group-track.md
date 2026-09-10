@@ -49,7 +49,7 @@ now carry a non-NULL `parent_id` pointing at the `GC Metrics` row, and the
 ranking takes effect *inside* the group.
 
 Ranks come from a single ordered table covering each metric. `heap_size` and
-`rss` come first (they are drawn outside the group, see
+`rss` are not ranked from it: each is drawn outside the group, see
 [ADR-0004](0004-toplevel-shared-counters.md) and
 [ADR-0024](0024-an-event-names-the-track-it-is-drawn-on.md)), then
 `collected`, `uncollectable` (emitted only when non-zero), `candidates`,

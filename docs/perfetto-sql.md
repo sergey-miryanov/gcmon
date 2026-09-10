@@ -31,7 +31,7 @@ gcmon traces use the standard Perfetto schema:
 - **`counter`**: counter samples
   - `track_id`, `ts`, `value`
 - **`counter_track`**: one row per counter track
-  - `id`, `name` (`"G0 collected"`, `"Thread 0 heap_size"`)
+  - `id`, `name` (`"G0 collected"`, `"heap_size"`), `parent_id`
 - **`process_track`**: every row gcmon draws, the process's own and the ones
   nested under its `Interpreters` group, each with the process's `upid`
   - `id`, `name`, `parent_id`, `upid`, and `source_arg_set_id` for the track's

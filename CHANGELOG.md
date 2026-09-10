@@ -8,6 +8,7 @@
 - An interpreter's pause row is named `GC Pauses`, under a group named `Interpreter {iid}`, where it was `Thread {iid}` beside the process track
 - A query that joined `thread_track` joins `process_track`. Every row gcmon draws carries its process's `upid`
 - An interpreter's loss row is named `GC Loss`, under its `Interpreter {iid}` group, where it was `GC Loss {iid}` beside the process track
+- A `heap_size` counter track is named `heap_size`, on its `Interpreter {iid}` group, where it was `Thread {iid} heap_size` beside the process track. A query matching `name = 'heap_size'` finds it again
 
 ### Bugfixes
 

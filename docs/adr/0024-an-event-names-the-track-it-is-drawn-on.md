@@ -50,14 +50,11 @@ no producers, dedup lives only in `PerfettoTrackState`, reached through
 `write_events` and `record_process_liveness`, both already under `_io_lock`.
 
 **A counter carries one metric, its value and a written display name.** The
-converter writes the display name, `G0 collected` or `Thread 0 heap_size`,
-where the encoder used to concatenate one. `metric` is the other field, and
+converter writes the display name, `G0 collected` or `heap_size`, where the
+encoder used to concatenate one. `metric` is the other field, and
 still does the grouping: it drives the sibling rank and the shared y axis
 ([ADR-0005](0005-counter-y-axis-share-key.md)), so `G0 collected` and
 `G1 collected` keep one scale.
-
-**The converter qualifies `heap_size` with its interpreter.**
-`Thread 0 heap_size`, interpreter 0 included.
 
 **A slice is one event, and the encoder expands it.**
 `Slice(track, name, cat, ts_start, ts_stop, args)` replaces `SliceBegin` and
@@ -72,9 +69,11 @@ fuzz suite checks it against the real trace processor.
 
 ## Consequences
 
-- A trace an operator opens is unchanged, except that a `heap_size` counter
-  track is named `Thread {iid} heap_size` where it was `heap_size`. A
-  PerfettoSQL query matching `name = 'heap_size'` stops matching.
+- A trace an operator opens is unchanged. A `heap_size` counter track keeps
+  its bare name, and a PerfettoSQL query matching `name = 'heap_size'` keeps
+  matching: the interpreter that owns one is named by the group the row hangs
+  off ([ADR-0027](0027-group-every-row-an-interpreter-owns.md)), not by the
+  row's own name.
 - A JSONL capture carries no `tid`, and one written before this change still
   reads: nothing read the field, and `from_mapping` rebuilds a record from its
   own fields.

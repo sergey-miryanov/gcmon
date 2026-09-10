@@ -61,9 +61,9 @@ _EXPECTED_COUNTER_NAMES: frozenset[str] = frozenset(
         "G1 uncollectable",
         "G1 candidates",
         "G1 duration",
-        "Thread 0 heap_size",
-        "Thread 1 heap_size",
-        "Thread 2 heap_size",
+        # One row per interpreter, all three named the same: each hangs off
+        # its own group, so the name has nothing to tell apart (ADR-0027).
+        "heap_size",
     }
 )
 
@@ -2552,7 +2552,7 @@ class TestRssCounterTrackIntegration:
         with open_trace_processor(path) as tp:
             counter_tracks = {r.name.strip() for r in tp.query("SELECT name FROM counter_track")}
             # GC counter tracks should still be present.
-            for expected in ("G0 collected", "G0 candidates", "Thread 0 heap_size"):
+            for expected in ("G0 collected", "G0 candidates", "heap_size"):
                 assert expected in counter_tracks, (
                     f"GC counter track {expected!r} missing after adding RSS; got {sorted(counter_tracks)}"
                 )
@@ -2564,9 +2564,10 @@ class TestRssCounterTrackIntegration:
 class TestTwoInterpretersHeapSizes:
     """Two interpreters in one process draw two `heap_size` rows.
 
-    Both parent to the process track, so unqualified they would be siblings
-    sharing a name: one row apparently drawn twice, and a PerfettoSQL query
-    matching on it selecting both heaps at once.
+    Both are named `heap_size`. What keeps them apart is the group each hangs
+    off (ADR-0027): sharing a name *and* a parent is what the trace processor
+    merges, and the qualified name ADR-0024 wrote stood in for the parent
+    before there was one to hang off.
     """
 
     @pytest.fixture(scope="class")
@@ -2584,27 +2585,40 @@ class TestTwoInterpretersHeapSizes:
             yield tp
 
     def test_each_interpreter_gets_a_row_of_its_own(self, two_interpreters: TraceProcessor) -> None:
+        rows = list(
+            two_interpreters.query(
+                "SELECT ig.name AS iname, ct.id AS id FROM counter_track ct "
+                "JOIN track ig ON ct.parent_id = ig.id "
+                "WHERE ct.name = 'heap_size' ORDER BY ig.name"
+            )
+        )
+        assert [r.iname for r in rows] == ["Interpreter 0", "Interpreter 1"]
+        assert len({r.id for r in rows}) == 2, f"the two rows merged: {[dict(r.__dict__) for r in rows]}"
+
+    def test_a_query_matching_the_bare_name_finds_it(self, two_interpreters: TraceProcessor) -> None:
+        """What ADR-0024's qualifier broke and ADR-0027 gives back."""
         names = {r.name.strip() for r in two_interpreters.query("SELECT name FROM counter_track")}
-        assert {"Thread 0 heap_size", "Thread 1 heap_size"} <= names
-        assert "heap_size" not in names
+        assert "heap_size" in names
 
     def test_a_query_can_select_one_heap(self, two_interpreters: TraceProcessor) -> None:
+        """One hop up the parent chain, which is what names the interpreter
+        now that the track name does not."""
         rows = list(
             two_interpreters.query(
                 "SELECT c.value AS value FROM counter c "
                 "JOIN counter_track ct ON c.track_id = ct.id "
-                "WHERE ct.name = 'Thread 1 heap_size'"
+                "JOIN track ig ON ct.parent_id = ig.id "
+                "WHERE ct.name = 'heap_size' AND ig.name = 'Interpreter 1'"
             )
         )
         assert [r.value for r in rows] == [9_000]
 
-    def test_both_rows_parent_to_the_process_track(self, two_interpreters: TraceProcessor) -> None:
-        parents = {
-            r.name.strip(): r.parent_id
-            for r in two_interpreters.query("SELECT name, parent_id FROM counter_track WHERE name LIKE '%heap_size'")
-        }
+    def test_each_row_parents_to_its_own_interpreter_group(self, two_interpreters: TraceProcessor) -> None:
+        parents = [
+            r.parent_id for r in two_interpreters.query("SELECT parent_id FROM counter_track WHERE name = 'heap_size'")
+        ]
         assert len(parents) == 2
-        assert len(set(parents.values())) == 1
+        assert len(set(parents)) == 2, f"both heap rows share a parent: {parents}"
 
     def test_rss_stays_bare(self, two_interpreters: TraceProcessor) -> None:
         """Its owner is the process, and a process holds one."""

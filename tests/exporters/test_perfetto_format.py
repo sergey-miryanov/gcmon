@@ -216,11 +216,13 @@ class TestConvertItemToPerfettoPackets:
                     assert td.parent_uuid == interpreter_uuid
                     assert td.child_ordering == 3
         assert group_seen, "GC Counters group track descriptor was not emitted"
-        # heap_size is a top-level counter: parented directly to the process.
-        assert per_metric_parent["Thread 0 heap_size"] == proc_uuid
+        # heap_size is a top-level counter: parented to the interpreter's own
+        # group, beside `GC Metrics` rather than inside it.
+        assert per_metric_parent["heap_size"] == interpreter_uuid
+        assert proc_uuid not in per_metric_parent.values()
         # Per-gen counters are parented to the GC Counters group.
         for name, parent_uuid in per_metric_parent.items():
-            if name != "Thread 0 heap_size":
+            if name != "heap_size":
                 assert parent_uuid == group_uuid, f"{name!r} should parent to group"
 
     def test_basic_item_emits_pause_slice(self) -> None:
