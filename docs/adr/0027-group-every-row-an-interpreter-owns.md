@@ -1,6 +1,6 @@
 # ADR-0027: Group every row an interpreter owns under one track
 
-- **Status:** Accepted, unbuilt (spec 0069)
+- **Status:** Accepted
 - **Date:** 2026-09-10
 
 ## Context
@@ -48,8 +48,10 @@ merged.
 **One `Interpreters` group per process holds those groups**, parented to the
 process track and carrying `child_ordering = EXPLICIT`. It is the
 non-OS-scoped parent that makes the trace processor honor an interpreter
-group's `sibling_order_rank`, which is the iid. It holds no events, and every
-process gets one whether it runs one interpreter or many.
+group's `sibling_order_rank`, which is the iid. It holds no events, and a
+process gcmon read a record from gets one whether it ran one interpreter or
+many. A process gcmon only ever polled gets none, because nothing inside it
+was ever drawn on.
 
 **The encoder cannot write a `ThreadDescriptor`.** The builder loses the
 fields that produce the sub-message, and the root track descriptor loses
@@ -100,6 +102,11 @@ something, and a row exists because an event names it
   pid, and `thread.is_main_thread` marks it. gcmon cannot drop it while it
   writes processes, and nothing in gcmon produces it to grep for.
 - A query reaches a pause through `process_track` rather than `thread_track`.
+- A group is a row only once something in its subtree carries an event. The
+  trace processor builds no `track` row for a descriptor whose whole subtree
+  is eventless, the process track included, so neither group appears in a
+  trace until a row inside it is drawn on. Nothing has to suppress them for a
+  process that collected nothing: they are already absent.
 - A counter track is named `heap_size` again, so a query matching
   `name = 'heap_size'` finds it. ADR-0024 broke that match when it qualified
   the name with the interpreter.
@@ -161,11 +168,14 @@ something, and a row exists because an event names it
   a `Track`.
 - `src/gcmon/exporters/perfetto_builders.py` no longer encodes a
   `ThreadDescriptor`, and `src/gcmon/exporters/perfetto_proto.py` drops the
-  field numbers behind it.
+  field numbers behind it: `ThreadDescriptorField` and `ThreadOrdering`, and
+  the `thread` and `thread_ordering` entries in `TrackDescriptorField`. A
+  field number nothing writes is a way back in.
 - `src/gcmon/exporters/trace_converter.py` writes `heap_size` as the display
   name.
-- `src/gcmon/model/trace_event.py` is unchanged. `InterpreterTrack` and
-  `LossTrack` name the same rows, and the groups are the encoder's.
+- `src/gcmon/model/trace_event.py` keeps its shape: no event names a group,
+  and `InterpreterTrack` and `LossTrack` name the same two rows as before.
+  Only `InterpreterTrack`'s docstring moves, off the thread it described.
 - Tests: `tests/exporters/test_perfetto_exporter_integration.py` asserts the
   hierarchy through the trace processor, that a `GC Metrics` row exists per
   interpreter rather than per process, and that no row in `thread` carries a

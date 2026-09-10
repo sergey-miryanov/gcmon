@@ -84,10 +84,23 @@ _Avoid_: timeline, profile, output file
 
 **Track**:
 One row in a trace. An **event** names the track it is drawn on: a
-**process**'s row for its marks and its RSS, an **interpreter**'s for that
-interpreter's collections, or that interpreter's **loss** row.
+**process**'s row for its marks and its RSS, an **interpreter**'s **pause
+row** for that interpreter's collections, or its **loss** row.
 _Avoid_: lane, thread (none of the three is one), tid, row (in output; fine in
 prose)
+
+**Interpreter group**:
+The `Interpreter {iid}` row every track one **interpreter** owns hangs under:
+its pause row, its loss row, its `heap_size` and its **counter group**. It
+holds no events of its own, and it is what a query walks up to when it asks
+which interpreter a counter belongs to.
+_Avoid_: thread group, iid track, interpreter track (that is the pause row)
+
+**Interpreter list**:
+The `Interpreters` row holding a process's **interpreter groups**, one per
+process, under the **process track**. It is the non-OS-scoped parent that
+makes the trace processor honor each group's rank, which is the **iid**.
+_Avoid_: interpreters track, iids group
 
 **Process track**:
 A process's own row, and what its other rows hang under: the list of its

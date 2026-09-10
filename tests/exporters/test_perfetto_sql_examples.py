@@ -149,7 +149,7 @@ class TestTheDocumentedQueries:
         Driven from `process` it returns rows for everything that collected,
         so a row count says nothing; the process gcmon knew from liveness
         alone is the one that disappears."""
-        lifetime = next(sql for sql in _examples() if "pauses" in sql)
+        lifetime = next(sql for sql in _examples() if "observed lifetime" in sql)
 
         names = {row.name for row in documented_trace_processor.query(lifetime)}
 

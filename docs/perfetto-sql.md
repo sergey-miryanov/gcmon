@@ -83,6 +83,58 @@ GROUP BY name
 ORDER BY IF(parent_id IS NULL, 0, 1), name
 ```
 
+## Example: Naming the Interpreter a Counter Belongs To
+
+Every row an interpreter owns hangs under a group named `Interpreter {iid}`,
+and those under one `Interpreters` group per process. A per-generation counter
+is a grandchild of its group through `GC Metrics`; `heap_size` is a child of
+it. So two hops up `parent_id` reach the interpreter from any counter, and the
+`Interpreters` group carries the process's `upid`:
+
+```sql
+-- Every per-generation counter, with the interpreter and process that own it
+SELECT
+    p.name AS process,
+    ig.name AS interpreter,
+    ct.name AS counter,
+    COUNT(c.id) AS samples
+FROM counter_track ct
+JOIN track gm ON ct.parent_id = gm.id AND gm.name = 'GC Metrics'
+JOIN track ig ON gm.parent_id = ig.id
+JOIN process_track lt ON ig.parent_id = lt.id AND lt.name = 'Interpreters'
+JOIN process p ON lt.upid = p.upid
+LEFT JOIN counter c ON c.track_id = ct.id
+GROUP BY ct.id
+ORDER BY p.name, ig.name, ct.name
+```
+
+`heap_size` sits one hop closer, on the group itself:
+
+```sql
+-- Each interpreter's heap size, by the group the row hangs off
+SELECT ig.name AS interpreter, c.ts, c.value
+FROM counter c
+JOIN counter_track ct ON c.track_id = ct.id AND ct.name = 'heap_size'
+JOIN track ig ON ct.parent_id = ig.id
+ORDER BY ig.name, c.ts
+```
+
+The same walk names the interpreter that ran a pause. Its row is named
+`GC Pauses` for every interpreter, so the group is what tells two apart:
+
+```sql
+-- GC pauses with the interpreter that ran them
+SELECT ig.name AS interpreter, s.name, s.ts, s.dur
+FROM slice s
+JOIN process_track pt ON s.track_id = pt.id AND pt.name = 'GC Pauses'
+JOIN track ig ON pt.parent_id = ig.id
+ORDER BY s.ts
+```
+
+The `debug.iid` annotation on a pause slice carries the same number, and
+`EXTRACT_ARG(s.arg_set_id, 'debug.iid')` reads it without the join. The parent
+chain is what a counter has instead, since a counter carries no annotations.
+
 ## Example: Querying RSS Values
 
 Under `--rss`, samples land in the `counter` table on a track named `rss`:
