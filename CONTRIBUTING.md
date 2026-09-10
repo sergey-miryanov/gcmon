@@ -21,7 +21,7 @@ that look unrelated to what is missing.
 ## Running the tests
 
 ```bash
-poetry run pytest
+poetry run just test
 ```
 
 Four suites are **deselected by default** and run only when you name their
@@ -29,10 +29,10 @@ marker, so a passing `pytest` covers less than it looks:
 
 | Marker | Command | What it covers |
 |---|---|---|
-| `stress` | `poetry run pytest -m stress` | thread safety of the exporter and control-client pipelines |
-| `fuzz` | `poetry run pytest -m fuzz` | randomized differential tests against the real trace processor |
-| `architecture` | `poetry run pytest -m architecture` | the code's structure, read without running it |
-| `benchmark` | `poetry run pytest tests/benchmarks -m benchmark --codspeed` | CodSpeed performance benchmarks |
+| `stress` | `poetry run just stress` | thread safety of the exporter and control-client pipelines |
+| `fuzz` | `poetry run just fuzz` | randomized differential tests against the real trace processor |
+| `architecture` | `poetry run just architecture` | the code's structure, read without running it |
+| `benchmark` | `poetry run just architecture` | CodSpeed performance benchmarks |
 
 CI runs the stress and fuzz suites in jobs of their own, so a change that
 passes locally can still fail there. Coverage has a floor of 80% (`fail_under`
@@ -43,9 +43,8 @@ in `pyproject.toml`).
 Two type checkers run in strict mode, and both have to pass:
 
 ```bash
-poetry run mypy src tests
-poetry run pyrefly check src tests
-poetry run ruff check src
+poetry run just typecheck
+poetry run just lint
 ```
 
 `pre-commit` covers the rest: ruff's checker and formatter, `typos` and
@@ -60,8 +59,8 @@ Markdown wraps at 78 columns. The tool is idempotent per file and rewrites
 nothing but the wrapping:
 
 ```bash
-python .github/scripts/wrap_markdown.py docs/cli.md
-python .github/scripts/wrap_markdown.py --check docs/cli.md
+poetry run just wrap docs/cli.md
+poetry run just wrap --check docs/cli.md
 ```
 
 Python wraps at 120 instead (`line-length` in `pyproject.toml`); the two
