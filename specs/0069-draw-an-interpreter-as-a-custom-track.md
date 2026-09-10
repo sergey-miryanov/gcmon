@@ -8,15 +8,15 @@
 - **Origin:** the review of 0027's landing, 2026-09-09, and the two traces
   built from it
 - **Respects:**
-  [ADR-0002](../docs/adr/0002-perfetto-track-uuid-and-hierarchy.md) (every
-  track is explicitly parented: the row keeps its uuid and its parent),
-  [ADR-0003](../docs/adr/0003-gc-metrics-group-track.md) (ordering is dropped
-  under an OS-scoped parent, which is why `GC Metrics` exists),
-  [ADR-0011](../docs/adr/0011-process-lifetime-and-ordering.md) (section 4
-  amends its thread-descriptor clause),
-  [ADR-0024](../docs/adr/0024-an-event-names-the-track-it-is-drawn-on.md) (an
-  event names its `Track`; the model is unchanged, only what the encoder
-  derives from an `InterpreterTrack`)
+  - [ADR-0002](../docs/adr/0002-perfetto-track-uuid-and-hierarchy.md): every
+    track is explicitly parented, and the row keeps its uuid and its parent.
+  - [ADR-0003](../docs/adr/0003-gc-metrics-group-track.md): ordering is
+    dropped under an OS-scoped parent, which is why `GC Metrics` exists.
+  - [ADR-0011](../docs/adr/0011-process-lifetime-and-ordering.md): section 4
+    amends its thread-descriptor clause.
+  - [ADR-0024](../docs/adr/0024-an-event-names-the-track-it-is-drawn-on.md):
+    an event names its `Track`. The model is unchanged, and only what the
+    encoder derives from an `InterpreterTrack` moves.
 
 ## 1. Problem
 
