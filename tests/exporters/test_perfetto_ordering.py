@@ -74,7 +74,9 @@ class TestProcessOrderingByFirstTs:
         assert len(roots) == 1
         td = roots[0]
         assert td.process_ordering == 1
-        assert td.thread_ordering == 1
+        # Nothing gcmon draws is a thread track, so there is no thread
+        # ordering to ask for (ADR-0027).
+        assert not td.HasField("thread_ordering")
         assert not td.HasField("name")
         assert not td.HasField("process")
         assert not td.HasField("thread")

@@ -9,7 +9,6 @@ from perfetto.protos.perfetto.trace.perfetto_trace_pb2 import (
     CounterDescriptor,
     DebugAnnotation,
     ProcessDescriptor,
-    ThreadDescriptor,
     Trace,
     TracePacket,
     TrackDescriptor,
@@ -22,8 +21,6 @@ from gcmon.exporters.perfetto_proto import (
     DebugAnnotationField,
     ProcessDescriptorField,
     ProcessOrdering,
-    ThreadDescriptorField,
-    ThreadOrdering,
     TraceField,
     TracePacketField,
     TrackDescriptorField,
@@ -55,22 +52,12 @@ class TestPerfettoProtoConstants:
         assert f["uuid"].number == TrackDescriptorField.UUID
         assert f["name"].number == TrackDescriptorField.NAME
         assert f["process"].number == TrackDescriptorField.PROCESS
-        assert f["thread"].number == TrackDescriptorField.THREAD
         assert f["parent_uuid"].number == TrackDescriptorField.PARENT_UUID
         assert f["counter"].number == TrackDescriptorField.COUNTER
         assert f["child_ordering"].number == TrackDescriptorField.CHILD_ORDERING
         assert f["sibling_order_rank"].number == TrackDescriptorField.SIBLING_ORDER_RANK
         assert f["description"].number == TrackDescriptorField.DESCRIPTION
         assert f["process_ordering"].number == TrackDescriptorField.PROCESS_ORDERING
-        assert f["thread_ordering"].number == TrackDescriptorField.THREAD_ORDERING
-
-    def test_thread_descriptor_field(self) -> None:
-        desc = ThreadDescriptor.DESCRIPTOR
-        assert desc is not None
-        f = desc.fields_by_name
-        assert f["pid"].number == ThreadDescriptorField.PID
-        assert f["tid"].number == ThreadDescriptorField.TID
-        assert f["thread_name"].number == ThreadDescriptorField.THREAD_NAME
 
     def test_process_descriptor_field(self) -> None:
         desc = ProcessDescriptor.DESCRIPTOR
@@ -144,8 +131,3 @@ class TestPerfettoProtoConstants:
         v = TrackDescriptor.ProcessOrdering
         assert int(v.PROCESS_ORDERING_UNSPECIFIED) == ProcessOrdering.UNSPECIFIED
         assert int(v.PROCESS_ORDERING_EXPLICIT) == ProcessOrdering.EXPLICIT
-
-    def test_thread_ordering(self) -> None:
-        v = TrackDescriptor.ThreadOrdering
-        assert int(v.THREAD_ORDERING_UNSPECIFIED) == ThreadOrdering.UNSPECIFIED
-        assert int(v.THREAD_ORDERING_EXPLICIT) == ThreadOrdering.EXPLICIT

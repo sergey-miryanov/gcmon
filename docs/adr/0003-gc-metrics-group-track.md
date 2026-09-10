@@ -81,11 +81,12 @@ is fine: only the relative order matters.
 - **`child_ordering = LEXICOGRAPHIC` with name prefixes**
   (`0_heap_size`, `1_collected`, …). Rejected: it works, but the prefix shows
   up in the track name the user reads.
-- **`process_ordering` / `thread_ordering` on the root descriptor
-  (`uuid = 0`).** Not applicable here: those fields order process tracks
-  against each other and thread tracks against each other, and say nothing
-  about counters. They are used, for the purpose they are meant for, in
-  [ADR-0011](0011-process-lifetime-and-ordering.md).
+- **`process_ordering` on the root descriptor (`uuid = 0`).** Not applicable
+  here: it orders process tracks against each other and says nothing about
+  counters. It is used, for the purpose it is meant for, in
+  [ADR-0011](0011-process-lifetime-and-ordering.md). The `thread_ordering`
+  hint beside it in the proto is not a field gcmon writes
+  ([ADR-0027](0027-group-every-row-an-interpreter-owns.md)).
 - **Leave counters parented to the process track and accept arbitrary order.**
   Rejected; this is what the earlier iteration did, and the counter list is
   long enough that the order is worth fixing.

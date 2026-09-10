@@ -13,8 +13,6 @@ from .perfetto_proto import (
     DebugAnnotationField,
     ProcessDescriptorField,
     ProcessOrdering,
-    ThreadDescriptorField,
-    ThreadOrdering,
     TraceField,
     TracePacketField,
     TrackDescriptorField,
@@ -40,16 +38,13 @@ def build_track_descriptor(
     uuid: int,
     name: str,
     pid: int | None = None,
-    tid: int | None = None,
     parent_uuid: int | None = None,
     is_counter: bool = False,
     child_ordering: ChildTracksOrdering | None = None,
     sibling_order_rank: int | None = None,
-    thread_name: str | None = None,
     cmdline: Sequence[str] | None = None,
     description: str | None = None,
     process_ordering: ProcessOrdering | None = None,
-    thread_ordering: ThreadOrdering | None = None,
     start_timestamp_ns: int | None = None,
     y_axis_share_key: str | None = None,
 ) -> bytes:
@@ -59,15 +54,14 @@ def build_track_descriptor(
     ----------
     uuid
         Track UUID; the special value ``0`` is reserved for the root
-        track descriptor that carries ``process_ordering`` /
-        ``thread_ordering`` hints.
+        track descriptor that carries the ``process_ordering`` hint.
     name
         Human-readable track name. Falsy values (empty string) suppress
         the ``name`` field, used for the root descriptor and for any
         other track where the name would be redundant.
-    pid, tid, thread_name, cmdline, start_timestamp_ns
-        Populate the OS-association sub-message: ``ThreadDescriptor`` if
-        both ``pid`` and ``tid`` are given, else ``ProcessDescriptor``.
+    pid, cmdline, start_timestamp_ns
+        Populate the ``ProcessDescriptor`` sub-message, the only
+        OS-association gcmon writes (ADR-0027).
     parent_uuid
         Optional parent track UUID; sets ``TrackDescriptor.parent_uuid``.
     is_counter
@@ -79,10 +73,10 @@ def build_track_descriptor(
     description
         Human-readable description; surfaced in the Perfetto UI as a
         tooltip on the track's help icon.
-    process_ordering, thread_ordering
-        Root-descriptor-only hints that tell the UI to honor
-        ``sibling_order_rank`` on process / thread tracks. Only set
-        these on the root descriptor (``uuid = 0``).
+    process_ordering
+        A root-descriptor-only hint that tells the UI to honor
+        ``sibling_order_rank`` on process tracks. Only set it on the root
+        descriptor (``uuid = 0``).
     y_axis_share_key
         Optional string used to group counter tracks with the same
         parent on a shared Y-axis in the Perfetto UI. Only effective
@@ -95,14 +89,7 @@ def build_track_descriptor(
     result = encode_varint_field(TrackDescriptorField.UUID, uuid)
     if name:
         result += encode_string_field(TrackDescriptorField.NAME, name)
-    if pid is not None and tid is not None:
-        thread_desc = encode_varint_field(ThreadDescriptorField.PID, pid) + encode_varint_field(
-            ThreadDescriptorField.TID, tid
-        )
-        if thread_name is not None:
-            thread_desc += encode_string_field(ThreadDescriptorField.THREAD_NAME, thread_name)
-        result += encode_bytes_field(TrackDescriptorField.THREAD, thread_desc)
-    elif pid is not None:
+    if pid is not None:
         process_desc = encode_varint_field(ProcessDescriptorField.PID, pid)
         if cmdline:
             for arg in cmdline:
@@ -116,8 +103,6 @@ def build_track_descriptor(
         result += encode_bytes_field(TrackDescriptorField.PROCESS, process_desc)
     if parent_uuid is not None:
         result += encode_varint_field(TrackDescriptorField.PARENT_UUID, parent_uuid)
-    if thread_ordering is not None:
-        result += encode_varint_field(TrackDescriptorField.THREAD_ORDERING, thread_ordering)
     if process_ordering is not None:
         result += encode_varint_field(TrackDescriptorField.PROCESS_ORDERING, process_ordering)
     if is_counter:

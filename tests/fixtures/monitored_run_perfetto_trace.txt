@@ -3,7 +3,6 @@ trusted_packet_sequence_id: 1
 track_descriptor {
   uuid: 0
   process_ordering: PROCESS_ORDERING_EXPLICIT
-  thread_ordering: THREAD_ORDERING_EXPLICIT
 }
 --- packet ---
 trusted_packet_sequence_id: 1

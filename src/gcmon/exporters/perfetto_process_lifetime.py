@@ -21,7 +21,6 @@ from .perfetto_builders import (
 from .perfetto_proto import (
     ChildTracksOrdering,
     ProcessOrdering,
-    ThreadOrdering,
     TrackEventType,
 )
 from .perfetto_track_state import PerfettoTrackState, ProcessSpan
@@ -75,7 +74,6 @@ def _emit_root_descriptor(
         uuid=0,
         name="",
         process_ordering=ProcessOrdering.EXPLICIT,
-        thread_ordering=ThreadOrdering.EXPLICIT,
     )
     return [build_trace_packet(sequence_id, track_descriptor=desc)]
 

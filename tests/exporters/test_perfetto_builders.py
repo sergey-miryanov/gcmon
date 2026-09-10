@@ -6,7 +6,6 @@ is what pins the wire format (ADR-0001).
 
 from perfetto.protos.perfetto.trace.perfetto_trace_pb2 import (
     DebugAnnotation,
-    ThreadDescriptor,
     Trace,
     TracePacket,
     TrackDescriptor,
@@ -73,25 +72,6 @@ class TestBuildTrackDescriptor:
         assert descriptor.HasField("process")
         assert len(descriptor.process.cmdline) == 0
 
-    def test_thread_descriptor(self) -> None:
-        data = build_track_descriptor(
-            uuid=200,
-            name="Thread 0",
-            pid=100,
-            tid=0,
-            parent_uuid=100,
-            sibling_order_rank=0,
-        )
-        descriptor = TrackDescriptor()
-        descriptor.ParseFromString(data)
-        assert descriptor.uuid == 200
-        assert descriptor.name == "Thread 0"
-        assert descriptor.parent_uuid == 100
-        assert descriptor.sibling_order_rank == 0
-        assert descriptor.HasField("thread")
-        assert descriptor.thread.pid == 100
-        assert descriptor.thread.tid == 0
-
     def test_counter_descriptor(self) -> None:
         data = build_track_descriptor(uuid=300, name="G0 collected", parent_uuid=200, is_counter=True)
         descriptor = TrackDescriptor()
@@ -137,29 +117,6 @@ class TestBuildTrackDescriptor:
         descriptor.ParseFromString(data)
         assert descriptor.HasField("process")
         assert not descriptor.process.HasField("start_timestamp_ns")
-
-    def test_thread_descriptor_ignores_start_timestamp_ns(self) -> None:
-        """``start_timestamp_ns`` is only valid on a process
-        descriptor. A thread descriptor built with the kwarg must NOT
-        emit it (the field is wrapped in a sub-message that we only
-        emit for process descriptors)."""
-        data = build_track_descriptor(
-            uuid=200,
-            name="Thread 0",
-            pid=100,
-            tid=0,
-            parent_uuid=100,
-            start_timestamp_ns=1_000,
-        )
-        descriptor = TrackDescriptor()
-        descriptor.ParseFromString(data)
-        assert descriptor.HasField("thread")
-        # ThreadDescriptor has no ``start_timestamp_ns`` field, so the
-        # encoder must NOT write it in the thread submessage. Check by
-        # verifying that the parsed + re-serialized thread submessage
-        # matches the expected minimal payload.
-        expected = ThreadDescriptor(pid=100, tid=0)
-        assert descriptor.thread.SerializeToString() == expected.SerializeToString()
 
 
 class TestBuildCounterDescriptor:

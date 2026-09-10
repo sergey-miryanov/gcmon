@@ -84,11 +84,13 @@ share a BEGIN.
 - Perfetto-only. JSONL is unchanged.
 
 **A root `TrackDescriptor` at `uuid = 0`** is emitted once per trace with
-`process_ordering = EXPLICIT` and `thread_ordering = EXPLICIT` (fields 19 and
-20) and nothing else: no name, no parent, no sub-message. The UI reads the two
-hints only on the canary channel of `ui.perfetto.dev` (Flags -> Release
-channel -> Canary), and a trace processor older than 0.57 ignores them and
-orders tracks its own way. gcmon writes them whatever the reader, so a trace
+`process_ordering = EXPLICIT` (field 19) and nothing else: no name, no parent,
+no sub-message. There is no thread ordering to ask for, since nothing gcmon
+draws is a thread track
+([ADR-0027](0027-group-every-row-an-interpreter-owns.md)). The UI reads the
+hint only on the canary channel of `ui.perfetto.dev` (Flags -> Release
+channel -> Canary), and a trace processor older than 0.57 ignores it and
+orders tracks its own way. gcmon writes it whatever the reader, so a trace
 stays forward-compatible.
 
 **Process tracks are ranked by first observation**, ties broken by ascending
@@ -529,9 +531,9 @@ iteration.
   descriptors live there because finalization writes them, a process known
   only from liveness being described there or nowhere.
 - `src/gcmon/exporters/perfetto_proto.py` carries `process_ordering` at field
-  19 and `thread_ordering` at field 20. Fields 6 and 7 on the same message are
-  `chrome_process` and `chrome_thread`, so a wrong number writes a different
-  message and fails silently
+  19. Fields 6 and 7 on the same message are `chrome_process` and
+  `chrome_thread`, so a wrong number writes a different message and fails
+  silently
   ([ADR-0001](0001-hand-rolled-perfetto-protobuf-encoder.md)).
 - `src/gcmon/exporters/perfetto_track_state.py` holds the span accumulator,
   the ranks and the row pids. Every key it holds is filed under the process,
