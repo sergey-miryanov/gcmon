@@ -151,7 +151,7 @@ class TestConvertItemToPerfettoPackets:
         assert state.has_process_descriptor(proc(100))
         assert state.has_track(interpreter_track(100, 0))
 
-    def test_thread_track_has_sibling_order_rank_zero(self) -> None:
+    def test_pause_track_has_sibling_order_rank_zero(self) -> None:
         state = PerfettoTrackState()
         item = GCStatsInfo(
             gen=0,
@@ -166,20 +166,21 @@ class TestConvertItemToPerfettoPackets:
             duration=0.001,
         )
         descriptors, _ = convert_item(proc(100), item, state, sequence_id=1)
-        proc_uuid = state.get_process_track_uuid(proc(100))
-        thread_uuid = state.get_track_uuid(interpreter_track(100, 0))
-        thread_found = False
+        interpreter_uuid = state.get_or_create_interpreter_group_track_uuid(proc(100), 0)
+        pause_uuid = state.get_track_uuid(interpreter_track(100, 0))
+        pause_found = False
         for desc_bytes in descriptors:
             packet = TracePacket()
             packet.ParseFromString(desc_bytes)
             if packet.HasField("track_descriptor"):
                 td = packet.track_descriptor
-                if td.uuid == thread_uuid:
-                    assert td.parent_uuid == proc_uuid
+                if td.uuid == pause_uuid:
+                    assert td.parent_uuid == interpreter_uuid
                     assert td.sibling_order_rank == 0
                     assert not td.HasField("child_ordering")
-                    thread_found = True
-        assert thread_found
+                    assert not td.HasField("thread")
+                    pause_found = True
+        assert pause_found
 
     def test_counter_tracks_parented_to_counter_group(self) -> None:
         state = PerfettoTrackState()
@@ -1003,8 +1004,10 @@ class TestATrackIsDescribedOffTheEventsOnIt:
         descriptors, _ = convert_trace_events_to_perfetto(self._pid_events(100), state, sequence_id=1)
         names = self._named(descriptors)
         assert "Process 100" in names
-        assert "Thread 0" in names
-        assert names.index("Process 100") < names.index("Thread 0"), "parent must precede child"
+        assert "GC Pauses" in names
+        assert names.index("Process 100") < names.index("Interpreter 0") < names.index("GC Pauses"), (
+            f"each parent must precede its child; got {names}"
+        )
 
     def test_an_rss_only_pid_gets_a_process_row_and_no_thread_row(self) -> None:
         state = PerfettoTrackState()
@@ -1033,7 +1036,7 @@ class TestATrackIsDescribedOffTheEventsOnIt:
         first, _ = convert_trace_events_to_perfetto(self._pid_events(100), state, sequence_id=1)
         second, _ = convert_trace_events_to_perfetto(self._pid_events(100), state, sequence_id=1)
         assert "Process 100" in self._named(first)
-        assert "Thread 0" in self._named(first)
+        assert "GC Pauses" in self._named(first)
         assert self._named(second) == []
 
     def test_a_second_interpreter_is_described_when_it_first_collects(self) -> None:
@@ -1043,7 +1046,7 @@ class TestATrackIsDescribedOffTheEventsOnIt:
         convert_trace_events_to_perfetto(self._pid_events(100, iid=0), state, sequence_id=1)
         later, _ = convert_trace_events_to_perfetto(self._pid_events(100, iid=1), state, sequence_id=1)
         names = self._named(later)
-        assert names[:2] == ["Interpreter 1", "Thread 1"], f"the group it hangs off comes first; got {names}"
+        assert names[:2] == ["Interpreter 1", "GC Pauses"], f"the group it hangs off comes first; got {names}"
         assert "Process 100" not in names
 
 

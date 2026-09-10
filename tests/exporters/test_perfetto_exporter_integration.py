@@ -88,10 +88,10 @@ _PROCESS_LIFETIME_TRACK_NAME: str = "Processes"
 def _process_filter(pid: int) -> str:
     """SQL fragment to scope a query to a single ``pid``.
 
-    Thread-attached slices (begin/end, counter) are joined through the
-    ``thread_track``/``thread`` views. ``slice.track_id`` is the same track id
-    for both ``thread_track`` and ``process_track`` views; the view that
-    matches a given slice row is determined by the track's type.
+    Every track gcmon writes belongs to a process rather than to a thread
+    (ADR-0027), so one join through ``process_track`` reaches them all: the
+    process's own row, and the rows nested under its ``Interpreters`` group,
+    which the trace processor gives the same ``upid``.
 
     Scoped on the name, not on ``process.pid``: that column holds the pid
     gcmon writes for the row rather than the operating system's (ADR-0011).
@@ -100,19 +100,36 @@ def _process_filter(pid: int) -> str:
     ``Process <pid>#2`` and up.
     """
     return (
-        f"JOIN thread_track tt ON s.track_id = tt.id "
-        f"JOIN thread th ON tt.utid = th.utid "
-        f"JOIN process p ON th.upid = p.upid "
-        f"WHERE p.name = 'Process {pid}'"
+        f"JOIN process_track pt ON s.track_id = pt.id JOIN process p ON pt.upid = p.upid WHERE p.name = 'Process {pid}'"
     )
+
+
+def _process_row_filter(pid: int) -> str:
+    """SQL fragment to scope a query to a process's *own* row.
+
+    :func:`_process_filter` reaches every row under the process's ``upid``,
+    the ones inside its ``Interpreters`` group included. This one stops at
+    the process track itself, which carries the ``Lifetime`` bar, the marks
+    and the RSS (ADR-0024).
+    """
+    return f"JOIN process_track pt ON s.track_id = pt.id WHERE pt.name = 'Process {pid}'"
+
+
+def _on_interpreter(iid: int) -> str:
+    """SQL fragment narrowing a :func:`_process_filter` query to one
+    interpreter.
+
+    Every interpreter's pauses are drawn on a row named ``GC Pauses``, so
+    what names the interpreter is the group that row hangs off (ADR-0027).
+    """
+    return f"AND EXISTS (SELECT 1 FROM track ig WHERE ig.id = pt.parent_id AND ig.name = 'Interpreter {iid}')"
 
 
 def _process_filter_instant(pid: int) -> str:
     """SQL fragment to scope an instant-event query to a single ``pid``.
 
-    Instant events (e.g. ``GC monitor started``) are emitted on the process
-    track, not on a thread track, so the join goes through ``process_track``.
-    Scoped on the name for the reason :func:`_process_filter` gives.
+    :func:`_process_filter` narrowed to the zero-width slices, which is what
+    an instant event (e.g. ``GC monitor started``) reads back as.
     """
     return (
         f"JOIN process_track pt ON s.track_id = pt.id "
@@ -533,7 +550,7 @@ class TestSliceArgs:
                 f"  SELECT s.arg_set_id FROM slice s "
                 f"  {_process_filter(DEFAULT_PID)} "
                 f"  AND s.name = '{_PAUSE_NAME}' AND s.dur > 0 "
-                f"  AND th.name = 'Thread 0'"
+                f"  {_on_interpreter(0)}"
                 f")"
             )
         }
@@ -586,7 +603,7 @@ class TestSliceArgs:
                 f"  SELECT s.arg_set_id FROM slice s "
                 f"  {_process_filter(DEFAULT_PID)} "
                 "  AND s.name = 'Deduce Unreachable(1)' AND s.dur > 0 "
-                f"  AND th.name = 'Thread 1'"
+                f"  {_on_interpreter(1)}"
                 ")"
             )
         }
@@ -603,7 +620,7 @@ class TestSliceArgs:
                 "  SELECT s.arg_set_id FROM slice s "
                 f"  {_process_filter(DEFAULT_PID)} "
                 "  AND s.name = 'GC Pause(1)' AND s.dur > 0 "
-                "  AND th.name = 'Thread 1'"
+                f"  {_on_interpreter(1)}"
                 ")"
             )
         }
@@ -800,8 +817,9 @@ class TestCounterYAxisShareKey:
 
 class TestTrackDescriptors:
     """The Perfetto exporter emits a process track descriptor with the
-    expected ``Process <pid>`` name. (Chrome JSON does not produce a
-    separate process track; the test is therefore Perfetto-only.)"""
+    expected ``Process <pid>`` name, and no thread descriptor at all.
+    (Chrome JSON does not produce a separate process track; the test is
+    therefore Perfetto-only.)"""
 
     def test_process_track_present(self, trace_processor: TraceProcessor) -> None:
         rows = sorted(r.name for r in trace_processor.query("SELECT name FROM track WHERE name LIKE 'Process %'"))
@@ -809,199 +827,43 @@ class TestTrackDescriptors:
             f"expected process tracks for both PIDs, got {rows}"
         )
 
-    def test_thread_tracks_present(self, trace_processor: TraceProcessor) -> None:
-        rows = {
-            r.name
-            for r in trace_processor.query(
-                f"SELECT th.name FROM thread th JOIN process p ON th.upid = p.upid "
-                f"WHERE p.name = 'Process {DEFAULT_PID}'"
-            )
-        }
-        for iid in (0, 1, 2):
-            assert f"Thread {iid}" in rows, f"missing 'Thread {iid}' in DEFAULT_PID's threads; got {sorted(rows)}"
-
-    def test_thread_tid_is_the_interpreter_id(
+    def test_gcmon_writes_no_thread_row_of_its_own(
         self,
         trace_processor: TraceProcessor,
     ) -> None:
-        """``thread.tid`` is the interpreter id for every interpreter, so a
-        query attributes GC activity to one without asking which row it is
-        (ADR-0011).
-        """
-        rows = list(
-            trace_processor.query(
-                "SELECT p.name AS pname, th.name AS tname, th.tid AS tid "
-                "FROM thread th JOIN process p ON th.upid = p.upid "
-                "WHERE th.name LIKE 'Thread %' ORDER BY p.name, th.name"
-            )
-        )
-
-        assert [(r.pname, r.tname, r.tid) for r in rows] == [
-            (f"Process {DEFAULT_PID}", "Thread 0", 0),
-            (f"Process {DEFAULT_PID}", "Thread 1", 1),
-            (f"Process {DEFAULT_PID}", "Thread 2", 2),
-            (f"Process {_SECOND_PID}", "Thread 0", 0),
-        ], f"unexpected thread rows: {[dict(r.__dict__) for r in rows]}"
-
-    def test_the_trace_processor_keeps_a_thread_whose_tid_is_the_pid(
-        self,
-        trace_processor: TraceProcessor,
-    ) -> None:
-        """A process descriptor gives the trace processor a thread carrying
-        the row's pid as its ``tid``, and that is the thread it calls the
-        process's main one. Row pids count from 1 and interpreter ids from 0,
-        so it is an interpreter of gcmon's wherever the two numberings meet,
-        and a nameless row with no ``thread_track`` wherever they do not.
-        Which interpreter it lands on says nothing about that interpreter.
+        """Every row an interpreter owns is a custom track (ADR-0027), so
+        what is left in ``thread`` is the one nameless row the trace
+        processor builds per process out of the ``ProcessDescriptor``,
+        carrying the row's ``pid`` as its ``tid``. It is what
+        ``is_main_thread`` marks, and gcmon cannot drop it while it writes
+        processes.
         """
         rows = list(
             trace_processor.query(
                 "SELECT p.name AS pname, COALESCE(th.name, '') AS tname, th.tid AS tid, "
-                "(tt.id IS NULL) AS untracked "
+                "th.is_main_thread AS ismain, (tt.id IS NULL) AS untracked "
                 "FROM thread th JOIN process p ON th.upid = p.upid "
                 "LEFT JOIN thread_track tt ON tt.utid = th.utid "
-                "WHERE th.is_main_thread = 1 AND p.name LIKE 'Process %' "
-                "ORDER BY p.name, th.tid"
+                "WHERE p.name LIKE 'Process %' ORDER BY p.name, th.tid"
             )
         )
 
-        assert [(r.pname, r.tname, r.tid, r.untracked) for r in rows] == [
-            (f"Process {DEFAULT_PID}", "Thread 1", 1, 0),
-            (f"Process {_SECOND_PID}", "", 2, 1),
-        ], f"unexpected main-thread rows: {[dict(r.__dict__) for r in rows]}"
+        assert [(r.pname, r.tname, r.tid, r.ismain, r.untracked) for r in rows] == [
+            (f"Process {DEFAULT_PID}", "", 1, 1, 1),
+            (f"Process {_SECOND_PID}", "", 2, 1, 1),
+        ], f"unexpected thread rows: {[dict(r.__dict__) for r in rows]}"
 
-
-class TestInterpreterGroups:
-    """The two grouping rows every interpreter's rows hang off (ADR-0027).
-
-    ``Interpreters`` is the non-OS-scoped parent that makes the trace
-    processor honor an interpreter group's rank, and ``Interpreter {iid}``
-    is what carries the iid so no row inside it repeats the number.
-    """
-
-    def test_the_interpreter_list_is_one_flattened_row_per_process(
+    def test_no_slice_is_drawn_on_a_thread_track(
         self,
         trace_processor: TraceProcessor,
     ) -> None:
-        """``Interpreters`` reaches its process by ``upid`` and not by a
-        parent.
-
-        A custom child of an OS-scoped parent is flattened, which is the
-        trade ADR-0003 accepted for ``GC Metrics`` and ADR-0027 accepts
-        again here. Asserting a parent on this row instead is what would
-        make this test fail after the change rather than before it.
-        """
+        """The reading that made the old shape wrong: a pause reaches its
+        process through ``process_track`` now, and nothing gcmon writes goes
+        anywhere near ``thread_track``."""
         rows = list(
-            trace_processor.query(
-                "SELECT p.name AS pname, (t.parent_id IS NULL) AS flattened "
-                "FROM process_track t JOIN process p ON t.upid = p.upid "
-                "WHERE t.name = 'Interpreters' ORDER BY p.name"
-            )
+            trace_processor.query("SELECT COUNT(*) AS cnt FROM slice s JOIN thread_track tt ON s.track_id = tt.id")
         )
-
-        assert [(r.pname, r.flattened) for r in rows] == [
-            (f"Process {DEFAULT_PID}", 1),
-            (f"Process {_SECOND_PID}", 1),
-        ], f"unexpected Interpreters rows: {[dict(r.__dict__) for r in rows]}"
-
-    def test_each_interpreter_group_hangs_off_its_process_list(
-        self,
-        trace_processor: TraceProcessor,
-    ) -> None:
-        """One group per interpreter gcmon read a record from, under the
-        list of the process that ran it."""
-        rows = list(
-            trace_processor.query(
-                "SELECT p.name AS pname, t.name AS name "
-                "FROM track t "
-                "JOIN process_track lt ON t.parent_id = lt.id "
-                "JOIN process p ON lt.upid = p.upid "
-                "WHERE lt.name = 'Interpreters' ORDER BY p.name, t.name"
-            )
-        )
-
-        assert [(r.pname, r.name) for r in rows] == [
-            (f"Process {DEFAULT_PID}", "Interpreter 0"),
-            (f"Process {DEFAULT_PID}", "Interpreter 1"),
-            (f"Process {DEFAULT_PID}", "Interpreter 2"),
-            (f"Process {_SECOND_PID}", "Interpreter 0"),
-        ], f"unexpected interpreter groups: {[dict(r.__dict__) for r in rows]}"
-
-    def test_a_process_draws_one_counter_group_per_interpreter(
-        self,
-        trace_processor: TraceProcessor,
-    ) -> None:
-        """A process running N interpreters has N ``GC Metrics`` rows.
-
-        Parented to the process track they shared a name and a parent, and
-        the trace processor merged them into one row per process holding
-        every interpreter's counters.
-        """
-        rows = list(
-            trace_processor.query(
-                "SELECT p.name AS pname, ig.name AS iname "
-                "FROM track gm "
-                "JOIN track ig ON gm.parent_id = ig.id "
-                "JOIN process_track lt ON ig.parent_id = lt.id "
-                "JOIN process p ON lt.upid = p.upid "
-                "WHERE gm.name = 'GC Metrics' ORDER BY p.name, ig.name"
-            )
-        )
-
-        assert [(r.pname, r.iname) for r in rows] == [
-            (f"Process {DEFAULT_PID}", "Interpreter 0"),
-            (f"Process {DEFAULT_PID}", "Interpreter 1"),
-            (f"Process {DEFAULT_PID}", "Interpreter 2"),
-            (f"Process {_SECOND_PID}", "Interpreter 0"),
-        ], f"unexpected GC Metrics rows: {[dict(r.__dict__) for r in rows]}"
-
-    def test_every_counter_names_its_interpreter_two_parents_up(
-        self,
-        trace_processor: TraceProcessor,
-    ) -> None:
-        """The question a gcmon trace had no answer to: which interpreter
-        does this ``G0 collected`` belong to?
-
-        Interpreter 1 is the one that ran a gen-1 collection in the fixture,
-        and interpreters 0 and 2 the gen-0 ones, so the generations name the
-        interpreters apart.
-        """
-        rows = list(
-            trace_processor.query(
-                "SELECT ig.name AS iname, ct.name AS cname "
-                "FROM counter_track ct "
-                "JOIN track gm ON ct.parent_id = gm.id "
-                "JOIN track ig ON gm.parent_id = ig.id "
-                "JOIN process_track lt ON ig.parent_id = lt.id "
-                "JOIN process p ON lt.upid = p.upid "
-                "WHERE gm.name = 'GC Metrics' AND ct.name LIKE 'G_ collected' "
-                f"AND p.name = 'Process {DEFAULT_PID}' ORDER BY ig.name"
-            )
-        )
-
-        assert [(r.iname, r.cname) for r in rows] == [
-            ("Interpreter 0", "G0 collected"),
-            ("Interpreter 1", "G1 collected"),
-            ("Interpreter 2", "G0 collected"),
-        ], f"unexpected counter attribution: {[dict(r.__dict__) for r in rows]}"
-
-    def test_a_process_that_never_collected_draws_neither_group(
-        self,
-        liveness_trace_processor: TraceProcessor,
-    ) -> None:
-        """A row exists because an event named it (ADR-0024), and a process
-        gcmon only ever polled names nothing inside either group."""
-        rows = list(
-            liveness_trace_processor.query(
-                "SELECT p.name AS pname FROM process_track t "
-                "JOIN process p ON t.upid = p.upid "
-                "WHERE t.name = 'Interpreters'"
-            )
-        )
-
-        assert [r.pname for r in rows] == [f"Process {DEFAULT_PID}"], (
-            f"only the process that collected should draw a list; got {[dict(r.__dict__) for r in rows]}"
-        )
+        assert [r.cnt for r in rows] == [0], f"expected no thread-attached slices, got {[r.cnt for r in rows]}"
 
 
 class TestDiagnosticTrackSchema:
@@ -1337,9 +1199,7 @@ class TestProcessRowLifetimeSlice:
         rows = list(
             trace_processor.query(
                 f"SELECT s.name AS name, s.ts AS ts, s.depth AS depth FROM slice s "
-                f"JOIN process_track pt ON s.track_id = pt.id "
-                f"JOIN process p ON pt.upid = p.upid "
-                f"WHERE p.name = 'Process {DEFAULT_PID}' ORDER BY s.ts, s.depth"
+                f"{_process_row_filter(DEFAULT_PID)} ORDER BY s.ts, s.depth"
             )
         )
         assert [(r.name, r.depth) for r in rows] == [
@@ -1538,26 +1398,13 @@ class TestProcessesTrack:
         # instant event. The last non-counter non-meta event for each
         # pid is the end of the last GC item's pause.
         #
-        # We compare against SQL: take the min(ts) and max(ts) of all
-        # Begin/End/Instant events for the pid (joined through
-        # thread_track for EndEvents and through process_track for
-        # Instants), then verify the slice matches.
+        # We compare against SQL: take the min(ts) of every Begin/End/
+        # Instant event for the pid, all of them reached by one join
+        # through process_track (ADR-0027), then verify the slice matches.
         for pid in (DEFAULT_PID, _SECOND_PID):
-            # First non-meta ts: min over all slices on both
-            # process_track (instant events) and thread_track (Begin/
-            # End events) for this pid.
-            candidates: list[int] = []
-            for join_clause in (
-                f"JOIN process_track pt ON s.track_id = pt.id JOIN process p ON pt.upid = p.upid "
-                f"WHERE p.name = 'Process {pid}'",
-                f"JOIN thread_track tt ON s.track_id = tt.id "
-                f"JOIN thread th ON tt.utid = th.utid "
-                f"JOIN process p ON th.upid = p.upid "
-                f"WHERE p.name = 'Process {pid}'",
-            ):
-                rows = trace_processor.query(f"SELECT MIN(s.ts) AS ts FROM slice s {join_clause}")
-                for r in rows:
-                    candidates.append(r.ts)
+            candidates = [
+                r.ts for r in trace_processor.query(f"SELECT MIN(s.ts) AS ts FROM slice s {_process_filter(pid)}")
+            ]
             assert candidates, f"no first event found for pid {pid}"
             expected_first = min(candidates)
 
@@ -1885,10 +1732,7 @@ class TestARunKilledMidFlight:
     ) -> None:
         rows = list(
             killed_run_trace_processor.query(
-                f"SELECT s.name AS sname, s.ts AS ts, s.dur AS dur FROM slice s "
-                f"JOIN process_track pt ON s.track_id = pt.id "
-                f"JOIN process p ON pt.upid = p.upid "
-                f"WHERE p.name = 'Process {_SECOND_PID}'"
+                f"SELECT s.name AS sname, s.ts AS ts, s.dur AS dur FROM slice s {_process_row_filter(_SECOND_PID)}"
             )
         )
         assert [(r.sname, r.ts, r.ts + r.dur) for r in rows] == [(_PROCESS_ROW_SLICE_NAME, _KILL_GC_START, _KILL_TICK)]
@@ -1916,12 +1760,7 @@ class TestARunKilledMidFlight:
         """What the kill still costs. ``DEFAULT_PID`` was alive when the trace
         stopped, so its bar never went out."""
         rows = list(
-            killed_run_trace_processor.query(
-                f"SELECT s.name AS sname FROM slice s "
-                f"JOIN process_track pt ON s.track_id = pt.id "
-                f"JOIN process p ON pt.upid = p.upid "
-                f"WHERE p.name = 'Process {DEFAULT_PID}'"
-            )
+            killed_run_trace_processor.query(f"SELECT s.name AS sname FROM slice s {_process_row_filter(DEFAULT_PID)}")
         )
         assert rows == []
 
@@ -1938,12 +1777,12 @@ class TestARunKilledMidFlight:
         killed_run_trace_processor: TraceProcessor,
     ) -> None:
         """A row hidden for want of a bar is the loss worth minimising: the
-        thread tracks under it reached the file either way."""
+        pause rows under it reached the file either way."""
         rows = list(
             killed_run_trace_processor.query(
                 "SELECT s.name AS sname FROM slice s "
-                "JOIN thread_track tt ON s.track_id = tt.id "
-                "WHERE s.name LIKE 'GC Pause%'"
+                "JOIN process_track pt ON s.track_id = pt.id "
+                "WHERE pt.name = 'GC Pauses' AND s.name LIKE 'GC Pause%'"
             )
         )
         assert len(rows) == 3
@@ -2031,21 +1870,21 @@ class TestReusedPidDrawsTwoOfEveryRow:
             _REUSE_SECOND_NAME: _REUSE_SECOND_START,
         }
 
-    def test_each_process_draws_its_pauses_on_its_own_thread_row(
+    def test_each_process_draws_its_pauses_on_its_own_row(
         self,
         reused_pid_trace_processor: TraceProcessor,
     ) -> None:
-        """Both processes run an interpreter 0 and so share a ``tid``. What
-        keeps their pauses apart is the thread row: a ``utid`` each, under a
-        ``upid`` each, since the descriptor names the row pid gcmon counted
-        for that process (ADR-0011)."""
+        """Both processes run an interpreter 0, so both draw a row named
+        ``GC Pauses`` under a group named ``Interpreter 0``. What keeps their
+        pauses apart is the ``upid``: a process row each, since the
+        descriptor names the row pid gcmon counted for that process
+        (ADR-0011)."""
         rows = list(
             reused_pid_trace_processor.query(
-                f"SELECT p.name AS pname, th.utid AS utid, th.upid AS upid, th.tid AS tid, s.ts AS ts "
+                f"SELECT p.name AS pname, pt.id AS ctrack_id, pt.upid AS upid, s.ts AS ts "
                 f"FROM slice s "
-                f"JOIN thread_track tt ON s.track_id = tt.id "
-                f"JOIN thread th ON tt.utid = th.utid "
-                f"JOIN process p ON th.upid = p.upid "
+                f"JOIN process_track pt ON s.track_id = pt.id "
+                f"JOIN process p ON pt.upid = p.upid "
                 f"WHERE s.name = '{_PAUSE_NAME}' ORDER BY p.name"
             )
         )
@@ -2054,9 +1893,8 @@ class TestReusedPidDrawsTwoOfEveryRow:
             (_REUSE_FIRST_NAME, _REUSE_FIRST_START),
             (_REUSE_SECOND_NAME, _REUSE_SECOND_START),
         ]
-        assert len({r.utid for r in rows}) == 2, f"expected a thread row per process, got {rows}"
+        assert len({r.ctrack_id for r in rows}) == 2, f"expected a pause row per process, got {rows}"
         assert len({r.upid for r in rows}) == 2, f"expected a process row per process, got {rows}"
-        assert {r.tid for r in rows} == {0}, f"each pause is interpreter 0's, so each tid is 0: {rows}"
 
     def test_each_process_draws_its_counters_on_its_own_tracks(
         self,
@@ -2316,9 +2154,8 @@ class TestAPidHeldFourTimesDrawsFourRows:
             pid_held_four_times_trace_processor.query(
                 "SELECT p.name AS pname, s.ts AS ts "
                 "FROM slice s "
-                "JOIN thread_track tt ON s.track_id = tt.id "
-                "JOIN thread th ON tt.utid = th.utid "
-                "JOIN process p ON th.upid = p.upid "
+                "JOIN process_track pt ON s.track_id = pt.id "
+                "JOIN process p ON pt.upid = p.upid "
                 f"WHERE s.name = '{_PAUSE_NAME}' ORDER BY s.ts"
             )
         )

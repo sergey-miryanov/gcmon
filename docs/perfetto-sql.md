@@ -22,18 +22,20 @@ gcmon traces use the standard Perfetto schema:
   - `upid`, the trace processor's own key and the one to group by; `pid`, one
     gcmon writes per process, not the operating system's; `name`
     (`"Process 12345"`); `start_ts`
-- **`thread`**: one row per interpreter, plus a nameless row for each process
-  whose row `pid` no interpreter id meets
-  - `utid`, its own key; `upid`, the process it belongs to; `tid`, the
-    interpreter id; `name` (`"Thread 0"`)
+- **`thread`**: one nameless row per process, which the trace processor builds
+  out of the `ProcessDescriptor`. gcmon writes none of its own
+  - `utid`, its own key; `upid`, the process it belongs to; `tid`, equal to
+    the row's `pid`
 - **`slice`**: GC pauses and sub-steps
   - `name` (`"GC Pause(0)"`), `ts` and `dur` in nanoseconds, `arg_set_id`
 - **`counter`**: counter samples
   - `track_id`, `ts`, `value`
 - **`counter_track`**: one row per counter track
   - `id`, `name` (`"G0 collected"`, `"Thread 0 heap_size"`)
-- **`process_track`** / **`thread_track`**: process and thread rows
-  - `id`, `pid` / `tid`, and `source_arg_set_id` for the track's own args
+- **`process_track`**: every row gcmon draws, the process's own and the ones
+  nested under its `Interpreters` group, each with the process's `upid`
+  - `id`, `name`, `parent_id`, `upid`, and `source_arg_set_id` for the track's
+    own args
 - **`args`**: key/value arguments for slices and tracks
   - `arg_set_id`, `string_value` / `int_value`
   - `key` / `flat_key`: bare for a track arg (`description`), prefixed for a
@@ -48,13 +50,13 @@ gcmon traces use the standard Perfetto schema:
 > The `debug.pid` annotation on the `Processes` span and on the `Lifetime` bar
 > carries the operating system's PID, and so does the row's name.
 
-> **Note:** `thread.tid` is the interpreter id, the same number as a GC
-> slice's `debug.iid` annotation. Every process also keeps a thread whose
-> `tid` is the row's `pid`, which is the one `thread.is_main_thread` marks.
-> Row pids count from 1 and interpreter ids from 0, so that thread is an
-> interpreter where the two meet, and a row with no name, no `thread_track`
-> and no slices where they do not. The flag says nothing about the interpreter
-> it lands on. Count interpreters by filtering on `thread.name`.
+> **Note:** gcmon writes no thread of its own. An interpreter is not an
+> operating-system thread, so every row one owns is a plain custom track under
+> a group named `Interpreter {iid}`. The one row in `thread` is the nameless
+> one the trace processor builds per process, carrying the row's `pid` as its
+> `tid` and marked by `thread.is_main_thread`; it has no name, no
+> `thread_track` and no slices. Count interpreters by counting the
+> `Interpreter %` tracks under a process's `Interpreters` group.
 
 ## Example: Replicating the Stats Table
 
@@ -169,9 +171,8 @@ SELECT
 FROM slice span
 JOIN track spant ON span.track_id = spant.id AND spant.name = 'Processes'
 LEFT JOIN process p ON p.name = span.name
-LEFT JOIN thread th ON th.upid = p.upid
-LEFT JOIN thread_track tt ON tt.utid = th.utid
-LEFT JOIN slice gc ON gc.track_id = tt.id AND gc.name GLOB 'GC Pause*'
+LEFT JOIN process_track pt ON pt.upid = p.upid AND pt.name = 'GC Pauses'
+LEFT JOIN slice gc ON gc.track_id = pt.id AND gc.name GLOB 'GC Pause*'
 GROUP BY span.id
 ORDER BY span.ts
 ```

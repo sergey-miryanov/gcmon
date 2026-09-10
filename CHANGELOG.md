@@ -2,9 +2,14 @@
 
 ## WIP
 
+### Breaking changes
+
+- A Perfetto trace holds no `thread` row of gcmon's. An interpreter is not an operating-system thread, so every row one owns is a plain custom track. The one row left in `thread` is the nameless one the trace processor builds per process, and `thread.is_main_thread` marks it
+- An interpreter's pause row is named `GC Pauses`, under a group named `Interpreter {iid}`, where it was `Thread {iid}` beside the process track
+- A query that joined `thread_track` joins `process_track`. Every row gcmon draws carries its process's `upid`
+
 ### Bugfixes
 
-- Every thread row in a Perfetto trace carries its interpreter id as the `tid`, where the main interpreter used to carry the process row's `pid`
 - A per-generation counter names the interpreter that owns it. A process running several interpreters draws a `GC Metrics` row each, where the copies used to merge into one row per process holding every interpreter's counters, identically named and unattributable
 
 ## Version 0.7.0 (2026-09-09)

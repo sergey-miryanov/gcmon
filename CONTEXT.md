@@ -90,10 +90,10 @@ _Avoid_: lane, thread (none of the three is one), tid, row (in output; fine in
 prose)
 
 **Process track**:
-A process's own row, and what its other rows hang under: its thread rows, its
-loss rows, the list of its interpreters, and the counters drawn beside that
-list rather than inside it. Named `Process 12345`, or `Process 12345#2` for
-the second process to hold the pid.
+A process's own row, and what its other rows hang under: the list of its
+interpreters, and the counters drawn beside that list rather than inside it.
+Named `Process 12345`, or `Process 12345#2` for the second process to hold the
+pid.
 _Avoid_: process group, pid track, parent track
 
 **Counter group**:
@@ -133,8 +133,8 @@ _Avoid_: buffer, per-generation stats, slot array
 **Interpreter**:
 One CPython interpreter inside a process, identified by its **iid**. Each
 keeps its own collector, its own rings and its own cumulative counters, and
-gcmon publishes the iid as a Perfetto `tid`. Perfetto's own `iid` on an
-interned string is a different thing; see **Intern id**.
+gcmon draws every row one owns under a group named after its iid. Perfetto's
+own `iid` on an interned string is a different thing; see **Intern id**.
 _Avoid_: subinterpreter (an iid of 0 is an interpreter too), thread, isolate
 
 **Generation**:

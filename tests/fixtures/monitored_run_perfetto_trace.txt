@@ -39,13 +39,8 @@ track_descriptor {
 trusted_packet_sequence_id: 1
 track_descriptor {
   uuid: 4
-  name: "Thread 0"
-  thread {
-    pid: 1
-    tid: 0
-    thread_name: "Thread 0"
-  }
-  parent_uuid: 1
+  name: "GC Pauses"
+  parent_uuid: 3
   sibling_order_rank: 0
 }
 --- packet ---
@@ -208,13 +203,8 @@ track_descriptor {
 trusted_packet_sequence_id: 1
 track_descriptor {
   uuid: 20
-  name: "Thread 0"
-  thread {
-    pid: 2
-    tid: 0
-    thread_name: "Thread 0"
-  }
-  parent_uuid: 17
+  name: "GC Pauses"
+  parent_uuid: 19
   sibling_order_rank: 0
 }
 --- packet ---
@@ -377,13 +367,8 @@ track_descriptor {
 trusted_packet_sequence_id: 1
 track_descriptor {
   uuid: 36
-  name: "Thread 0"
-  thread {
-    pid: 3
-    tid: 0
-    thread_name: "Thread 0"
-  }
-  parent_uuid: 33
+  name: "GC Pauses"
+  parent_uuid: 35
   sibling_order_rank: 0
 }
 --- packet ---

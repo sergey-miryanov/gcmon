@@ -264,22 +264,34 @@ class MonitoredRun:
         return "".join(f"--- packet ---\n{packet}" for packet in self.packets())
 
     def row_pid_by_track(self) -> dict[int, int]:
-        """Every descriptor carries a pid, on `ProcessDescriptor` or on
-        `ThreadDescriptor` alike, so this needs no walk up to a parent.
+        """The row pid each track belongs to, by walking `parent_uuid` up to
+        the one descriptor that carries a pid.
+
+        Only a `ProcessDescriptor` carries one: everything an interpreter
+        owns is a plain custom track under that process's `Interpreters`
+        group (ADR-0027), so the walk is what attributes it.
 
         It is the pid gcmon writes for the row, one per process rather than
         one per operating-system pid (ADR-0011). The operating system's
         reaches the trace on the spans.
         """
-        by_track: dict[int, int] = {}
+        pids: dict[int, int] = {}
+        parents: dict[int, int] = {}
         for packet in self.packets():
             if not packet.HasField("track_descriptor"):
                 continue
             descriptor = packet.track_descriptor
-            if descriptor.HasField("thread"):
-                by_track[descriptor.uuid] = descriptor.thread.pid
-            elif descriptor.HasField("process"):
-                by_track[descriptor.uuid] = descriptor.process.pid
+            if descriptor.HasField("process"):
+                pids[descriptor.uuid] = descriptor.process.pid
+            elif descriptor.parent_uuid:
+                parents[descriptor.uuid] = descriptor.parent_uuid
+        by_track: dict[int, int] = dict(pids)
+        for uuid in parents:
+            walk = uuid
+            while walk in parents:
+                walk = parents[walk]
+            if walk in pids:
+                by_track[uuid] = pids[walk]
         return by_track
 
     def row_pids_on(self, pid: int) -> set[int]:

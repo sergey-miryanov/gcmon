@@ -281,15 +281,22 @@ def loaded_trace_processor(
 def _process_filter(pid: int) -> str:
     """SQL fragment scoping a query to the one process on *pid*.
 
+    One join through ``process_track`` reaches every row gcmon writes for a
+    process, the ones inside its ``Interpreters`` group included (ADR-0027).
+
     On the name, not on ``process.pid``: that column holds the pid gcmon
     writes for the row (ADR-0011).
     """
     return (
-        "JOIN thread_track tt ON s.track_id = tt.id "
-        "JOIN thread th ON tt.utid = th.utid "
-        "JOIN process p ON th.upid = p.upid "
-        f"WHERE p.name = 'Process {pid}'"
+        f"JOIN process_track pt ON s.track_id = pt.id JOIN process p ON pt.upid = p.upid WHERE p.name = 'Process {pid}'"
     )
+
+
+def _on_interpreter(iid: int) -> str:
+    """SQL fragment narrowing a :func:`_process_filter` query to one
+    interpreter, which the group its row hangs off is what names
+    (ADR-0027)."""
+    return f"AND EXISTS (SELECT 1 FROM track ig WHERE ig.id = pt.parent_id AND ig.name = 'Interpreter {iid}')"
 
 
 def _row_set(rows: Iterable[_NameRow]) -> set[str]:
@@ -444,18 +451,21 @@ class TestCombinedTraceIsStructurallyComplete:
         )
         assert {r.pname: r.sampled for r in rows} == {f"Process {_PID_A}": 3, f"Process {_PID_B}": 1}
 
-    def test_thread_tracks_present(
+    def test_interpreter_groups_present(
         self,
         loaded_trace_processor: TraceProcessor,
     ) -> None:
         rows = sorted(
             r.name
             for r in loaded_trace_processor.query(
-                f"SELECT th.name FROM thread th JOIN process p ON th.upid = p.upid WHERE p.name = 'Process {_PID_A}'",
+                "SELECT t.name FROM track t "
+                "JOIN process_track lt ON t.parent_id = lt.id "
+                "JOIN process p ON lt.upid = p.upid "
+                f"WHERE lt.name = 'Interpreters' AND p.name = 'Process {_PID_A}'",
             )
         )
         for iid in (_IID_A1, _IID_A2, _IID_A3):
-            assert f"Thread {iid}" in rows, f"missing 'Thread {iid}' in pid={_PID_A}'s threads; got {rows}"
+            assert f"Interpreter {iid}" in rows, f"missing 'Interpreter {iid}' under pid={_PID_A}; got {rows}"
 
     def test_pause_slice_exists(
         self,
@@ -492,7 +502,7 @@ class TestCombineJsonlToPerfettoIntegration:
                 f"  SELECT s.arg_set_id FROM slice s "
                 f"  {_process_filter(_PID_A)} "
                 "  AND s.name = 'GC Pause(0)' AND s.dur > 0 "
-                f"  AND th.name = 'Thread {_IID_A1}'"
+                f"  {_on_interpreter(_IID_A1)}"
                 ")"
             )
         }
@@ -548,11 +558,7 @@ class TestCombineNormalizePerfettoIntegration:
             # minimum across the pid=1001 slice table is 0 (vs. 1.5B unnormalized).
             rows = list(
                 tp.query(
-                    f"SELECT MIN(ts) AS min_ts FROM slice s "
-                    f"JOIN thread_track tt ON s.track_id = tt.id "
-                    f"JOIN thread th ON tt.utid = th.utid "
-                    f"JOIN process p ON th.upid = p.upid "
-                    f"WHERE p.name = 'Process {_PID_A}'",
+                    f"SELECT MIN(ts) AS min_ts FROM slice s {_process_filter(_PID_A)}",
                 )
             )
             assert len(rows) == 1

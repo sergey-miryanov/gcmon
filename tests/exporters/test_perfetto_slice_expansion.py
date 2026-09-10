@@ -93,7 +93,7 @@ class TestASliceExpandsIntoAPair:
         descriptors, _ = _convert([Slice(ROW, "GC Pause(0)", "gc.pause", 1_000, 1_500, {})])
         named = [td.name for td in (parse_track_descriptor(d) for d in descriptors) if td is not None and td.name]
         assert "Process 4242" in named
-        assert "Thread 0" in named
+        assert "GC Pauses" in named
 
     def test_a_slice_places_no_instant(self) -> None:
         """The conversion pass writes nothing but the pair. The process row
@@ -104,17 +104,16 @@ class TestASliceExpandsIntoAPair:
         assert instants == []
 
 
-def _thread_row(tp: TraceProcessor) -> list[tuple[str, int, int, int]]:
+def _pause_row(tp: TraceProcessor) -> list[tuple[str, int, int, int]]:
     """Every slice on the interpreter's row, as ``(name, ts, dur, depth)``."""
     return [
         (row.name, row.ts, row.dur, row.depth)
         for row in tp.query(
             "SELECT s.name, s.ts, s.dur, s.depth FROM slice s "
-            "JOIN thread_track tt ON s.track_id = tt.id "
-            "JOIN thread th ON tt.utid = th.utid "
-            "JOIN process p ON th.upid = p.upid "
+            "JOIN process_track pt ON s.track_id = pt.id "
+            "JOIN process p ON pt.upid = p.upid "
             # By name: `p.pid` is the row's, one gcmon hands out (ADR-0011).
-            f"WHERE p.name = 'Process {PID}' ORDER BY s.ts, s.depth"
+            f"WHERE pt.name = 'GC Pauses' AND p.name = 'Process {PID}' ORDER BY s.ts, s.depth"
         )
     ]
 
@@ -125,7 +124,7 @@ def _as_read_back(rows: list[Slice], tmp_path: Path, name: str) -> list[tuple[st
     path = tmp_path / f"{name}.pftrace"
     path.write_bytes(build_trace([*descriptors, *packets]))
     with open_trace_processor(path) as tp:
-        return _thread_row(tp)
+        return _pause_row(tp)
 
 
 class TestTheTraceProcessorBuildsTheNesting:

@@ -114,8 +114,12 @@ def _interpreter_group_name(iid: int) -> str:
     return f"Interpreter {iid}"
 
 
+_PAUSE_TRACK_NAME: str = "GC Pauses"
+# First inside the interpreter group. See `_COUNTER_GROUP_RANK` for the ladder.
+_PAUSE_TRACK_RANK: int = 0
+
 _LOSS_TRACK_NAME: str = "GC Loss"
-# Below the interpreter's own thread track, which ranks 0.
+# Below the interpreter's own pause row, which ranks 0.
 _LOSS_TRACK_RANK: int = 1
 
 
@@ -156,31 +160,29 @@ def _emit_interpreter_group_descriptors(
     return group_uuid, packets
 
 
-def _emit_thread_descriptor(
+def _emit_pause_descriptor(
     track: InterpreterTrack,
     state: PerfettoTrackState,
     sequence_id: int,
 ) -> list[bytes]:
-    """Build *track*'s thread track descriptor if not already emitted."""
+    """Build *track*'s GC Pauses track descriptor, once.
+
+    A plain custom track under the interpreter's own group rather than a
+    thread: an interpreter is not an operating-system thread, and a
+    ``thread`` sub-message describes one that does not exist (ADR-0027). The
+    group carries the iid, so the row does not repeat it.
+    """
     if state.has_track(track):
         return []
     state.mark_track(track)
-    iid = track.iid
-    # The row's pid, not the operating system's, so this thread lands under
-    # its own process (ADR-0011). The `tid` beside it is the interpreter id,
-    # a synthetic namespace of gcmon's rather than an operating-system thread
-    # id, and the two numberings meet where an iid equals the row pid.
-    row_pid = state.get_row_pid(track.process)
+    interpreter_uuid, packets = _emit_interpreter_group_descriptors(track, state, sequence_id)
     desc = build_track_descriptor(
         state.get_track_uuid(track),
-        f"Thread {iid}",
-        pid=row_pid,
-        tid=iid,
-        parent_uuid=state.get_process_track_uuid(track.process),
-        sibling_order_rank=0,
-        thread_name=f"Thread {iid}",
+        _PAUSE_TRACK_NAME,
+        parent_uuid=interpreter_uuid,
+        sibling_order_rank=_PAUSE_TRACK_RANK,
     )
-    return [build_trace_packet(sequence_id, track_descriptor=desc)]
+    return [*packets, build_trace_packet(sequence_id, track_descriptor=desc)]
 
 
 def _emit_loss_descriptor(
@@ -299,11 +301,8 @@ def _emit_track_descriptors(
         sibling_order_rank=state.get_process_track_rank(process),
         start_timestamp_ns=state.get_process_lifetime_start_ts(process),
     )
-    if isinstance(track, InterpreterTrack | LossTrack):
-        _, group_packets = _emit_interpreter_group_descriptors(track, state, sequence_id)
-        descriptors.extend(group_packets)
     if isinstance(track, InterpreterTrack):
-        descriptors.extend(_emit_thread_descriptor(track, state, sequence_id))
+        descriptors.extend(_emit_pause_descriptor(track, state, sequence_id))
     elif isinstance(track, LossTrack):
         descriptors.extend(_emit_loss_descriptor(track, state, sequence_id))
     return descriptors
