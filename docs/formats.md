@@ -26,8 +26,8 @@ A trace carries these, on one track per interpreter:
   Resurrected, Clear Weakrefs, Delete Garbage.
 - **Counter tracks** per generation, `G{gen}`, carrying `collected`,
   `candidates`, `duration` and `uncollectable`, inside that interpreter's
-  `GC Metrics` group, with `heap_size` beside the group rather than inside
-  it, one per interpreter.
+  `GC Metrics` group, with `heap_size` beside the group rather than inside it,
+  one per interpreter.
 - **Counter Y-axis sharing**: one metric shares an axis across generations, so
   `G0 collected`, `G1 collected` and `G2 collected` line up.
 - **`GC Loss` track**: one row per interpreter, `GC Loss`, under that
@@ -43,8 +43,8 @@ A trace carries these, on one track per interpreter:
   `clipped` says which slices were cut. See [Perfetto SQL](perfetto-sql.md).
 - **One process track per process**, `Process 12345` and `Process 12345#2`,
   each carrying that process's own `Interpreters` group, counters, start time
-  and command line. The PID on the row is gcmon's, not the operating
-  system's; see [The `Lifetime` slice](#the-lifetime-slice).
+  and command line. The PID on the row is gcmon's, not the operating system's;
+  see [The `Lifetime` slice](#the-lifetime-slice).
 - **Process ordering**: the tracks sort by when gcmon first observed each
   process, earliest at the top, and a process it read no collections from
   takes a position like any other. A process gcmon reaches only after it has

@@ -51,8 +51,8 @@ no producers, dedup lives only in `PerfettoTrackState`, reached through
 
 **A counter carries one metric, its value and a written display name.** The
 converter writes the display name, `G0 collected` or `heap_size`, where the
-encoder used to concatenate one. `metric` is the other field, and
-still does the grouping: it drives the sibling rank and the shared y axis
+encoder used to concatenate one. `metric` is the other field, and still does
+the grouping: it drives the sibling rank and the shared y axis
 ([ADR-0005](0005-counter-y-axis-share-key.md)), so `G0 collected` and
 `G1 collected` keep one scale.
 

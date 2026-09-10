@@ -88,10 +88,10 @@ share a BEGIN.
 no sub-message. There is no thread ordering to ask for, since nothing gcmon
 draws is a thread track
 ([ADR-0027](0027-group-every-row-an-interpreter-owns.md)). The UI reads the
-hint only on the canary channel of `ui.perfetto.dev` (Flags -> Release
-channel -> Canary), and a trace processor older than 0.57 ignores it and
-orders tracks its own way. gcmon writes it whatever the reader, so a trace
-stays forward-compatible.
+hint only on the canary channel of `ui.perfetto.dev` (Flags -> Release channel
+-> Canary), and a trace processor older than 0.57 ignores it and orders tracks
+its own way. gcmon writes it whatever the reader, so a trace stays
+forward-compatible.
 
 **Process tracks are ranked by first observation**, ties broken by ascending
 process, sequential from 0. Every process with a recorded span gets a rank,
@@ -129,9 +129,9 @@ still builds one nameless thread per process out of that descriptor, with a
 `tid` equal to the pid, and `thread.is_main_thread` marks it. No query of
 gcmon's reads it.
 
-**Every process draws a full set of rows of its own**: process track, a
-group per interpreter holding that interpreter's rows, and a `Lifetime` slice,
-named `Process <pid>` and `Process <pid>#N` to match its `Processes` span.
+**Every process draws a full set of rows of its own**: process track, a group
+per interpreter holding that interpreter's rows, and a `Lifetime` slice, named
+`Process <pid>` and `Process <pid>#N` to match its `Processes` span.
 `start_timestamp_ns` stamps a row where its process started. Measured against
 the trace processor the suite pins in `tests.perfetto_prebuilt`.
 
@@ -530,11 +530,10 @@ iteration.
   the finalization the encoder calls at close. The root and the process
   descriptors live there because finalization writes them, a process known
   only from liveness being described there or nowhere.
-- `src/gcmon/exporters/perfetto_proto.py` carries `process_ordering` at field
-  19. Fields 6 and 7 on the same message are `chrome_process` and
+- `src/gcmon/exporters/perfetto_proto.py` carries the `process_ordering` field
+  number, 19. Fields 6 and 7 on the same message are `chrome_process` and
   `chrome_thread`, so a wrong number writes a different message and fails
-  silently
-  ([ADR-0001](0001-hand-rolled-perfetto-protobuf-encoder.md)).
+  silently ([ADR-0001](0001-hand-rolled-perfetto-protobuf-encoder.md)).
 - `src/gcmon/exporters/perfetto_track_state.py` holds the span accumulator,
   the ranks and the row pids. Every key it holds is filed under the process,
   which is what splits the rows a reused pid draws.

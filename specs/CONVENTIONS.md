@@ -40,9 +40,8 @@ however wrong the code looks.
 
 **4. Use the project's vocabulary, and respect the ADRs.** One entry read out
 of the target's ring is a **record**; one thing written into a trace is an
-**event**. gcmon identifies an interpreter by its **iid** and names its
-group in a trace after it. An interval whose records the target overwrote
-before
+**event**. gcmon identifies an interpreter by its **iid** and names its group
+in a trace after it. An interval whose records the target overwrote before
 gcmon read them is a **loss window** or a **blind interval**, never "missing
 data". A `Processes`-track slice is a **span**. A group of layers on one side
 of the capture file is a **subsystem**
