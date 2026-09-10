@@ -122,9 +122,11 @@ something, and a row exists because an event names it
   It is one row per process rather than several, and it keeps its `upid`.
 - Clauses elsewhere are void and move with this record: ADR-0003's parenting
   of `GC Metrics` to the process track, ADR-0011's thread-descriptor clause,
-  ADR-0024's `heap_size` qualifier, and the top-level clause ADR-0004 keeps in
-  its supersession note. ADR-0003's finding stands, and this record is built
-  on it: a custom group buys back the ordering an OS-scoped parent discards.
+  ADR-0024's `heap_size` qualifier, the top-level clause ADR-0004 keeps in its
+  supersession note, ADR-0015's parenting of the loss row, and the track kinds
+  ADR-0002 and ADR-0016 enumerate. ADR-0003's finding stands, and this record
+  is built on it: a custom group buys back the ordering an OS-scoped parent
+  discards.
 
 ## Alternatives considered
 

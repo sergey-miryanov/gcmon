@@ -7,9 +7,10 @@
 ## Context
 
 Perfetto identifies every track by a 64-bit `uuid`, and
-`TrackDescriptor.parent_uuid` builds the tree the UI renders. gcmon emits four
-kinds of track per monitored process: the process track, one thread track per
-interpreter, counter tracks, and the shared `Processes` lifetime track (see
+`TrackDescriptor.parent_uuid` builds the tree the UI renders. gcmon emits a
+process track per monitored process, a group per interpreter holding that
+interpreter's rows ([ADR-0027](0027-group-every-row-an-interpreter-owns.md)),
+counter tracks, and the shared `Processes` lifetime track (see
 [ADR-0011](0011-process-lifetime-and-ordering.md)).
 
 An early design derived UUIDs arithmetically from the identifiers (process as
@@ -37,18 +38,19 @@ track reuses its UUID across flushes. Collision-freedom comes from the
 counter, not from bit arithmetic.
 
 **`uuid = 0` is reserved.** It is Perfetto's special root descriptor, used to
-carry `process_ordering` / `thread_ordering` hints. It is not a parent, and
-nothing may point `parent_uuid` at it. The allocator starting at 1 guarantees
-no user track can collide with it.
+carry the `process_ordering` hint. It is not a parent, and nothing may point
+`parent_uuid` at it. The allocator starting at 1 guarantees no user track can
+collide with it.
 
 **Descriptor layout:**
 
 - Process: `ProcessDescriptor` at field **3**, with
   `child_ordering = EXPLICIT` so its children can be ordered.
-- Thread: `parent_uuid` = the process track, `sibling_order_rank = 0`, and
-  **no** `child_ordering`, because thread tracks are leaves and the field
-  would be a no-op. Their children (the counters) are siblings under the
-  process, not under the thread.
+- Interpreter groups: `Interpreters` parents to the process track and
+  `Interpreter {iid}` to that, both with `child_ordering = EXPLICIT`. Every
+  row an interpreter owns parents to its group and is ranked inside it
+  ([ADR-0027](0027-group-every-row-an-interpreter-owns.md)). No track gcmon
+  writes carries a `ThreadDescriptor`.
 - Counters: parented to the `GC Metrics` group or to the process track,
   following [ADR-0003](0003-gc-metrics-group-track.md) and
   [ADR-0004](0004-toplevel-shared-counters.md).
@@ -65,8 +67,8 @@ wire** (`parent_uuid=None`, which the encoder skips), never `parent_uuid=0`.
 - Adding a new track kind needs no bit-layout design: ask the state object for
   a UUID.
 - UUIDs are not stable across runs or reproducible from a pid. Nothing depends
-  on that; identity is carried by the descriptor's `pid`/`tid`/`name`, which
-  is what the trace processor keys on.
+  on that; identity is carried by the descriptor's `pid` and `name` and by the
+  parent chain, which is what the trace processor keys on.
 - UUIDs stay small, so their varints stay short.
 - The `1 << 60` bit-marking is gone. Perfetto's "default track" recognition
   comes from the presence of the `ProcessDescriptor` / `ThreadDescriptor`
@@ -86,15 +88,15 @@ wire** (`parent_uuid=None`, which the encoder skips), never `parent_uuid=0`.
 ## Implementation
 
 - `src/gcmon/exporters/perfetto_track_state.py` holds the counter, seeded to
-  `1`, and the lazy memoized lookups that hand out the process and thread
-  track UUIDs.
+  `1`, and the lazy memoized lookups that hand out the process, interpreter
+  group and per-row UUIDs.
 - `src/gcmon/exporters/perfetto_proto.py` carries the `ProcessDescriptor`
   field numbers (`PID = 1`, `CMDLINE = 2`, `PROCESS_NAME = 6`,
   `START_TIMESTAMP_NS = 7`); the sub-message itself is written at
   `TrackDescriptor` field 3.
-- `src/gcmon/exporters/perfetto_format.py` emits the thread descriptor with
-  `parent_uuid` set to the process track, `sibling_order_rank = 0` and no
-  `child_ordering`.
+- `src/gcmon/exporters/perfetto_format.py` emits each interpreter's rows with
+  `parent_uuid` set to that interpreter's group and a `sibling_order_rank`
+  inside it.
 - `src/gcmon/exporters/perfetto_builders.py` omits `parent_uuid` from the wire
   when it is `None`.
 - Tests: `tests/exporters/test_perfetto_track_state.py` for uuid allocation,

@@ -126,10 +126,10 @@ summed over:
 **Process-wide quantities stay keyed per process.** `heap_size` has no
 generation, so no ring owns one, and its high-water mark is taken per process,
 with two processes that shared a pid keeping a mark each. The trace draws it
-per interpreter instead, `Thread {iid} heap_size`
-([ADR-0024](0024-an-event-names-the-track-it-is-drawn-on.md)), so the two
-sides fold it differently. The end-of-run summary and the coverage footnote
-stay run-wide, the scope `Total` reports.
+per interpreter instead, a `heap_size` row on each interpreter's group
+([ADR-0027](0027-group-every-row-an-interpreter-owns.md)), so the two sides
+fold it differently. The end-of-run summary and the coverage footnote stay
+run-wide, the scope `Total` reports.
 
 ## Consequences
 
