@@ -104,9 +104,53 @@ _TOPLEVEL_COUNTER_METRICS: frozenset[str] = frozenset({"heap_size"})
 
 _COUNTER_GROUP_NAME: str = "GC Metrics"
 
+_INTERPRETER_LIST_NAME: str = "Interpreters"
+
+
+def _interpreter_group_name(iid: int) -> str:
+    return f"Interpreter {iid}"
+
+
 _LOSS_TRACK_NAME: str = "GC Loss"
 # Below the interpreter's own thread track, which ranks 0.
 _LOSS_TRACK_RANK: int = 1
+
+
+def _emit_interpreter_group_descriptors(
+    track: InterpreterTrack | LossTrack,
+    state: PerfettoTrackState,
+    sequence_id: int,
+) -> tuple[int, list[bytes]]:
+    """Build the two groups interpreter *track*'s rows hang off, outer
+    first, and return the inner one's uuid (ADR-0027).
+
+    ``Interpreters`` carries no rank: its parent is the process track, which
+    is OS-scoped, so the trace processor would discard one (ADR-0003). Being
+    a plain custom track itself is what makes the trace processor honor the
+    rank on the group inside it, which is the iid.
+    """
+    process = track.process
+    packets: list[bytes] = []
+    if not state.has_interpreter_list_track(process):
+        list_desc = build_track_descriptor(
+            state.get_or_create_interpreter_list_track_uuid(process),
+            _INTERPRETER_LIST_NAME,
+            parent_uuid=state.get_process_track_uuid(process),
+            child_ordering=ChildTracksOrdering.EXPLICIT,
+        )
+        packets.append(build_trace_packet(sequence_id, track_descriptor=list_desc))
+    if state.has_interpreter_group_track(process, track.iid):
+        return state.get_or_create_interpreter_group_track_uuid(process, track.iid), packets
+    group_uuid = state.get_or_create_interpreter_group_track_uuid(process, track.iid)
+    group_desc = build_track_descriptor(
+        group_uuid,
+        _interpreter_group_name(track.iid),
+        parent_uuid=state.get_or_create_interpreter_list_track_uuid(process),
+        child_ordering=ChildTracksOrdering.EXPLICIT,
+        sibling_order_rank=track.iid,
+    )
+    packets.append(build_trace_packet(sequence_id, track_descriptor=group_desc))
+    return group_uuid, packets
 
 
 def _emit_thread_descriptor(
@@ -248,6 +292,9 @@ def _emit_track_descriptors(
         sibling_order_rank=state.get_process_track_rank(process),
         start_timestamp_ns=state.get_process_lifetime_start_ts(process),
     )
+    if isinstance(track, InterpreterTrack | LossTrack):
+        _, group_packets = _emit_interpreter_group_descriptors(track, state, sequence_id)
+        descriptors.extend(group_packets)
     if isinstance(track, InterpreterTrack):
         descriptors.extend(_emit_thread_descriptor(track, state, sequence_id))
     elif isinstance(track, LossTrack):

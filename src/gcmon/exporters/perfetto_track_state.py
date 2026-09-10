@@ -27,6 +27,8 @@ class PerfettoTrackState:
         self._tracks: set[Track] = set()
         self._counter_tracks: dict[tuple[Track, str], int] = {}
         self._counter_group_uuids: dict[Track, int] = {}
+        self._interpreter_list_uuids: dict[Process, int] = {}
+        self._interpreter_group_uuids: dict[tuple[Process, int], int] = {}
         self._process_uuids: dict[Process, int] = {}
         self._row_pids: dict[Process, int] = {}
         self._track_uuids: dict[Track, int] = {}
@@ -142,6 +144,29 @@ class PerfettoTrackState:
         if track not in self._counter_group_uuids:
             self._counter_group_uuids[track] = self._alloc_uuid()
         return self._counter_group_uuids[track]
+
+    def has_interpreter_list_track(self, process: Process) -> bool:
+        return process in self._interpreter_list_uuids
+
+    def get_or_create_interpreter_list_track_uuid(self, process: Process) -> int:
+        if process not in self._interpreter_list_uuids:
+            self._interpreter_list_uuids[process] = self._alloc_uuid()
+        return self._interpreter_list_uuids[process]
+
+    def has_interpreter_group_track(self, process: Process, iid: int) -> bool:
+        return (process, iid) in self._interpreter_group_uuids
+
+    def get_or_create_interpreter_group_track_uuid(self, process: Process, iid: int) -> int:
+        """The uuid of the group holding every row interpreter *iid* owns.
+
+        Keyed on the pair rather than on a `Track`, because an
+        `InterpreterTrack` and a `LossTrack` naming the same interpreter
+        hang off the same group (ADR-0027).
+        """
+        key = (process, iid)
+        if key not in self._interpreter_group_uuids:
+            self._interpreter_group_uuids[key] = self._alloc_uuid()
+        return self._interpreter_group_uuids[key]
 
     def has_process_lifetime_track(self) -> bool:
         return self._process_lifetime_track_uuid is not None

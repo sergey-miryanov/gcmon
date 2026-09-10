@@ -1042,8 +1042,99 @@ class TestATrackIsDescribedOffTheEventsOnIt:
         convert_trace_events_to_perfetto(self._pid_events(100, iid=0), state, sequence_id=1)
         later, _ = convert_trace_events_to_perfetto(self._pid_events(100, iid=1), state, sequence_id=1)
         names = self._named(later)
-        assert names[0] == "Thread 1"
+        assert names[:2] == ["Interpreter 1", "Thread 1"], f"the group it hangs off comes first; got {names}"
         assert "Process 100" not in names
+
+
+class TestTheInterpreterGroupsAreDerived:
+    """The two grouping rows every interpreter's rows hang off (ADR-0027).
+
+    Read off the wire rather than through the trace processor: a group
+    holding no events and no described children is not a row the trace
+    processor builds, so until something moves inside them these
+    descriptors are the only place they exist.
+    """
+
+    def _events(self, pid: int, iid: int = 0) -> list[TraceEvent]:
+        item = GCStatsInfo(
+            gen=0,
+            iid=iid,
+            ts_start=1_000,
+            ts_stop=2_000,
+            heap_size=1000,
+            collections=1,
+            collected=10,
+            uncollectable=0,
+            candidates=5,
+            duration=0.001,
+        )
+        return convert_item_to_trace_format(proc(pid), item)
+
+    def _by_name(self, descriptors: list[bytes]) -> dict[str, TrackDescriptor]:
+        parsed = [parse_track_descriptor(d) for d in descriptors]
+        return {td.name: td for td in parsed if td is not None and td.name}
+
+    def test_a_record_derives_the_list_and_the_group_that_holds_it(self) -> None:
+        state = PerfettoTrackState()
+        descriptors, _ = convert_trace_events_to_perfetto(self._events(100), state, sequence_id=1)
+        described = self._by_name(descriptors)
+
+        listing = described["Interpreters"]
+        assert listing.parent_uuid == state.get_process_track_uuid(proc(100))
+        assert listing.child_ordering == 3
+        # No rank: the process track is OS-scoped and discards one (ADR-0003).
+        assert not listing.HasField("sibling_order_rank")
+
+        group = described["Interpreter 0"]
+        assert group.parent_uuid == listing.uuid
+        assert group.child_ordering == 3
+        assert group.sibling_order_rank == 0
+
+    def test_the_list_precedes_the_group_it_holds(self) -> None:
+        state = PerfettoTrackState()
+        descriptors, _ = convert_trace_events_to_perfetto(self._events(100), state, sequence_id=1)
+        names = [td.name for td in (parse_track_descriptor(d) for d in descriptors) if td is not None and td.name]
+        assert names.index("Process 100") < names.index("Interpreters") < names.index("Interpreter 0"), (
+            f"each parent must precede its child; got {names}"
+        )
+
+    def test_a_second_interpreter_shares_the_list_and_gets_its_own_group(self) -> None:
+        state = PerfettoTrackState()
+        convert_trace_events_to_perfetto(self._events(100, iid=0), state, sequence_id=1)
+        later, _ = convert_trace_events_to_perfetto(self._events(100, iid=1), state, sequence_id=1)
+        described = self._by_name(later)
+
+        assert "Interpreters" not in described, "the list is described once per process"
+        group = described["Interpreter 1"]
+        assert group.parent_uuid == state.get_or_create_interpreter_list_track_uuid(proc(100))
+        assert group.sibling_order_rank == 1
+
+    def test_a_loss_row_reaches_the_same_group_as_the_collections(self) -> None:
+        """One group per interpreter, not one per row it owns."""
+        state = PerfettoTrackState()
+        convert_trace_events_to_perfetto(self._events(100, iid=0), state, sequence_id=1)
+        later, _ = convert_trace_events_to_perfetto(
+            convert_loss_to_trace_format(proc(100), create_mock_loss_item(iid=0)),
+            state,
+            sequence_id=1,
+        )
+        described = self._by_name(later)
+        assert "GC Loss 0" in described, "the loss row still describes itself"
+        assert "Interpreter 0" not in described, "interpreter 0's group is already described"
+        assert "Interpreters" not in described
+
+    def test_a_process_that_only_reported_rss_derives_neither(self) -> None:
+        """A row exists because an event named it (ADR-0024), and nothing
+        an interpreter owns was named here."""
+        state = PerfettoTrackState()
+        descriptors, _ = convert_trace_events_to_perfetto(
+            [Counter(process_track(100), "rss", "rss", 1_000, 4096)],
+            state,
+            sequence_id=1,
+        )
+        described = self._by_name(descriptors)
+        assert "Interpreters" not in described
+        assert not any(name.startswith("Interpreter ") for name in described)
 
 
 class TestLossTrackDescriptor:
