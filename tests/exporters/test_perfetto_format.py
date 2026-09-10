@@ -1123,7 +1123,7 @@ class TestTheInterpreterGroupsAreDerived:
             sequence_id=1,
         )
         described = self._by_name(later)
-        assert "GC Loss 0" in described, "the loss row still describes itself"
+        assert "GC Loss" in described, "the loss row still describes itself"
         assert "Interpreter 0" not in described, "interpreter 0's group is already described"
         assert "Interpreters" not in described
 
@@ -1144,9 +1144,9 @@ class TestTheInterpreterGroupsAreDerived:
 class TestLossTrackDescriptor:
     """Nothing but the slices describes the loss track.
 
-    A ``LossTrack`` is not a ``InterpreterTrack``, the same distinction that keeps
-    the row from being drawn as a thread. So the descriptor has to come off
-    the slices themselves, or they land on a uuid nothing ever named.
+    A ``LossTrack`` is not an ``InterpreterTrack``, so a batch holding loss
+    and no collection describes only the loss row. The descriptor has to come
+    off the slices themselves, or they land on a uuid nothing ever named.
     """
 
     def _convert(self, msgs: list[LossMsg], state: PerfettoTrackState, pid: int = 100) -> list[bytes]:
@@ -1168,21 +1168,27 @@ class TestLossTrackDescriptor:
 
         found = self._loss_descriptors(self._convert([self._msg(iid=0)], state))
 
-        assert [td.name for td in found] == ["GC Loss 0"]
+        assert [td.name for td in found] == ["GC Loss"]
 
-    def test_it_is_named_for_its_interpreter(self) -> None:
+    def test_each_interpreter_gets_one_inside_its_own_group(self) -> None:
+        """Two rows, identically named. What tells them apart is the group
+        each hangs off, which is what carries the iid (ADR-0027)."""
         state = PerfettoTrackState()
 
         found = self._loss_descriptors(self._convert([self._msg(iid=0), self._msg(iid=1)], state))
 
-        assert [td.name for td in found] == ["GC Loss 0", "GC Loss 1"]
+        assert [td.name for td in found] == ["GC Loss", "GC Loss"]
+        assert [td.parent_uuid for td in found] == [
+            state.get_or_create_interpreter_group_track_uuid(proc(100), 0),
+            state.get_or_create_interpreter_group_track_uuid(proc(100), 1),
+        ]
 
-    def test_it_hangs_off_the_process_track(self) -> None:
+    def test_it_hangs_off_the_interpreter_group(self) -> None:
         state = PerfettoTrackState()
 
         found = self._loss_descriptors(self._convert([self._msg()], state))
 
-        assert found[0].parent_uuid == state.get_process_track_uuid(proc(100))
+        assert found[0].parent_uuid == state.get_or_create_interpreter_group_track_uuid(proc(100), 0)
 
     def test_it_is_a_plain_custom_track(self) -> None:
         """A ``thread`` sub-message would describe an OS thread that does not

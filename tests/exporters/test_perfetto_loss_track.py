@@ -72,18 +72,13 @@ def _load(events: list[TraceEvent], tmp_path: Path, name: str) -> tuple[int, lis
         slices = [
             (row.track_name, row.name, row.ts, row.dur)
             for row in tp.query(
-                # A thread track carries no `track.name` of its own -- trace
-                # processor resolves it through the thread table, which the
-                # custom loss track has no row in.
                 # The process's own row and the shared `Processes` row are
                 # the span rows, asserted on in `_process_slices` and in the
                 # exporter's own suite.
-                "SELECT COALESCE(t.name, th.name) AS track_name, s.name, s.ts, s.dur "
+                "SELECT t.name AS track_name, s.name, s.ts, s.dur "
                 "FROM slice s JOIN track t ON s.track_id = t.id "
-                "LEFT JOIN thread_track tt ON tt.id = t.id "
-                "LEFT JOIN thread th ON th.utid = tt.utid "
                 "WHERE s.depth = 0 "
-                f"AND COALESCE(t.name, th.name) NOT IN ('Processes', 'Process {PID}') "
+                f"AND t.name NOT IN ('Processes', 'Process {PID}') "
                 "ORDER BY s.ts"
             )
         ]
@@ -148,9 +143,9 @@ def test_a_loss_span_lands_on_its_own_track(tmp_path: Path) -> None:
 
     assert misplaced == 0
     assert slices == [
-        ("Thread 0", "GC Pause(0)", 1_000, 1_000),
-        ("GC Loss 0", "GC Loss(0)", 2_000, 7_000),
-        ("Thread 0", "GC Pause(0)", 9_000, 1_000),
+        ("GC Pauses", "GC Pause(0)", 1_000, 1_000),
+        ("GC Loss", "GC Loss(0)", 2_000, 7_000),
+        ("GC Pauses", "GC Pause(0)", 9_000, 1_000),
     ]
 
 
@@ -164,11 +159,23 @@ def test_the_bar_is_the_whole_interval(tmp_path: Path) -> None:
 
 
 def test_two_interpreters_get_two_rows(tmp_path: Path) -> None:
+    """Both rows are named ``GC Loss``, so what has to keep them apart is the
+    group each hangs off. Sharing a name *and* a parent is what the trace
+    processor merges (ADR-0027)."""
     events = _events(_loss(2_000, 9_000, 500), _loss(2_000, 9_000, 500, iid=7))
 
-    _, slices = _load(events, tmp_path, "two_rows")
+    with open_trace_processor(_write(events, tmp_path, "two_rows")) as tp:
+        rows = [
+            (row.iname, row.id)
+            for row in tp.query(
+                "SELECT ig.name AS iname, t.id AS id FROM track t "
+                "JOIN track ig ON t.parent_id = ig.id "
+                "WHERE t.name = 'GC Loss' ORDER BY ig.name"
+            )
+        ]
 
-    assert {track for track, name, _ts, _dur in slices if name.startswith("GC Loss")} == {"GC Loss 0", "GC Loss 7"}
+    assert [iname for iname, _id in rows] == ["Interpreter 0", "Interpreter 7"]
+    assert len({track_id for _iname, track_id in rows}) == 2, f"the two rows merged: {rows}"
 
 
 def _process_slices(events: list[TraceEvent], tmp_path: Path, name: str) -> list[Slice]:
@@ -184,9 +191,9 @@ def _process_slices(events: list[TraceEvent], tmp_path: Path, name: str) -> list
 
 
 def test_the_process_row_is_untouched_by_loss_spans(tmp_path: Path) -> None:
-    """The loss track hangs off the process track, so a descriptor naming the
-    wrong parent would land its spans on the process's own row and reshape
-    the `Lifetime` bar ADR-0013 keeps clear of it.
+    """The loss track hangs off its interpreter's group, so a descriptor
+    naming the wrong parent would land its spans on the process's own row and
+    reshape the `Lifetime` bar ADR-0013 keeps clear of it.
 
     The losses here sit inside the interval the collections already bound, so
     the bar is the same width either way and any difference is the spans

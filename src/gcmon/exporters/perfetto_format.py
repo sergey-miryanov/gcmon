@@ -192,20 +192,21 @@ def _emit_loss_descriptor(
 ) -> list[bytes]:
     """Build *track*'s GC Loss track descriptor, once.
 
-    A plain custom track rather than a thread: a ``LossTrack`` names an
-    interpreter but no OS thread, and a ``thread`` sub-message would describe
-    one that does not exist.
+    Beside the interpreter's pause row inside its group, and named for what
+    it holds rather than for the interpreter: the group carries the iid, so
+    the row does not repeat it (ADR-0027).
     """
     if state.has_track(track):
         return []
     state.mark_track(track)
+    interpreter_uuid, packets = _emit_interpreter_group_descriptors(track, state, sequence_id)
     desc = build_track_descriptor(
         state.get_track_uuid(track),
-        f"{_LOSS_TRACK_NAME} {track.iid}",
-        parent_uuid=state.get_process_track_uuid(track.process),
+        _LOSS_TRACK_NAME,
+        parent_uuid=interpreter_uuid,
         sibling_order_rank=_LOSS_TRACK_RANK,
     )
-    return [build_trace_packet(sequence_id, track_descriptor=desc)]
+    return [*packets, build_trace_packet(sequence_id, track_descriptor=desc)]
 
 
 def _emit_counter_group_descriptor(

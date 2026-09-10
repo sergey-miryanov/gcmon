@@ -29,8 +29,8 @@ A trace carries these, on one track per interpreter:
   as a process-level counter beside them, one per interpreter.
 - **Counter Y-axis sharing**: one metric shares an axis across generations, so
   `G0 collected`, `G1 collected` and `G2 collected` line up.
-- **`GC Loss` track**: one row per interpreter, `GC Loss {iid}`, under that
-  process's own track; see [GC Loss slices](#gc-loss-slices).
+- **`GC Loss` track**: one row per interpreter, `GC Loss`, under that
+  interpreter's group; see [GC Loss slices](#gc-loss-slices).
 - **`rss` counter** per process under `--rss`, in bytes, sampled at
   `--rss-interval` (default 1s).
 - **`Processes` track**: a minimap of the session, one slice per monitored
@@ -101,7 +101,8 @@ figure that covers a whole run; see [Statistics](statistics.md).
 
 A target whose collector runs faster than gcmon polls loses records; see
 [How gcmon reads a process](monitoring.md). Each interval gcmon went blind in
-gets one slice on a `GC Loss {iid}` track of its own.
+gets one slice on a `GC Loss` track of its own, under that interpreter's
+group.
 
 **One span per poll interval**, from one read of the target to the next, so
 consecutive spans meet without overlapping and the row reads as a sequence.

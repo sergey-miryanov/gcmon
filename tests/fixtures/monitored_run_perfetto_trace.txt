@@ -99,8 +99,8 @@ track_descriptor {
 trusted_packet_sequence_id: 1
 track_descriptor {
   uuid: 10
-  name: "GC Loss 0"
-  parent_uuid: 1
+  name: "GC Loss"
+  parent_uuid: 3
   sibling_order_rank: 1
 }
 --- packet ---
@@ -329,8 +329,8 @@ track_descriptor {
 trusted_packet_sequence_id: 1
 track_descriptor {
   uuid: 32
-  name: "GC Loss 0"
-  parent_uuid: 17
+  name: "GC Loss"
+  parent_uuid: 19
   sibling_order_rank: 1
 }
 --- packet ---
@@ -460,8 +460,8 @@ track_descriptor {
 trusted_packet_sequence_id: 1
 track_descriptor {
   uuid: 45
-  name: "GC Loss 0"
-  parent_uuid: 33
+  name: "GC Loss"
+  parent_uuid: 35
   sibling_order_rank: 1
 }
 --- packet ---

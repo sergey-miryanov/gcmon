@@ -7,6 +7,7 @@
 - A Perfetto trace holds no `thread` row of gcmon's. An interpreter is not an operating-system thread, so every row one owns is a plain custom track. The one row left in `thread` is the nameless one the trace processor builds per process, and `thread.is_main_thread` marks it
 - An interpreter's pause row is named `GC Pauses`, under a group named `Interpreter {iid}`, where it was `Thread {iid}` beside the process track
 - A query that joined `thread_track` joins `process_track`. Every row gcmon draws carries its process's `upid`
+- An interpreter's loss row is named `GC Loss`, under its `Interpreter {iid}` group, where it was `GC Loss {iid}` beside the process track
 
 ### Bugfixes
 
