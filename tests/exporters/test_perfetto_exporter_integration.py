@@ -871,6 +871,139 @@ class TestTrackDescriptors:
         ], f"unexpected main-thread rows: {[dict(r.__dict__) for r in rows]}"
 
 
+class TestInterpreterGroups:
+    """The two grouping rows every interpreter's rows hang off (ADR-0027).
+
+    ``Interpreters`` is the non-OS-scoped parent that makes the trace
+    processor honor an interpreter group's rank, and ``Interpreter {iid}``
+    is what carries the iid so no row inside it repeats the number.
+    """
+
+    def test_the_interpreter_list_is_one_flattened_row_per_process(
+        self,
+        trace_processor: TraceProcessor,
+    ) -> None:
+        """``Interpreters`` reaches its process by ``upid`` and not by a
+        parent.
+
+        A custom child of an OS-scoped parent is flattened, which is the
+        trade ADR-0003 accepted for ``GC Metrics`` and ADR-0027 accepts
+        again here. Asserting a parent on this row instead is what would
+        make this test fail after the change rather than before it.
+        """
+        rows = list(
+            trace_processor.query(
+                "SELECT p.name AS pname, (t.parent_id IS NULL) AS flattened "
+                "FROM process_track t JOIN process p ON t.upid = p.upid "
+                "WHERE t.name = 'Interpreters' ORDER BY p.name"
+            )
+        )
+
+        assert [(r.pname, r.flattened) for r in rows] == [
+            (f"Process {DEFAULT_PID}", 1),
+            (f"Process {_SECOND_PID}", 1),
+        ], f"unexpected Interpreters rows: {[dict(r.__dict__) for r in rows]}"
+
+    def test_each_interpreter_group_hangs_off_its_process_list(
+        self,
+        trace_processor: TraceProcessor,
+    ) -> None:
+        """One group per interpreter gcmon read a record from, under the
+        list of the process that ran it."""
+        rows = list(
+            trace_processor.query(
+                "SELECT p.name AS pname, t.name AS name "
+                "FROM track t "
+                "JOIN process_track lt ON t.parent_id = lt.id "
+                "JOIN process p ON lt.upid = p.upid "
+                "WHERE lt.name = 'Interpreters' ORDER BY p.name, t.name"
+            )
+        )
+
+        assert [(r.pname, r.name) for r in rows] == [
+            (f"Process {DEFAULT_PID}", "Interpreter 0"),
+            (f"Process {DEFAULT_PID}", "Interpreter 1"),
+            (f"Process {DEFAULT_PID}", "Interpreter 2"),
+            (f"Process {_SECOND_PID}", "Interpreter 0"),
+        ], f"unexpected interpreter groups: {[dict(r.__dict__) for r in rows]}"
+
+    def test_a_process_draws_one_counter_group_per_interpreter(
+        self,
+        trace_processor: TraceProcessor,
+    ) -> None:
+        """A process running N interpreters has N ``GC Metrics`` rows.
+
+        Parented to the process track they shared a name and a parent, and
+        the trace processor merged them into one row per process holding
+        every interpreter's counters.
+        """
+        rows = list(
+            trace_processor.query(
+                "SELECT p.name AS pname, ig.name AS iname "
+                "FROM track gm "
+                "JOIN track ig ON gm.parent_id = ig.id "
+                "JOIN process_track lt ON ig.parent_id = lt.id "
+                "JOIN process p ON lt.upid = p.upid "
+                "WHERE gm.name = 'GC Metrics' ORDER BY p.name, ig.name"
+            )
+        )
+
+        assert [(r.pname, r.iname) for r in rows] == [
+            (f"Process {DEFAULT_PID}", "Interpreter 0"),
+            (f"Process {DEFAULT_PID}", "Interpreter 1"),
+            (f"Process {DEFAULT_PID}", "Interpreter 2"),
+            (f"Process {_SECOND_PID}", "Interpreter 0"),
+        ], f"unexpected GC Metrics rows: {[dict(r.__dict__) for r in rows]}"
+
+    def test_every_counter_names_its_interpreter_two_parents_up(
+        self,
+        trace_processor: TraceProcessor,
+    ) -> None:
+        """The question a gcmon trace had no answer to: which interpreter
+        does this ``G0 collected`` belong to?
+
+        Interpreter 1 is the one that ran a gen-1 collection in the fixture,
+        and interpreters 0 and 2 the gen-0 ones, so the generations name the
+        interpreters apart.
+        """
+        rows = list(
+            trace_processor.query(
+                "SELECT ig.name AS iname, ct.name AS cname "
+                "FROM counter_track ct "
+                "JOIN track gm ON ct.parent_id = gm.id "
+                "JOIN track ig ON gm.parent_id = ig.id "
+                "JOIN process_track lt ON ig.parent_id = lt.id "
+                "JOIN process p ON lt.upid = p.upid "
+                "WHERE gm.name = 'GC Metrics' AND ct.name LIKE 'G_ collected' "
+                f"AND p.name = 'Process {DEFAULT_PID}' ORDER BY ig.name"
+            )
+        )
+
+        assert [(r.iname, r.cname) for r in rows] == [
+            ("Interpreter 0", "G0 collected"),
+            ("Interpreter 1", "G1 collected"),
+            ("Interpreter 2", "G0 collected"),
+        ], f"unexpected counter attribution: {[dict(r.__dict__) for r in rows]}"
+
+    def test_a_process_that_never_collected_draws_neither_group(
+        self,
+        liveness_trace_processor: TraceProcessor,
+    ) -> None:
+        """A row exists because an event named it (ADR-0024), and a process
+        gcmon only ever polled names nothing inside either group."""
+        rows = list(
+            liveness_trace_processor.query(
+                "SELECT p.name AS pname FROM process_track t "
+                "JOIN process p ON t.upid = p.upid "
+                "WHERE t.name = 'Interpreters'"
+            )
+        )
+
+        assert [r.pname for r in rows] == [f"Process {DEFAULT_PID}"], (
+            f"only the process that collected should draw a list; got {[dict(r.__dict__) for r in rows]}"
+        )
+
+
 class TestDiagnosticTrackSchema:
     """Diagnostic: dump the track table to understand what columns are
     populated. Run with ``pytest -m integration -k TestDiagnosticTrackSchema -s``

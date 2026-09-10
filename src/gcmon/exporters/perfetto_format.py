@@ -103,6 +103,9 @@ _COUNTER_RANKS: dict[str, int] = {
 _TOPLEVEL_COUNTER_METRICS: frozenset[str] = frozenset({"heap_size"})
 
 _COUNTER_GROUP_NAME: str = "GC Metrics"
+# Last inside the interpreter group. ADR-0027 ranks the rows it holds as the
+# pause row, the loss row, `heap_size` and then this one.
+_COUNTER_GROUP_RANK: int = 3
 
 _INTERPRETER_LIST_NAME: str = "Interpreters"
 
@@ -204,26 +207,30 @@ def _emit_loss_descriptor(
 
 
 def _emit_counter_group_descriptor(
-    track: Track,
+    track: InterpreterTrack | LossTrack,
     state: PerfettoTrackState,
     sequence_id: int,
 ) -> tuple[int, list[bytes]]:
     """Build *track*'s GC Metrics grouping track descriptor.
 
-    It carries no ``process`` or ``thread`` field: the trace processor honors
-    ordering on a plain custom track and not on an OS-scoped one (ADR-0003).
+    Parented to the interpreter's own group rather than to the process
+    track, which is what stops one process's copies merging into a single
+    row holding every interpreter's counters (ADR-0027). It carries no
+    ``process`` or ``thread`` field: the trace processor honors ordering on a
+    plain custom track and not on an OS-scoped one (ADR-0003).
     """
+    interpreter_uuid, packets = _emit_interpreter_group_descriptors(track, state, sequence_id)
     if state.has_counter_group_track(track):
-        return state.get_or_create_counter_group_track_uuid(track), []
+        return state.get_or_create_counter_group_track_uuid(track), packets
     group_uuid = state.get_or_create_counter_group_track_uuid(track)
     desc = build_track_descriptor(
         group_uuid,
         _COUNTER_GROUP_NAME,
-        parent_uuid=state.get_process_track_uuid(track.process),
+        parent_uuid=interpreter_uuid,
         child_ordering=ChildTracksOrdering.EXPLICIT,
-        sibling_order_rank=0,
+        sibling_order_rank=_COUNTER_GROUP_RANK,
     )
-    return group_uuid, [build_trace_packet(sequence_id, track_descriptor=desc)]
+    return group_uuid, [*packets, build_trace_packet(sequence_id, track_descriptor=desc)]
 
 
 def _emit_counter_track_descriptor(

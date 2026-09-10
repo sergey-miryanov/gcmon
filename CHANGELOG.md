@@ -5,6 +5,7 @@
 ### Bugfixes
 
 - Every thread row in a Perfetto trace carries its interpreter id as the `tid`, where the main interpreter used to carry the process row's `pid`
+- A per-generation counter names the interpreter that owns it. A process running several interpreters draws a `GC Metrics` row each, where the copies used to merge into one row per process holding every interpreter's counters, identically named and unattributable
 
 ## Version 0.7.0 (2026-09-09)
 

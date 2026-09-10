@@ -91,14 +91,14 @@ prose)
 
 **Process track**:
 A process's own row, and what its other rows hang under: its thread rows, its
-loss rows, its counter group, and the counters drawn beside the group rather
-than inside it. Named `Process 12345`, or `Process 12345#2` for the second
-process to hold the pid.
+loss rows, the list of its interpreters, and the counters drawn beside that
+list rather than inside it. Named `Process 12345`, or `Process 12345#2` for
+the second process to hold the pid.
 _Avoid_: process group, pid track, parent track
 
 **Counter group**:
 The `GC Metrics` row a process's per-generation counters hang under, one per
-interpreter, itself under the process track.
+interpreter, itself under that interpreter's group.
 _Avoid_: metrics track, group (unqualified), counter track (that is one
 counter's own row)
 

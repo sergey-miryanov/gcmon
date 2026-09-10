@@ -37,7 +37,8 @@ ranking, not the rank field.**
 ## Decision
 
 Insert an intermediate **non-OS-scoped grouping track named `GC Metrics`**,
-one per `(process, iid)`, parented to the process track, carrying
+one per `(process, iid)`, parented to that interpreter's own group
+([ADR-0027](0027-group-every-row-an-interpreter-owns.md)), carrying
 `child_ordering = EXPLICIT` and no `process` / `thread` / `counter`
 sub-message. Every per-generation counter track's `parent_uuid` points at this
 group instead of at the process track.
@@ -61,10 +62,12 @@ is fine: only the relative order matters.
 - **Accepted trade-off:** the same proto rule that breaks ranking under
   OS-scoped parents also governs rendering. Per the `parent_uuid` back-compat
   note, a track whose parent is OS-scoped "inherits the parent's
-  process/thread association and will appear as a *sibling* of the parent." So
-  the `GC Metrics` group renders *alongside* the `Process <pid>` track in the
-  UI rather than nested inside it. The spec owner reviewed this and accepted
-  it, since ordering within the group still works.
+  process/thread association and will appear as a *sibling* of the parent."
+  The row that pays it is whichever custom track a process track parents, the
+  `Interpreters` group ADR-0027 puts there: it renders *alongside* the
+  `Process <pid>` track in the UI rather than nested inside it, and the rows
+  below it nest normally. The spec owner reviewed this and accepted it, since
+  ordering within the group still works.
 - The group is collapsible, which keeps the top-level track list short. That
   is why `heap_size` is drawn *outside* the group
   ([ADR-0004](0004-toplevel-shared-counters.md), carried forward by

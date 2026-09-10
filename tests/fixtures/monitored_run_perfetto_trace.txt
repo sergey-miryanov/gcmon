@@ -53,9 +53,9 @@ trusted_packet_sequence_id: 1
 track_descriptor {
   uuid: 5
   name: "GC Metrics"
-  parent_uuid: 1
+  parent_uuid: 3
   child_ordering: EXPLICIT
-  sibling_order_rank: 0
+  sibling_order_rank: 3
 }
 --- packet ---
 trusted_packet_sequence_id: 1
@@ -222,9 +222,9 @@ trusted_packet_sequence_id: 1
 track_descriptor {
   uuid: 21
   name: "GC Metrics"
-  parent_uuid: 17
+  parent_uuid: 19
   child_ordering: EXPLICIT
-  sibling_order_rank: 0
+  sibling_order_rank: 3
 }
 --- packet ---
 trusted_packet_sequence_id: 1
@@ -391,9 +391,9 @@ trusted_packet_sequence_id: 1
 track_descriptor {
   uuid: 37
   name: "GC Metrics"
-  parent_uuid: 33
+  parent_uuid: 35
   child_ordering: EXPLICIT
-  sibling_order_rank: 0
+  sibling_order_rank: 3
 }
 --- packet ---
 trusted_packet_sequence_id: 1

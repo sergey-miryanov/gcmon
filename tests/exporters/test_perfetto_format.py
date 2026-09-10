@@ -197,6 +197,7 @@ class TestConvertItemToPerfettoPackets:
         )
         descriptors, _ = convert_item(proc(100), item, state, sequence_id=1)
         proc_uuid = state.get_process_track_uuid(proc(100))
+        interpreter_uuid = state.get_or_create_interpreter_group_track_uuid(proc(100), 0)
         group_uuid = state.get_or_create_counter_group_track_uuid(interpreter_track(100, 0))
         assert group_uuid != proc_uuid
         group_seen = False
@@ -211,7 +212,7 @@ class TestConvertItemToPerfettoPackets:
                     per_metric_parent[td.name] = td.parent_uuid
                 elif uuid == group_uuid:
                     group_seen = True
-                    assert td.parent_uuid == proc_uuid
+                    assert td.parent_uuid == interpreter_uuid
                     assert td.child_ordering == 3
         assert group_seen, "GC Counters group track descriptor was not emitted"
         # heap_size is a top-level counter: parented directly to the process.
