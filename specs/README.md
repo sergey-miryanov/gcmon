@@ -39,7 +39,6 @@ This file holds the open set and the order to take it in. The other two:
 | [0061](0061-build-the-statistics-table-from-a-tracefile.md) | Feature (enhancement) | L | The statistics table exists only while gcmon is running; a capture from last week holds every number and offers no way to see them |
 | [0062](0062-name-a-workload-from-a-sanitized-command-line.md) | Feature (enhancement) | M | A pyperformance run prints one `Total` folding sixty benchmarks and hundreds of blocks keyed by a pid that means nothing afterwards; the level anyone asks about is missing |
 | [0063](0063-compare-two-tracefiles.md) | Feature (enhancement) | L | Nothing answers "did GC get worse between these two runs"; two tables side by side works for one row and fails for sixty |
-| [0069](0069-group-every-row-an-interpreter-owns.md) | Bug (reporting) | L | gcmon draws each interpreter as an OS thread that does not exist and hangs the rest of its rows off the process track beside it, where the trace processor merges its per-interpreter `GC Metrics` groups into one and no query can say which interpreter a counter belongs to |
 
 Every row here has a file. A missing number either retired or never became
 one; [RETIRED.md](RETIRED.md) says which.
@@ -51,7 +50,6 @@ one; [RETIRED.md](RETIRED.md) says which.
 | 0025 | The only outage, and the fix is one word |
 | 0050 | Unblocked: 0049 landed, and taking this next edits the help text and the advisory once |
 | 0052 | Silent, and what it produces is indistinguishable from a real measurement |
-| 0069 | ADR-0027 is unbuilt until this lands, and every query written against the current shape is one more to rewrite |
 | 0030 | |
 | 0035 | 0039 landed, and the nine `Metric` classes it replaces are a module named for the table |
 | 0037 | |
