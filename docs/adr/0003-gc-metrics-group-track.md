@@ -48,13 +48,14 @@ Because the group is a plain custom track, the trace processor honors
 now carry a non-NULL `parent_id` pointing at the `GC Metrics` row, and the
 ranking takes effect *inside* the group.
 
-Ranks come from a single ordered table covering each metric. `heap_size` and
-`rss` are not ranked from it: each is drawn outside the group, see
-[ADR-0004](0004-toplevel-shared-counters.md) and
-[ADR-0024](0024-an-event-names-the-track-it-is-drawn-on.md)), then
-`collected`, `uncollectable` (emitted only when non-zero), `candidates`,
-`duration`, and the rest. Inserting a metric shifts the ranks below it, which
-is fine: only the relative order matters.
+Ranks come from a single ordered table covering each metric: `collected`,
+`uncollectable` (emitted only when non-zero), `candidates`, `duration`, and
+the rest. `rss` has an entry there too, though a `ProcessTrack` draws it on
+the OS-scoped process row, where the rank is discarded
+([ADR-0004](0004-toplevel-shared-counters.md)). `heap_size` has none: it is
+drawn on its interpreter's group, which ranks it
+([ADR-0027](0027-group-every-row-an-interpreter-owns.md)). Inserting a metric
+shifts the ranks below it, which is fine: only the relative order matters.
 
 ## Consequences
 

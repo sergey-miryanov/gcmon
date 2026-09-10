@@ -61,12 +61,12 @@ queryable per-pause from the slice `args` table.
 
 - One continuous `heap_size` series per `(pid, tid)`, and one `rss` series per
   pid.
-- **Accepted trade-off:** because these tracks are parented to the OS-scoped
-  process track, the trace processor drops their `sibling_order_rank` (the
-  rule from [ADR-0003](0003-gc-metrics-group-track.md)). Their position is a
-  UI heuristic; in the Perfetto UI they render *below* the `GC Metrics` group.
-  A rank for `heap_size` is retained for documentation and
-  forward-compatibility but is not honored.
+- **Accepted trade-off:** `rss` is parented to the OS-scoped process track, so
+  the trace processor drops its `sibling_order_rank` (the rule from
+  [ADR-0003](0003-gc-metrics-group-track.md)) and its position is a UI
+  heuristic. `heap_size` no longer pays this: it is drawn on its interpreter's
+  group, a plain custom track, which honors the rank it carries there
+  ([ADR-0027](0027-group-every-row-an-interpreter-owns.md)).
 - **Chrome-consumer break:** the converter now emits two `C` events per item
   rather than one. Downstream Chrome-trace tooling that assumed a single
   counter event per GC pause, and read every metric from it, must read the

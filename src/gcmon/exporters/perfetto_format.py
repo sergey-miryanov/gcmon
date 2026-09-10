@@ -75,8 +75,9 @@ __all__ = [
 ]
 
 
+# `heap_size` has no entry: it is the one metric drawn on the interpreter
+# group, which ranks it by `_TOPLEVEL_COUNTER_RANK` instead.
 _COUNTER_RANKS: dict[str, int] = {
-    "heap_size": 0,
     "rss": 1,
     "collected": 2,
     "uncollectable": 3,
