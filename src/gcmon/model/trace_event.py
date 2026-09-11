@@ -36,8 +36,7 @@ class InterpreterTrack(msgspec.Struct, frozen=True):
     """Interpreter *iid*'s row, carrying its collections.
 
     Drawn as a plain custom track named ``GC Pauses``, under the group that
-    holds every row interpreter *iid* owns and carries the number
-    (ADR-0027).
+    holds every row interpreter *iid* owns (ADR-0027).
     """
 
     process: Process

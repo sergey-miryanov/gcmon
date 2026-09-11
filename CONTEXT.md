@@ -91,15 +91,13 @@ prose)
 
 **Interpreter group**:
 The `Interpreter {iid}` row every track one **interpreter** owns hangs under:
-its pause row, its loss row, its `heap_size` and its **counter group**. It
-holds no events of its own, and it is what a query walks up to when it asks
-which interpreter a counter belongs to.
+its pause row, its loss row, its `heap_size` and its **counter group**. One
+per **iid**, holding no events of its own.
 _Avoid_: thread group, iid track, interpreter track (that is the pause row)
 
 **Interpreter list**:
 The `Interpreters` row holding a process's **interpreter groups**, one per
-process, under the **process track**. It is the non-OS-scoped parent that
-makes the trace processor honor each group's rank, which is the **iid**.
+process, under the **process track**. The groups inside it sort by **iid**.
 _Avoid_: interpreters track, iids group
 
 **Process track**:

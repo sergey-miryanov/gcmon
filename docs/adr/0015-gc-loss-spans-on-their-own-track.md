@@ -6,6 +6,8 @@
     [ADR-0024](0024-an-event-names-the-track-it-is-drawn-on.md)
   - 2026-09-01: the track key became per process, see
     [ADR-0011](0011-process-lifetime-and-ordering.md)
+  - 2026-09-11: the loss row moved onto the interpreter group, see
+    [ADR-0027](0027-group-every-row-an-interpreter-owns.md)
 
 ## Context
 

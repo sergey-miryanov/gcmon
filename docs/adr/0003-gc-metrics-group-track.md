@@ -4,6 +4,8 @@
 - **Date:** 2026-06-27, amended:
   - 2026-09-01: the track key became per process, see
     [ADR-0011](0011-process-lifetime-and-ordering.md)
+  - 2026-09-11: `GC Metrics` moved onto the interpreter group, see
+    [ADR-0027](0027-group-every-row-an-interpreter-owns.md)
 
 ## Context
 
@@ -50,10 +52,9 @@ ranking takes effect *inside* the group.
 
 Ranks come from a single ordered table covering each metric: `collected`,
 `uncollectable` (emitted only when non-zero), `candidates`, `duration`, and
-the rest. `rss` has an entry there too, though a `ProcessTrack` draws it on
-the OS-scoped process row, where the rank is discarded
-([ADR-0004](0004-toplevel-shared-counters.md)). `heap_size` has none: it is
-drawn on its interpreter's group, which ranks it
+the rest. `rss` has an entry too, though a `ProcessTrack` draws it where the
+rank is discarded ([ADR-0004](0004-toplevel-shared-counters.md)); `heap_size`
+has none, because its interpreter's group ranks it
 ([ADR-0027](0027-group-every-row-an-interpreter-owns.md)). Inserting a metric
 shifts the ranks below it, which is fine: only the relative order matters.
 
@@ -64,11 +65,11 @@ shifts the ranks below it, which is fine: only the relative order matters.
   OS-scoped parents also governs rendering. Per the `parent_uuid` back-compat
   note, a track whose parent is OS-scoped "inherits the parent's
   process/thread association and will appear as a *sibling* of the parent."
-  The row that pays it is whichever custom track a process track parents, the
-  `Interpreters` group ADR-0027 puts there: it renders *alongside* the
-  `Process <pid>` track in the UI rather than nested inside it, and the rows
-  below it nest normally. The spec owner reviewed this and accepted it, since
-  ordering within the group still works.
+  The row that pays it is the `Interpreters` group, the one custom track a
+  process track parents (ADR-0027): it renders *alongside* the `Process <pid>`
+  track in the UI rather than nested inside it, and the rows below it nest
+  normally. The spec owner reviewed this and accepted it, since ordering
+  within the group still works.
 - The group is collapsible, which keeps the top-level track list short. That
   is why `heap_size` is drawn *outside* the group
   ([ADR-0004](0004-toplevel-shared-counters.md), carried forward by
@@ -85,9 +86,7 @@ shifts the ranks below it, which is fine: only the relative order matters.
 - **`process_ordering` on the root descriptor (`uuid = 0`).** Not applicable
   here: it orders process tracks against each other and says nothing about
   counters. It is used, for the purpose it is meant for, in
-  [ADR-0011](0011-process-lifetime-and-ordering.md). The `thread_ordering`
-  hint beside it in the proto is not a field gcmon writes
-  ([ADR-0027](0027-group-every-row-an-interpreter-owns.md)).
+  [ADR-0011](0011-process-lifetime-and-ordering.md).
 - **Leave counters parented to the process track and accept arbitrary order.**
   Rejected; this is what the earlier iteration did, and the counter list is
   long enough that the order is worth fixing.

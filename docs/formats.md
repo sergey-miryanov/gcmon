@@ -16,7 +16,7 @@ deflate capture opens on any Perfetto.
 
 *A gcmon capture in the Perfetto UI.*
 
-A trace carries these, on one track per interpreter:
+A trace carries these:
 
 - **`GC Pauses` track**: one row per interpreter, under that interpreter's
   group, holding one **`GC Pause(gen)` slice** per GC run gcmon read, carrying

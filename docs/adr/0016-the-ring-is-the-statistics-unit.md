@@ -6,6 +6,8 @@
     [ADR-0024](0024-an-event-names-the-track-it-is-drawn-on.md)
   - 2026-08-31: the epoch moved onto a `Process` the monitor creates, see
     [ADR-0025](0025-create-every-process-in-one-place.md)
+  - 2026-09-11: `heap_size` lost its interpreter from the track name, see
+    [ADR-0027](0027-group-every-row-an-interpreter-owns.md)
   - 2026-09-01: the track keys it cites became per process, see
     [ADR-0011](0011-process-lifetime-and-ordering.md)
 

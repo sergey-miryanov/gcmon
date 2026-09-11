@@ -50,13 +50,12 @@ gcmon traces use the standard Perfetto schema:
 > The `debug.pid` annotation on the `Processes` span and on the `Lifetime` bar
 > carries the operating system's PID, and so does the row's name.
 
-> **Note:** gcmon writes no thread of its own. An interpreter is not an
-> operating-system thread, so every row one owns is a plain custom track under
-> a group named `Interpreter {iid}`. The one row in `thread` is the nameless
-> one the trace processor builds per process, carrying the row's `pid` as its
-> `tid` and marked by `thread.is_main_thread`; it has no name, no
-> `thread_track` and no slices. Count interpreters by counting the
-> `Interpreter %` tracks under a process's `Interpreters` group.
+> **Note:** gcmon writes no thread of its own. Every row an interpreter owns
+> is a plain custom track under a group named `Interpreter {iid}`. The one row
+> in `thread` is the nameless one the trace processor builds per process,
+> carrying the row's `pid` as its `tid` and marked by `thread.is_main_thread`;
+> it has no name, no `thread_track` and no slices. Count interpreters by
+> counting the `Interpreter %` tracks under a process's `Interpreters` group.
 
 ## Example: Replicating the Stats Table
 
@@ -86,10 +85,9 @@ ORDER BY IF(parent_id IS NULL, 0, 1), name
 ## Example: Naming the Interpreter a Counter Belongs To
 
 Every row an interpreter owns hangs under a group named `Interpreter {iid}`,
-and those under one `Interpreters` group per process. A per-generation counter
-is a grandchild of its group through `GC Metrics`; `heap_size` is a child of
-it. So two hops up `parent_id` reach the interpreter from any counter, and the
-`Interpreters` group carries the process's `upid`:
+and those under one `Interpreters` group per process. Two hops up `parent_id`
+reach the interpreter from a per-generation counter and one from `heap_size`,
+and the `Interpreters` group carries the process's `upid`:
 
 ```sql
 -- Every per-generation counter, with the interpreter and process that own it
@@ -111,7 +109,7 @@ ORDER BY p.name, ig.name, ct.name
 `heap_size` sits one hop closer, on the group itself:
 
 ```sql
--- Each interpreter's heap size, by the group the row hangs off
+-- Each interpreter's heap size
 SELECT ig.name AS interpreter, c.ts, c.value
 FROM counter c
 JOIN counter_track ct ON c.track_id = ct.id AND ct.name = 'heap_size'
@@ -119,8 +117,8 @@ JOIN track ig ON ct.parent_id = ig.id
 ORDER BY ig.name, c.ts
 ```
 
-The same walk names the interpreter that ran a pause. Its row is named
-`GC Pauses` for every interpreter, so the group is what tells two apart:
+A pause takes the same walk, from a row named `GC Pauses` under every
+interpreter's group:
 
 ```sql
 -- GC pauses with the interpreter that ran them
@@ -131,9 +129,9 @@ JOIN track ig ON pt.parent_id = ig.id
 ORDER BY s.ts
 ```
 
-The `debug.iid` annotation on a pause slice carries the same number, and
-`EXTRACT_ARG(s.arg_set_id, 'debug.iid')` reads it without the join. The parent
-chain is what a counter has instead, since a counter carries no annotations.
+A pause slice carries the same number as a `debug.iid` annotation, which
+`EXTRACT_ARG(s.arg_set_id, 'debug.iid')` reads without the join. A counter
+carries no annotations, and the parent chain is what it has instead.
 
 ## Example: Querying RSS Values
 

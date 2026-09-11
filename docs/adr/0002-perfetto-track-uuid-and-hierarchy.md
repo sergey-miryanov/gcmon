@@ -3,6 +3,8 @@
 - **Status:** Accepted
 - **Date:** 2026-06-08, amended:
   - 2026-06-18: UUID allocator revised
+  - 2026-09-11: the thread track became a group per interpreter, see
+    [ADR-0027](0027-group-every-row-an-interpreter-owns.md)
 
 ## Context
 

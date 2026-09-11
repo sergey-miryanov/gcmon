@@ -92,7 +92,7 @@ _COUNTER_RANKS: dict[str, int] = {
 
 # A counter an interpreter owns that is nonetheless drawn a level up, on the
 # interpreter's own group rather than inside its `GC Metrics` group
-# (ADR-0004, as ADR-0027 leaves it).
+# (ADR-0004, ADR-0027).
 #
 # `rss` is not here: a `ProcessTrack` owns it, so parenting it to the process
 # row is its identity rather than a policy.
@@ -131,10 +131,8 @@ def _emit_interpreter_group_descriptors(
     """Build the two groups interpreter *track*'s rows hang off, outer
     first, and return the inner one's uuid (ADR-0027).
 
-    ``Interpreters`` carries no rank: its parent is the process track, which
-    is OS-scoped, so the trace processor would discard one (ADR-0003). Being
-    a plain custom track itself is what makes the trace processor honor the
-    rank on the group inside it, which is the iid.
+    ``Interpreters`` carries no rank: the process track above it is
+    OS-scoped, and the trace processor discards one there (ADR-0003).
     """
     process = track.process
     packets: list[bytes] = []
@@ -167,10 +165,8 @@ def _emit_pause_descriptor(
 ) -> list[bytes]:
     """Build *track*'s GC Pauses track descriptor, once.
 
-    A plain custom track under the interpreter's own group rather than a
-    thread: an interpreter is not an operating-system thread, and a
-    ``thread`` sub-message describes one that does not exist (ADR-0027). The
-    group carries the iid, so the row does not repeat it.
+    A plain custom track under the interpreter's own group, never a thread
+    (ADR-0027).
     """
     if state.has_track(track):
         return []
@@ -193,8 +189,7 @@ def _emit_loss_descriptor(
     """Build *track*'s GC Loss track descriptor, once.
 
     Beside the interpreter's pause row inside its group, and named for what
-    it holds rather than for the interpreter: the group carries the iid, so
-    the row does not repeat it (ADR-0027).
+    it holds rather than for the interpreter (ADR-0027).
     """
     if state.has_track(track):
         return []
@@ -216,11 +211,10 @@ def _emit_counter_group_descriptor(
 ) -> tuple[int, list[bytes]]:
     """Build *track*'s GC Metrics grouping track descriptor.
 
-    Parented to the interpreter's own group rather than to the process
-    track, which is what stops one process's copies merging into a single
-    row holding every interpreter's counters (ADR-0027). It carries no
-    ``process`` or ``thread`` field: the trace processor honors ordering on a
-    plain custom track and not on an OS-scoped one (ADR-0003).
+    Parented to the interpreter's own group rather than to the process track,
+    which is what keeps one process's copies from merging (ADR-0027). It
+    carries no ``process`` or ``thread`` field: the trace processor honors
+    ordering on a plain custom track and not on an OS-scoped one (ADR-0003).
     """
     interpreter_uuid, packets = _emit_interpreter_group_descriptors(track, state, sequence_id)
     if state.has_counter_group_track(track):

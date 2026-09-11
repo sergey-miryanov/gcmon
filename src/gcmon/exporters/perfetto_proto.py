@@ -33,8 +33,7 @@ class TracePacketField(IntEnum):
 
 
 class TrackDescriptorField(IntEnum):
-    """Field numbers gcmon writes. A track it draws belongs to a process or
-    to nothing, never to a thread, so the ``thread`` field at 4 and the
+    """Field numbers gcmon writes. The ``thread`` field at 4 and the
     ``thread_ordering`` hint at 20 are absent (ADR-0027)."""
 
     UUID = 1

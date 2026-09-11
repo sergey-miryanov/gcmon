@@ -29,6 +29,8 @@
   - 2026-09-02: a rank became one draw off a counter
   - 2026-09-02: a row moved off the operating system's pid onto one gcmon
     counts
+  - 2026-09-11: the thread descriptor went, see
+    [ADR-0027](0027-group-every-row-an-interpreter-owns.md)
 
 ## Context
 
@@ -122,8 +124,8 @@ do not reliably draw a row each.
 
 **A row is written under a pid gcmon counts from 1, not the operating
 system's.** The `ProcessDescriptor` is the only place it reaches the trace:
-gcmon writes no `ThreadDescriptor` at all, and everything an interpreter owns
-is a plain custom track under that process
+gcmon writes no `ThreadDescriptor`, and everything an interpreter owns is a
+plain custom track under that process
 ([ADR-0027](0027-group-every-row-an-interpreter-owns.md)). The trace processor
 still builds one nameless thread per process out of that descriptor, with a
 `tid` equal to the pid, and `thread.is_main_thread` marks it. No query of
