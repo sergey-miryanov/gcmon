@@ -1,7 +1,9 @@
 # ADR-0027: Group every row an interpreter owns under one track
 
 - **Status:** Accepted
-- **Date:** 2026-09-11
+- **Date:** 2026-09-11, amended:
+  - 2026-09-12: the group is named `Python Interpreters`, so the UI sorts it
+    after `Process <pid>`
 
 ## Context
 
@@ -45,13 +47,14 @@ merged.
 `Interpreter {iid}`**, one per `(process, iid)`, carrying
 `child_ordering = EXPLICIT`. It holds no events.
 
-**One `Interpreters` group per process holds those groups**, parented to the
-process track and carrying `child_ordering = EXPLICIT`. It is the
+**One `Python Interpreters` group per process holds those groups**, parented
+to the process track and carrying `child_ordering = EXPLICIT`. It is the
 non-OS-scoped parent that makes the trace processor honor an interpreter
-group's `sibling_order_rank`, which is the iid. It holds no events, and a
-process gcmon read a record from gets one whether it ran one interpreter or
-many. A process gcmon only ever polled gets none, because nothing inside it
-was ever drawn on.
+group's `sibling_order_rank`, which is the iid. The name leads with `Python`
+so the group sorts below `Process <pid>` rather than above it. It holds no
+events, and a process gcmon read a record from gets one whether it ran one
+interpreter or many. A process gcmon only ever polled gets none, because
+nothing inside it was ever drawn on.
 
 **The encoder cannot write a `ThreadDescriptor`.** The builder loses the
 fields that produce the sub-message, and the root track descriptor loses
@@ -77,7 +80,7 @@ The tree a trace holds, for one process running two interpreters:
 
 ```
 Process 12345
-Interpreters
+Python Interpreters
   Interpreter 0
     GC Pauses
     GC Loss
@@ -110,15 +113,24 @@ something, and a row exists because an event names it
   `name = 'heap_size'` finds it. ADR-0024 broke that match when it qualified
   the name with the interpreter.
 - **Accepted trade-off:** a reader reaches `heap_size` by expanding
-  `Interpreters` and then `Interpreter {iid}`, two groups that did not exist
-  before.
+  `Python Interpreters` and then `Interpreter {iid}`, two groups that did not
+  exist before.
 - **Accepted trade-off:** a process running one interpreter pays two nesting
-  levels for guarantees it cannot use: `Interpreters` has one group to order,
-  and `Interpreter {iid}` has no sibling to keep it apart from. The trace's
-  depth does not then depend on how many interpreters a run happened to have.
-- `Interpreters` renders beside `Process <pid>` rather than inside it, by the
-  same rule and with the same consequence ADR-0003 accepted for `GC Metrics`.
-  It is one row per process rather than several, and it keeps its `upid`.
+  levels for guarantees it cannot use: `Python Interpreters` has one group to
+  order, and `Interpreter {iid}` has no sibling to keep it apart from. The
+  trace's depth does not then depend on how many interpreters a run happened
+  to have.
+- `Python Interpreters` renders beside `Process <pid>` rather than inside it,
+  by the same rule and with the same consequence ADR-0003 accepted for
+  `GC Metrics`. It is one row per process rather than several, and it keeps
+  its `upid`.
+- The order those rows come out in is the UI's, not gcmon's.
+  `dev.perfetto.TraceProcessorTrack` ranks a process's children by kind and
+  breaks ties on the lower-cased name, reading no `sibling_order_rank`.
+  `Process <pid>` and the group are both slice-shaped, so the name decides
+  which of the two leads; `rss` is a counter, which the same plugin ranks
+  below every slice, so it comes last whatever anything is called. Checked
+  against Perfetto v58.2, the version `tests/perfetto_prebuilt.py` pins.
 - Clauses elsewhere are void and move with this record: ADR-0003's parenting
   of `GC Metrics` to the process track, ADR-0011's thread-descriptor clause,
   ADR-0024's `heap_size` qualifier, the top-level clause ADR-0004 keeps in its
@@ -142,11 +154,14 @@ something, and a row exists because an event names it
 - **Keep `Thread {iid}` and the `Thread {iid} heap_size` qualifier.** Halves
   the churn, and leaves the word "thread" in a trace for a thing that is not
   one, inside a row that already says which interpreter it is.
-- **Emit `Interpreters` only for a process running more than one
+- **Emit `Python Interpreters` only for a process running more than one
   interpreter.** Rejected as unimplementable rather than undesirable, for the
   reason ADR-0024 rejected the same shape for the `heap_size` name: gcmon is a
   streaming writer and does not know at descriptor time whether a sibling will
   appear.
+- **Name the group `Interpreters`.** What this record shipped with. It reads
+  better and it sorts above `Process <pid>`, which draws a process's
+  interpreters over the process that runs them.
 - **Carry the iid as a track argument, so attribution is one join.** The
   descriptor's `description` field reaches the `args` table and would hold it.
   Rejected: `description` is a tooltip a human reads, and a row would then
@@ -162,11 +177,11 @@ something, and a row exists because an event names it
 ## Implementation
 
 - `src/gcmon/exporters/perfetto_format.py` derives an interpreter's group, the
-  process's `Interpreters` group and the rows inside both, and holds the ranks
-  and the track names.
+  process's `Python Interpreters` group and the rows inside both, and holds
+  the ranks and the track names.
 - `src/gcmon/exporters/perfetto_track_state.py` keys a uuid per interpreter
-  group and one per `Interpreters` group, beside the tables it already keys on
-  a `Track`.
+  group and one per `Python Interpreters` group, beside the tables it already
+  keys on a `Track`.
 - `src/gcmon/exporters/perfetto_builders.py` no longer encodes a
   `ThreadDescriptor`, and `src/gcmon/exporters/perfetto_proto.py` drops the
   field numbers behind it: `ThreadDescriptorField` and `ThreadOrdering`, and

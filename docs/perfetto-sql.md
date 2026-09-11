@@ -33,7 +33,7 @@ gcmon traces use the standard Perfetto schema:
 - **`counter_track`**: one row per counter track
   - `id`, `name` (`"G0 collected"`, `"heap_size"`), `parent_id`
 - **`process_track`**: every row gcmon draws, the process's own and the ones
-  nested under its `Interpreters` group, each with the process's `upid`
+  nested under its `Python Interpreters` group, each with the process's `upid`
   - `id`, `name`, `parent_id`, `upid`, and `source_arg_set_id` for the track's
     own args
 - **`args`**: key/value arguments for slices and tracks
@@ -55,7 +55,8 @@ gcmon traces use the standard Perfetto schema:
 > in `thread` is the nameless one the trace processor builds per process,
 > carrying the row's `pid` as its `tid` and marked by `thread.is_main_thread`;
 > it has no name, no `thread_track` and no slices. Count interpreters by
-> counting the `Interpreter %` tracks under a process's `Interpreters` group.
+> counting the `Interpreter %` tracks under a process's `Python Interpreters`
+> group.
 
 ## Example: Replicating the Stats Table
 
@@ -85,9 +86,9 @@ ORDER BY IF(parent_id IS NULL, 0, 1), name
 ## Example: Naming the Interpreter a Counter Belongs To
 
 Every row an interpreter owns hangs under a group named `Interpreter {iid}`,
-and those under one `Interpreters` group per process. Two hops up `parent_id`
-reach the interpreter from a per-generation counter and one from `heap_size`,
-and the `Interpreters` group carries the process's `upid`:
+and those under one `Python Interpreters` group per process. Two hops up
+`parent_id` reach the interpreter from a per-generation counter and one from
+`heap_size`, and the `Python Interpreters` group carries the process's `upid`:
 
 ```sql
 -- Every per-generation counter, with the interpreter and process that own it
@@ -99,7 +100,7 @@ SELECT
 FROM counter_track ct
 JOIN track gm ON ct.parent_id = gm.id AND gm.name = 'GC Metrics'
 JOIN track ig ON gm.parent_id = ig.id
-JOIN process_track lt ON ig.parent_id = lt.id AND lt.name = 'Interpreters'
+JOIN process_track lt ON ig.parent_id = lt.id AND lt.name = 'Python Interpreters'
 JOIN process p ON lt.upid = p.upid
 LEFT JOIN counter c ON c.track_id = ct.id
 GROUP BY ct.id

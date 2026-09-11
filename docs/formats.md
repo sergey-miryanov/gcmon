@@ -42,9 +42,9 @@ A trace carries these:
   width**, which overlapping processes cut short and sometimes to nothing;
   `clipped` says which slices were cut. See [Perfetto SQL](perfetto-sql.md).
 - **One process track per process**, `Process 12345` and `Process 12345#2`,
-  each carrying that process's own `Interpreters` group, counters, start time
-  and command line. The PID on the row is gcmon's, not the operating system's;
-  see [The `Lifetime` slice](#the-lifetime-slice).
+  each carrying that process's own `Python Interpreters` group, counters,
+  start time and command line. The PID on the row is gcmon's, not the
+  operating system's; see [The `Lifetime` slice](#the-lifetime-slice).
 - **Process ordering**: the tracks sort by when gcmon first observed each
   process, earliest at the top, and a process it read no collections from
   takes a position like any other. A process gcmon reaches only after it has

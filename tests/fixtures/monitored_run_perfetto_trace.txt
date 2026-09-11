@@ -21,7 +21,7 @@ track_descriptor {
 trusted_packet_sequence_id: 1
 track_descriptor {
   uuid: 2
-  name: "Interpreters"
+  name: "Python Interpreters"
   parent_uuid: 1
   child_ordering: EXPLICIT
 }
@@ -185,7 +185,7 @@ track_descriptor {
 trusted_packet_sequence_id: 1
 track_descriptor {
   uuid: 18
-  name: "Interpreters"
+  name: "Python Interpreters"
   parent_uuid: 17
   child_ordering: EXPLICIT
 }
@@ -349,7 +349,7 @@ track_descriptor {
 trusted_packet_sequence_id: 1
 track_descriptor {
   uuid: 34
-  name: "Interpreters"
+  name: "Python Interpreters"
   parent_uuid: 33
   child_ordering: EXPLICIT
 }

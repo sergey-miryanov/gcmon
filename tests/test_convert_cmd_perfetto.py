@@ -274,7 +274,8 @@ def _process_filter(pid: int) -> str:
     """SQL fragment scoping a query to the one process on *pid*.
 
     One join through ``process_track`` reaches every row gcmon writes for a
-    process, the ones inside its ``Interpreters`` group included (ADR-0027).
+    process, the ones inside its ``Python Interpreters`` group included
+    (ADR-0027).
 
     On the name, not on ``process.pid``: that column holds the pid gcmon
     writes for the row (ADR-0011).
@@ -453,7 +454,7 @@ class TestCombinedTraceIsStructurallyComplete:
                 "SELECT t.name FROM track t "
                 "JOIN process_track lt ON t.parent_id = lt.id "
                 "JOIN process p ON lt.upid = p.upid "
-                f"WHERE lt.name = 'Interpreters' AND p.name = 'Process {_PID_A}'",
+                f"WHERE lt.name = 'Python Interpreters' AND p.name = 'Process {_PID_A}'",
             )
         )
         for iid in (_IID_A1, _IID_A2, _IID_A3):

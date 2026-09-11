@@ -107,7 +107,9 @@ _COUNTER_GROUP_NAME: str = "GC Metrics"
 # pause row, the loss row, `heap_size` and then this one.
 _COUNTER_GROUP_RANK: int = 3
 
-_INTERPRETER_LIST_NAME: str = "Interpreters"
+# The word "Python" is what sorts the group after `Process {pid}`: the
+# Perfetto UI orders a process's rows by name within a kind (ADR-0027).
+_INTERPRETER_LIST_NAME: str = "Python Interpreters"
 
 
 def _interpreter_group_name(iid: int) -> str:
@@ -131,7 +133,7 @@ def _emit_interpreter_group_descriptors(
     """Build the two groups interpreter *track*'s rows hang off, outer
     first, and return the inner one's uuid (ADR-0027).
 
-    ``Interpreters`` carries no rank: the process track above it is
+    ``Python Interpreters`` carries no rank: the process track above it is
     OS-scoped, and the trace processor discards one there (ADR-0003).
     """
     process = track.process

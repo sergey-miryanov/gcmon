@@ -90,8 +90,8 @@ def _process_filter(pid: int) -> str:
 
     Every track gcmon writes belongs to a process rather than to a thread
     (ADR-0027), so one join through ``process_track`` reaches them all: the
-    process's own row, and the rows nested under its ``Interpreters`` group,
-    which the trace processor gives the same ``upid``.
+    process's own row, and the rows nested under its ``Python
+    Interpreters`` group, which the trace processor gives the same ``upid``.
 
     Scoped on the name, not on ``process.pid``: that column holds the pid
     gcmon writes for the row rather than the operating system's (ADR-0011).
@@ -108,8 +108,8 @@ def _process_row_filter(pid: int) -> str:
     """SQL fragment to scope a query to a process's *own* row.
 
     :func:`_process_filter` reaches every row under the process's ``upid``,
-    the ones inside its ``Interpreters`` group included. This one stops at
-    the process track itself, which carries the ``Lifetime`` bar, the marks
+    the ones inside its ``Python Interpreters`` group included. This one
+    stops at the process track itself, which carries the ``Lifetime`` bar, the marks
     and the RSS (ADR-0024).
     """
     return f"JOIN process_track pt ON s.track_id = pt.id WHERE pt.name = 'Process {pid}'"

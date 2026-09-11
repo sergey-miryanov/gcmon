@@ -96,8 +96,9 @@ per **iid**, holding no events of its own.
 _Avoid_: thread group, iid track, interpreter track (that is the pause row)
 
 **Interpreter list**:
-The `Interpreters` row holding a process's **interpreter groups**, one per
-process, under the **process track**. The groups inside it sort by **iid**.
+The `Python Interpreters` row holding a process's **interpreter groups**, one
+per process, under the **process track**. The groups inside it sort by
+**iid**.
 _Avoid_: interpreters track, iids group
 
 **Process track**:

@@ -5,6 +5,8 @@
   - 2026-06-18: UUID allocator revised
   - 2026-09-11: the thread track became a group per interpreter, see
     [ADR-0027](0027-group-every-row-an-interpreter-owns.md)
+  - 2026-09-12: the interpreter list is named `Python Interpreters`, see
+    [ADR-0027](0027-group-every-row-an-interpreter-owns.md)
 
 ## Context
 
@@ -48,7 +50,7 @@ collide with it.
 
 - Process: `ProcessDescriptor` at field **3**, with
   `child_ordering = EXPLICIT` so its children can be ordered.
-- Interpreter groups: `Interpreters` parents to the process track and
+- Interpreter groups: `Python Interpreters` parents to the process track and
   `Interpreter {iid}` to that, both with `child_ordering = EXPLICIT`. Every
   row an interpreter owns parents to its group and is ranked inside it
   ([ADR-0027](0027-group-every-row-an-interpreter-owns.md)). No track gcmon

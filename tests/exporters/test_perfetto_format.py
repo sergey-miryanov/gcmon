@@ -1085,7 +1085,7 @@ class TestTheInterpreterGroupsAreDerived:
         descriptors, _ = convert_trace_events_to_perfetto(self._events(100), state, sequence_id=1)
         described = self._by_name(descriptors)
 
-        listing = described["Interpreters"]
+        listing = described["Python Interpreters"]
         assert listing.parent_uuid == state.get_process_track_uuid(proc(100))
         assert listing.child_ordering == 3
         # No rank: the process track is OS-scoped and discards one (ADR-0003).
@@ -1100,9 +1100,25 @@ class TestTheInterpreterGroupsAreDerived:
         state = PerfettoTrackState()
         descriptors, _ = convert_trace_events_to_perfetto(self._events(100), state, sequence_id=1)
         names = [td.name for td in (parse_track_descriptor(d) for d in descriptors) if td is not None and td.name]
-        assert names.index("Process 100") < names.index("Interpreters") < names.index("Interpreter 0"), (
+        assert names.index("Process 100") < names.index("Python Interpreters") < names.index("Interpreter 0"), (
             f"each parent must precede its child; got {names}"
         )
+
+    def test_the_list_sorts_below_the_process_row(self) -> None:
+        """A rename has to keep the list under the row it belongs to.
+
+        `dev.perfetto.TraceProcessorTrack` ranks a process's rows by kind and
+        breaks the tie on the lower-cased name, reading no
+        `sibling_order_rank`. Both of these are slice-shaped, so the name is
+        the whole of it (ADR-0027).
+        """
+        state = PerfettoTrackState()
+        descriptors, _ = convert_trace_events_to_perfetto(self._events(100), state, sequence_id=1)
+        parsed = [td for td in (parse_track_descriptor(d) for d in descriptors) if td is not None]
+        process_uuid = state.get_process_track_uuid(proc(100))
+        process_name = next(td.name for td in parsed if td.uuid == process_uuid)
+        listing_name = next(td.name for td in parsed if td.parent_uuid == process_uuid)
+        assert process_name.lower() < listing_name.lower(), f"{listing_name!r} draws above {process_name!r} in the UI"
 
     def test_a_second_interpreter_shares_the_list_and_gets_its_own_group(self) -> None:
         state = PerfettoTrackState()
@@ -1110,7 +1126,7 @@ class TestTheInterpreterGroupsAreDerived:
         later, _ = convert_trace_events_to_perfetto(self._events(100, iid=1), state, sequence_id=1)
         described = self._by_name(later)
 
-        assert "Interpreters" not in described, "the list is described once per process"
+        assert "Python Interpreters" not in described, "the list is described once per process"
         group = described["Interpreter 1"]
         assert group.parent_uuid == state.get_or_create_interpreter_list_track_uuid(proc(100))
         assert group.sibling_order_rank == 1
@@ -1127,7 +1143,7 @@ class TestTheInterpreterGroupsAreDerived:
         described = self._by_name(later)
         assert "GC Loss" in described, "the loss row still describes itself"
         assert "Interpreter 0" not in described, "interpreter 0's group is already described"
-        assert "Interpreters" not in described
+        assert "Python Interpreters" not in described
 
     def test_a_process_that_only_reported_rss_derives_neither(self) -> None:
         """A row exists because an event named it (ADR-0024), and nothing
@@ -1139,7 +1155,7 @@ class TestTheInterpreterGroupsAreDerived:
             sequence_id=1,
         )
         described = self._by_name(descriptors)
-        assert "Interpreters" not in described
+        assert "Python Interpreters" not in described
         assert not any(name.startswith("Interpreter ") for name in described)
 
 

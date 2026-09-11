@@ -268,8 +268,9 @@ class MonitoredRun:
         the one descriptor that carries a pid.
 
         Only a `ProcessDescriptor` carries one: everything an interpreter
-        owns is a plain custom track under that process's `Interpreters`
-        group (ADR-0027), so the walk is what attributes it.
+        owns is a plain custom track under that process's
+        `Python Interpreters` group (ADR-0027), so the walk is what
+        attributes it.
 
         It is the pid gcmon writes for the row, one per process rather than
         one per operating-system pid (ADR-0011). The operating system's
