@@ -7,8 +7,8 @@ from perfetto.protos.perfetto.trace.perfetto_trace_pb2 import (
     TrackEvent,
 )
 
-from gcmon.exporters.perfetto_format import convert_trace_events_to_perfetto
-from gcmon.exporters.perfetto_process_lifetime import finalize_perfetto_packets
+from gcmon.exporters.perfetto_format import _INTERPRETER_LIST_NAME, convert_trace_events_to_perfetto
+from gcmon.exporters.perfetto_process_lifetime import _PROCESS_ROW_SLICE_NAME, finalize_perfetto_packets
 from gcmon.exporters.perfetto_proto import TrackEventType
 from gcmon.exporters.perfetto_track_state import PerfettoTrackState
 from gcmon.exporters.trace_converter import convert_item_to_trace_format, convert_loss_to_trace_format
@@ -24,11 +24,6 @@ from tests.exporters.perfetto_helpers import (
     parse_track_descriptor,
 )
 from tests.helpers import create_mock_loss_item, interpreter_track, proc, process_track
-
-# Name of the slice drawn on each process's own row over the interval gcmon
-# observed it. Must match ``_PROCESS_ROW_SLICE_NAME`` in
-# ``gcmon.exporters.perfetto_process_lifetime``.
-_PROCESS_ROW_SLICE_NAME: str = "Lifetime"
 
 
 class TestConvertItemToPerfettoPackets:
@@ -1085,7 +1080,7 @@ class TestTheInterpreterGroupsAreDerived:
         descriptors, _ = convert_trace_events_to_perfetto(self._events(100), state, sequence_id=1)
         described = self._by_name(descriptors)
 
-        listing = described["Python Interpreters"]
+        listing = described[_INTERPRETER_LIST_NAME]
         assert listing.parent_uuid == state.get_process_track_uuid(proc(100))
         assert listing.child_ordering == 3
         # No rank: the process track is OS-scoped and discards one (ADR-0003).
@@ -1100,7 +1095,7 @@ class TestTheInterpreterGroupsAreDerived:
         state = PerfettoTrackState()
         descriptors, _ = convert_trace_events_to_perfetto(self._events(100), state, sequence_id=1)
         names = [td.name for td in (parse_track_descriptor(d) for d in descriptors) if td is not None and td.name]
-        assert names.index("Process 100") < names.index("Python Interpreters") < names.index("Interpreter 0"), (
+        assert names.index("Process 100") < names.index(_INTERPRETER_LIST_NAME) < names.index("Interpreter 0"), (
             f"each parent must precede its child; got {names}"
         )
 
@@ -1126,7 +1121,7 @@ class TestTheInterpreterGroupsAreDerived:
         later, _ = convert_trace_events_to_perfetto(self._events(100, iid=1), state, sequence_id=1)
         described = self._by_name(later)
 
-        assert "Python Interpreters" not in described, "the list is described once per process"
+        assert _INTERPRETER_LIST_NAME not in described, "the list is described once per process"
         group = described["Interpreter 1"]
         assert group.parent_uuid == state.get_or_create_interpreter_list_track_uuid(proc(100))
         assert group.sibling_order_rank == 1
@@ -1143,7 +1138,7 @@ class TestTheInterpreterGroupsAreDerived:
         described = self._by_name(later)
         assert "GC Loss" in described, "the loss row still describes itself"
         assert "Interpreter 0" not in described, "interpreter 0's group is already described"
-        assert "Python Interpreters" not in described
+        assert _INTERPRETER_LIST_NAME not in described
 
     def test_a_process_that_only_reported_rss_derives_neither(self) -> None:
         """A row exists because an event named it (ADR-0024), and nothing
@@ -1155,7 +1150,7 @@ class TestTheInterpreterGroupsAreDerived:
             sequence_id=1,
         )
         described = self._by_name(descriptors)
-        assert "Python Interpreters" not in described
+        assert _INTERPRETER_LIST_NAME not in described
         assert not any(name.startswith("Interpreter ") for name in described)
 
 

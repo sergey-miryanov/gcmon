@@ -88,7 +88,8 @@ ORDER BY IF(parent_id IS NULL, 0, 1), name
 Every row an interpreter owns hangs under a group named `Interpreter {iid}`,
 and those under one `Python Interpreters` group per process. Two hops up
 `parent_id` reach the interpreter from a per-generation counter and one from
-`heap_size`, and the `Python Interpreters` group carries the process's `upid`:
+`heap_size`, and the group above them carries the process's `upid`. Walk the
+chain rather than matching on a name, which is a label the UI shows:
 
 ```sql
 -- Every per-generation counter, with the interpreter and process that own it
@@ -100,7 +101,7 @@ SELECT
 FROM counter_track ct
 JOIN track gm ON ct.parent_id = gm.id AND gm.name = 'GC Metrics'
 JOIN track ig ON gm.parent_id = ig.id
-JOIN process_track lt ON ig.parent_id = lt.id AND lt.name = 'Python Interpreters'
+JOIN process_track lt ON ig.parent_id = lt.id
 JOIN process p ON lt.upid = p.upid
 LEFT JOIN counter c ON c.track_id = ct.id
 GROUP BY ct.id

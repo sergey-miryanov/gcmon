@@ -68,11 +68,11 @@ shifts the ranks below it, which is fine: only the relative order matters.
   OS-scoped parents also governs rendering. Per the `parent_uuid` back-compat
   note, a track whose parent is OS-scoped "inherits the parent's
   process/thread association and will appear as a *sibling* of the parent."
-  The row that pays it is the `Python Interpreters` group, the one custom
-  track a process track parents (ADR-0027): it renders *alongside* the
-  `Process <pid>` track in the UI rather than nested inside it, and the rows
-  below it nest normally. The spec owner reviewed this and accepted it, since
-  ordering within the group still works.
+  The row that pays it is the interpreter list, the one custom track a process
+  track parents (ADR-0027): it renders *alongside* the `Process <pid>` track
+  in the UI rather than nested inside it, and the rows below it nest normally.
+  The spec owner reviewed this and accepted it, since ordering within the
+  group still works.
 - The group is collapsible, which keeps the top-level track list short. That
   is why `heap_size` is drawn *outside* the group
   ([ADR-0004](0004-toplevel-shared-counters.md), carried forward by

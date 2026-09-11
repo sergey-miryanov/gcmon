@@ -14,6 +14,7 @@ import pytest
 from perfetto.trace_processor import TraceProcessor
 
 from gcmon.exporters import PerfettoExporter
+from gcmon.exporters.perfetto_process_lifetime import _PROCESS_ROW_SLICE_NAME, process_track_name
 from gcmon.exporters.trace_converter import duration_text
 from tests.conftest import DEFAULT_PID
 from tests.data_helpers import create_instant_msg
@@ -73,11 +74,6 @@ _ARG_PREFIX: str = "debug"
 _FAKE_CMDLINE: tuple[str, ...] = ("python3", "-m", "fake_target")
 _FAKE_CMDLINE_JOINED: str = " ".join(_FAKE_CMDLINE)
 
-# Name of the slice drawn on each process's own row over the interval
-# gcmon observed that process. Must match ``_PROCESS_ROW_SLICE_NAME`` in
-# ``gcmon.exporters.perfetto_process_lifetime``.
-_PROCESS_ROW_SLICE_NAME: str = "Lifetime"
-
 # Name of the shared top-level Perfetto track that holds one slice per
 # pid spanning the first-to-last non-meta event timestamps for that
 # pid. Must match ``_PROCESS_LIFETIME_TRACK_NAME`` in
@@ -90,8 +86,8 @@ def _process_filter(pid: int) -> str:
 
     Every track gcmon writes belongs to a process rather than to a thread
     (ADR-0027), so one join through ``process_track`` reaches them all: the
-    process's own row, and the rows nested under its ``Python
-    Interpreters`` group, which the trace processor gives the same ``upid``.
+    process's own row, and the rows nested under its interpreter list, which
+    the trace processor gives the same ``upid``.
 
     Scoped on the name, not on ``process.pid``: that column holds the pid
     gcmon writes for the row rather than the operating system's (ADR-0011).
@@ -100,7 +96,8 @@ def _process_filter(pid: int) -> str:
     ``Process <pid>#2`` and up.
     """
     return (
-        f"JOIN process_track pt ON s.track_id = pt.id JOIN process p ON pt.upid = p.upid WHERE p.name = 'Process {pid}'"
+        "JOIN process_track pt ON s.track_id = pt.id JOIN process p ON pt.upid = p.upid "
+        f"WHERE p.name = '{process_track_name(proc(pid))}'"
     )
 
 
@@ -108,11 +105,11 @@ def _process_row_filter(pid: int) -> str:
     """SQL fragment to scope a query to a process's *own* row.
 
     :func:`_process_filter` reaches every row under the process's ``upid``,
-    the ones inside its ``Python Interpreters`` group included. This one
-    stops at the process track itself, which carries the ``Lifetime`` bar, the marks
+    the ones inside its interpreter list included. This one stops at the
+    process track itself, which carries the ``Lifetime`` bar, the marks
     and the RSS (ADR-0024).
     """
-    return f"JOIN process_track pt ON s.track_id = pt.id WHERE pt.name = 'Process {pid}'"
+    return f"JOIN process_track pt ON s.track_id = pt.id WHERE pt.name = '{process_track_name(proc(pid))}'"
 
 
 def _on_interpreter(iid: int) -> str:

@@ -21,9 +21,11 @@ import pytest
 from perfetto.trace_processor import TraceProcessor
 
 from gcmon.analysis.jsonl_io import read_jsonl
+from gcmon.exporters.perfetto_format import _INTERPRETER_LIST_NAME
+from gcmon.exporters.perfetto_process_lifetime import process_track_name
 from gcmon.exporters.trace_converter import convert_to_trace_format
 from gcmon.model.trace_event import Slice, TraceEvent
-from tests.helpers import create_mock_incremental_item, create_mock_stats_item, open_trace_processor
+from tests.helpers import create_mock_incremental_item, create_mock_stats_item, open_trace_processor, proc
 
 
 def _int(v: int | None) -> int:
@@ -44,6 +46,11 @@ _IID_A2: int = 1
 _IID_A3: int = 2
 _IID_B1: int = 10
 _TS_START: int = 1_500_000_000
+
+# What each process's row is called, built the way the exporter builds it
+# rather than spelled out again here.
+_NAME_A: str = process_track_name(proc(_PID_A))
+_NAME_B: str = process_track_name(proc(_PID_B))
 _DURATION_NS: int = 5_000_000
 
 # Counter-track names produced by the encoder for each generation. All three
@@ -274,14 +281,14 @@ def _process_filter(pid: int) -> str:
     """SQL fragment scoping a query to the one process on *pid*.
 
     One join through ``process_track`` reaches every row gcmon writes for a
-    process, the ones inside its ``Python Interpreters`` group included
-    (ADR-0027).
+    process, the ones inside its interpreter list included (ADR-0027).
 
     On the name, not on ``process.pid``: that column holds the pid gcmon
     writes for the row (ADR-0011).
     """
     return (
-        f"JOIN process_track pt ON s.track_id = pt.id JOIN process p ON pt.upid = p.upid WHERE p.name = 'Process {pid}'"
+        "JOIN process_track pt ON s.track_id = pt.id JOIN process p ON pt.upid = p.upid "
+        f"WHERE p.name = '{process_track_name(proc(pid))}'"
     )
 
 
@@ -394,9 +401,7 @@ class TestCombinedTraceIsStructurallyComplete:
                 "SELECT name FROM track WHERE name LIKE 'Process %'",
             )
         )
-        assert rows == sorted([f"Process {_PID_A}", f"Process {_PID_B}"]), (
-            f"expected process tracks for both PIDs, got {rows}"
-        )
+        assert rows == sorted([_NAME_A, _NAME_B]), f"expected process tracks for both PIDs, got {rows}"
 
     def test_the_close_time_sweep_leaves_a_combined_process_alone(
         self,
@@ -414,7 +419,7 @@ class TestCombinedTraceIsStructurallyComplete:
                 "WHERE s.name = 'Lifetime' GROUP BY p.name ORDER BY p.name"
             )
         )
-        assert {r.pname: r.n for r in rows} == {f"Process {_PID_A}": 1, f"Process {_PID_B}": 1}
+        assert {r.pname: r.n for r in rows} == {_NAME_A: 1, _NAME_B: 1}
 
         described = list(
             loaded_trace_processor.query(
@@ -442,7 +447,7 @@ class TestCombinedTraceIsStructurallyComplete:
                 "WHERE s.name = 'Lifetime' AND a.flat_key = 'debug.sampled_count'"
             )
         )
-        assert {r.pname: r.sampled for r in rows} == {f"Process {_PID_A}": 3, f"Process {_PID_B}": 1}
+        assert {r.pname: r.sampled for r in rows} == {_NAME_A: 3, _NAME_B: 1}
 
     def test_interpreter_groups_present(
         self,
@@ -454,7 +459,7 @@ class TestCombinedTraceIsStructurallyComplete:
                 "SELECT t.name FROM track t "
                 "JOIN process_track lt ON t.parent_id = lt.id "
                 "JOIN process p ON lt.upid = p.upid "
-                f"WHERE lt.name = 'Python Interpreters' AND p.name = 'Process {_PID_A}'",
+                f"WHERE lt.name = '{_INTERPRETER_LIST_NAME}' AND p.name = '{_NAME_A}'",
             )
         )
         for iid in (_IID_A1, _IID_A2, _IID_A3):

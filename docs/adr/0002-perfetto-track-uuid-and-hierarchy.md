@@ -50,9 +50,9 @@ collide with it.
 
 - Process: `ProcessDescriptor` at field **3**, with
   `child_ordering = EXPLICIT` so its children can be ordered.
-- Interpreter groups: `Python Interpreters` parents to the process track and
-  `Interpreter {iid}` to that, both with `child_ordering = EXPLICIT`. Every
-  row an interpreter owns parents to its group and is ranked inside it
+- Interpreter groups: the interpreter list parents to the process track and an
+  interpreter's own group to that, both with `child_ordering = EXPLICIT`.
+  Every row an interpreter owns parents to its group and is ranked inside it
   ([ADR-0027](0027-group-every-row-an-interpreter-owns.md)). No track gcmon
   writes carries a `ThreadDescriptor`.
 - Counters: parented to the `GC Metrics` group or to the process track,

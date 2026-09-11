@@ -133,8 +133,8 @@ def _emit_interpreter_group_descriptors(
     """Build the two groups interpreter *track*'s rows hang off, outer
     first, and return the inner one's uuid (ADR-0027).
 
-    ``Python Interpreters`` carries no rank: the process track above it is
-    OS-scoped, and the trace processor discards one there (ADR-0003).
+    The list carries no rank: the process track above it is OS-scoped, and
+    the trace processor discards one there (ADR-0003).
     """
     process = track.process
     packets: list[bytes] = []
