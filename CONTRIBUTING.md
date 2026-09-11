@@ -32,7 +32,7 @@ marker, so a passing `pytest` covers less than it looks:
 | `stress` | `poetry run just stress` | thread safety of the exporter and control-client pipelines |
 | `fuzz` | `poetry run just fuzz` | randomized differential tests against the real trace processor |
 | `architecture` | `poetry run just architecture` | the code's structure, read without running it |
-| `benchmark` | `poetry run just architecture` | CodSpeed performance benchmarks |
+| `benchmark` | `poetry run just bench` | CodSpeed performance benchmarks |
 
 CI runs the stress and fuzz suites in jobs of their own, so a change that
 passes locally can still fail there. Coverage has a floor of 80% (`fail_under`
