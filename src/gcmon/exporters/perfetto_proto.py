@@ -33,8 +33,7 @@ class TracePacketField(IntEnum):
 
 
 class TrackDescriptorField(IntEnum):
-    """Field numbers gcmon writes. The ``thread`` field at 4 and the
-    ``thread_ordering`` hint at 20 are absent (ADR-0027)."""
+    """Field numbers gcmon writes."""
 
     UUID = 1
     NAME = 2

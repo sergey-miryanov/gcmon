@@ -62,8 +62,9 @@ _EXPECTED_COUNTER_NAMES: frozenset[str] = frozenset(
         "G1 uncollectable",
         "G1 candidates",
         "G1 duration",
-        # One row per interpreter, all three named the same: each sits in
-        # its own group, so the name has nothing to tell apart (ADR-0027).
+        # Three rows, one name. Each interpreter draws its own `heap_size`
+        # inside its own group, and the group is what carries the iid, so a
+        # set of names holds one entry (ADR-0027).
         "heap_size",
     }
 )
