@@ -62,7 +62,7 @@ _EXPECTED_COUNTER_NAMES: frozenset[str] = frozenset(
         "G1 uncollectable",
         "G1 candidates",
         "G1 duration",
-        # One row per interpreter, all three named the same: each hangs off
+        # One row per interpreter, all three named the same: each sits in
         # its own group, so the name has nothing to tell apart (ADR-0027).
         "heap_size",
     }
@@ -117,7 +117,7 @@ def _on_interpreter(iid: int) -> str:
     interpreter.
 
     Every interpreter's pauses are drawn on a row named ``GC Pauses``, so
-    what names the interpreter is the group that row hangs off (ADR-0027).
+    what names the interpreter is the group that row parents to (ADR-0027).
     """
     return f"AND EXISTS (SELECT 1 FROM track ig WHERE ig.id = pt.parent_id AND ig.name = 'Interpreter {iid}')"
 
@@ -1738,8 +1738,8 @@ class TestARunKilledMidFlight:
         self,
         killed_run_trace_processor: TraceProcessor,
     ) -> None:
-        """The bar keeps the row rendered, and the command line hangs off the
-        row."""
+        """The bar keeps the row rendered, and the row keeps its command
+        line."""
         rows = list(
             killed_run_trace_processor.query(
                 f"SELECT a.string_value AS description FROM args a "
@@ -2561,10 +2561,10 @@ class TestRssCounterTrackIntegration:
 class TestTwoInterpretersHeapSizes:
     """Two interpreters in one process draw two `heap_size` rows.
 
-    Both are named `heap_size`. What keeps them apart is the group each hangs
-    off (ADR-0027): sharing a name *and* a parent is what the trace processor
-    merges, and the qualified name ADR-0024 wrote stood in for the parent
-    before there was one to hang off.
+    Both are named `heap_size`. What keeps them apart is the group each
+    parents to (ADR-0027): sharing a name *and* a parent is what the trace
+    processor merges, and the qualified name ADR-0024 wrote stood in for the
+    parent before there was one.
     """
 
     @pytest.fixture(scope="class")

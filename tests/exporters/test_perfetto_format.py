@@ -1048,12 +1048,12 @@ class TestATrackIsDescribedOffTheEventsOnIt:
         convert_trace_events_to_perfetto(self._pid_events(100, iid=0), state, sequence_id=1)
         later, _ = convert_trace_events_to_perfetto(self._pid_events(100, iid=1), state, sequence_id=1)
         names = self._named(later)
-        assert names[:2] == ["Interpreter 1", "GC Pauses"], f"the group it hangs off comes first; got {names}"
+        assert names[:2] == ["Interpreter 1", "GC Pauses"], f"the group it parents to comes first; got {names}"
         assert "Process 100" not in names
 
 
 class TestTheInterpreterGroupsAreDerived:
-    """The two grouping rows every interpreter's rows hang off (ADR-0027).
+    """The two grouping rows that hold every interpreter's rows (ADR-0027).
 
     Read off the wire rather than through the trace processor: a group
     holding no events and no described children is not a row the trace
@@ -1258,7 +1258,7 @@ class TestLossTrackDescriptor:
 
     def test_each_interpreter_gets_one_inside_its_own_group(self) -> None:
         """Two rows, identically named. What tells them apart is the group
-        each hangs off, which is what carries the iid (ADR-0027)."""
+        each parents to, which is what carries the iid (ADR-0027)."""
         state = PerfettoTrackState()
 
         found = self._loss_descriptors(self._convert([self._msg(iid=0), self._msg(iid=1)], state))

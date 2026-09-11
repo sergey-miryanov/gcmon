@@ -208,7 +208,7 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
     )
 
     events.append(
-        # Unqualified: the row hangs off the interpreter's own group, so no
+        # Unqualified: the row sits inside the interpreter's own group, so no
         # two of them share a parent and the name does not have to tell them
         # apart (ADR-0027).
         Counter(

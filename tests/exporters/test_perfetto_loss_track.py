@@ -160,7 +160,7 @@ def test_the_bar_is_the_whole_interval(tmp_path: Path) -> None:
 
 def test_two_interpreters_get_two_rows(tmp_path: Path) -> None:
     """Both rows are named ``GC Loss``, so what has to keep them apart is the
-    group each hangs off. Sharing a name *and* a parent is what the trace
+    group each sits in. Sharing a name *and* a parent is what the trace
     processor merges (ADR-0027)."""
     events = _events(_loss(2_000, 9_000, 500), _loss(2_000, 9_000, 500, iid=7))
 
@@ -191,7 +191,7 @@ def _process_slices(events: list[TraceEvent], tmp_path: Path, name: str) -> list
 
 
 def test_the_process_row_is_untouched_by_loss_spans(tmp_path: Path) -> None:
-    """The loss track hangs off its interpreter's group, so a descriptor
+    """The loss track sits inside its interpreter's group, so a descriptor
     naming the wrong parent would land its spans on the process's own row and
     reshape the `Lifetime` bar ADR-0013 keeps clear of it.
 

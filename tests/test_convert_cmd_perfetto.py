@@ -80,7 +80,7 @@ _G2_COUNTERS: frozenset[str] = frozenset(
     }
 )
 # One row per interpreter in the capture, and the capture holds four. Each
-# hangs off that interpreter's own group, so the four collapse into one name
+# sits in that interpreter's own group, so the four collapse into one name
 # here, the way the per-generation counters under `GC Metrics` already do.
 _HEAP_COUNTERS: frozenset[str] = frozenset({"heap_size"})
 _DURATION_COUNTERS: frozenset[str] = frozenset(
@@ -294,7 +294,7 @@ def _process_filter(pid: int) -> str:
 
 def _on_interpreter(iid: int) -> str:
     """SQL fragment narrowing a :func:`_process_filter` query to one
-    interpreter, which the group its row hangs off is what names
+    interpreter. The group its row parents to is what names it
     (ADR-0027)."""
     return f"AND EXISTS (SELECT 1 FROM track ig WHERE ig.id = pt.parent_id AND ig.name = 'Interpreter {iid}')"
 

@@ -161,7 +161,7 @@ class PerfettoTrackState:
 
         Keyed on the pair rather than on a `Track`, because an
         `InterpreterTrack` and a `LossTrack` naming the same interpreter
-        hang off the same group (ADR-0027).
+        share a group (ADR-0027).
         """
         key = (process, iid)
         if key not in self._interpreter_group_uuids:

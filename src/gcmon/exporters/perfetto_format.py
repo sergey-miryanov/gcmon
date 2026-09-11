@@ -109,7 +109,7 @@ _INTERPRETER_ROW_ORDER: tuple[str, ...] = (
 _INTERPRETER_ROW_RANKS: dict[str, int] = {name: rank for rank, name in enumerate(_INTERPRETER_ROW_ORDER)}
 
 # What a `GC Metrics` group holds, ranked the same way. `rss` is absent
-# because it hangs off the process track, which is OS-scoped, and the trace
+# because it parents to the process track, which is OS-scoped, and the trace
 # processor discards a rank there (ADR-0003).
 _COUNTER_ORDER: tuple[str, ...] = (
     "collected",
@@ -133,8 +133,8 @@ def _emit_interpreter_group_descriptors(
     state: PerfettoTrackState,
     sequence_id: int,
 ) -> tuple[int, list[bytes]]:
-    """Build the two groups interpreter *track*'s rows hang off, outer
-    first, and return the inner one's uuid (ADR-0027).
+    """Build the two groups that hold *track*'s rows, outer first, and
+    return the inner one's uuid (ADR-0027).
 
     The list carries no rank: the process track above it is OS-scoped, and
     the trace processor discards one there (ADR-0003).
@@ -244,12 +244,13 @@ def _emit_counter_track_descriptor(
 ) -> tuple[int, list[bytes]]:
     """Build a counter track descriptor if not already emitted.
 
-    A counter the process owns hangs off the process track and carries no
-    rank, which an OS-scoped parent discards (ADR-0003). One an interpreter
-    owns whose metric is in ``_TOPLEVEL_COUNTER_METRICS`` hangs off that
-    interpreter's group, beside its pause and loss rows rather than inside
-    its GC Metrics group. Every other counter hangs off the GC Metrics group,
-    where the trace processor and the UI honor its ``_COUNTER_RANKS`` entry.
+    A counter the process owns parents to the process track and carries no
+    rank, which the trace processor discards there (ADR-0003). One an
+    interpreter owns whose metric is in ``_TOPLEVEL_COUNTER_METRICS`` draws
+    on that interpreter's group, beside its pause and loss rows rather than
+    inside its GC Metrics group. Every other counter parents to the GC
+    Metrics group, where the trace processor and the UI honor its
+    ``_COUNTER_RANKS`` entry.
 
     *display_name* is the track name on the wire and identifies the track
     within *track*; *metric* is what the rank and the shared y axis are keyed
