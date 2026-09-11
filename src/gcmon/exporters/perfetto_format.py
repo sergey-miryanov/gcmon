@@ -75,37 +75,7 @@ __all__ = [
 ]
 
 
-# `heap_size` has no entry: it is the one metric drawn on the interpreter
-# group, which ranks it by `_TOPLEVEL_COUNTER_RANK` instead.
-_COUNTER_RANKS: dict[str, int] = {
-    "rss": 1,
-    "collected": 2,
-    "uncollectable": 3,
-    "candidates": 4,
-    "duration": 5,
-    "increment_size": 6,
-    "alive_size": 7,
-    "finalized_garbage_count": 8,
-    "deleted_garbage_count": 9,
-    "clear_weakrefs_count": 10,
-}
-
-# A counter an interpreter owns that is nonetheless drawn a level up, on the
-# interpreter's own group rather than inside its `GC Metrics` group
-# (ADR-0004, ADR-0027).
-#
-# `rss` is not here: a `ProcessTrack` owns it, so parenting it to the process
-# row is its identity rather than a policy.
-_TOPLEVEL_COUNTER_METRICS: frozenset[str] = frozenset({"heap_size"})
-
-# Where such a counter sits inside the interpreter group. See
-# `_COUNTER_GROUP_RANK` for the ladder.
-_TOPLEVEL_COUNTER_RANK: int = 2
-
 _COUNTER_GROUP_NAME: str = "GC Metrics"
-# Last inside the interpreter group. ADR-0027 ranks the rows it holds as the
-# pause row, the loss row, `heap_size` and then this one.
-_COUNTER_GROUP_RANK: int = 3
 
 # The word "Python" is what sorts the group after `Process {pid}`: the
 # Perfetto UI orders a process's rows by name within a kind (ADR-0027).
@@ -117,12 +87,45 @@ def _interpreter_group_name(iid: int) -> str:
 
 
 _PAUSE_TRACK_NAME: str = "GC Pauses"
-# First inside the interpreter group. See `_COUNTER_GROUP_RANK` for the ladder.
-_PAUSE_TRACK_RANK: int = 0
-
 _LOSS_TRACK_NAME: str = "GC Loss"
-# Below the interpreter's own pause row, which ranks 0.
-_LOSS_TRACK_RANK: int = 1
+
+# A counter an interpreter owns that is nonetheless drawn a level up, on the
+# interpreter's own group rather than inside its `GC Metrics` group
+# (ADR-0004, ADR-0027).
+#
+# `rss` is not here: a `ProcessTrack` owns it, so parenting it to the process
+# row is its identity rather than a policy.
+_HEAP_METRIC: str = "heap_size"
+_TOPLEVEL_COUNTER_METRICS: frozenset[str] = frozenset({_HEAP_METRIC})
+
+# What an interpreter group holds, top to bottom (ADR-0027). Each row ranks by
+# its index here, so this tuple is the whole statement of the order.
+_INTERPRETER_ROW_ORDER: tuple[str, ...] = (
+    _PAUSE_TRACK_NAME,
+    _LOSS_TRACK_NAME,
+    _HEAP_METRIC,
+    _COUNTER_GROUP_NAME,
+)
+_INTERPRETER_ROW_RANKS: dict[str, int] = {name: rank for rank, name in enumerate(_INTERPRETER_ROW_ORDER)}
+
+# What a `GC Metrics` group holds, ranked the same way. `rss` is absent
+# because it hangs off the process track, which is OS-scoped, and the trace
+# processor discards a rank there (ADR-0003).
+_COUNTER_ORDER: tuple[str, ...] = (
+    "collected",
+    "uncollectable",
+    "candidates",
+    "duration",
+    "increment_size",
+    "alive_size",
+    "finalized_garbage_count",
+    "deleted_garbage_count",
+    "clear_weakrefs_count",
+)
+_COUNTER_RANKS: dict[str, int] = {metric: rank for rank, metric in enumerate(_COUNTER_ORDER)}
+
+# A metric this module has never heard of draws below every one it has.
+_UNLISTED_COUNTER_RANK: int = len(_COUNTER_ORDER)
 
 
 def _emit_interpreter_group_descriptors(
@@ -178,7 +181,7 @@ def _emit_pause_descriptor(
         state.get_track_uuid(track),
         _PAUSE_TRACK_NAME,
         parent_uuid=interpreter_uuid,
-        sibling_order_rank=_PAUSE_TRACK_RANK,
+        sibling_order_rank=_INTERPRETER_ROW_RANKS[_PAUSE_TRACK_NAME],
     )
     return [*packets, build_trace_packet(sequence_id, track_descriptor=desc)]
 
@@ -201,7 +204,7 @@ def _emit_loss_descriptor(
         state.get_track_uuid(track),
         _LOSS_TRACK_NAME,
         parent_uuid=interpreter_uuid,
-        sibling_order_rank=_LOSS_TRACK_RANK,
+        sibling_order_rank=_INTERPRETER_ROW_RANKS[_LOSS_TRACK_NAME],
     )
     return [*packets, build_trace_packet(sequence_id, track_descriptor=desc)]
 
@@ -227,7 +230,7 @@ def _emit_counter_group_descriptor(
         _COUNTER_GROUP_NAME,
         parent_uuid=interpreter_uuid,
         child_ordering=ChildTracksOrdering.EXPLICIT,
-        sibling_order_rank=_COUNTER_GROUP_RANK,
+        sibling_order_rank=_INTERPRETER_ROW_RANKS[_COUNTER_GROUP_NAME],
     )
     return group_uuid, [*packets, build_trace_packet(sequence_id, track_descriptor=desc)]
 
@@ -241,12 +244,12 @@ def _emit_counter_track_descriptor(
 ) -> tuple[int, list[bytes]]:
     """Build a counter track descriptor if not already emitted.
 
-    A counter the process owns hangs off the process track. One an
-    interpreter owns whose metric is in ``_TOPLEVEL_COUNTER_METRICS`` hangs
-    off that interpreter's group, beside its pause and loss rows rather than
-    inside its GC Metrics group. Every other counter hangs off the GC Metrics
-    group, where the trace processor and the UI honor its ``_COUNTER_RANKS``
-    entry.
+    A counter the process owns hangs off the process track and carries no
+    rank, which an OS-scoped parent discards (ADR-0003). One an interpreter
+    owns whose metric is in ``_TOPLEVEL_COUNTER_METRICS`` hangs off that
+    interpreter's group, beside its pause and loss rows rather than inside
+    its GC Metrics group. Every other counter hangs off the GC Metrics group,
+    where the trace processor and the UI honor its ``_COUNTER_RANKS`` entry.
 
     *display_name* is the track name on the wire and identifies the track
     within *track*; *metric* is what the rank and the shared y axis are keyed
@@ -261,7 +264,6 @@ def _emit_counter_track_descriptor(
             display_name,
             parent_uuid=state.get_process_track_uuid(track.process),
             is_counter=True,
-            sibling_order_rank=_COUNTER_RANKS.get(metric, 0),
         )
         return ctr_uuid, [build_trace_packet(sequence_id, track_descriptor=desc)]
     if metric in _TOPLEVEL_COUNTER_METRICS:
@@ -274,7 +276,7 @@ def _emit_counter_track_descriptor(
             display_name,
             parent_uuid=interpreter_uuid,
             is_counter=True,
-            sibling_order_rank=_TOPLEVEL_COUNTER_RANK,
+            sibling_order_rank=_INTERPRETER_ROW_RANKS[_HEAP_METRIC],
         )
         return ctr_uuid, [*packets, build_trace_packet(sequence_id, track_descriptor=desc)]
     group_uuid, group_packets = _emit_counter_group_descriptor(track, state, sequence_id)
@@ -287,7 +289,7 @@ def _emit_counter_track_descriptor(
         display_name,
         parent_uuid=group_uuid,
         is_counter=True,
-        sibling_order_rank=_COUNTER_RANKS.get(metric, 0),
+        sibling_order_rank=_COUNTER_RANKS.get(metric, _UNLISTED_COUNTER_RANK),
         y_axis_share_key=metric,
     )
     return ctr_uuid, [*group_packets, build_trace_packet(sequence_id, track_descriptor=desc)]

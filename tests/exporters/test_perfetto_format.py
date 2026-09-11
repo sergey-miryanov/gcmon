@@ -7,7 +7,12 @@ from perfetto.protos.perfetto.trace.perfetto_trace_pb2 import (
     TrackEvent,
 )
 
-from gcmon.exporters.perfetto_format import _INTERPRETER_LIST_NAME, convert_trace_events_to_perfetto
+from gcmon.exporters.perfetto_format import (
+    _COUNTER_RANKS,
+    _INTERPRETER_LIST_NAME,
+    _UNLISTED_COUNTER_RANK,
+    convert_trace_events_to_perfetto,
+)
 from gcmon.exporters.perfetto_process_lifetime import _PROCESS_ROW_SLICE_NAME, finalize_perfetto_packets
 from gcmon.exporters.perfetto_proto import TrackEventType
 from gcmon.exporters.perfetto_track_state import PerfettoTrackState
@@ -17,6 +22,7 @@ from gcmon.model.trace_event import (
     Counter,
     Instant,
     TraceEvent,
+    Track,
 )
 from tests.exporters.perfetto_helpers import (
     convert_item,
@@ -488,9 +494,8 @@ class TestConvertItemToPerfettoPackets:
                 break
         assert duration_track_uuid is not None
 
-        # Find the matching TrackDescriptor and assert rank=4 (per-gen rank
-        # for `duration` in the new layout) plus parent resolves to a track
-        # named "GC Metrics".
+        # Find the matching TrackDescriptor, and check it ranks where
+        # `_COUNTER_ORDER` puts `duration` under a parent named "GC Metrics".
         descriptors: dict[int, tuple[int, int, str]] = {}
         for p in descriptors_packets:
             packet = TracePacket()
@@ -505,7 +510,7 @@ class TestConvertItemToPerfettoPackets:
             )
         assert duration_track_uuid in descriptors
         parent, rank, _ = descriptors[duration_track_uuid]
-        assert rank == 5
+        assert rank == _COUNTER_RANKS["duration"]
         assert parent != 0
         assert descriptors[parent][2] == "GC Metrics"
 
@@ -1152,6 +1157,74 @@ class TestTheInterpreterGroupsAreDerived:
         described = self._by_name(descriptors)
         assert _INTERPRETER_LIST_NAME not in described
         assert not any(name.startswith("Interpreter ") for name in described)
+
+
+class TestTheRowsInsideAnInterpreterGroupAreRanked:
+    """The rows a group holds draw in the order ADR-0027 sets.
+
+    The order is spelled out below rather than read off
+    ``_INTERPRETER_ROW_ORDER``, which would pass whatever that tuple said.
+    Reordering the rows is a decision the record carries, so it costs an
+    edit here too.
+    """
+
+    def _events(self, pid: int = 100, iid: int = 0) -> list[TraceEvent]:
+        """One of every row an interpreter owns: a pause slice, a loss
+        span, the `heap_size` counter and a counter inside GC Metrics."""
+        item = GCStatsInfo(
+            gen=0,
+            iid=iid,
+            ts_start=1_000,
+            ts_stop=2_000,
+            heap_size=1000,
+            collections=1,
+            collected=10,
+            uncollectable=0,
+            candidates=5,
+            duration=0.001,
+        )
+        return [
+            *convert_item_to_trace_format(proc(pid), item),
+            *convert_loss_to_trace_format(proc(pid), create_mock_loss_item(iid=iid)),
+        ]
+
+    def test_they_draw_pauses_loss_heap_size_then_the_metrics_group(self) -> None:
+        state = PerfettoTrackState()
+        descriptors, _ = convert_trace_events_to_perfetto(self._events(), state, sequence_id=1)
+        parsed = [td for td in (parse_track_descriptor(d) for d in descriptors) if td is not None]
+
+        group_uuid = state.get_or_create_interpreter_group_track_uuid(proc(100), 0)
+        rows = sorted((td for td in parsed if td.parent_uuid == group_uuid), key=lambda td: td.sibling_order_rank)
+
+        assert [td.name for td in rows] == ["GC Pauses", "GC Loss", "heap_size", "GC Metrics"]
+        assert [td.sibling_order_rank for td in rows] == [0, 1, 2, 3], "ranks must be distinct for the order to hold"
+
+
+class TestACounterTakesItsRankFromItsMetric:
+    def _counter(self, track: Track, metric: str) -> list[TrackDescriptor]:
+        state = PerfettoTrackState()
+        descriptors, _ = convert_trace_events_to_perfetto(
+            [Counter(track, metric, f"G0 {metric}", 1_000, 42)],
+            state,
+            sequence_id=1,
+        )
+        parsed = [parse_track_descriptor(d) for d in descriptors]
+        return [td for td in parsed if td is not None and td.name == f"G0 {metric}"]
+
+    def test_a_metric_nobody_listed_draws_below_every_listed_one(self) -> None:
+        """A counter gcmon grows later should appear at the bottom of the
+        group rather than above the ones somebody placed."""
+        found = self._counter(interpreter_track(100, 0), "gizmo_count")
+
+        assert found[0].sibling_order_rank == _UNLISTED_COUNTER_RANK
+        assert found[0].sibling_order_rank > max(_COUNTER_RANKS.values())
+
+    def test_a_counter_on_the_process_track_carries_no_rank(self) -> None:
+        """The process track is OS-scoped, so the trace processor throws a
+        child's rank away (ADR-0003). Writing one says otherwise."""
+        found = self._counter(process_track(100), "rss")
+
+        assert not found[0].HasField("sibling_order_rank")
 
 
 class TestLossTrackDescriptor:

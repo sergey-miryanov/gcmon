@@ -41,10 +41,9 @@ lazily, on first use of each track. The state object maps identity (`pid`,
 track reuses its UUID across flushes. Collision-freedom comes from the
 counter, not from bit arithmetic.
 
-**`uuid = 0` is reserved.** It is Perfetto's special root descriptor, used to
-carry the `process_ordering` hint. It is not a parent, and nothing may point
-`parent_uuid` at it. The allocator starting at 1 guarantees no user track can
-collide with it.
+**`uuid = 0` is reserved.** Perfetto reads it as the root descriptor, and
+gcmon writes one there to carry the `process_ordering` hint. Nothing parents
+to it, and the allocator starts at 1, so no track takes the number instead.
 
 **Descriptor layout:**
 
