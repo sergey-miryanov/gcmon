@@ -235,5 +235,5 @@ run-wide, the scope `Total` reports.
   JSONL, so the offline path reconstructs what the live path recorded.
 - `tests/stats/test_stats_output.py` pins the table's two levels and the
   footer wording; `tests/stats/test_stats.py` pins the per-ring arithmetic,
-  the settling and the bound; `tests/test_loss_replay.py` pins that a replayed
-  capture agrees with the live one.
+  the settling and the bound; `tests/monitoring/test_loss_replay.py` pins that
+  a replayed capture agrees with the live one.

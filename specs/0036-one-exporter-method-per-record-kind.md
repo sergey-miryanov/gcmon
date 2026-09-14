@@ -219,8 +219,8 @@ already-open stream.
   back through the trace processor. Four fakes subclass `EventsExporter` and
   all four shrink with the interface: `MockExporter` in `tests/helpers.py`
   from six methods to four, and `Recorder` in `tests/exporters/loss_row.py`,
-  `LossRecorder` in `tests/test_loss.py` and `Recorder` in
-  `tests/test_loss_replay.py` from four to two.
+  `LossRecorder` in `tests/monitoring/test_monitor_loss.py` and `Recorder` in
+  `tests/monitoring/test_loss_replay.py` from four to two.
 - **Cases:**
   1. Every record kind reaches every exporter that handles it, and the output
      is byte-identical to today's for a fixed input on all three formats: the

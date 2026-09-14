@@ -140,10 +140,10 @@ unbuilt.
   `lost_from`/`lost_count`/`lost_pause_ns`. Assert on the reconstruction,
   never on whether a detector fired; a detector that fires and repairs nothing
   is the outcome section 7 argues against.
-- **Prior art:** `tests/test_loss.py` for the per-ring arithmetic and
+- **Prior art:** `tests/model/test_loss.py` for the per-ring arithmetic and
   `tests/captures.py` for building a poll's record set with a known ground
-  truth. `tests/test_loss_replay.py` is the model for asserting that two paths
-  agree on one capture.
+  truth. `tests/monitoring/test_loss_replay.py` is the model for asserting
+  that two paths agree on one capture.
 - **Cases:**
   1. One poll's records for a ring carrying an interior hole: today the hole's
      pause reaches no window, and `exact_pause_ns` is short by it.

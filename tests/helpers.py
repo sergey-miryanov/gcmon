@@ -269,6 +269,56 @@ def create_mock_stats_item(
     )
 
 
+TS0 = 1_000_000_000
+"""When a synthetic run's first collection starts."""
+
+SPACING_NS = 1_150_000
+"""Measured gap between gen-0 collections."""
+
+
+def varied_pause(n: int) -> int:
+    """Pause lengths that do not all match, so a sum cannot pass by accident."""
+    return 100_000 + (n % 7) * 13_000
+
+
+def build_run(
+    count: int,
+    gen: int = 0,
+    iid: int = 0,
+    pause_ns: Callable[[int], int] = varied_pause,
+    spacing_ns: int = SPACING_NS,
+    ts0: int = TS0,
+    first_collection: int = 1,
+) -> list[GCStatsInfo]:
+    """Every collection a target performs, with ``duration`` accumulating."""
+    events: list[GCStatsInfo] = []
+    cumulative_ns = 0
+    ts = ts0
+
+    for nth in range(count):
+        collections = first_collection + nth
+        pause = pause_ns(collections)
+        cumulative_ns += pause
+        events.append(
+            create_mock_stats_item(
+                gen=gen,
+                iid=iid,
+                collections=collections,
+                ts_start=ts,
+                ts_stop=ts + pause,
+                duration=cumulative_ns / 1e9,
+            )
+        )
+        ts += spacing_ns
+
+    return events
+
+
+def true_pause_ns(events: Sequence[GCStatsInfo], first: int, last: int) -> int:
+    """Ground truth: the pause sum over collections *first* through *last*."""
+    return sum(e.ts_stop - e.ts_start for e in events if first <= e.collections <= last)
+
+
 def create_mock_loss_item(
     iid: int = 0,
     ts_start: int = 1_000,

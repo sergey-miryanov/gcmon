@@ -247,10 +247,11 @@ survives the ring wrapping.
   `src/gcmon/exporters/perfetto_builders.py` write the track and the
   generation groups.
 - `src/gcmon/stats/streaming_stats.py` records every gap.
-- `tests/test_loss.py` and `tests/test_loss_replay.py` check the arithmetic
-  against synthetic sessions and a real capture replayed behind a simulated
-  ring. `tests/analysis/test_combine_loss_round_trip.py` resolves the loss row
-  as a stack, live and through `combine`.
+- `tests/model/test_loss.py` and `tests/monitoring/test_monitor_loss.py` check
+  the arithmetic against synthetic sessions, and
+  `tests/monitoring/test_loss_replay.py` against a real capture replayed
+  behind a simulated ring. `tests/analysis/test_combine_loss_round_trip.py`
+  resolves the loss row as a stack, live and through `combine`.
   `tests/exporters/test_perfetto_loss_track.py`, marked `fuzz`, settles the
   track layout against the real trace processor per
   [ADR-0014](0014-perfetto-integration-test-strategy.md).
