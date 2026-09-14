@@ -37,7 +37,7 @@ from gcmon.monitoring.wait_policy import no_wait_policy
 from gcmon.stats.streaming_stats import StreamingStats
 from tests.captures import SSL_CONTEXT_SIZE
 from tests.helpers import FakeEventsReader, polled, proc
-from tests.test_monitor_cursor import POLL_0
+from tests.monitoring.test_monitor_cursor import POLL_0
 
 PID = 33328
 IID = 0

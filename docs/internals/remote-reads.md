@@ -133,8 +133,9 @@ does with each.
 
 `debug=True` lets an outer layer replace any of these with a `RuntimeError`
 carrying the original as `__cause__`. A dead target on Windows arrives that
-way, measured. `tests/test_events_reader.py` records what the other two do, on
-every CI run across `ubuntu-latest`, `macos-latest` and `windows-latest`.
+way, measured. `tests/monitoring/test_events_reader.py` records what the other
+two do, on every CI run across `ubuntu-latest`, `macos-latest` and
+`windows-latest`.
 
 [win32-pid]: https://learn.microsoft.com/en-us/windows/win32/procthread/process-handles-and-identifiers
 [posix-reuse]: https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/V1_chap04.html#tag_04_17

@@ -73,9 +73,9 @@ Neither is bounded.
   is gcmon's own resource use.
 
 **Why the suite does not catch it.** Nothing counts what an attachment costs
-the monitor process. `tests/test_events_reader.py` asserts how many times
-gcmon attaches, which is the opposite measure: a run that leaks a port per
-attach passes every one of those assertions.
+the monitor process. `tests/monitoring/test_events_reader.py` asserts how many
+times gcmon attaches, which is the opposite measure: a run that leaks a port
+per attach passes every one of those assertions.
 
 ## 4. Proposed change
 
@@ -109,7 +109,8 @@ that would put a `ctypes` Mach call in a package whose one rule about
   attach-and-drop cycles is the count before, within a small margin for the
   interpreter's own churn. Asserting an absolute number pins the platform
   rather than the defect.
-- **Prior art:** `tests/test_events_reader.py::TestAttachOncePerPid` for the
+- **Prior art:**
+  `tests/monitoring/test_events_reader.py::TestAttachOncePerPid` for the
   attach-and-drop cycle to build on; it counts attaches where this counts what
   they cost.
 - **Cases:**

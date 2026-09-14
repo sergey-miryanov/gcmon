@@ -154,10 +154,11 @@ new output format is a second `EventEncoder` implementation.
 - `src/gcmon/analysis/combine.py` holds the two output paths and the
   normalization split.
 - `src/gcmon/analysis/jsonl_io.py` holds the Chrome-file check.
-- Tests: `tests/monitoring/test_monitor_cmd.py` and
-  `tests/monitoring/test_monitoring_options.py` cover the refusals;
-  `tests/test_convert_cmd.py` covers `combine`'s arguments and what it writes;
-  `tests/test_convert_cmd_perfetto.py` carries the encoder's oracle, which
-  reads a `.pftrace` through the trace processor and compares it against the
-  events it was built from; `tests/monitoring/test_monitored_run_trace.py`
-  pins a whole run as decoded `TracePacket` text.
+- Tests: `tests/cli/monitor/test_monitor_cmd.py` and
+  `tests/cli/monitor/test_monitoring_options.py` cover the refusals;
+  `tests/cli/analyze/test_convert_cmd.py` covers `combine`'s arguments and
+  what it writes; `tests/test_convert_cmd_perfetto.py` carries the encoder's
+  oracle, which reads a `.pftrace` through the trace processor and compares it
+  against the events it was built from;
+  `tests/monitoring/test_monitored_run_trace.py` pins a whole run as decoded
+  `TracePacket` text.

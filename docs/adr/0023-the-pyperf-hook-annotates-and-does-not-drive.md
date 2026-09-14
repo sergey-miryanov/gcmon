@@ -124,5 +124,5 @@ two in step.
 server passes it through to the exporter unchanged.
 
 `tests/pyperf/test_pyperf_hook.py` drives a real client into a real control
-server. `tests/test_marks.py` pins the grammar as a literal string: a round
-trip alone passes on a changed separator.
+server. `tests/model/test_marks.py` pins the grammar as a literal string: a
+round trip alone passes on a changed separator.

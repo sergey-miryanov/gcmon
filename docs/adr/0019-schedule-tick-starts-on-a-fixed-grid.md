@@ -141,10 +141,11 @@ summary rather than the loop.
   and `GCMON_RATE`; `src/gcmon/cli/monitor/monitoring_options.py` reports what
   it rejects and applies the same minimum to a rate arriving from anywhere
   else.
-- Tests: `tests/test_schedule.py` for the grid, the skip and the floor,
+- Tests: `tests/model/test_schedule.py` for the grid, the skip and the floor,
   asserted on the arithmetic directly; `tests/monitoring/test_monitor_loop.py`
   for the rest, driven by a scripted clock and a stop event that records what
   it was asked to wait for, never by elapsed wall time, which would assert the
   operating system rather than gcmon; `tests/stats/test_stats_output.py` for
-  the summary line and the two remedies; `tests/test_monitor_coverage.py` for
-  the advisory keeping to what it knows.
+  the summary line and the two remedies;
+  `tests/monitoring/test_monitor_coverage.py` for the advisory keeping to what
+  it knows.

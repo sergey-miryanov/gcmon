@@ -53,8 +53,8 @@ environment defaults both derived from it.
    variable without my writing the name twice, so that renaming the variable
    cannot leave the help stale.
 5. As a maintainer, I want every `GCMON_*` variable to accept exactly what it
-   accepts today, so that `tests/test_env.py` is the guard on the rewrite
-   rather than a suite that had to be edited to pass.
+   accepts today, so that `tests/cli/monitor/test_env.py` is the guard on the
+   rewrite rather than a suite that had to be edited to pass.
 6. As a maintainer of the `run` and `monitor` commands, I want option
    validation to raise rather than return `None`, so that a new command cannot
    forget the `if options is None` check and start a run with an unvalidated
@@ -107,7 +107,7 @@ it from there. Either order works.
 **4.5: Environment variable names and semantics are frozen.** Every `GCMON_*`
 name, every accepted truthy spelling (`1`, `yes`, `on`, `true`), every
 default. They are documented in [docs/cli.md](../docs/cli.md) and in the help
-text, and `tests/test_env.py` pins them.
+text, and `tests/cli/monitor/test_env.py` pins them.
 
 **Rejected: a settings library.** It would replace a table gcmon controls with
 a dependency's opinions about precedence and error text, for eleven options,
@@ -123,12 +123,12 @@ row.
 
 ## 5. Seams and testing decisions
 
-- **Seam:** `tests/test_cli.py`, at the command line, the highest seam
+- **Seam:** `tests/cli/test_cli.py`, at the command line, the highest seam
   available, because everything here exists to turn an argv and an environment
   into a configuration, and that is observable from outside.
-  `tests/test_env.py` and `tests/monitoring/test_monitoring_options.py` cover
-  the environment defaults and the validation rules at the level they are
-  written today.
+  `tests/cli/monitor/test_env.py` and
+  `tests/cli/monitor/test_monitoring_options.py` cover the environment
+  defaults and the validation rules at the level they are written today.
 - **New seam needed:** none.
 - **What makes a good test here:** drive `main()` with an argv and a patched
   environment and assert on exit code and emitted log lines. A test that reads
@@ -137,14 +137,14 @@ row.
   operator gets. For the ordering change, assert that a rejected invocation
   emits the error and **no** configuration lines; asserting the error appears
   is not enough, since it appears today too.
-- **Prior art:** `tests/test_env.py` for the environment-variable matrix;
-  `tests/monitoring/test_monitoring_options.py` for the validation cases and
-  the `RSS_CAPABLE_FORMATS` parametrization; `tests/test_cli.py` for driving
-  `main()` end to end.
+- **Prior art:** `tests/cli/monitor/test_env.py` for the environment-variable
+  matrix; `tests/cli/monitor/test_monitoring_options.py` for the validation
+  cases and the `RSS_CAPABLE_FORMATS` parametrization; `tests/cli/test_cli.py`
+  for driving `main()` end to end.
 - **Cases:**
   1. Every option resolves identically from a flag, from its environment
-     variable, and from neither: the same matrix `tests/test_env.py` covers
-     today, unchanged.
+     variable, and from neither: the same matrix
+     `tests/cli/monitor/test_env.py` covers today, unchanged.
   2. A flag overrides its environment variable, as today.
   3. `--rate -1` exits 1, prints the rate error, and prints no configuration
      lines.

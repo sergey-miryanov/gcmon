@@ -137,5 +137,5 @@ choices stay `["jsonl", "chrome", "perfetto"]`.
   carries the chrome↔perfetto content-equivalence assertions;
   `tests/exporters/test_combined_exporter.py` and
   `test_combined_exporter_integration.py` cover the forwarder;
-  `tests/monitoring/test_monitor_cmd.py` checks end-to-end that both files are
-  written.
+  `tests/cli/monitor/test_monitor_cmd.py` checks end-to-end that both files
+  are written.

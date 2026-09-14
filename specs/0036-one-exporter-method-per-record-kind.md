@@ -197,11 +197,11 @@ already-open stream.
 - **Seam:** the on-disk file, through `tests/exporters/test_jsonl_exporter.py`
   and `test_perfetto_exporter.py`, the stream through
   `test_stdout_exporter.py`, plus the JSONL leg of
-  `tests/test_convert_cmd.py`. That is the highest seam available and the
-  correct one: the contract this must not break is the file, not the class
-  structure. The RSS warning moves seam with the code it lives in: three
-  assertions in `tests/monitoring/test_monitoring_options.py` move to
-  `tests/monitoring/test_loop_runner.py`, and that file's import of
+  `tests/cli/analyze/test_convert_cmd.py`. That is the highest seam available
+  and the correct one: the contract this must not break is the file, not the
+  class structure. The RSS warning moves seam with the code it lives in: three
+  assertions in `tests/cli/monitor/test_monitoring_options.py` move to
+  `tests/cli/monitor/test_loop_runner.py`, and that file's import of
   `RSS_CAPABLE_FORMATS` goes with the tuple.
 - **New seam needed:** none. Do **not** assert on `__mro__`, on which class
   holds the buffer, or on the method count; that pins the implementation this
@@ -214,11 +214,11 @@ already-open stream.
   processor, since a round-trip through our own constant is equally happy with
   a right and a wrong field number
   ([ADR-0014](../docs/adr/0014-perfetto-integration-test-strategy.md)).
-- **Prior art:** `tests/test_convert_cmd.py` for the JSONL round-trip;
-  `tests/test_convert_cmd_perfetto.py` for what a trace means read back
-  through the trace processor. Four fakes subclass `EventsExporter` and all
-  four shrink with the interface: `MockExporter` in `tests/helpers.py` from
-  six methods to four, and `Recorder` in `tests/exporters/loss_row.py`,
+- **Prior art:** `tests/cli/analyze/test_convert_cmd.py` for the JSONL
+  round-trip; `tests/test_convert_cmd_perfetto.py` for what a trace means read
+  back through the trace processor. Four fakes subclass `EventsExporter` and
+  all four shrink with the interface: `MockExporter` in `tests/helpers.py`
+  from six methods to four, and `Recorder` in `tests/exporters/loss_row.py`,
   `LossRecorder` in `tests/test_loss.py` and `Recorder` in
   `tests/test_loss_replay.py` from four to two.
 - **Cases:**

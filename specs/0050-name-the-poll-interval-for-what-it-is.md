@@ -83,8 +83,8 @@ has to be maintained. The break is one error message on one invocation.
 
 ## 5. Seams and testing decisions
 
-- **Seam:** `tests/test_cli.py`, which already parses argument vectors and
-  asserts the resulting options, and `tests/monitoring/test_monitor_cmd.py`
+- **Seam:** `tests/cli/test_cli.py`, which already parses argument vectors and
+  asserts the resulting options, and `tests/cli/monitor/test_monitor_cmd.py`
   for the env-var path. Argument parsing is the highest seam that can observe
   a flag rename, and both suites exist.
 - **New seam needed:** none.
@@ -92,8 +92,8 @@ has to be maintained. The break is one error message on one invocation.
   `MonitoringOptions`, from the flag and from the variable, rather than
   asserting the parser's internal attribute names. The hazard in a rename is a
   call site that kept the old spelling and now silently takes a default.
-- **Prior art:** `tests/test_cli.py` for the flag cases;
-  `tests/monitoring/test_monitor_cmd.py` for the env-var cases and for the
+- **Prior art:** `tests/cli/test_cli.py` for the flag cases;
+  `tests/cli/monitor/test_monitor_cmd.py` for the env-var cases and for the
   pattern of setting `GCMON_*` around a parse.
 - **Cases:**
   1. `--interval 0.05` sets the interval; `-i 0.05` does too.

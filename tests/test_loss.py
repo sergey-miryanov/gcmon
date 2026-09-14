@@ -31,7 +31,7 @@ from gcmon.monitoring.wait_policy import no_wait_policy
 from gcmon.stats.streaming_stats import StreamingStats
 from gcmon.support.time_units import secs_to_ns
 from tests.helpers import FakeEventsReader, create_mock_stats_item, polled, proc
-from tests.test_monitor_cursor import POLL_0, POLL_1, build_batch
+from tests.monitoring.test_monitor_cursor import POLL_0, POLL_1, build_batch
 
 PID = 12345
 TS0 = 1_000_000_000

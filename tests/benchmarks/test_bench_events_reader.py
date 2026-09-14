@@ -14,7 +14,7 @@ from pytest_codspeed import BenchmarkFixture
 
 from gcmon.model.protocol import TGCStatsInfo
 from gcmon.monitoring.events_reader import RemoteEventsReader
-from tests.test_events_reader import running_target
+from tests.monitoring.test_events_reader import running_target
 
 # Reads per measured call, enough that the work around the call does not set
 # the figure. Both benchmarks repeat the same count, so the pair stays a ratio.

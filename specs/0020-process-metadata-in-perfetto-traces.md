@@ -128,7 +128,7 @@ already behaves.
   the right slice rather than merely present in the byte stream.
 - **New seam needed:** none for emission. The env-var injection needs an
   assertion at `ChildProcessRunner`'s environment-building step, which
-  `tests/test_child_process_runner.py` already reaches.
+  `tests/monitoring/test_child_process_runner.py` already reaches.
 - **What makes a good test here:** query the annotation *through its slice*:
   join `args` to the `Lifetime` slice on a known pid's process track and
   assert the value. A test that greps the trace bytes for the string would

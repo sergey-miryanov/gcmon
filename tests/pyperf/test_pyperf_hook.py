@@ -23,7 +23,7 @@ from gcmon.model.protocol import TInstantMsg
 from gcmon.monitoring.events_reader import RemoteEventsReader, TargetUnavailable
 from gcmon.pyperf.hook import GCMonitorHook, _get_env_pyperf_hook_control_timeout, gcmon_hook
 from tests.helpers import MockExporter, monitored, open_trace_processor
-from tests.test_events_reader import target_executable
+from tests.monitoring.test_events_reader import target_executable
 
 
 class Marked(NamedTuple):

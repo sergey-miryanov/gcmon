@@ -121,21 +121,21 @@ is where that is stated rather than left to the implementations.
 
 ## 5. Seams and testing decisions
 
-- **Seam:** `tests/monitoring/test_loop_runner.py`, at the monitoring entry
+- **Seam:** `tests/cli/monitor/test_loop_runner.py`, at the monitoring entry
   point, the highest seam that can observe the change, because what these
   types are *for* is being handed to that function and started.
-  `tests/test_child_process_runner.py` and
-  `tests/monitoring/test_monitor_cmd.py` cover the two adapters at their own
+  `tests/monitoring/test_child_process_runner.py` and
+  `tests/cli/monitor/test_monitor_cmd.py` cover the two adapters at their own
   level.
 - **New seam needed:** none.
 - **What makes a good test here:** exercise both adapters through the same
   entry point and assert the observable difference is only the one that should
   exist: the exit code. A test asserting that a class implements a protocol
   proves the type checker ran; assert behaviour instead.
-- **Prior art:** `tests/monitoring/test_loop_runner.py` for driving the entry
+- **Prior art:** `tests/cli/monitor/test_loop_runner.py` for driving the entry
   point with a substituted session; `tests/monitoring/conftest.py` for the
-  existing fakes; `tests/test_child_process_runner.py` for the spawn adapter's
-  lifecycle.
+  existing fakes; `tests/monitoring/test_child_process_runner.py` for the
+  spawn adapter's lifecycle.
 - **Cases:**
   1. `gcmon run` propagates a failing script's exit code, as today.
   2. `gcmon monitor <pid>` exits 0 whatever the attached process does, as

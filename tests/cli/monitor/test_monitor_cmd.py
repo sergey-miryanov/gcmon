@@ -8,8 +8,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from tests.cli.monitor.conftest import MonitorArgsFactory
 from tests.helpers import assert_valid_perfetto_trace
-from tests.monitoring.conftest import MonitorArgsFactory
 
 
 @pytest.fixture

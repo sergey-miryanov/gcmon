@@ -173,9 +173,9 @@ wait behind it.
 - `src/gcmon/cli/monitor/loop_runner.py` builds the one registry a run has,
   before the target starts, because the control server has to be listening by
   then.
-- `tests/test_process.py` pins the struct to the pair, the ordering and the
-  suffix; `tests/monitoring/test_process_registry.py` pins creation, the prune
-  and what `at` answers on each side of a departure;
+- `tests/model/test_process.py` pins the struct to the pair, the ordering and
+  the suffix; `tests/monitoring/test_process_registry.py` pins creation, the
+  prune and what `at` answers on each side of a departure;
   `tests/architecture/test_layering.py` is where the `control`-to-`monitoring`
   edge fails, and `tests/architecture/test_lock_order.py` is where an exporter
   naming `ProcessLookup` does. Both are deselected by default.

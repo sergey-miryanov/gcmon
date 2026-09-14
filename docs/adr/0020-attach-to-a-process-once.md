@@ -135,10 +135,9 @@ cursor makes a number wrong; a stale attachment invents the data.
   [ADR-0015](0015-gc-loss-spans-on-their-own-track.md) fixes the read-start
   instant as the one that closes the previous poll's interval, so that bracket
   did not move.
-- Tests: `tests/test_events_reader.py` for the lifetime, against a counting
-  stand-in for the attachment and against real subprocesses;
+- Tests: `tests/monitoring/test_events_reader.py` for the lifetime, against a
+  counting stand-in for the attachment and against real subprocesses;
   `tests/benchmarks/test_bench_events_reader.py` for the gap the decision
   rests on, a held read measured against a fresh attach;
-  `tests/test_monitor.py` for both arms of a poll, since a test watching one
-  arm passes with the two swapped; `tests/monitoring/test_monitor.py` for the
-  prune.
+  `tests/monitoring/test_monitor.py` for both arms of a poll, since a test
+  watching one arm passes with the two swapped, and for the prune.

@@ -60,8 +60,9 @@ which point one shared path is worth more than the encoder's independence.
 
 ## 5. Seams and testing decisions
 
-- **Seam:** the dispatch function itself, plus `tests/test_convert_cmd.py`,
-  which drives `gcmon convert` end to end for each format word.
+- **Seam:** the dispatch function itself, plus
+  `tests/cli/analyze/test_convert_cmd.py`, which drives `gcmon convert` end to
+  end for each format word.
 - **New seam needed:** none.
 - **What makes a good test here:** one that fails when the two paths disagree,
   rather than one per path. Drive every format word through both and assert
