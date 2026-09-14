@@ -126,6 +126,7 @@ flush, and the highest cannot run there.
   still opens and what an interpreter without libzstd writes instead;
   `tests/exporters/test_perfetto_proto.py` checks the field numbers against
   the generated descriptor; `tests/helpers.py` holds the reader every Perfetto
-  test reads through, and `tests/test_helpers.py` covers it;
+  test reads through, and `test_inflating_the_batches_yields_the_packets`
+  inflates a real run's batches by an independent route to check it;
   `tests/benchmarks/test_bench_trace_write.py` measures the write path on the
   CodSpeed job.
