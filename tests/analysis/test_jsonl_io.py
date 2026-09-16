@@ -39,7 +39,7 @@ from gcmon.model.names import (
     TS_STOP,
     TYPE,
 )
-from gcmon.model.protocol import has_incremental
+from gcmon.model.protocol import has_incremental, is_gc_stats
 from gcmon.model.trace_event import Counter, Slice
 from gcmon.support.vocabulary import ENCODING, FORMAT_PERFETTO
 from tests.analysis.conftest import make_inc_item, make_inc_jsonl_record
@@ -58,7 +58,7 @@ class TestJsonToItem:
         data = create_jsonl_record(pid=123, gen=0)
         pid, item = json_to_item(data)
         assert pid == 123
-        assert hasattr(item, "gen")
+        assert is_gc_stats(item)
         assert item.gen == 0
 
     def test_returns_incremental_item(self) -> None:
@@ -84,7 +84,7 @@ class TestReadJsonl:
         result = read_jsonl(path)
         assert 123 in result
         assert len(result[123]) == 1
-        assert hasattr(result[123][0], "gen")
+        assert is_gc_stats(result[123][0])
         assert result[123][0].gen == 0
 
     def test_reads_multiple_pids(self, tmp_path: Path) -> None:

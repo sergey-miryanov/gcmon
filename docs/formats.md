@@ -34,6 +34,10 @@ A trace carries these:
   `G0 collected`, `G1 collected` and `G2 collected` line up.
 - **`GC Loss` track**: one row per interpreter, `GC Loss`, under that
   interpreter's group; see [GC Loss slices](#gc-loss-slices).
+- **Control instants** on the process row, where a program drove gcmon through
+  the [control plane](control-plane.md): `start GC monitor` when it resumed
+  polling and `stop GC monitor` when it suppressed it. A mark a program sends
+  itself carries whatever name it passed.
 - **`rss` counter** per process under `--rss`, in bytes, sampled at
   `--rss-interval` (default 1s).
 - **`Processes` track**: a minimap of the session, one slice per monitored

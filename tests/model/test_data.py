@@ -10,7 +10,15 @@ from gcmon.model.data import (
     instant_msg,
 )
 from gcmon.model.names import GEN, GENS, IID, LOST_COUNT, OBSERVED_COUNT, PID, TS_START, TS_STOP
-from gcmon.model.protocol import TMapping, has_deduce_unreachable, has_incremental, has_mark_alive, to_mapping
+from gcmon.model.protocol import (
+    TMapping,
+    has_deduce_unreachable,
+    has_incremental,
+    has_mark_alive,
+    is_gc_stats,
+    is_instant,
+    to_mapping,
+)
 
 
 class TestGCStatsInfo:
@@ -118,8 +126,8 @@ class TestLossMsg:
         ``convert_to_trace_format`` and the normalizers from claiming it."""
         msg = LossMsg(iid=0, ts_start=1_000, ts_stop=2_000, gens=[])
 
-        assert not hasattr(msg, "collections")
-        assert not hasattr(msg, "type")
+        assert not is_gc_stats(msg)
+        assert not is_instant(msg)
 
     def test_from_mapping_returns_loss_msg(self) -> None:
         result = from_mapping(

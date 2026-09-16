@@ -74,10 +74,7 @@ class TestASliceExpandsIntoAPair:
         begin = _slice_packets(packets)[0]
         assert begin.timestamp == 1_000
         assert begin.track_event.name == gc_pause_slice_name(0)
-        # Spelled out rather than imported: nothing else pins the value a
-        # reader filters on in Perfetto, and the constant would agree with
-        # itself after a rename.
-        assert list(begin.track_event.categories) == ["gc.pause"]
+        assert list(begin.track_event.categories) == [PAUSE.category]
         assert [a.name for a in begin.track_event.debug_annotations] == [GENERATION]
 
     def test_the_end_lands_at_ts_stop_and_carries_only_the_track(self) -> None:

@@ -7,6 +7,32 @@ extensions.
 trace processor puts gcmon's slice args under `debug.`: a per-generation loss
 count is `debug.gen0.lost_count`.
 
+## Slice Categories
+
+Every slice gcmon draws carries a category naming the phase it measures, with
+the generation as a keyword: a gen-0 pause is `gc.pause(gen=0)`. Filter on the
+prefix to reach every generation at once, on the whole string to reach one.
+
+| Category | Slice |
+|---|---|
+| `gc.pause` | `GC Pause(gen)`, the one slice every record produces |
+| `gc.mark.alive` | `GC Mark Alive(gen)` |
+| `gc.increment` | `GC Fill Increment(gen)` |
+| `gc.deduce` | `GC Deduce Unreachable(gen)` |
+| `gc.weakrefs` | `GC Handle Weakrefs Callbacks(gen)` |
+| `gc.finalize` | `GC Finalize Garbage(gen)` |
+| `gc.resurrect` | `GC Handle Resurrected(gen)` |
+| `gc.clear_weakrefs` | `GC Clear Weakrefs(gen)` |
+| `gc.delete` | `GC Delete Garbage(gen)` |
+| `gc.loss` | `GC Loss(gens)`, an interval gcmon went blind for |
+
+Every row but the first two needs a CPython build carrying the extra GC
+instrumentation; see [Output formats](formats.md#perfetto-output).
+
+`gc.loss` is the one to exclude from a pause query. A loss span's width is an
+interval nothing measured, so blending it into the pause distribution reads as
+a pause that never happened.
+
 ## Accessing the SQL Interface
 
 1. Open your `.pftrace` file in [Perfetto UI](https://ui.perfetto.dev)
