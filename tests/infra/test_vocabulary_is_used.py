@@ -12,8 +12,14 @@ Some literals are allowed through, each for a reason the scan cannot infer:
 - `tests/model/test_names.py`, which spells them out on purpose so a rename
   has one place to pass through;
 - the sites listed in ``ALLOWED`` below, each with its reason. Two forms
-  recur there: a literal a type checker narrows on, which a name defeats,
-  and an argument to something that writes down whatever it is handed.
+  recur there: an argument to something that writes down whatever it is
+  handed, and a word that happens to read like one gcmon owns.
+
+Only one literal is kept for a type checker: `sys.platform == "win32"` is
+the form mypy and pyrefly narrow on. `hasattr` needs no such exemption,
+because the narrowing lives in a `TypeGuard` signature rather than at the
+call site: `gcmon.model.protocol` has a guard per field, and calling one
+reads better than repeating its body.
 """
 
 from __future__ import annotations
@@ -52,18 +58,18 @@ ALLOWED: dict[str, frozenset[str]] = {
     "tests/exporters/test_perfetto_emission_order_fuzz.py": frozenset({"Process A", "Process B"}),
     # Arguments to builders that write down whatever they are handed.
     "tests/exporters/test_perfetto_builders.py": frozenset({"Process 100", "collected", "duration"}),
-    # The one place the category a reader filters on is pinned.
-    "tests/exporters/test_perfetto_slice_expansion.py": frozenset({"gc.pause"}),
     # `get_env_duration` and `get_env_rss`, resolved by suffix.
     "tests/cli/monitor/test_env.py": frozenset({"duration", "rss"}),
     # A subprocess stream, not an output format.
     "tests/support/test_log_process_output.py": frozenset({"stdout"}),
-    # `hasattr(x, "gen")` narrows a union where `hasattr(x, GEN)` does not,
-    # the same way `sys.platform == "win32"` does.
-    "src/gcmon/model/protocol.py": frozenset({"collections", "type", "gens"}),
-    "tests/analysis/test_jsonl_io.py": frozenset({"gen"}),
-    "tests/model/test_data.py": frozenset({"collections", "type"}),
 }
+
+
+# Words gcmon owns that are also ordinary Python. `"name"` is a keyword
+# argument, a `parametrize` argname and a dict key in a dozen helpers, so
+# policing it reports plumbing rather than duplication. The constants stay;
+# only the scan lets them through.
+TOO_GENERIC: frozenset[str] = frozenset({"name", "type"})
 
 
 def _watched() -> dict[str, str]:
@@ -75,7 +81,7 @@ def _watched() -> dict[str, str]:
     for module in (names, vocabulary):
         for attr in module.__all__:
             value = getattr(module, attr)
-            if isinstance(value, str) and len(value) > 2:
+            if isinstance(value, str) and len(value) > 2 and value not in TOO_GENERIC:
                 out.setdefault(value, f"{module.__name__}.{attr}")
     return out
 
