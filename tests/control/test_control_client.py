@@ -8,12 +8,13 @@ import pytest
 
 from gcmon.control.control_client import ControlClient, _default_connect, connect_with_retry
 from gcmon.control.control_server import CONTROL_ADDRESS_ENV
+from gcmon.control.protocol import MSG, MSG_START, MSG_STOP
 from gcmon.model.names import PID, TS
 
 
 def assert_payload(mock_conn: MagicMock, expected_msg: str, *, call_index: int = 0) -> dict[str, int | str]:
     payload: dict[str, int | str] = mock_conn.send.call_args_list[call_index][0][0]
-    assert payload["msg"] == expected_msg
+    assert payload[MSG] == expected_msg
     assert payload[PID] == os.getpid()
     assert isinstance(payload[TS], int)
     return payload
@@ -55,8 +56,8 @@ class TestPublicAPI:
     @pytest.mark.parametrize(
         "method, args, expected_msg",
         [
-            ("start_monitoring", (), "start"),
-            ("stop_monitoring", (), "stop"),
+            ("start_monitoring", (), MSG_START),
+            ("stop_monitoring", (), MSG_STOP),
             ("instant_msg", ("custom event",), "custom event"),
         ],
     )
@@ -76,8 +77,8 @@ class TestPublicAPI:
             with client.pause_monitoring():
                 pass
         assert mock_conn.send.call_count == 2
-        assert mock_conn.send.call_args_list[0][0][0]["msg"] == "stop"
-        assert mock_conn.send.call_args_list[1][0][0]["msg"] == "start"
+        assert mock_conn.send.call_args_list[0][0][0][MSG] == MSG_STOP
+        assert mock_conn.send.call_args_list[1][0][0][MSG] == MSG_START
 
 
 class TestInstantMsg:

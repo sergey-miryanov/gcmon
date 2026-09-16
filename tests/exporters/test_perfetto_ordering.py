@@ -9,6 +9,7 @@ from perfetto.protos.perfetto.trace.perfetto_trace_pb2 import (
     TrackDescriptor,
 )
 
+from gcmon.control.protocol import START_EVENT
 from gcmon.exporters.perfetto_format import convert_trace_events_to_perfetto
 from gcmon.exporters.perfetto_process_lifetime import process_track_name
 from gcmon.exporters.perfetto_track_state import PerfettoTrackState
@@ -64,7 +65,7 @@ class TestProcessOrderingByFirstTs:
     def test_root_descriptor_present_with_explicit_ordering(self) -> None:
         state = PerfettoTrackState()
         events: list[TraceEvent] = [
-            Instant(process_track(100), "start", ts=5_000),
+            Instant(process_track(100), START_EVENT, ts=5_000),
         ]
         descriptors, _ = convert_trace_events_to_perfetto(
             events,
@@ -240,8 +241,8 @@ class TestProcessOrderingByFirstTs:
         """
         state = PerfettoTrackState()
         events: list[TraceEvent] = [
-            Instant(process_track(100), "start", ts=5_000),
-            Instant(process_track(200), "start", ts=1_000),
+            Instant(process_track(100), START_EVENT, ts=5_000),
+            Instant(process_track(200), START_EVENT, ts=1_000),
         ]
         descriptors, _ = convert_trace_events_to_perfetto(
             events,

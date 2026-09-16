@@ -3,6 +3,7 @@
 import json
 
 from gcmon.analysis.jsonl_io import read_jsonl
+from gcmon.control.protocol import START_EVENT, STOP_EVENT
 from gcmon.exporters import JsonlExporter
 from gcmon.model.data import GCStatsInfo
 from gcmon.model.names import (
@@ -236,7 +237,7 @@ class TestJsonlExporterInstantEvents:
         self, jsonl_exporter: ExporterFactory, read_jsonl: JsonlFileReader
     ) -> None:
         exporter, path = jsonl_exporter(threshold=1)
-        instant = create_instant_msg(name="start GC monitor", ts=1_500_000_000)
+        instant = create_instant_msg(name=START_EVENT, ts=1_500_000_000)
         exporter.add_instant_event(proc(DEFAULT_PID), instant)
         exporter.close()
 
@@ -252,19 +253,19 @@ class TestJsonlExporterInstantEvents:
 
     def test_add_instant_event_multiple(self, jsonl_exporter: ExporterFactory, read_jsonl: JsonlFileReader) -> None:
         exporter, path = jsonl_exporter(threshold=1000)
-        for name in ("start", "stop"):
+        for name in (START_EVENT, STOP_EVENT):
             exporter.add_instant_event(proc(DEFAULT_PID), create_instant_msg(name=name, ts=1000))
         exporter.close()
 
         events = read_jsonl(path)
         assert len(events) == 2
-        for event, name in zip(events, ("start", "stop"), strict=True):
+        for event, name in zip(events, (START_EVENT, STOP_EVENT), strict=True):
             assert_is_instant_msg(event, pid=DEFAULT_PID, name=name, ts=1_000)
 
     def test_mixed_instant_and_gc_events(
         self, mock_stats_item: GCStatsInfo, jsonl_exporter: ExporterFactory, read_jsonl: JsonlFileReader
     ) -> None:
-        instant = create_instant_msg(name="stop", ts=2_000)
+        instant = create_instant_msg(name=STOP_EVENT, ts=2_000)
         exporter, path = jsonl_exporter(threshold=1_000)
         exporter.add_event(proc(DEFAULT_PID), mock_stats_item)
         exporter.add_instant_event(proc(DEFAULT_PID), instant)

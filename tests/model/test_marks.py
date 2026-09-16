@@ -2,6 +2,7 @@
 
 import pytest
 
+from gcmon.control.protocol import START_EVENT
 from gcmon.model.marks import Mark, Side, format_mark, parse_mark
 from gcmon.model.names import NAME
 from gcmon.support.vocabulary import PROGRAM_NAME
@@ -52,7 +53,7 @@ class TestParsingSomethingElse:
         NAME,
         [
             "",
-            "start GC monitor",
+            START_EVENT,
             PROGRAM_NAME,
             "gcmon:bm_base64:1",
             "gcmon:bm_base64:1:1:begin:extra",

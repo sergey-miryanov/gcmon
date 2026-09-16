@@ -1,6 +1,7 @@
 import msgspec
 import pytest
 
+from gcmon.control.protocol import START_EVENT
 from gcmon.model.data import (
     GCStatsInfo,
     GenLoss,
@@ -38,7 +39,7 @@ class TestGCStatsInfo:
 class TestInstantMsg:
     def test_instant_msg_creation(self, instant_item: InstantMsg) -> None:
         assert instant_item.type == "i"
-        assert instant_item.name == "start GC monitor"
+        assert instant_item.name == START_EVENT
         assert instant_item.ts == 5_000_000
 
     def test_instant_msg_with_explicit_ts(self) -> None:
@@ -101,7 +102,7 @@ class TestFromMapping:
         result = from_mapping(instant_dict)
         assert isinstance(result, InstantMsg)
         assert result.type == "i"
-        assert result.name == "start GC monitor"
+        assert result.name == START_EVENT
         assert result.ts == 5_000_000
 
     def test_from_mapping_empty_raises(self) -> None:

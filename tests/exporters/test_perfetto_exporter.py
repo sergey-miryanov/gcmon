@@ -9,6 +9,7 @@ from perfetto.protos.perfetto.trace.perfetto_trace_pb2 import (
     TrackEvent,
 )
 
+from gcmon.control.protocol import START_EVENT, STOP_EVENT
 from gcmon.exporters import PerfettoExporter
 from gcmon.exporters.perfetto_format import (
     TrackEventType,
@@ -188,7 +189,7 @@ class TestPerfettoExporter:
 
     def test_add_instant_event_writes_instant_event(self, perfetto_exporter: ExporterFactory) -> None:
         exporter, path = perfetto_exporter()
-        instant = create_instant_msg(name="start GC monitor", ts=1_500_000_000)
+        instant = create_instant_msg(name=START_EVENT, ts=1_500_000_000)
         exporter.add_instant_event(proc(DEFAULT_PID), instant)
         exporter.close()
 
@@ -202,11 +203,11 @@ class TestPerfettoExporter:
                     names.append(name)
         # Only what the caller sent: the process row is kept rendered by
         # the "Lifetime" slice, which is not an instant.
-        assert names == ["start GC monitor"]
+        assert names == [START_EVENT]
 
     def test_multiple_add_instant_event(self, perfetto_exporter: ExporterFactory) -> None:
         exporter, path = perfetto_exporter()
-        for ev_name in ("start GC monitor", "stop GC monitor"):
+        for ev_name in (START_EVENT, STOP_EVENT):
             exporter.add_instant_event(proc(DEFAULT_PID), create_instant_msg(name=ev_name, ts=1_500_000_000))
         exporter.close()
 
@@ -218,7 +219,7 @@ class TestPerfettoExporter:
                 event_name = track_event.name
                 if event_name:
                     names.append(event_name)
-        assert names == ["start GC monitor", "stop GC monitor"]
+        assert names == [START_EVENT, STOP_EVENT]
 
     def test_events_have_valid_timestamps(
         self, mock_stats_item: GCStatsInfo, perfetto_exporter: ExporterFactory

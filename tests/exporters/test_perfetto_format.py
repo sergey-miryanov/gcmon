@@ -7,6 +7,7 @@ from perfetto.protos.perfetto.trace.perfetto_trace_pb2 import (
     TrackEvent,
 )
 
+from gcmon.control.protocol import START_EVENT, STOP_EVENT
 from gcmon.exporters.perfetto_format import (
     _COUNTER_GROUP_NAME,
     _COUNTER_RANKS,
@@ -801,7 +802,7 @@ class TestConvertInstantToPerfettoPacket:
     def test_emits_process_descriptor(self) -> None:
         state = PerfettoTrackState()
         events: list[TraceEvent] = [
-            Instant(process_track(100), "start", ts=5_000),
+            Instant(process_track(100), START_EVENT, ts=5_000),
         ]
         descriptors, _ = convert_trace_events_to_perfetto(events, state, sequence_id=1)
         # 1 root descriptor + 1 process descriptor. The "Processes" track
@@ -812,7 +813,7 @@ class TestConvertInstantToPerfettoPacket:
     def test_emits_instant_event(self) -> None:
         state = PerfettoTrackState()
         events: list[TraceEvent] = [
-            Instant(process_track(100), "start GC monitor", ts=5_000),
+            Instant(process_track(100), START_EVENT, ts=5_000),
         ]
         _, packets = convert_trace_events_to_perfetto(events, state, sequence_id=1)
         # One packet from the convert call: the user-provided instant on
@@ -829,7 +830,7 @@ class TestConvertInstantToPerfettoPacket:
             if packet.HasField("track_event"):
                 names.append(packet.track_event.name or None)
         assert names == [
-            "start GC monitor",
+            START_EVENT,
             process_track_name(proc(100)),
             process_track_name(proc(100)),
             _PROCESS_ROW_SLICE_NAME,
@@ -839,23 +840,23 @@ class TestConvertInstantToPerfettoPacket:
         for p in packets:
             packet = TracePacket()
             packet.ParseFromString(p)
-            if packet.track_event.name == "start GC monitor":
+            if packet.track_event.name == START_EVENT:
                 instant_packet = packet
                 break
         assert instant_packet is not None
         assert instant_packet.timestamp == 5_000
         assert instant_packet.track_event.type == TrackEvent.Type.TYPE_INSTANT
-        assert instant_packet.track_event.name == "start GC monitor"
+        assert instant_packet.track_event.name == START_EVENT
 
     def test_reuses_process_descriptor(self) -> None:
         state = PerfettoTrackState()
         desc1, packets1 = convert_trace_events_to_perfetto(
-            [Instant(process_track(100), "start", ts=5_000)],
+            [Instant(process_track(100), START_EVENT, ts=5_000)],
             state,
             sequence_id=1,
         )
         desc2, packets2 = convert_trace_events_to_perfetto(
-            [Instant(process_track(100), "stop", ts=10_000)],
+            [Instant(process_track(100), STOP_EVENT, ts=10_000)],
             state,
             sequence_id=1,
         )
@@ -898,7 +899,7 @@ class TestConvertInstantToPerfettoPacket:
         )
         gc_desc, _ = convert_item(proc(100), gc_item, state, sequence_id=1)
         inst_desc, _ = convert_trace_events_to_perfetto(
-            [Instant(process_track(100), "stop", ts=5_000)],
+            [Instant(process_track(100), STOP_EVENT, ts=5_000)],
             state,
             sequence_id=1,
         )

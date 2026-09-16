@@ -1,5 +1,5 @@
-"""No module re-spells a word `gcmon.model.names` or
-`gcmon.support.vocabulary` already owns.
+"""No module re-spells a word `gcmon.model.names`,
+`gcmon.support.vocabulary` or `gcmon.control.protocol` already owns.
 
 The constants only help while everything reads them. A literal that creeps
 back is invisible: it agrees with the constant on the day it is written and
@@ -73,12 +73,13 @@ TOO_GENERIC: frozenset[str] = frozenset({"name", "type"})
 
 
 def _watched() -> dict[str, str]:
-    """``{literal: constant}`` for every word the two modules own."""
+    """``{literal: constant}`` for every word the vocabulary modules own."""
+    from gcmon.control import protocol
     from gcmon.model import names
     from gcmon.support import vocabulary
 
     out: dict[str, str] = {}
-    for module in (names, vocabulary):
+    for module in (names, vocabulary, protocol):
         for attr in module.__all__:
             value = getattr(module, attr)
             if isinstance(value, str) and len(value) > 2 and value not in TOO_GENERIC:

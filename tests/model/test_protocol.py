@@ -3,6 +3,7 @@ from types import SimpleNamespace
 
 import pytest
 
+from gcmon.control.protocol import START_EVENT
 from gcmon.model.data import GCStatsInfo, GenLoss, InstantMsg, LossMsg
 from gcmon.model.names import (
     ALIVE_SIZE,
@@ -475,7 +476,7 @@ class TestToMapping:
 
         assert isinstance(result, Mapping)
         assert result[TYPE] == "i"
-        assert result[NAME] == "start GC monitor"
+        assert result[NAME] == START_EVENT
         assert result[TS] == 5_000_000
 
     def test_to_mapping_unknown_type_raises(self) -> None:
