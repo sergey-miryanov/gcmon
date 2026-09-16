@@ -7,7 +7,7 @@ from collections.abc import Callable, Iterator, Sequence, Set
 from contextlib import contextmanager
 from pathlib import Path
 from types import ModuleType
-from typing import override
+from typing import Final, override
 
 from perfetto.protos.perfetto.trace.perfetto_trace_pb2 import Trace, TracePacket
 from perfetto.trace_processor import TraceProcessor, TraceProcessorConfig
@@ -16,14 +16,32 @@ from gcmon.exporters.exporter import EventsExporter
 from gcmon.exporters.trace_converter import counter_display_name
 from gcmon.model.data import GCStatsInfo, GenLoss, LossMsg
 from gcmon.model.names import (
+    ALIVE_SIZE,
     CANDIDATES,
+    CLEAR_WEAKREFS_COUNT,
     COLLECTED,
     COLLECTIONS,
+    DELETED_GARBAGE_COUNT,
     DURATION,
+    FINALIZED_GARBAGE_COUNT,
     GEN,
     HEAP_SIZE,
     IID,
+    INCREMENT_SIZE,
     PID,
+    TS_CLEAR_WEAKREFS_STOP,
+    TS_DEDUCE_UNREACHABLE_START,
+    TS_DEDUCE_UNREACHABLE_STOP,
+    TS_DELETE_GARBAGE_START,
+    TS_DELETE_GARBAGE_STOP,
+    TS_FILL_INCREMENT_START,
+    TS_FILL_INCREMENT_STOP,
+    TS_FINALIZE_GARBAGE_STOP,
+    TS_HANDLE_RESURRECTED_STOP,
+    TS_HANDLE_WEAKREF_CALLBACKS_START,
+    TS_HANDLE_WEAKREF_CALLBACKS_STOP,
+    TS_MARK_ALIVE_START,
+    TS_MARK_ALIVE_STOP,
     TS_START,
     TS_STOP,
     TYPE,
@@ -280,7 +298,11 @@ def create_mock_stats_item(
     candidates: int = 40,
     heap_size: int = 52428800,
     duration: float = 0.005,
+    **sub_phase: int | None,
 ) -> GCStatsInfo:
+    """A pause record. *sub_phase* sets one sub-phase field and leaves the
+    rest unset, which is the shape a `has_*` guard is asked about; the
+    builder beside this one sets them all."""
     return GCStatsInfo(
         gen=gen,
         iid=iid,
@@ -292,6 +314,7 @@ def create_mock_stats_item(
         uncollectable=uncollectable,
         candidates=candidates,
         duration=duration,
+        **sub_phase,
     )
 
 
@@ -376,66 +399,38 @@ def create_mock_loss_item(
     )
 
 
-def create_mock_incremental_item(
-    gen: int = 0,
-    iid: int = 0,
-    ts_start: int = 1_500_000_000,
-    ts_stop: int = 1_505_000_000,
-    heap_size: int = 52428800,
-    collections: int = 50,
-    collected: int = 200,
-    uncollectable: int = 10,
-    candidates: int = 40,
-    duration: float = 0.005,
-    increment_size: int | None = 1000,
-    alive_size: int | None = 800,
-    ts_mark_alive_start: int | None = 1_500_000_000,
-    ts_mark_alive_stop: int | None = 1_501_000_000,
-    ts_fill_increment_start: int | None = 1_501_000_000,
-    ts_fill_increment_stop: int | None = 1_502_000_000,
-    ts_deduce_unreachable_start: int | None = 1_502_000_000,
-    ts_deduce_unreachable_stop: int | None = 1_503_000_000,
-    ts_handle_weakref_callbacks_start: int | None = 1_503_000_000,
-    ts_handle_weakref_callbacks_stop: int | None = 1_504_000_000,
-    ts_finalize_garbage_stop: int | None = 1_505_000_000,
-    finalized_garbage_count: int | None = 42,
-    ts_handle_resurrected_stop: int | None = 1_506_000_000,
-    ts_clear_weakrefs_stop: int | None = 1_507_000_000,
-    clear_weakrefs_count: int | None = 7,
-    ts_delete_garbage_start: int | None = 1_508_000_000,
-    ts_delete_garbage_stop: int | None = 1_509_000_000,
-    deleted_garbage_count: int | None = 13,
-) -> GCStatsInfo:
-    return GCStatsInfo(
-        gen=gen,
-        iid=iid,
-        ts_start=ts_start,
-        ts_stop=ts_stop,
-        heap_size=heap_size,
-        collections=collections,
-        collected=collected,
-        uncollectable=uncollectable,
-        candidates=candidates,
-        duration=duration,
-        increment_size=increment_size,
-        alive_size=alive_size,
-        ts_mark_alive_start=ts_mark_alive_start,
-        ts_mark_alive_stop=ts_mark_alive_stop,
-        ts_fill_increment_start=ts_fill_increment_start,
-        ts_fill_increment_stop=ts_fill_increment_stop,
-        ts_deduce_unreachable_start=ts_deduce_unreachable_start,
-        ts_deduce_unreachable_stop=ts_deduce_unreachable_stop,
-        ts_handle_weakref_callbacks_start=ts_handle_weakref_callbacks_start,
-        ts_handle_weakref_callbacks_stop=ts_handle_weakref_callbacks_stop,
-        ts_finalize_garbage_stop=ts_finalize_garbage_stop,
-        finalized_garbage_count=finalized_garbage_count,
-        ts_handle_resurrected_stop=ts_handle_resurrected_stop,
-        ts_clear_weakrefs_stop=ts_clear_weakrefs_stop,
-        clear_weakrefs_count=clear_weakrefs_count,
-        ts_delete_garbage_start=ts_delete_garbage_start,
-        ts_delete_garbage_stop=ts_delete_garbage_stop,
-        deleted_garbage_count=deleted_garbage_count,
-    )
+SUB_PHASES: Final[dict[str, int]] = {
+    INCREMENT_SIZE: 1000,
+    ALIVE_SIZE: 800,
+    TS_MARK_ALIVE_START: 1_500_000_000,
+    TS_MARK_ALIVE_STOP: 1_501_000_000,
+    TS_FILL_INCREMENT_START: 1_501_000_000,
+    TS_FILL_INCREMENT_STOP: 1_502_000_000,
+    TS_DEDUCE_UNREACHABLE_START: 1_502_000_000,
+    TS_DEDUCE_UNREACHABLE_STOP: 1_503_000_000,
+    TS_HANDLE_WEAKREF_CALLBACKS_START: 1_503_000_000,
+    TS_HANDLE_WEAKREF_CALLBACKS_STOP: 1_504_000_000,
+    TS_FINALIZE_GARBAGE_STOP: 1_505_000_000,
+    FINALIZED_GARBAGE_COUNT: 42,
+    TS_HANDLE_RESURRECTED_STOP: 1_506_000_000,
+    TS_CLEAR_WEAKREFS_STOP: 1_507_000_000,
+    CLEAR_WEAKREFS_COUNT: 7,
+    TS_DELETE_GARBAGE_START: 1_508_000_000,
+    TS_DELETE_GARBAGE_STOP: 1_509_000_000,
+    DELETED_GARBAGE_COUNT: 13,
+}
+"""Every sub-phase a record can carry, in collector order."""
+
+
+def create_mock_incremental_item(**overrides: int | float | None) -> GCStatsInfo:
+    """A record with every sub-phase set.
+
+    The same builder as :func:`create_mock_stats_item`, which sets none of
+    them; pass ``field=None`` to drop one back off.
+    """
+    # The merged mapping is `int | float | None`; each keyword it lands on
+    # is narrower than that, and only the call site knows which.
+    return create_mock_stats_item(**{**SUB_PHASES, **overrides})  # type: ignore[arg-type]
 
 
 def create_jsonl_record(
@@ -466,22 +461,17 @@ def create_jsonl_record(
     }
 
 
-def assert_valid_jsonl_format(file_path: Path) -> list[JsonlRecord]:
-    """Validate that a file contains valid JSONL format (one JSON object per line).
+def read_jsonl_file(path: Path) -> list[JsonlRecord]:
+    """Every record in a JSONL file, blank lines skipped.
 
-    Args:
-        file_path: Path to the JSONL file to validate.
-
-    Returns:
-        List of parsed event dictionaries.
-
-    Raises:
-        AssertionError: If the file is not valid JSONL format.
+    A test that expects the file to hold something wants
+    :func:`assert_valid_jsonl_format` instead; this one returns an empty list
+    for an empty file, which is what a flush-threshold test asserts on.
     """
-    assert file_path.exists(), f"File {file_path} does not exist"
+    assert path.exists(), f"File {path} does not exist"
 
     data: list[JsonlRecord] = []
-    with open(file_path, encoding=ENCODING) as f:
+    with open(path, encoding=ENCODING) as f:
         for line_no, line in enumerate(f, 1):
             line = line.strip()
             if not line:
@@ -489,7 +479,12 @@ def assert_valid_jsonl_format(file_path: Path) -> list[JsonlRecord]:
             obj = json.loads(line)
             assert isinstance(obj, dict), f"Line {line_no} in JSONL file should be a JSON object, got {type(obj)}"
             data.append(obj)
+    return data
 
+
+def assert_valid_jsonl_format(file_path: Path) -> list[JsonlRecord]:
+    """The records in a JSONL file, which a caller here expects to hold some."""
+    data = read_jsonl_file(file_path)
     assert len(data) > 0, f"JSONL file {file_path} is empty"
     return data
 

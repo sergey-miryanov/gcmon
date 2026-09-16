@@ -39,8 +39,7 @@ class TestCounterTrackYAxisShareKey:
     and inspect the resulting counter track descriptors for the
     ``y_axis_share_key`` value."""
 
-    def test_grouped_counters_share_y_axis_by_metric(self) -> None:
-        state = PerfettoTrackState()
+    def test_grouped_counters_share_y_axis_by_metric(self, state: PerfettoTrackState) -> None:
         events: list[TraceEvent] = [
             gen_counter(interpreter_track(100, 0), 0, COLLECTED, 1_000, 100),
             gen_counter(interpreter_track(100, 0), 0, CANDIDATES, 1_000, 50),
@@ -64,8 +63,7 @@ class TestCounterTrackYAxisShareKey:
                     f"{track_name} should share Y-axis under {metric!r}"
                 )
 
-    def test_heap_size_has_no_share_key(self) -> None:
-        state = PerfettoTrackState()
+    def test_heap_size_has_no_share_key(self, state: PerfettoTrackState) -> None:
         events: list[TraceEvent] = [
             Counter(interpreter_track(100, 0), HEAP_SIZE, HEAP_SIZE, 1_000, 4096),
         ]
@@ -76,8 +74,7 @@ class TestCounterTrackYAxisShareKey:
         )
         assert _counter_track_y_axis_share_key(descriptors, HEAP_SIZE) is None
 
-    def test_uncollectable_share_key_emitted_when_nonzero(self) -> None:
-        state = PerfettoTrackState()
+    def test_uncollectable_share_key_emitted_when_nonzero(self, state: PerfettoTrackState) -> None:
         events: list[TraceEvent] = [
             gen_counter(interpreter_track(100, 0), 0, COLLECTED, 1_000, 1),
             gen_counter(interpreter_track(100, 0), 0, UNCOLLECTABLE, 1_000, 1),
@@ -91,13 +88,12 @@ class TestCounterTrackYAxisShareKey:
         )
         assert _counter_track_y_axis_share_key(descriptors, counter_display_name(0, UNCOLLECTABLE)) == UNCOLLECTABLE
 
-    def test_different_pids_have_independent_share_groups(self) -> None:
+    def test_different_pids_have_independent_share_groups(self, state: PerfettoTrackState) -> None:
         """Two pids each emit a ``G0 collected`` counter. Both must
         carry ``y_axis_share_key = "collected"``; the parent-scoping
         is what the docs require for safe sharing, and is implicit in
         the existing per-``(pid, tid)`` ``GC Metrics`` group.
         """
-        state = PerfettoTrackState()
         events: list[TraceEvent] = [
             gen_counter(interpreter_track(100, 0), 0, COLLECTED, 1_000, 10),
             gen_counter(interpreter_track(100, 0), 0, CANDIDATES, 1_000, 5),
@@ -130,8 +126,7 @@ class TestCounterTrackYAxisShareKey:
 class TestRssCounterTrack:
     """RSS counter track shape and process-level parenting."""
 
-    def test_counter_track_parented_to_process(self) -> None:
-        state = PerfettoTrackState()
+    def test_counter_track_parented_to_process(self, state: PerfettoTrackState) -> None:
         events: list[TraceEvent] = [
             Counter(process_track(100), RSS, RSS, 1_000, 4096),
         ]
@@ -156,10 +151,9 @@ class TestRssCounterTrack:
                 break
         assert found_ctr, "RSS counter track descriptor was not emitted"
 
-    def test_display_name_is_metric_name(self) -> None:
+    def test_display_name_is_metric_name(self, state: PerfettoTrackState) -> None:
         """The RSS track carries the ``display_name`` the producer wrote,
         ``"rss"``, unqualified by any owner."""
-        state = PerfettoTrackState()
         events: list[TraceEvent] = [
             Counter(process_track(100), RSS, RSS, 1_000, 8192),
         ]
@@ -173,10 +167,9 @@ class TestRssCounterTrack:
                 return
         pytest.fail("RSS counter track descriptor not found")
 
-    def test_no_thread_descriptor_for_rss_tid(self) -> None:
+    def test_no_thread_descriptor_for_rss_tid(self, state: PerfettoTrackState) -> None:
         """No ``ThreadDescriptor`` track should be emitted for
         ``tid=-1``; RSS is process-level."""
-        state = PerfettoTrackState()
         events: list[TraceEvent] = [
             Counter(process_track(100), RSS, RSS, 1_000, 4096),
         ]
@@ -186,8 +179,7 @@ class TestRssCounterTrack:
             if td is not None and td.HasField("thread"):
                 pytest.fail(f"unexpected thread descriptor for RSS: uuid={td.uuid}")
 
-    def test_multiple_pids_get_separate_rss_tracks(self) -> None:
-        state = PerfettoTrackState()
+    def test_multiple_pids_get_separate_rss_tracks(self, state: PerfettoTrackState) -> None:
         events: list[TraceEvent] = [
             Counter(process_track(100), RSS, RSS, 1_000, 4096),
             Counter(process_track(200), RSS, RSS, 2_000, 8192),
@@ -200,10 +192,9 @@ class TestRssCounterTrack:
         # track, and process tracks have distinct UUIDs.
         assert state.get_process_track_uuid(proc(100)) != state.get_process_track_uuid(proc(200))
 
-    def test_rss_renders_at_top_level(self) -> None:
+    def test_rss_renders_at_top_level(self, state: PerfettoTrackState) -> None:
         """RSS is a top-level counter metric, parented directly to the
         process track, NOT inside the GC Metrics group."""
-        state = PerfettoTrackState()
         events: list[TraceEvent] = [
             # RSS sample (tid=-1, process-level)
             Counter(process_track(100), RSS, RSS, 1_000, 4096),

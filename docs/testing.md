@@ -61,7 +61,7 @@ else. Three files hold the pins:
 | `tests/exporters/test_track_names_are_documented.py` | every track and slice name | `docs/formats.md` |
 | `tests/infra/test_env_names_are_documented.py` | every environment variable | `docs/cli.md`, `docs/pyperf.md` |
 | `tests/model/test_names.py` | that the table is shaped right and agrees with what a conversion writes | the converter |
-| `tests/infra/test_vocabulary_is_used.py` | that no module respells a word the two vocabulary modules own | the modules themselves |
+| `tests/infra/test_vocabulary_is_used.py` | that no module respells a word the vocabulary modules own | the modules themselves |
 
 Every other test imports the constant or the formatter, so renaming a row, a
 slice or a variable touches the code, its page and one tuple rather than every
@@ -81,7 +81,8 @@ test assert a name the converter would never write.
 `gcmon.support.vocabulary` holds what is not a name in a trace: the program
 name, the encoding, the subcommands and the words `--format` takes. It sits in
 `support` because `analysis` and `exporters` branch on the format words and
-may not import `cli`.
+may not import `cli`. `gcmon.control.protocol` holds the third set, the words
+a client sends and the instants the server writes; the guard reads all three.
 
 A test that reads a constant back and asserts it equals its own literal is not
 a pin. The rename that changes the constant changes the assertion in the same
@@ -105,6 +106,25 @@ Import for a value the test does not care about, such as the category on a
 `Slice` it builds only to read back. Keep the literal for a threshold or a
 default the test exists to hold still: `OVERRUN_SHARE` read back from the code
 would assert nothing.
+
+## Building a record
+
+One builder constructs a `GCStatsInfo`, and everything else picks values
+through it. `create_mock_stats_item` in `tests/helpers.py` is that builder: it
+sets no sub-phase, and the keywords it passes through set one or two for a
+test that asks a `has_*` guard about them. `create_mock_incremental_item`
+beside it is the same builder with `SUB_PHASES` applied, so a record with
+every sub-phase set and a record with none come from the same constructor.
+
+A second builder that spells out `GCStatsInfo(...)` again is how a field added
+to the struct reaches some tests and not others. Where a package wants its own
+figures, it names a default set rather than a second constructor: `pause_item`
+in `tests/exporters/perfetto_helpers.py` is `create_mock_stats_item` with
+timestamps small enough for an assertion to quote.
+
+The fixtures follow the same rule. `simple_item` and `incremental_item` in
+`tests/conftest.py` choose values; `state` in `tests/exporters/conftest.py` is
+the empty `PerfettoTrackState` every conversion test opens on.
 
 ## Where each kind of test lives
 

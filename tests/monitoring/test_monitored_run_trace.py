@@ -74,6 +74,7 @@ from typing import Any, override
 from unittest.mock import patch
 
 import pytest
+from msgspec.structs import replace
 from perfetto.protos.perfetto.trace.perfetto_trace_pb2 import TracePacket, TrackEvent
 
 from gcmon.exporters.perfetto_exporter import PerfettoExporter
@@ -227,18 +228,7 @@ def _shifted(records: Mapping[int, list[GCStatsInfo]], skew_ns: int) -> dict[int
     """
     return {
         gen: [
-            GCStatsInfo(
-                gen=record.gen,
-                iid=record.iid,
-                ts_start=record.ts_start + skew_ns,
-                ts_stop=record.ts_stop + skew_ns,
-                heap_size=record.heap_size,
-                collections=record.collections,
-                collected=record.collected,
-                uncollectable=record.uncollectable,
-                candidates=record.candidates,
-                duration=record.duration,
-            )
+            replace(record, ts_start=record.ts_start + skew_ns, ts_stop=record.ts_stop + skew_ns)
             for record in gen_records
         ]
         for gen, gen_records in records.items()

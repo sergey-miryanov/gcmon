@@ -4,6 +4,8 @@ Each helper here is used by more than one of the ``test_perfetto_*``
 modules. Anything used by a single module stays in that module.
 """
 
+import functools
+
 from perfetto.protos.perfetto.trace.perfetto_trace_pb2 import (
     TracePacket,
     TrackDescriptor,
@@ -17,7 +19,25 @@ from gcmon.exporters.trace_converter import convert_item_to_trace_format
 from gcmon.model.data import GCStatsInfo
 from gcmon.model.process import Process
 from gcmon.model.trace_event import TraceEvent
-from tests.helpers import proc
+from tests.helpers import create_mock_stats_item, proc
+
+pause_item = functools.partial(
+    create_mock_stats_item,
+    ts_start=1_000,
+    ts_stop=2_000,
+    heap_size=1000,
+    collections=1,
+    collected=10,
+    uncollectable=0,
+    candidates=5,
+    duration=0.001,
+)
+"""A pause record with figures small enough for an assertion to quote.
+
+The builder in `tests/helpers.py` carries the realistic ones, which read as
+noise in a test that asserts a timestamp landed on a packet. Only the
+defaults differ; every field is still the same builder's.
+"""
 
 
 def span(pid: int, start_ts: int, end_ts: int, pid_epoch: int = 1) -> ProcessSpan:

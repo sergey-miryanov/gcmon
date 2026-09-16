@@ -23,7 +23,7 @@ from gcmon.model.names import (
     TS_MARK_ALIVE_START,
     TS_MARK_ALIVE_STOP,
 )
-from tests.helpers import create_jsonl_record
+from tests.helpers import create_jsonl_record, create_mock_incremental_item
 
 
 def make_inc_item(
@@ -33,7 +33,12 @@ def make_inc_item(
     increment_size: int = 500,
     alive_size: int = 300,
 ) -> GCStatsInfo:
-    return GCStatsInfo(
+    """A record whose sub-phases run back to back from *ts_start*.
+
+    `make_inc_jsonl_record` below writes the same figures as a JSONL line, so
+    a test can hand `combine` either shape and expect the same reading.
+    """
+    return create_mock_incremental_item(
         gen=gen,
         iid=1,
         ts_start=ts_start,

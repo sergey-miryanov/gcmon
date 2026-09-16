@@ -6,12 +6,12 @@ from pathlib import Path
 
 from gcmon.exporters import PerfettoExporter
 from gcmon.exporters.trace_converter import convert_item_to_trace_format
-from gcmon.model.data import GCStatsInfo
 from gcmon.model.names import RSS, gc_loss_slice_name
 from gcmon.model.trace_event import (
     Counter,
     Slice,
 )
+from tests.exporters.perfetto_helpers import pause_item
 from tests.helpers import (
     create_mock_loss_item,
     create_mock_stats_item,
@@ -44,18 +44,7 @@ class TestTheBufferHoldsNothingButEvents:
 
     def test_a_gc_record_buffers_the_events_the_converter_made(self, tmp_path: Path) -> None:
         exporter = self._make_exporter(tmp_path)
-        item = GCStatsInfo(
-            gen=0,
-            iid=0,
-            ts_start=1_000,
-            ts_stop=2_000,
-            heap_size=1000,
-            collections=1,
-            collected=10,
-            uncollectable=0,
-            candidates=5,
-            duration=0.001,
-        )
+        item = pause_item()
         exporter.add_event(proc(100), item)
         assert exporter._buffer == convert_item_to_trace_format(proc(100), item)
         assert {e.track for e in exporter._buffer} == {interpreter_track(100, 0)}

@@ -74,27 +74,16 @@ from tests.exporters.perfetto_helpers import (
     convert_item,
     lifetime_slices,
     parse_track_descriptor,
+    pause_item,
 )
 from tests.helpers import create_mock_loss_item, interpreter_track, proc, process_track
 
 
 class TestConvertItemToPerfettoPackets:
-    def test_cmdline_emitted_once_per_process(self) -> None:
-        state = PerfettoTrackState()
+    def test_cmdline_emitted_once_per_process(self, state: PerfettoTrackState) -> None:
         target = proc(100)
         state.set_cmdline(target, ("python", "script.py"))
-        item = GCStatsInfo(
-            gen=0,
-            iid=0,
-            ts_start=1_000,
-            ts_stop=2_000,
-            heap_size=1000,
-            collections=1,
-            collected=10,
-            uncollectable=0,
-            candidates=5,
-            duration=0.001,
-        )
+        item = pause_item()
         desc1, _ = convert_item(target, item, state, sequence_id=1)
 
         found_cmdline = False
@@ -116,15 +105,13 @@ class TestConvertItemToPerfettoPackets:
 
         desc2, _ = convert_item(
             target,
-            GCStatsInfo(
+            pause_item(
                 gen=1,
-                iid=0,
                 ts_start=3_000,
                 ts_stop=4_000,
                 heap_size=2000,
                 collections=2,
                 collected=20,
-                uncollectable=0,
                 candidates=10,
                 duration=0.002,
             ),
@@ -138,14 +125,13 @@ class TestConvertItemToPerfettoPackets:
             if packet.HasField("track_descriptor"):
                 assert not packet.track_descriptor.HasField("process")
 
-    def test_two_processes_on_one_pid_carry_their_own_cmdlines(self) -> None:
+    def test_two_processes_on_one_pid_carry_their_own_cmdlines(self, state: PerfettoTrackState) -> None:
         """``ProcessDescriptor.cmdline`` reaches no SQL column
         (ADR-0010), so the descriptor is where a successor's command
         line can be checked at all. Before the split it had nowhere to
         go: one descriptor went out for the pid, carrying the first
         process's program.
         """
-        state = PerfettoTrackState()
         first, second = proc(100, 1), proc(100, 2)
         state.set_cmdline(first, ("python", "first.py"))
         state.set_cmdline(second, ("python", "second.py"))
@@ -154,18 +140,7 @@ class TestConvertItemToPerfettoPackets:
         for process, ts in ((first, 1_000), (second, 3_000)):
             descriptors, _ = convert_item(
                 process,
-                GCStatsInfo(
-                    gen=0,
-                    iid=0,
-                    ts_start=ts,
-                    ts_stop=ts + 1_000,
-                    heap_size=1000,
-                    collections=1,
-                    collected=10,
-                    uncollectable=0,
-                    candidates=5,
-                    duration=0.001,
-                ),
+                pause_item(ts_start=ts, ts_stop=ts + 1_000),
                 state,
                 sequence_id=1,
             )
@@ -179,39 +154,15 @@ class TestConvertItemToPerfettoPackets:
             process_track_name(proc(100, 2)): ("python", "second.py"),
         }
 
-    def test_basic_item_emits_descriptors(self) -> None:
-        state = PerfettoTrackState()
-        item = GCStatsInfo(
-            gen=0,
-            iid=0,
-            ts_start=1_000,
-            ts_stop=2_000,
-            heap_size=1000,
-            collections=1,
-            collected=10,
-            uncollectable=0,
-            candidates=5,
-            duration=0.001,
-        )
+    def test_basic_item_emits_descriptors(self, state: PerfettoTrackState) -> None:
+        item = pause_item()
         descriptors, _ = convert_item(proc(100), item, state, sequence_id=1)
         assert len(descriptors) >= 2
         assert state.has_process_descriptor(proc(100))
         assert state.has_track(interpreter_track(100, 0))
 
-    def test_pause_track_has_sibling_order_rank_zero(self) -> None:
-        state = PerfettoTrackState()
-        item = GCStatsInfo(
-            gen=0,
-            iid=0,
-            ts_start=1_000,
-            ts_stop=2_000,
-            heap_size=1000,
-            collections=1,
-            collected=10,
-            uncollectable=0,
-            candidates=5,
-            duration=0.001,
-        )
+    def test_pause_track_has_sibling_order_rank_zero(self, state: PerfettoTrackState) -> None:
+        item = pause_item()
         descriptors, _ = convert_item(proc(100), item, state, sequence_id=1)
         interpreter_uuid = state.get_or_create_interpreter_group_track_uuid(proc(100), 0)
         pause_uuid = state.get_track_uuid(interpreter_track(100, 0))
@@ -229,20 +180,8 @@ class TestConvertItemToPerfettoPackets:
                     pause_found = True
         assert pause_found
 
-    def test_counter_tracks_parented_to_counter_group(self) -> None:
-        state = PerfettoTrackState()
-        item = GCStatsInfo(
-            gen=0,
-            iid=0,
-            ts_start=1_000,
-            ts_stop=2_000,
-            heap_size=1000,
-            collections=1,
-            collected=10,
-            uncollectable=0,
-            candidates=5,
-            duration=0.001,
-        )
+    def test_counter_tracks_parented_to_counter_group(self, state: PerfettoTrackState) -> None:
+        item = pause_item()
         descriptors, _ = convert_item(proc(100), item, state, sequence_id=1)
         proc_uuid = state.get_process_track_uuid(proc(100))
         interpreter_uuid = state.get_or_create_interpreter_group_track_uuid(proc(100), 0)
@@ -272,20 +211,8 @@ class TestConvertItemToPerfettoPackets:
             if name != HEAP_SIZE:
                 assert parent_uuid == group_uuid, f"{name!r} should parent to group"
 
-    def test_basic_item_emits_pause_slice(self) -> None:
-        state = PerfettoTrackState()
-        item = GCStatsInfo(
-            gen=0,
-            iid=0,
-            ts_start=1_000,
-            ts_stop=2_000,
-            heap_size=1000,
-            collections=1,
-            collected=10,
-            uncollectable=0,
-            candidates=5,
-            duration=0.001,
-        )
+    def test_basic_item_emits_pause_slice(self, state: PerfettoTrackState) -> None:
+        item = pause_item()
         _, packets = convert_item(proc(100), item, state, sequence_id=1)
         # The GC pause slice begin is not the first packet: the "Process
         # 100" slice begin on the shared "Processes" track precedes it.
@@ -320,20 +247,8 @@ class TestConvertItemToPerfettoPackets:
         assert first_packet.track_event.type == TrackEvent.Type.TYPE_SLICE_BEGIN
         assert first_packet.track_event.name == gc_pause_slice_name(0)
 
-    def test_basic_item_emits_counter_events(self) -> None:
-        state = PerfettoTrackState()
-        item = GCStatsInfo(
-            gen=0,
-            iid=0,
-            ts_start=1_000,
-            ts_stop=2_000,
-            heap_size=1000,
-            collections=1,
-            collected=10,
-            uncollectable=2,
-            candidates=5,
-            duration=0.001,
-        )
+    def test_basic_item_emits_counter_events(self, state: PerfettoTrackState) -> None:
+        item = pause_item(uncollectable=2)
         _, packets = convert_item(proc(100), item, state, sequence_id=1)
         counter_packets: list[tuple[TracePacket, TrackEvent]] = []
         for p in packets:
@@ -352,66 +267,28 @@ class TestConvertItemToPerfettoPackets:
         double_values = [track_event.double_counter_value for _, track_event in counter_packets]
         assert 0.001 in double_values
 
-    def test_counter_descriptor_emitted_once(self) -> None:
-        state = PerfettoTrackState()
-        item = GCStatsInfo(
-            gen=0,
-            iid=0,
-            ts_start=1_000,
-            ts_stop=2_000,
-            heap_size=1000,
-            collections=1,
-            collected=10,
-            uncollectable=0,
-            candidates=5,
-            duration=0.001,
-        )
+    def test_counter_descriptor_emitted_once(self, state: PerfettoTrackState) -> None:
+        item = pause_item()
         desc1, _ = convert_item(proc(100), item, state, sequence_id=1)
         desc2, _ = convert_item(proc(100), item, state, sequence_id=1)
         assert len(desc1) > 0
         assert len(desc2) == 0
 
-    def test_invalid_timestamps_produces_events(self) -> None:
-        state = PerfettoTrackState()
-        item = GCStatsInfo(
-            gen=0,
-            iid=0,
-            ts_start=2_000,
-            ts_stop=1_000,
-            heap_size=1000,
-            collections=1,
-            collected=10,
-            uncollectable=0,
-            candidates=5,
-            duration=0.001,
-        )
+    def test_invalid_timestamps_produces_events(self, state: PerfettoTrackState) -> None:
+        item = pause_item(ts_start=2_000, ts_stop=1_000)
         descriptors, packets = convert_item(proc(100), item, state, sequence_id=1)
         assert len(descriptors) >= 2
         assert len(packets) >= 2
 
-    def test_equal_timestamps_produces_events(self) -> None:
-        state = PerfettoTrackState()
-        item = GCStatsInfo(
-            gen=0,
-            iid=0,
-            ts_start=1_000,
-            ts_stop=1_000,
-            heap_size=1000,
-            collections=1,
-            collected=10,
-            uncollectable=0,
-            candidates=5,
-            duration=0.0,
-        )
+    def test_equal_timestamps_produces_events(self, state: PerfettoTrackState) -> None:
+        item = pause_item(ts_stop=1_000, duration=0.0)
         descriptors, packets = convert_item(proc(100), item, state, sequence_id=1)
         assert len(descriptors) >= 2
         assert len(packets) >= 2
 
-    def test_incremental_item_emits_subphases(self) -> None:
-        state = PerfettoTrackState()
-        item = GCStatsInfo(
+    def test_incremental_item_emits_subphases(self, state: PerfettoTrackState) -> None:
+        item = pause_item(
             gen=1,
-            iid=0,
             ts_start=3_000,
             ts_stop=4_000,
             heap_size=2048,
@@ -456,20 +333,8 @@ class TestConvertItemToPerfettoPackets:
         assert phase_slice_name(CLEAR_WEAKREFS, 1) in slice_begins
         assert phase_slice_name(DELETE_GARBAGE, 1) in slice_begins
 
-    def test_uncollectable_counter_omitted_when_zero(self) -> None:
-        state = PerfettoTrackState()
-        item = GCStatsInfo(
-            gen=0,
-            iid=0,
-            ts_start=1_000,
-            ts_stop=2_000,
-            heap_size=1000,
-            collections=5,
-            collected=10,
-            uncollectable=0,
-            candidates=3,
-            duration=0.001,
-        )
+    def test_uncollectable_counter_omitted_when_zero(self, state: PerfettoTrackState) -> None:
+        item = pause_item(collections=5, candidates=3)
         _, packets = convert_item(proc(100), item, state, sequence_id=1)
         counter_uuids: set[int] = set()
         for p in packets:
@@ -483,20 +348,8 @@ class TestConvertItemToPerfettoPackets:
         # collected, candidates, heap_size, duration; no uncollectable counter.
         assert len(counter_uuids) == 4
 
-    def test_uncollectable_counter_emitted_when_nonzero(self) -> None:
-        state = PerfettoTrackState()
-        item = GCStatsInfo(
-            gen=0,
-            iid=0,
-            ts_start=1_000,
-            ts_stop=2_000,
-            heap_size=1000,
-            collections=5,
-            collected=10,
-            uncollectable=2,
-            candidates=3,
-            duration=0.001,
-        )
+    def test_uncollectable_counter_emitted_when_nonzero(self, state: PerfettoTrackState) -> None:
+        item = pause_item(collections=5, uncollectable=2, candidates=3)
         _, packets = convert_item(proc(100), item, state, sequence_id=1)
         counter_uuids: set[int] = set()
         for p in packets:
@@ -510,20 +363,8 @@ class TestConvertItemToPerfettoPackets:
         # collected, uncollectable, candidates, heap_size, duration.
         assert len(counter_uuids) == 5
 
-    def test_duration_counter_in_gc_metrics_group(self) -> None:
-        state = PerfettoTrackState()
-        item = GCStatsInfo(
-            gen=0,
-            iid=0,
-            ts_start=1_000,
-            ts_stop=2_000,
-            heap_size=1000,
-            collections=5,
-            collected=10,
-            uncollectable=2,
-            candidates=3,
-            duration=0.42,
-        )
+    def test_duration_counter_in_gc_metrics_group(self, state: PerfettoTrackState) -> None:
+        item = pause_item(collections=5, uncollectable=2, candidates=3, duration=0.42)
         descriptors_packets, packets = convert_item(proc(100), item, state, sequence_id=1)
         # Find the per-gen `G0 duration` counter track UUID. The duration is
         # now split by generation (one `G{gen} duration` track per (pid, iid))
@@ -561,9 +402,8 @@ class TestConvertItemToPerfettoPackets:
         assert descriptors[parent][2] == _COUNTER_GROUP_NAME
 
     def _make_full_incremental_item(self) -> GCStatsInfo:
-        return GCStatsInfo(
+        return pause_item(
             gen=1,
-            iid=0,
             ts_start=3_000,
             ts_stop=4_000,
             heap_size=2048,
@@ -618,40 +458,34 @@ class TestConvertItemToPerfettoPackets:
             return out
         raise AssertionError(f"slice {slice_name!r} not found in packets")
 
-    def test_finalize_garbage_substep_has_count_annotation(self) -> None:
-        state = PerfettoTrackState()
+    def test_finalize_garbage_substep_has_count_annotation(self, state: PerfettoTrackState) -> None:
         _, packets = convert_item(proc(100), self._make_full_incremental_item(), state, sequence_id=1)
         anns = self._annotations_for_slice(packets, phase_slice_name(FINALIZE_GARBAGE, 1))
         assert (FINALIZED_GARBAGE_COUNT, 42) in anns
         assert all(name not in (DELETED_GARBAGE_COUNT, CLEAR_WEAKREFS_COUNT) for name, _ in anns)
 
-    def test_clear_weakrefs_substep_has_count_annotation(self) -> None:
-        state = PerfettoTrackState()
+    def test_clear_weakrefs_substep_has_count_annotation(self, state: PerfettoTrackState) -> None:
         _, packets = convert_item(proc(100), self._make_full_incremental_item(), state, sequence_id=1)
         anns = self._annotations_for_slice(packets, phase_slice_name(CLEAR_WEAKREFS, 1))
         assert (CLEAR_WEAKREFS_COUNT, 7) in anns
         assert all(name not in (FINALIZED_GARBAGE_COUNT, DELETED_GARBAGE_COUNT) for name, _ in anns)
 
-    def test_delete_garbage_substep_has_count_annotation(self) -> None:
-        state = PerfettoTrackState()
+    def test_delete_garbage_substep_has_count_annotation(self, state: PerfettoTrackState) -> None:
         _, packets = convert_item(proc(100), self._make_full_incremental_item(), state, sequence_id=1)
         anns = self._annotations_for_slice(packets, phase_slice_name(DELETE_GARBAGE, 1))
         assert (DELETED_GARBAGE_COUNT, 13) in anns
         assert all(name not in (FINALIZED_GARBAGE_COUNT, CLEAR_WEAKREFS_COUNT) for name, _ in anns)
 
-    def test_deduce_unreachable_substep_has_candidates_annotation(self) -> None:
-        state = PerfettoTrackState()
+    def test_deduce_unreachable_substep_has_candidates_annotation(self, state: PerfettoTrackState) -> None:
         item = self._make_full_incremental_item()
         _, packets = convert_item(proc(100), item, state, sequence_id=1)
         anns = self._annotations_for_slice(packets, phase_slice_name(DEDUCE_UNREACHABLE, 1))
         assert (CANDIDATES, item.candidates) in anns
         assert (GENERATION, 1) in anns
 
-    def test_zero_duration_subphase_skipped(self) -> None:
-        state = PerfettoTrackState()
-        item = GCStatsInfo(
+    def test_zero_duration_subphase_skipped(self, state: PerfettoTrackState) -> None:
+        item = pause_item(
             gen=1,
-            iid=0,
             ts_start=3_000,
             ts_stop=4_000,
             heap_size=2048,
@@ -677,32 +511,9 @@ class TestConvertItemToPerfettoPackets:
         assert phase_slice_name(MARK_ALIVE, 1) not in slice_names
         assert phase_slice_name(FILL_INCREMENT, 1) in slice_names
 
-    def test_multiple_threads(self) -> None:
-        state = PerfettoTrackState()
-        item0 = GCStatsInfo(
-            gen=0,
-            iid=0,
-            ts_start=1_000,
-            ts_stop=2_000,
-            heap_size=1000,
-            collections=1,
-            collected=10,
-            uncollectable=0,
-            candidates=5,
-            duration=0.001,
-        )
-        item1 = GCStatsInfo(
-            gen=0,
-            iid=1,
-            ts_start=1_000,
-            ts_stop=2_000,
-            heap_size=1000,
-            collections=1,
-            collected=10,
-            uncollectable=0,
-            candidates=5,
-            duration=0.001,
-        )
+    def test_multiple_threads(self, state: PerfettoTrackState) -> None:
+        item0 = pause_item()
+        item1 = pause_item(iid=1)
         desc0, _ = convert_item(proc(100), item0, state, sequence_id=1)
         desc1, _ = convert_item(proc(100), item1, state, sequence_id=1)
         assert len(desc0) >= 2
@@ -710,20 +521,8 @@ class TestConvertItemToPerfettoPackets:
         assert state.has_track(interpreter_track(100, 0))
         assert state.has_track(interpreter_track(100, 1))
 
-    def test_debug_annotation_name_wire_format(self) -> None:
-        state = PerfettoTrackState()
-        item = GCStatsInfo(
-            gen=0,
-            iid=0,
-            ts_start=1_000,
-            ts_stop=2_000,
-            heap_size=1000,
-            collections=5,
-            collected=10,
-            uncollectable=2,
-            candidates=3,
-            duration=0.001,
-        )
+    def test_debug_annotation_name_wire_format(self, state: PerfettoTrackState) -> None:
+        item = pause_item(collections=5, uncollectable=2, candidates=3)
         _, packets = convert_item(proc(100), item, state, sequence_id=1)
         # The process_track_name(proc(100)) slice begin on the shared "Processes" track
         # precedes the GC pause slice begin. Identify the GC pause slice
@@ -750,20 +549,8 @@ class TestConvertItemToPerfettoPackets:
             )
             assert ann.HasField(NAME)
 
-    def test_debug_annotations_on_pause(self) -> None:
-        state = PerfettoTrackState()
-        item = GCStatsInfo(
-            gen=0,
-            iid=0,
-            ts_start=1_000,
-            ts_stop=2_000,
-            heap_size=1000,
-            collections=5,
-            collected=10,
-            uncollectable=2,
-            candidates=3,
-            duration=0.001,
-        )
+    def test_debug_annotations_on_pause(self, state: PerfettoTrackState) -> None:
+        item = pause_item(collections=5, uncollectable=2, candidates=3)
         _, packets = convert_item(proc(100), item, state, sequence_id=1)
         # Disambiguate by name (and exclude the spec-15 "Processes" track
         # slice begin) to find the GC pause slice.
@@ -799,8 +586,7 @@ class TestConvertItemToPerfettoPackets:
 
 
 class TestConvertInstantToPerfettoPacket:
-    def test_emits_process_descriptor(self) -> None:
-        state = PerfettoTrackState()
+    def test_emits_process_descriptor(self, state: PerfettoTrackState) -> None:
         events: list[TraceEvent] = [
             Instant(process_track(100), START_EVENT, ts=5_000),
         ]
@@ -810,8 +596,7 @@ class TestConvertInstantToPerfettoPacket:
         assert len(descriptors) == 2
         assert state.has_process_descriptor(proc(100))
 
-    def test_emits_instant_event(self) -> None:
-        state = PerfettoTrackState()
+    def test_emits_instant_event(self, state: PerfettoTrackState) -> None:
         events: list[TraceEvent] = [
             Instant(process_track(100), START_EVENT, ts=5_000),
         ]
@@ -848,8 +633,7 @@ class TestConvertInstantToPerfettoPacket:
         assert instant_packet.track_event.type == TrackEvent.Type.TYPE_INSTANT
         assert instant_packet.track_event.name == START_EVENT
 
-    def test_reuses_process_descriptor(self) -> None:
-        state = PerfettoTrackState()
+    def test_reuses_process_descriptor(self, state: PerfettoTrackState) -> None:
         desc1, packets1 = convert_trace_events_to_perfetto(
             [Instant(process_track(100), START_EVENT, ts=5_000)],
             state,
@@ -883,20 +667,8 @@ class TestConvertInstantToPerfettoPacket:
             (10_000, TrackEventType.SLICE_END, process_track_name(proc(100)), {}),
         ]
 
-    def test_instant_after_gc_event_no_duplicate_descriptor(self) -> None:
-        state = PerfettoTrackState()
-        gc_item = GCStatsInfo(
-            gen=0,
-            iid=0,
-            ts_start=1_000,
-            ts_stop=2_000,
-            heap_size=1000,
-            collections=1,
-            collected=10,
-            uncollectable=0,
-            candidates=5,
-            duration=0.001,
-        )
+    def test_instant_after_gc_event_no_duplicate_descriptor(self, state: PerfettoTrackState) -> None:
+        gc_item = pause_item()
         gc_desc, _ = convert_item(proc(100), gc_item, state, sequence_id=1)
         inst_desc, _ = convert_trace_events_to_perfetto(
             [Instant(process_track(100), STOP_EVENT, ts=5_000)],
@@ -906,8 +678,7 @@ class TestConvertInstantToPerfettoPacket:
         assert len(gc_desc) >= 2
         assert len(inst_desc) == 0
 
-    def test_counter_track_takes_the_display_name_it_was_given(self) -> None:
-        state = PerfettoTrackState()
+    def test_counter_track_takes_the_display_name_it_was_given(self, state: PerfettoTrackState) -> None:
         descriptors, _ = convert_trace_events_to_perfetto(
             [
                 Counter(
@@ -932,32 +703,9 @@ class TestConvertInstantToPerfettoPacket:
         assert HEAP_SIZE in track_names
         assert "heap_size heap_size" not in track_names
 
-    def test_shared_heap_size_track_reused_across_generations(self) -> None:
-        state = PerfettoTrackState()
-        item_g0 = GCStatsInfo(
-            gen=0,
-            iid=0,
-            ts_start=1_000,
-            ts_stop=2_000,
-            heap_size=1000,
-            collections=1,
-            collected=10,
-            uncollectable=0,
-            candidates=5,
-            duration=0.001,
-        )
-        item_g1 = GCStatsInfo(
-            gen=1,
-            iid=0,
-            ts_start=3_000,
-            ts_stop=4_000,
-            heap_size=2000,
-            collections=1,
-            collected=10,
-            uncollectable=0,
-            candidates=5,
-            duration=0.001,
-        )
+    def test_shared_heap_size_track_reused_across_generations(self, state: PerfettoTrackState) -> None:
+        item_g0 = pause_item()
+        item_g1 = pause_item(gen=1, ts_start=3_000, ts_stop=4_000, heap_size=2000)
         convert_item(proc(100), item_g0, state, sequence_id=1)
         uuid_after_g0 = state.get_or_create_counter_track_uuid(interpreter_track(100, 0), HEAP_SIZE)
         convert_item(proc(100), item_g1, state, sequence_id=1)
@@ -1029,26 +777,14 @@ class TestATrackIsDescribedOffTheEventsOnIt:
     """
 
     def _pid_events(self, pid: int, iid: int = 0) -> list[TraceEvent]:
-        item = GCStatsInfo(
-            gen=0,
-            iid=iid,
-            ts_start=1_000,
-            ts_stop=2_000,
-            heap_size=1000,
-            collections=1,
-            collected=10,
-            uncollectable=0,
-            candidates=5,
-            duration=0.001,
-        )
+        item = pause_item(iid=iid)
         return convert_item_to_trace_format(proc(pid), item)
 
     def _named(self, descriptors: list[bytes]) -> list[str]:
         parsed = [parse_track_descriptor(d) for d in descriptors]
         return [td.name for td in parsed if td is not None and td.name]
 
-    def test_a_gc_record_describes_the_process_and_the_interpreter(self) -> None:
-        state = PerfettoTrackState()
+    def test_a_gc_record_describes_the_process_and_the_interpreter(self, state: PerfettoTrackState) -> None:
         descriptors, _ = convert_trace_events_to_perfetto(self._pid_events(100), state, sequence_id=1)
         names = self._named(descriptors)
         assert process_track_name(proc(100)) in names
@@ -1059,8 +795,7 @@ class TestATrackIsDescribedOffTheEventsOnIt:
             < names.index(_PAUSE_TRACK_NAME)
         ), f"each parent must precede its child; got {names}"
 
-    def test_an_rss_only_pid_gets_a_process_row_and_no_thread_row(self) -> None:
-        state = PerfettoTrackState()
+    def test_an_rss_only_pid_gets_a_process_row_and_no_thread_row(self, state: PerfettoTrackState) -> None:
         descriptors, _ = convert_trace_events_to_perfetto(
             [Counter(process_track(100), RSS, RSS, 1_000, 4096)],
             state,
@@ -1070,8 +805,7 @@ class TestATrackIsDescribedOffTheEventsOnIt:
         parsed = [parse_track_descriptor(d) for d in descriptors]
         assert not any(td.HasField("thread") for td in parsed if td is not None)
 
-    def test_a_mark_only_pid_gets_a_process_row_and_no_thread_row(self) -> None:
-        state = PerfettoTrackState()
+    def test_a_mark_only_pid_gets_a_process_row_and_no_thread_row(self, state: PerfettoTrackState) -> None:
         descriptors, _ = convert_trace_events_to_perfetto(
             [Instant(process_track(100), "mark", ts=1_000)],
             state,
@@ -1081,18 +815,16 @@ class TestATrackIsDescribedOffTheEventsOnIt:
         parsed = [parse_track_descriptor(d) for d in descriptors]
         assert not any(td.HasField("thread") for td in parsed if td is not None)
 
-    def test_every_track_is_described_exactly_once_across_batches(self) -> None:
-        state = PerfettoTrackState()
+    def test_every_track_is_described_exactly_once_across_batches(self, state: PerfettoTrackState) -> None:
         first, _ = convert_trace_events_to_perfetto(self._pid_events(100), state, sequence_id=1)
         second, _ = convert_trace_events_to_perfetto(self._pid_events(100), state, sequence_id=1)
         assert process_track_name(proc(100)) in self._named(first)
         assert _PAUSE_TRACK_NAME in self._named(first)
         assert self._named(second) == []
 
-    def test_a_second_interpreter_is_described_when_it_first_collects(self) -> None:
+    def test_a_second_interpreter_is_described_when_it_first_collects(self, state: PerfettoTrackState) -> None:
         """Its own row and its own counters, in a batch the process was
         already described in."""
-        state = PerfettoTrackState()
         convert_trace_events_to_perfetto(self._pid_events(100, iid=0), state, sequence_id=1)
         later, _ = convert_trace_events_to_perfetto(self._pid_events(100, iid=1), state, sequence_id=1)
         names = self._named(later)
@@ -1112,26 +844,14 @@ class TestTheInterpreterGroupsAreDerived:
     """
 
     def _events(self, pid: int, iid: int = 0) -> list[TraceEvent]:
-        item = GCStatsInfo(
-            gen=0,
-            iid=iid,
-            ts_start=1_000,
-            ts_stop=2_000,
-            heap_size=1000,
-            collections=1,
-            collected=10,
-            uncollectable=0,
-            candidates=5,
-            duration=0.001,
-        )
+        item = pause_item(iid=iid)
         return convert_item_to_trace_format(proc(pid), item)
 
     def _by_name(self, descriptors: list[bytes]) -> dict[str, TrackDescriptor]:
         parsed = [parse_track_descriptor(d) for d in descriptors]
         return {td.name: td for td in parsed if td is not None and td.name}
 
-    def test_a_record_derives_the_list_and_the_group_that_holds_it(self) -> None:
-        state = PerfettoTrackState()
+    def test_a_record_derives_the_list_and_the_group_that_holds_it(self, state: PerfettoTrackState) -> None:
         descriptors, _ = convert_trace_events_to_perfetto(self._events(100), state, sequence_id=1)
         described = self._by_name(descriptors)
 
@@ -1146,8 +866,7 @@ class TestTheInterpreterGroupsAreDerived:
         assert group.child_ordering == 3
         assert group.sibling_order_rank == 0
 
-    def test_the_list_precedes_the_group_it_holds(self) -> None:
-        state = PerfettoTrackState()
+    def test_the_list_precedes_the_group_it_holds(self, state: PerfettoTrackState) -> None:
         descriptors, _ = convert_trace_events_to_perfetto(self._events(100), state, sequence_id=1)
         names = [td.name for td in (parse_track_descriptor(d) for d in descriptors) if td is not None and td.name]
         assert (
@@ -1156,7 +875,7 @@ class TestTheInterpreterGroupsAreDerived:
             < names.index(_interpreter_group_name(0))
         ), f"each parent must precede its child; got {names}"
 
-    def test_the_list_sorts_below_the_process_row(self) -> None:
+    def test_the_list_sorts_below_the_process_row(self, state: PerfettoTrackState) -> None:
         """A rename has to keep the list under the row it belongs to.
 
         `dev.perfetto.TraceProcessorTrack` ranks a process's rows by kind and
@@ -1164,7 +883,6 @@ class TestTheInterpreterGroupsAreDerived:
         `sibling_order_rank`. Both of these are slice-shaped, so the name is
         the whole of it (ADR-0027).
         """
-        state = PerfettoTrackState()
         descriptors, _ = convert_trace_events_to_perfetto(self._events(100), state, sequence_id=1)
         parsed = [td for td in (parse_track_descriptor(d) for d in descriptors) if td is not None]
         process_uuid = state.get_process_track_uuid(proc(100))
@@ -1172,8 +890,7 @@ class TestTheInterpreterGroupsAreDerived:
         listing_name = next(td.name for td in parsed if td.parent_uuid == process_uuid)
         assert process_name.lower() < listing_name.lower(), f"{listing_name!r} draws above {process_name!r} in the UI"
 
-    def test_a_second_interpreter_shares_the_list_and_gets_its_own_group(self) -> None:
-        state = PerfettoTrackState()
+    def test_a_second_interpreter_shares_the_list_and_gets_its_own_group(self, state: PerfettoTrackState) -> None:
         convert_trace_events_to_perfetto(self._events(100, iid=0), state, sequence_id=1)
         later, _ = convert_trace_events_to_perfetto(self._events(100, iid=1), state, sequence_id=1)
         described = self._by_name(later)
@@ -1183,9 +900,8 @@ class TestTheInterpreterGroupsAreDerived:
         assert group.parent_uuid == state.get_or_create_interpreter_list_track_uuid(proc(100))
         assert group.sibling_order_rank == 1
 
-    def test_a_loss_row_reaches_the_same_group_as_the_collections(self) -> None:
+    def test_a_loss_row_reaches_the_same_group_as_the_collections(self, state: PerfettoTrackState) -> None:
         """One group per interpreter, not one per row it owns."""
-        state = PerfettoTrackState()
         convert_trace_events_to_perfetto(self._events(100, iid=0), state, sequence_id=1)
         later, _ = convert_trace_events_to_perfetto(
             convert_loss_to_trace_format(proc(100), create_mock_loss_item(iid=0)),
@@ -1197,10 +913,9 @@ class TestTheInterpreterGroupsAreDerived:
         assert _interpreter_group_name(0) not in described, "interpreter 0's group is already described"
         assert _INTERPRETER_LIST_NAME not in described
 
-    def test_a_process_that_only_reported_rss_derives_neither(self) -> None:
+    def test_a_process_that_only_reported_rss_derives_neither(self, state: PerfettoTrackState) -> None:
         """A row exists because an event named it (ADR-0024), and nothing
         an interpreter owns was named here."""
-        state = PerfettoTrackState()
         descriptors, _ = convert_trace_events_to_perfetto(
             [Counter(process_track(100), RSS, RSS, 1_000, 4096)],
             state,
@@ -1223,25 +938,13 @@ class TestTheRowsInsideAnInterpreterGroupAreRanked:
     def _events(self, pid: int = 100, iid: int = 0) -> list[TraceEvent]:
         """One of every row an interpreter owns: a pause slice, a loss
         span, the `heap_size` counter and a counter inside GC Metrics."""
-        item = GCStatsInfo(
-            gen=0,
-            iid=iid,
-            ts_start=1_000,
-            ts_stop=2_000,
-            heap_size=1000,
-            collections=1,
-            collected=10,
-            uncollectable=0,
-            candidates=5,
-            duration=0.001,
-        )
+        item = pause_item(iid=iid)
         return [
             *convert_item_to_trace_format(proc(pid), item),
             *convert_loss_to_trace_format(proc(pid), create_mock_loss_item(iid=iid)),
         ]
 
-    def test_they_draw_pauses_loss_heap_size_then_the_metrics_group(self) -> None:
-        state = PerfettoTrackState()
+    def test_they_draw_pauses_loss_heap_size_then_the_metrics_group(self, state: PerfettoTrackState) -> None:
         descriptors, _ = convert_trace_events_to_perfetto(self._events(), state, sequence_id=1)
         parsed = [td for td in (parse_track_descriptor(d) for d in descriptors) if td is not None]
 
@@ -1301,17 +1004,15 @@ class TestLossTrackDescriptor:
         parsed = [parse_track_descriptor(d) for d in descriptors]
         return [td for td in parsed if td is not None and td.name.startswith(_LOSS_TRACK_NAME)]
 
-    def test_the_track_is_described(self) -> None:
-        state = PerfettoTrackState()
+    def test_the_track_is_described(self, state: PerfettoTrackState) -> None:
 
         found = self._loss_descriptors(self._convert([self._msg(iid=0)], state))
 
         assert [td.name for td in found] == [_LOSS_TRACK_NAME]
 
-    def test_each_interpreter_gets_one_inside_its_own_group(self) -> None:
+    def test_each_interpreter_gets_one_inside_its_own_group(self, state: PerfettoTrackState) -> None:
         """Two rows, identically named. What tells them apart is the group
         each parents to, which is what carries the iid (ADR-0027)."""
-        state = PerfettoTrackState()
 
         found = self._loss_descriptors(self._convert([self._msg(iid=0), self._msg(iid=1)], state))
 
@@ -1321,17 +1022,15 @@ class TestLossTrackDescriptor:
             state.get_or_create_interpreter_group_track_uuid(proc(100), 1),
         ]
 
-    def test_it_hangs_off_the_interpreter_group(self) -> None:
-        state = PerfettoTrackState()
+    def test_it_hangs_off_the_interpreter_group(self, state: PerfettoTrackState) -> None:
 
         found = self._loss_descriptors(self._convert([self._msg()], state))
 
         assert found[0].parent_uuid == state.get_or_create_interpreter_group_track_uuid(proc(100), 0)
 
-    def test_it_is_a_plain_custom_track(self) -> None:
+    def test_it_is_a_plain_custom_track(self, state: PerfettoTrackState) -> None:
         """A ``thread`` sub-message would describe an OS thread that does not
         exist, and Perfetto ignores ordering hints on OS-scoped tracks."""
-        state = PerfettoTrackState()
 
         found = self._loss_descriptors(self._convert([self._msg()], state))
 
@@ -1339,28 +1038,15 @@ class TestLossTrackDescriptor:
         assert not found[0].HasField("process")
         assert found[0].sibling_order_rank == 1
 
-    def test_it_is_described_once(self) -> None:
-        state = PerfettoTrackState()
+    def test_it_is_described_once(self, state: PerfettoTrackState) -> None:
 
         self._convert([self._msg()], state)
         again = self._loss_descriptors(self._convert([self._msg()], state))
 
         assert again == []
 
-    def test_a_gc_slice_does_not_trigger_it(self) -> None:
-        state = PerfettoTrackState()
-        item = GCStatsInfo(
-            gen=0,
-            iid=0,
-            ts_start=1_000,
-            ts_stop=2_000,
-            heap_size=1000,
-            collections=1,
-            collected=10,
-            uncollectable=0,
-            candidates=5,
-            duration=0.001,
-        )
+    def test_a_gc_slice_does_not_trigger_it(self, state: PerfettoTrackState) -> None:
+        item = pause_item()
 
         descriptors, _ = convert_item(proc(100), item, state)
 

@@ -33,6 +33,7 @@ from gcmon.model.process import Process
 from tests.conftest import DEFAULT_PID
 from tests.data_helpers import create_instant_msg
 from tests.exporters.conftest import ExporterFactory
+from tests.exporters.perfetto_helpers import pause_item
 from tests.helpers import create_mock_incremental_item, create_mock_stats_item, perfetto_packets, proc
 
 # Pids that only ever show up as liveness observations: gcmon polled
@@ -303,18 +304,7 @@ class TestPerfettoExporter:
 
     def test_cmdline_comes_from_the_process(self, tmp_path: Path) -> None:
         exporter = PerfettoExporter(output_path=tmp_path / "test.pb")
-        item = GCStatsInfo(
-            gen=0,
-            iid=0,
-            ts_start=1_000,
-            ts_stop=2_000,
-            heap_size=1000,
-            collections=1,
-            collected=10,
-            uncollectable=0,
-            candidates=5,
-            duration=0.001,
-        )
+        item = pause_item()
         exporter.add_process_cmdline(proc(12345), ("python", "-u", "my_script.py"))
         exporter.add_event(proc(12345), item)
         exporter.close()
@@ -342,18 +332,7 @@ class TestPerfettoExporter:
 
     def test_a_process_with_no_cmdline_gets_no_description(self, tmp_path: Path) -> None:
         exporter = PerfettoExporter(output_path=tmp_path / "test.pb")
-        item = GCStatsInfo(
-            gen=0,
-            iid=0,
-            ts_start=1_000,
-            ts_stop=2_000,
-            heap_size=1000,
-            collections=1,
-            collected=10,
-            uncollectable=0,
-            candidates=5,
-            duration=0.001,
-        )
+        item = pause_item()
         exporter.add_event(proc(12345), item)
         exporter.close()
 

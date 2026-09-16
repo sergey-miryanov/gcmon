@@ -36,7 +36,7 @@ from gcmon.monitoring.target_process import ExternalProcess
 from gcmon.monitoring.wait_policy import no_wait_policy
 from gcmon.stats.streaming_stats import StreamingStats
 from tests.captures import SSL_CONTEXT_SIZE
-from tests.helpers import FakeEventsReader, polled, proc
+from tests.helpers import FakeEventsReader, create_mock_stats_item, polled, proc
 from tests.monitoring.test_monitor_cursor import POLL_0
 
 PID = 33328
@@ -94,7 +94,7 @@ def capture_records(
     per_gen: dict[int, list[GCStatsInfo]] = {}
     for gen, collections, ts_start, ts_stop, duration in capture:
         per_gen.setdefault(gen, []).append(
-            GCStatsInfo(
+            create_mock_stats_item(
                 gen=gen,
                 iid=IID,
                 ts_start=ts_start,
@@ -119,7 +119,7 @@ def empty_slot(gen: int) -> GCStatsInfo:
     one: `read_gc_stats` sets `gen` from the loop it is in rather than from the
     slot. `_is_complete` rejects it.
     """
-    return GCStatsInfo(
+    return create_mock_stats_item(
         gen=gen,
         iid=IID,
         ts_start=0,
@@ -290,7 +290,7 @@ class TestTheRingModel:
         for gen, collections, ts_start, ts_stop in POLL_0:
             if ts_start < ts_stop:
                 per_gen.setdefault(gen, []).append(
-                    GCStatsInfo(
+                    create_mock_stats_item(
                         gen=gen,
                         iid=IID,
                         ts_start=ts_start,
@@ -570,7 +570,7 @@ class TestAMidWriteSlot:
         settled = truth[0][20]
         in_flight = truth[0][21]
         batch = self.batch_at(settled.ts_stop)
-        half_written = GCStatsInfo(
+        half_written = create_mock_stats_item(
             gen=0,
             iid=IID,
             ts_start=in_flight.ts_start,

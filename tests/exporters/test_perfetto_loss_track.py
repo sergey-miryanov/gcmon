@@ -32,6 +32,7 @@ from gcmon.exporters.trace_converter import convert_item_to_trace_format, conver
 from gcmon.model.data import GCStatsInfo, LossMsg
 from gcmon.model.names import GC_LOSS_NAME, gc_loss_slice_name, gc_pause_slice_name
 from gcmon.model.trace_event import TraceEvent
+from tests.exporters.perfetto_helpers import pause_item
 from tests.helpers import create_mock_loss_item, open_trace_processor, proc
 
 pytestmark = pytest.mark.fuzz
@@ -45,17 +46,8 @@ Slice = tuple[str, str, int, int]
 
 
 def _pause(ts_start: int, ts_stop: int, collections: int) -> GCStatsInfo:
-    return GCStatsInfo(
-        gen=0,
-        iid=IID,
-        ts_start=ts_start,
-        ts_stop=ts_stop,
-        heap_size=1024,
-        collections=collections,
-        collected=1,
-        uncollectable=0,
-        candidates=1,
-        duration=0.001,
+    return pause_item(
+        iid=IID, ts_start=ts_start, ts_stop=ts_stop, heap_size=1024, collections=collections, collected=1, candidates=1
     )
 
 

@@ -16,7 +16,12 @@ from gcmon.monitoring.wait_policy import no_wait_policy
 from gcmon.stats.streaming_stats import StreamingStats
 from gcmon.support.vocabulary import PROGRAM_NAME
 from tests.data_helpers import create_instant_msg
-from tests.helpers import FakeEventsReader, MockExporter, create_mock_stats_item
+from tests.helpers import (
+    FakeEventsReader,
+    MockExporter,
+    create_mock_incremental_item,
+    create_mock_stats_item,
+)
 
 DEFAULT_PID: int = 12345
 
@@ -159,8 +164,7 @@ def env_module() -> types.ModuleType:
 
 @pytest.fixture
 def simple_item() -> GCStatsInfo:
-    return GCStatsInfo(
-        gen=0,
+    return create_mock_stats_item(
         iid=1,
         ts_start=1_000_000,
         ts_stop=2_000_000,
@@ -169,13 +173,12 @@ def simple_item() -> GCStatsInfo:
         collected=50,
         uncollectable=0,
         candidates=10,
-        duration=0.005,
     )
 
 
 @pytest.fixture
 def incremental_item() -> GCStatsInfo:
-    return GCStatsInfo(
+    return create_mock_incremental_item(
         gen=1,
         iid=2,
         ts_start=3_000_000,

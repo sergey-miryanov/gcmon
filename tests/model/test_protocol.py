@@ -1,4 +1,4 @@
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from types import SimpleNamespace
 
 import pytest
@@ -74,6 +74,10 @@ def loss_item() -> LossMsg:
     )
 
 
+Guard = Callable[[object], bool]
+"""What every `has_*` and `is_*` function is, once the narrowing is spent."""
+
+
 class TestIsGC:
     def test_regular_returns_true(self, simple_item: GCStatsInfo) -> None:
         assert is_gc_stats(simple_item) is True
@@ -97,191 +101,41 @@ class TestIsInstant:
 
 
 class TestHasGuards:
-    def test_has_pause_ts_true(self) -> None:
+    """Each guard answers for one field, and nine near-identical pairs said
+    so nine times. The table is the statement: a guard, the field it reads,
+    and a value that field can hold."""
+
+    SUB_PHASES = (
+        (has_incremental, INCREMENT_SIZE, 500),
+        (has_mark_alive, ALIVE_SIZE, 300),
+        (has_deduce_unreachable, TS_DEDUCE_UNREACHABLE_START, 100),
+        (has_handle_weakrefs, TS_HANDLE_WEAKREF_CALLBACKS_START, 100),
+        (has_finalize_garbage, TS_FINALIZE_GARBAGE_STOP, 100),
+        (has_handle_resurrected, TS_HANDLE_RESURRECTED_STOP, 100),
+        (has_clear_weakrefs, TS_CLEAR_WEAKREFS_STOP, 100),
+        (has_delete_garbage, TS_DELETE_GARBAGE_START, 100),
+    )
+
+    def test_a_pause_record_carries_the_pause_timestamps(self) -> None:
         assert has_pause_ts(create_mock_stats_item())
 
-    def test_has_pause_ts_false(self) -> None:
+    def test_something_that_is_not_a_record_does_not(self) -> None:
         assert not has_pause_ts(SimpleNamespace(gen=0))
 
-    def test_has_incremental_true(self) -> None:
-        assert has_incremental(
-            GCStatsInfo(
-                gen=0,
-                iid=0,
-                ts_start=0,
-                ts_stop=0,
-                heap_size=0,
-                collections=0,
-                collected=0,
-                uncollectable=0,
-                candidates=0,
-                duration=0.0,
-                increment_size=500,
-            )
-        )
+    @pytest.mark.parametrize(("guard", "field", "value"), SUB_PHASES, ids=[f[1] for f in SUB_PHASES])
+    def test_a_guard_sees_the_field_it_names(self, guard: Guard, field: str, value: int) -> None:
+        assert guard(create_mock_stats_item(**{field: value}))
 
-    def test_has_incremental_false(self) -> None:
-        assert not has_incremental(create_mock_stats_item())
-
-    def test_has_mark_alive_true(self) -> None:
-        assert has_mark_alive(
-            GCStatsInfo(
-                gen=0,
-                iid=0,
-                ts_start=0,
-                ts_stop=0,
-                heap_size=0,
-                collections=0,
-                collected=0,
-                uncollectable=0,
-                candidates=0,
-                duration=0.0,
-                alive_size=300,
-            )
-        )
-
-    def test_has_mark_alive_false(self) -> None:
-        assert not has_mark_alive(create_mock_stats_item())
-
-    def test_has_deduce_unreachable_true(self) -> None:
-        assert has_deduce_unreachable(
-            GCStatsInfo(
-                gen=0,
-                iid=0,
-                ts_start=0,
-                ts_stop=0,
-                heap_size=0,
-                collections=0,
-                collected=0,
-                uncollectable=0,
-                candidates=0,
-                duration=0.0,
-                ts_deduce_unreachable_start=100,
-            )
-        )
-
-    def test_has_deduce_unreachable_false(self) -> None:
-        assert not has_deduce_unreachable(create_mock_stats_item())
-
-    def test_has_handle_weakrefs_true(self) -> None:
-        assert has_handle_weakrefs(
-            GCStatsInfo(
-                gen=0,
-                iid=0,
-                ts_start=0,
-                ts_stop=0,
-                heap_size=0,
-                collections=0,
-                collected=0,
-                uncollectable=0,
-                candidates=0,
-                duration=0.0,
-                ts_handle_weakref_callbacks_start=100,
-            )
-        )
-
-    def test_has_handle_weakrefs_false(self) -> None:
-        assert not has_handle_weakrefs(create_mock_stats_item())
-
-    def test_has_finalize_garbage_true(self) -> None:
-        assert has_finalize_garbage(
-            GCStatsInfo(
-                gen=0,
-                iid=0,
-                ts_start=0,
-                ts_stop=0,
-                heap_size=0,
-                collections=0,
-                collected=0,
-                uncollectable=0,
-                candidates=0,
-                duration=0.0,
-                ts_finalize_garbage_stop=100,
-            )
-        )
-
-    def test_has_finalize_garbage_false(self) -> None:
-        assert not has_finalize_garbage(create_mock_stats_item())
-
-    def test_has_handle_resurrected_true(self) -> None:
-        assert has_handle_resurrected(
-            GCStatsInfo(
-                gen=0,
-                iid=0,
-                ts_start=0,
-                ts_stop=0,
-                heap_size=0,
-                collections=0,
-                collected=0,
-                uncollectable=0,
-                candidates=0,
-                duration=0.0,
-                ts_handle_resurrected_stop=100,
-            )
-        )
-
-    def test_has_handle_resurrected_false(self) -> None:
-        assert not has_handle_resurrected(create_mock_stats_item())
-
-    def test_has_clear_weakrefs_true(self) -> None:
-        assert has_clear_weakrefs(
-            GCStatsInfo(
-                gen=0,
-                iid=0,
-                ts_start=0,
-                ts_stop=0,
-                heap_size=0,
-                collections=0,
-                collected=0,
-                uncollectable=0,
-                candidates=0,
-                duration=0.0,
-                ts_clear_weakrefs_stop=100,
-            )
-        )
-
-    def test_has_clear_weakrefs_false(self) -> None:
-        assert not has_clear_weakrefs(create_mock_stats_item())
-
-    def test_has_delete_garbage_true(self) -> None:
-        assert has_delete_garbage(
-            GCStatsInfo(
-                gen=0,
-                iid=0,
-                ts_start=0,
-                ts_stop=0,
-                heap_size=0,
-                collections=0,
-                collected=0,
-                uncollectable=0,
-                candidates=0,
-                duration=0.0,
-                ts_delete_garbage_start=100,
-            )
-        )
-
-    def test_has_delete_garbage_false(self) -> None:
-        assert not has_delete_garbage(create_mock_stats_item())
+    @pytest.mark.parametrize(("guard", "field", "value"), SUB_PHASES, ids=[f[1] for f in SUB_PHASES])
+    def test_a_guard_passes_over_a_record_that_lacks_it(self, guard: Guard, field: str, value: int) -> None:
+        """A pause record leaves every sub-phase unset, so no guard may
+        claim it. One that does draws a slice off a missing timestamp."""
+        assert not guard(create_mock_stats_item())
 
 
 class TestToMappingPartial:
-    def _make_item(self, **extra: int) -> GCStatsInfo:
-        return GCStatsInfo(
-            gen=0,
-            iid=1,
-            ts_start=1_000_000,
-            ts_stop=2_000_000,
-            heap_size=1024,
-            collections=5,
-            collected=50,
-            uncollectable=0,
-            candidates=10,
-            duration=0.005,
-            **extra,
-        )
-
     def test_fill_increment_only(self) -> None:
-        item = self._make_item(
+        item = create_mock_stats_item(
             increment_size=500,
             ts_fill_increment_start=1_000_500,
             ts_fill_increment_stop=1_001_000,
@@ -303,7 +157,7 @@ class TestToMappingPartial:
         assert CLEAR_WEAKREFS_COUNT not in result
 
     def test_mark_alive_only(self) -> None:
-        item = self._make_item(
+        item = create_mock_stats_item(
             alive_size=300,
             ts_mark_alive_start=1_000_500,
             ts_mark_alive_stop=1_001_000,
@@ -325,7 +179,7 @@ class TestToMappingPartial:
         assert CLEAR_WEAKREFS_COUNT not in result
 
     def test_deduce_unreachable_only(self) -> None:
-        item = self._make_item(
+        item = create_mock_stats_item(
             ts_deduce_unreachable_start=1_000_500,
             ts_deduce_unreachable_stop=1_001_000,
         )
@@ -345,7 +199,7 @@ class TestToMappingPartial:
         assert CLEAR_WEAKREFS_COUNT not in result
 
     def test_finalize_garbage_only(self) -> None:
-        item = self._make_item(
+        item = create_mock_stats_item(
             ts_finalize_garbage_stop=1_005_000,
             finalized_garbage_count=42,
         )
@@ -356,7 +210,7 @@ class TestToMappingPartial:
         assert CLEAR_WEAKREFS_COUNT not in result
 
     def test_delete_garbage_only(self) -> None:
-        item = self._make_item(
+        item = create_mock_stats_item(
             ts_delete_garbage_start=1_008_000,
             ts_delete_garbage_stop=1_009_000,
             deleted_garbage_count=13,
@@ -369,7 +223,7 @@ class TestToMappingPartial:
         assert CLEAR_WEAKREFS_COUNT not in result
 
     def test_clear_weakrefs_only(self) -> None:
-        item = self._make_item(
+        item = create_mock_stats_item(
             ts_clear_weakrefs_stop=1_007_000,
             clear_weakrefs_count=7,
         )
@@ -380,7 +234,7 @@ class TestToMappingPartial:
         assert DELETED_GARBAGE_COUNT not in result
 
     def test_all_partial_phases(self) -> None:
-        item = self._make_item(
+        item = create_mock_stats_item(
             increment_size=500,
             alive_size=300,
             ts_mark_alive_start=1_000_500,

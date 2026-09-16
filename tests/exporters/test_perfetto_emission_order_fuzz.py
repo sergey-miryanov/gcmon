@@ -191,14 +191,13 @@ def test_nesting_past_the_limit_loses_slices_silently(tmp_path: Path) -> None:
     assert slices == {name: span for name, span in expected.items() if name not in dropped}
 
 
-def test_a_named_end_matches_by_name_not_by_stack_position(tmp_path: Path) -> None:
+def test_a_named_end_matches_by_name_not_by_stack_position(tmp_path: Path, state: PerfettoTrackState) -> None:
     """Pin the mechanism ADR-0011's emission argument rests on.
 
     It is why a shared start emitted inner-first corrupts *both* slices,
     and why two ENDs on one timestamp need no rule. If it ever changes,
     that argument has to be redone rather than patched.
     """
-    state = PerfettoTrackState()
     track_uuid = state.get_or_create_process_lifetime_track_uuid()
 
     def event(ts: int, event_type: TrackEventType, name: str) -> bytes:

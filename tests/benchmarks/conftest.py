@@ -29,6 +29,7 @@ from gcmon.model.names import (
     TS_STOP,
     UNCOLLECTABLE,
 )
+from tests.helpers import create_mock_incremental_item
 
 
 def make_gc_event(i: int, *, pid: int = 12345, iid: int = 0, gen: int = 0) -> GCStatsInfo:
@@ -41,7 +42,7 @@ def make_gc_event(i: int, *, pid: int = 12345, iid: int = 0, gen: int = 0) -> GC
     values away from the degenerate sub-microsecond range.
     """
     base = 1_000_000_000 + i * 5_000_000
-    return GCStatsInfo(
+    return create_mock_incremental_item(
         gen=gen,
         iid=iid,
         ts_start=base,
