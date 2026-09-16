@@ -23,6 +23,9 @@ import pytest
 from perfetto.trace_processor import TraceProcessor
 
 from gcmon.exporters import PerfettoExporter
+from gcmon.exporters.perfetto_format import _LOSS_TRACK_NAME
+from gcmon.exporters.perfetto_process_lifetime import process_track_name
+from gcmon.support.vocabulary import ENCODING
 from tests.helpers import (
     create_mock_incremental_item,
     create_mock_loss_item,
@@ -37,7 +40,7 @@ _SQL_BLOCK = re.compile(r"```sql\n(.*?)```", re.DOTALL)
 
 
 def _examples() -> list[str]:
-    return [block.strip() for block in _SQL_BLOCK.findall(PAGE.read_text(encoding="utf-8"))]
+    return [block.strip() for block in _SQL_BLOCK.findall(PAGE.read_text(encoding=ENCODING))]
 
 
 def _label(sql: str) -> str:
@@ -153,7 +156,7 @@ class TestTheDocumentedQueries:
 
         names = {row.name for row in documented_trace_processor.query(lifetime)}
 
-        assert f"Process {LIVENESS_ONLY_PID}" in names, (
+        assert process_track_name(proc(LIVENESS_ONLY_PID)) in names, (
             f"a process with a span and no `process` row was dropped: {sorted(names)}"
         )
 
@@ -169,6 +172,6 @@ class TestTheDocumentedQueries:
         names = {row.name for row in documented_trace_processor.query(statistics)}
 
         assert names, "the statistics example found nothing to group"
-        assert not any(name.startswith("GC Loss") for name in names), (
+        assert not any(name.startswith(_LOSS_TRACK_NAME) for name in names), (
             f"loss spans reached the pause statistics: {sorted(names)}"
         )

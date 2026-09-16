@@ -1,6 +1,8 @@
 """Tests for ``PerfettoTrackState`` uuid allocation and bookkeeping."""
 
 from gcmon.exporters.perfetto_track_state import PerfettoTrackState
+from gcmon.exporters.trace_converter import counter_display_name
+from gcmon.model.names import COLLECTED, HEAP_SIZE
 from gcmon.model.process import Process
 from tests.exporters.perfetto_helpers import span
 from tests.helpers import interpreter_track, loss_track, proc
@@ -11,7 +13,7 @@ class TestPerfettoTrackState:
         state = PerfettoTrackState()
         assert not state.has_process_descriptor(proc(123))
         assert not state.has_track(interpreter_track(123, 0))
-        assert not state.has_counter_track(interpreter_track(123, 0), "G0 collected")
+        assert not state.has_counter_track(interpreter_track(123, 0), counter_display_name(0, COLLECTED))
 
     def test_pid_tracking(self) -> None:
         state = PerfettoTrackState()
@@ -46,23 +48,23 @@ class TestPerfettoTrackState:
 
     def test_counter_track_uuid_sequential(self) -> None:
         state = PerfettoTrackState()
-        uuid0 = state.get_or_create_counter_track_uuid(interpreter_track(100, 0), "G0 collected")
-        uuid1 = state.get_or_create_counter_track_uuid(interpreter_track(100, 0), "heap_size")
+        uuid0 = state.get_or_create_counter_track_uuid(interpreter_track(100, 0), counter_display_name(0, COLLECTED))
+        uuid1 = state.get_or_create_counter_track_uuid(interpreter_track(100, 0), HEAP_SIZE)
         assert uuid0 == 1
         assert uuid1 == 2
 
     def test_counter_track_uuid_idempotent(self) -> None:
         state = PerfettoTrackState()
-        uuid1 = state.get_or_create_counter_track_uuid(interpreter_track(100, 0), "G0 collected")
-        uuid2 = state.get_or_create_counter_track_uuid(interpreter_track(100, 0), "G0 collected")
+        uuid1 = state.get_or_create_counter_track_uuid(interpreter_track(100, 0), counter_display_name(0, COLLECTED))
+        uuid2 = state.get_or_create_counter_track_uuid(interpreter_track(100, 0), counter_display_name(0, COLLECTED))
         assert uuid1 == uuid2
 
     def test_has_counter_track(self) -> None:
         state = PerfettoTrackState()
-        assert not state.has_counter_track(interpreter_track(100, 0), "G0 collected")
-        state.get_or_create_counter_track_uuid(interpreter_track(100, 0), "G0 collected")
-        assert state.has_counter_track(interpreter_track(100, 0), "G0 collected")
-        assert not state.has_counter_track(interpreter_track(100, 0), "G1 collected")
+        assert not state.has_counter_track(interpreter_track(100, 0), counter_display_name(0, COLLECTED))
+        state.get_or_create_counter_track_uuid(interpreter_track(100, 0), counter_display_name(0, COLLECTED))
+        assert state.has_counter_track(interpreter_track(100, 0), counter_display_name(0, COLLECTED))
+        assert not state.has_counter_track(interpreter_track(100, 0), counter_display_name(1, COLLECTED))
 
 
 class TestRankAllocation:
@@ -345,10 +347,10 @@ class TestTwoProcessesOnOnePidGetTheirOwnRows:
 
     def test_a_counter_gets_a_uuid_per_process(self) -> None:
         state = PerfettoTrackState()
-        first = state.get_or_create_counter_track_uuid(self.FIRST, "G0 collected")
+        first = state.get_or_create_counter_track_uuid(self.FIRST, counter_display_name(0, COLLECTED))
 
-        assert not state.has_counter_track(self.SECOND, "G0 collected")
-        assert state.get_or_create_counter_track_uuid(self.SECOND, "G0 collected") != first
+        assert not state.has_counter_track(self.SECOND, counter_display_name(0, COLLECTED))
+        assert state.get_or_create_counter_track_uuid(self.SECOND, counter_display_name(0, COLLECTED)) != first
 
     def test_two_interpreters_are_still_two_rows(self) -> None:
         """The control: dropping the epoch must not fold anything else."""

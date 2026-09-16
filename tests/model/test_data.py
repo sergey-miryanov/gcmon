@@ -9,6 +9,7 @@ from gcmon.model.data import (
     from_mapping,
     instant_msg,
 )
+from gcmon.model.names import GEN, GENS, IID, LOST_COUNT, OBSERVED_COUNT, PID, TS_START, TS_STOP
 from gcmon.model.protocol import TMapping, has_deduce_unreachable, has_incremental, has_mark_alive, to_mapping
 
 
@@ -123,12 +124,12 @@ class TestLossMsg:
     def test_from_mapping_returns_loss_msg(self) -> None:
         result = from_mapping(
             {
-                "pid": 42,
+                PID: 42,
                 "tid": -2,
-                "iid": 1,
-                "ts_start": 1_000,
-                "ts_stop": 2_000,
-                "gens": [{"gen": 2, "observed_count": 3, "lost_count": 76}],
+                IID: 1,
+                TS_START: 1_000,
+                TS_STOP: 2_000,
+                GENS: [{GEN: 2, OBSERVED_COUNT: 3, LOST_COUNT: 76}],
             }
         )
 

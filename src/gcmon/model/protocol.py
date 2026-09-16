@@ -1,6 +1,45 @@
 from collections.abc import Mapping, Sequence
 from typing import Protocol, TypeGuard
 
+from .names import (
+    ALIVE_SIZE,
+    CANDIDATES,
+    CLEAR_WEAKREFS_COUNT,
+    COLLECTED,
+    COLLECTIONS,
+    DELETED_GARBAGE_COUNT,
+    DURATION,
+    FINALIZED_GARBAGE_COUNT,
+    GEN,
+    GENS,
+    HEAP_SIZE,
+    IID,
+    INCREMENT_SIZE,
+    LOST_COUNT,
+    LOST_FROM,
+    LOST_PAUSE_NS,
+    NAME,
+    OBSERVED_COUNT,
+    TS,
+    TS_CLEAR_WEAKREFS_STOP,
+    TS_DEDUCE_UNREACHABLE_START,
+    TS_DEDUCE_UNREACHABLE_STOP,
+    TS_DELETE_GARBAGE_START,
+    TS_DELETE_GARBAGE_STOP,
+    TS_FILL_INCREMENT_START,
+    TS_FILL_INCREMENT_STOP,
+    TS_FINALIZE_GARBAGE_STOP,
+    TS_HANDLE_RESURRECTED_STOP,
+    TS_HANDLE_WEAKREF_CALLBACKS_START,
+    TS_HANDLE_WEAKREF_CALLBACKS_STOP,
+    TS_MARK_ALIVE_START,
+    TS_MARK_ALIVE_STOP,
+    TS_START,
+    TS_STOP,
+    TYPE,
+    UNCOLLECTABLE,
+)
+
 __all__ = [
     "JsonlRecord",
     "TClearWeakrefsInfo",
@@ -131,74 +170,74 @@ type TItem = TGCStatsInfo | TInstantMsg | TLossMsg
 
 
 def has_pause_ts(item: object) -> TypeGuard[TGCStatsInfo]:
-    return getattr(item, "ts_start", None) is not None
+    return getattr(item, TS_START, None) is not None
 
 
 def has_incremental(item: object) -> TypeGuard[TIncrementalInfo]:
-    return getattr(item, "increment_size", None) is not None
+    return getattr(item, INCREMENT_SIZE, None) is not None
 
 
 def has_mark_alive(item: object) -> TypeGuard[TMarkAliveInfo]:
-    return getattr(item, "alive_size", None) is not None
+    return getattr(item, ALIVE_SIZE, None) is not None
 
 
 def has_deduce_unreachable(item: object) -> TypeGuard[TDeduceUnreachableInfo]:
-    return getattr(item, "ts_deduce_unreachable_start", None) is not None
+    return getattr(item, TS_DEDUCE_UNREACHABLE_START, None) is not None
 
 
 def has_handle_weakrefs(item: object) -> TypeGuard[THandleWeakrefsInfo]:
-    return getattr(item, "ts_handle_weakref_callbacks_start", None) is not None
+    return getattr(item, TS_HANDLE_WEAKREF_CALLBACKS_START, None) is not None
 
 
 def has_finalize_garbage(item: object) -> TypeGuard[TFinalizeGarbageInfo]:
-    return getattr(item, "ts_finalize_garbage_stop", None) is not None
+    return getattr(item, TS_FINALIZE_GARBAGE_STOP, None) is not None
 
 
 def has_handle_resurrected(item: object) -> TypeGuard[THandleResurrectedInfo]:
-    return getattr(item, "ts_handle_resurrected_stop", None) is not None
+    return getattr(item, TS_HANDLE_RESURRECTED_STOP, None) is not None
 
 
 def has_clear_weakrefs(item: object) -> TypeGuard[TClearWeakrefsInfo]:
-    return getattr(item, "ts_clear_weakrefs_stop", None) is not None
+    return getattr(item, TS_CLEAR_WEAKREFS_STOP, None) is not None
 
 
 def has_delete_garbage(item: object) -> TypeGuard[TDeleteGarbageInfo]:
-    return getattr(item, "ts_delete_garbage_start", None) is not None
+    return getattr(item, TS_DELETE_GARBAGE_START, None) is not None
 
 
 def is_gc_stats(item: object) -> TypeGuard[TGCStatsInfo]:
     """A GC record is the one record type built around ``collections``."""
-    return hasattr(item, "collections")
+    return hasattr(item, COLLECTIONS)
 
 
 def is_instant(item: object) -> TypeGuard[TInstantMsg]:
-    return hasattr(item, "type")
+    return hasattr(item, TYPE)
 
 
 def is_loss(item: object) -> TypeGuard[TLossMsg]:
-    return hasattr(item, "gens")
+    return hasattr(item, GENS)
 
 
 def to_mapping(item: TItem) -> JsonlRecord:
     if is_instant(item):
         return {
-            "type": item.type,
-            "name": item.name,
-            "ts": item.ts,
+            TYPE: item.type,
+            NAME: item.name,
+            TS: item.ts,
         }
 
     if is_loss(item):
         return {
-            "iid": item.iid,
-            "ts_start": item.ts_start,
-            "ts_stop": item.ts_stop,
-            "gens": [
+            IID: item.iid,
+            TS_START: item.ts_start,
+            TS_STOP: item.ts_stop,
+            GENS: [
                 {
-                    "gen": gen.gen,
-                    "observed_count": gen.observed_count,
-                    "lost_from": gen.lost_from,
-                    "lost_count": gen.lost_count,
-                    "lost_pause_ns": gen.lost_pause_ns,
+                    GEN: gen.gen,
+                    OBSERVED_COUNT: gen.observed_count,
+                    LOST_FROM: gen.lost_from,
+                    LOST_COUNT: gen.lost_count,
+                    LOST_PAUSE_NS: gen.lost_pause_ns,
                 }
                 for gen in item.gens
             ],
@@ -206,51 +245,51 @@ def to_mapping(item: TItem) -> JsonlRecord:
 
     if is_gc_stats(item):
         m: JsonlRecord = {
-            "gen": item.gen,
-            "iid": item.iid,
-            "ts_start": item.ts_start,
-            "ts_stop": item.ts_stop,
-            "heap_size": item.heap_size,
-            "collections": item.collections,
-            "collected": item.collected,
-            "uncollectable": item.uncollectable,
-            "candidates": item.candidates,
-            "duration": item.duration,
+            GEN: item.gen,
+            IID: item.iid,
+            TS_START: item.ts_start,
+            TS_STOP: item.ts_stop,
+            HEAP_SIZE: item.heap_size,
+            COLLECTIONS: item.collections,
+            COLLECTED: item.collected,
+            UNCOLLECTABLE: item.uncollectable,
+            CANDIDATES: item.candidates,
+            DURATION: item.duration,
         }
 
         if has_incremental(item):
-            m["increment_size"] = item.increment_size
-            m["ts_fill_increment_start"] = item.ts_fill_increment_start
-            m["ts_fill_increment_stop"] = item.ts_fill_increment_stop
+            m[INCREMENT_SIZE] = item.increment_size
+            m[TS_FILL_INCREMENT_START] = item.ts_fill_increment_start
+            m[TS_FILL_INCREMENT_STOP] = item.ts_fill_increment_stop
 
         if has_mark_alive(item):
-            m["alive_size"] = item.alive_size
-            m["ts_mark_alive_start"] = item.ts_mark_alive_start
-            m["ts_mark_alive_stop"] = item.ts_mark_alive_stop
+            m[ALIVE_SIZE] = item.alive_size
+            m[TS_MARK_ALIVE_START] = item.ts_mark_alive_start
+            m[TS_MARK_ALIVE_STOP] = item.ts_mark_alive_stop
 
         if has_deduce_unreachable(item):
-            m["ts_deduce_unreachable_start"] = item.ts_deduce_unreachable_start
-            m["ts_deduce_unreachable_stop"] = item.ts_deduce_unreachable_stop
+            m[TS_DEDUCE_UNREACHABLE_START] = item.ts_deduce_unreachable_start
+            m[TS_DEDUCE_UNREACHABLE_STOP] = item.ts_deduce_unreachable_stop
 
         if has_handle_weakrefs(item):
-            m["ts_handle_weakref_callbacks_start"] = item.ts_handle_weakref_callbacks_start
-            m["ts_handle_weakref_callbacks_stop"] = item.ts_handle_weakref_callbacks_stop
+            m[TS_HANDLE_WEAKREF_CALLBACKS_START] = item.ts_handle_weakref_callbacks_start
+            m[TS_HANDLE_WEAKREF_CALLBACKS_STOP] = item.ts_handle_weakref_callbacks_stop
 
         if has_finalize_garbage(item):
-            m["ts_finalize_garbage_stop"] = item.ts_finalize_garbage_stop
-            m["finalized_garbage_count"] = item.finalized_garbage_count
+            m[TS_FINALIZE_GARBAGE_STOP] = item.ts_finalize_garbage_stop
+            m[FINALIZED_GARBAGE_COUNT] = item.finalized_garbage_count
 
         if has_handle_resurrected(item):
-            m["ts_handle_resurrected_stop"] = item.ts_handle_resurrected_stop
+            m[TS_HANDLE_RESURRECTED_STOP] = item.ts_handle_resurrected_stop
 
         if has_clear_weakrefs(item):
-            m["ts_clear_weakrefs_stop"] = item.ts_clear_weakrefs_stop
-            m["clear_weakrefs_count"] = item.clear_weakrefs_count
+            m[TS_CLEAR_WEAKREFS_STOP] = item.ts_clear_weakrefs_stop
+            m[CLEAR_WEAKREFS_COUNT] = item.clear_weakrefs_count
 
         if has_delete_garbage(item):
-            m["ts_delete_garbage_start"] = item.ts_delete_garbage_start
-            m["ts_delete_garbage_stop"] = item.ts_delete_garbage_stop
-            m["deleted_garbage_count"] = item.deleted_garbage_count
+            m[TS_DELETE_GARBAGE_START] = item.ts_delete_garbage_start
+            m[TS_DELETE_GARBAGE_STOP] = item.ts_delete_garbage_stop
+            m[DELETED_GARBAGE_COUNT] = item.deleted_garbage_count
 
         return m
 

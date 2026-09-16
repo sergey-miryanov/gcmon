@@ -1,5 +1,6 @@
 import msgspec
 
+from .names import COLLECTIONS, GENS, TYPE
 from .protocol import TMapping
 
 
@@ -83,11 +84,11 @@ def from_mapping(data: TMapping) -> GCStatsInfo | InstantMsg | LossMsg:
     # line never reads the dict again. A record carrying none of the three
     # still falls through to the GC branch, which is where an old-format loss
     # record has to land to be refused.
-    if "collections" in data:
+    if COLLECTIONS in data:
         return msgspec.convert(data, GCStatsInfo)
-    if "gens" in data:
+    if GENS in data:
         return msgspec.convert(data, LossMsg)
-    if data.get("type") == "i":
+    if data.get(TYPE) == "i":
         return msgspec.convert(data, InstantMsg)
     return msgspec.convert(data, GCStatsInfo)
 

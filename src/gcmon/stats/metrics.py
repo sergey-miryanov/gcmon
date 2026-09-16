@@ -1,7 +1,18 @@
 """The GC sub-phases gcmon measures, and the record timestamps each runs between."""
 
-from typing import Protocol
+from typing import Final, Protocol
 
+from ..model.names import (
+    CLEAR_WEAKREFS,
+    DEDUCE_UNREACHABLE,
+    DELETE_GARBAGE,
+    FILL_INCREMENT,
+    FINALIZE_GARBAGE,
+    HANDLE_RESURRECTED,
+    HANDLE_WEAKREFS,
+    MARK_ALIVE,
+    PAUSE,
+)
 from ..model.protocol import (
     has_clear_weakrefs,
     has_deduce_unreachable,
@@ -23,7 +34,7 @@ class Metric(Protocol):
 
 class PauseMetric:
     def __init__(self) -> None:
-        self.name = "GC Pause"
+        self.name = PAUSE.label
 
     def get_values(self, item: object) -> tuple[int, int]:
         if has_pause_ts(item):
@@ -33,7 +44,7 @@ class PauseMetric:
 
 class MarkAliveMetric:
     def __init__(self) -> None:
-        self.name = "GC Mark Alive"
+        self.name = MARK_ALIVE.label
 
     def get_values(self, item: object) -> tuple[int, int]:
         if has_mark_alive(item):
@@ -43,7 +54,7 @@ class MarkAliveMetric:
 
 class FillIncrementMetric:
     def __init__(self) -> None:
-        self.name = "GC Fill Increment"
+        self.name = FILL_INCREMENT.label
 
     def get_values(self, item: object) -> tuple[int, int]:
         if has_incremental(item):
@@ -53,7 +64,7 @@ class FillIncrementMetric:
 
 class DeduceUnreachableMetric:
     def __init__(self) -> None:
-        self.name = "GC Deduce Unreachable"
+        self.name = DEDUCE_UNREACHABLE.label
 
     def get_values(self, item: object) -> tuple[int, int]:
         if has_deduce_unreachable(item):
@@ -63,7 +74,7 @@ class DeduceUnreachableMetric:
 
 class HandleWeakrefsMetric:
     def __init__(self) -> None:
-        self.name = "GC Handle Weakrefs Callbacks"
+        self.name = HANDLE_WEAKREFS.label
 
     def get_values(self, item: object) -> tuple[int, int]:
         if has_handle_weakrefs(item):
@@ -73,7 +84,7 @@ class HandleWeakrefsMetric:
 
 class FinalizeGarbageMetric:
     def __init__(self) -> None:
-        self.name = "GC Finalize Garbage"
+        self.name = FINALIZE_GARBAGE.label
 
     def get_values(self, item: object) -> tuple[int, int]:
         if has_finalize_garbage(item):
@@ -83,7 +94,7 @@ class FinalizeGarbageMetric:
 
 class HandleResurrectedMetric:
     def __init__(self) -> None:
-        self.name = "GC Handle Resurrected"
+        self.name = HANDLE_RESURRECTED.label
 
     def get_values(self, item: object) -> tuple[int, int]:
         if has_handle_resurrected(item):
@@ -93,7 +104,7 @@ class HandleResurrectedMetric:
 
 class ClearWeakrefsMetric:
     def __init__(self) -> None:
-        self.name = "GC Clear Weakrefs"
+        self.name = CLEAR_WEAKREFS.label
 
     def get_values(self, item: object) -> tuple[int, int]:
         if has_clear_weakrefs(item):
@@ -103,7 +114,7 @@ class ClearWeakrefsMetric:
 
 class DeleteGarbageMetric:
     def __init__(self) -> None:
-        self.name = "GC Delete Garbage"
+        self.name = DELETE_GARBAGE.label
 
     def get_values(self, item: object) -> tuple[int, int]:
         if has_delete_garbage(item):
@@ -111,8 +122,12 @@ class DeleteGarbageMetric:
         return 0, 0
 
 
+# The key a caller reaches the pause metric by. Two modules single it
+# out, one for the row it labels and one for the percentiles it owns.
+PAUSE_KEY: Final = "pause"
+
 METRICS: dict[str, Metric] = {
-    "pause": PauseMetric(),
+    PAUSE_KEY: PauseMetric(),
     "mark_alive": MarkAliveMetric(),
     "fill_increment": FillIncrementMetric(),
     "deduce_unreachable": DeduceUnreachableMetric(),

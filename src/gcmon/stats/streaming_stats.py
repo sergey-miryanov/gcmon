@@ -9,7 +9,7 @@ import msgspec
 from ..model.process import Process
 from ..model.protocol import TGCStatsInfo
 from ..support.time_units import secs_to_ns
-from .metrics import METRICS
+from .metrics import METRICS, PAUSE_KEY
 from .stats import Stats, get_quantile_value
 
 logger = logging.getLogger(__name__)
@@ -148,7 +148,7 @@ class RingStats(msgspec.Struct):
         """The pause durations gcmon read for one generation of this ring."""
         if self.metrics is None:
             return Stats()
-        return self.metrics["pause"][gen]
+        return self.metrics[PAUSE_KEY][gen]
 
     def pause_totals(self, gen: int) -> PauseTotals:
         """One generation, sampled and lost together."""
@@ -403,7 +403,7 @@ class StreamingStats:
             for gen, loss in ring.loss.items():
                 lost.setdefault(gen, LossTotals()).add(loss.count, loss.pause_ns)
 
-        pause = self.metrics["pause"]
+        pause = self.metrics[PAUSE_KEY]
         by_gen = {}
         for gen in self.GENS:
             sampled = pause[gen]

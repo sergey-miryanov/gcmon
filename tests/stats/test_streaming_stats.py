@@ -6,6 +6,7 @@ import numpy as np
 
 from gcmon.model.data import GCStatsInfo
 from gcmon.model.protocol import TGCStatsInfo
+from gcmon.stats.metrics import PAUSE_KEY
 from gcmon.stats.stats import get_quantile_value
 from gcmon.stats.streaming_stats import StreamingStats
 from tests.helpers import proc
@@ -81,7 +82,7 @@ class TestStreamingStatsUpdate:
         mock_stats_item: TGCStatsInfo,
     ) -> None:
         streaming_stats.update(proc(12345), mock_stats_item)
-        assert streaming_stats.metrics["pause"][0].count() == 1
+        assert streaming_stats.metrics[PAUSE_KEY][0].count() == 1
 
     def test_update_records_incremental_metrics(
         self,
@@ -105,7 +106,7 @@ class TestStreamingStatsUpdate:
     ) -> None:
         item = gc_stats_item_factory(ts_start=1000, ts_stop=1000)
         streaming_stats.update(proc(12345), item)
-        assert streaming_stats.metrics["pause"][0].count() == 0
+        assert streaming_stats.metrics[PAUSE_KEY][0].count() == 0
 
     def test_update_keeps_sub_microsecond_duration(
         self,
@@ -117,8 +118,8 @@ class TestStreamingStatsUpdate:
         item = gc_stats_item_factory(ts_start=0, ts_stop=750)
         streaming_stats.update(proc(12345), item)
 
-        assert streaming_stats.metrics["pause"][0].count() == 1
-        assert streaming_stats.metrics["pause"][0].sum() == 750
+        assert streaming_stats.metrics[PAUSE_KEY][0].count() == 1
+        assert streaming_stats.metrics[PAUSE_KEY][0].sum() == 750
 
     def test_update_tracks_heap_size(
         self,
@@ -153,7 +154,7 @@ class TestStreamingStatsRingTracking:
     def test_get_ring_stats_returns_active(self, streaming_stats_with_pids: StreamingStats) -> None:
         ring_stats = streaming_stats_with_pids.get_ring_stats(proc(11111), 0)
         assert ring_stats is not None
-        assert "pause" in ring_stats
+        assert PAUSE_KEY in ring_stats
 
     def test_get_ring_stats_returns_settled(
         self,
@@ -190,10 +191,10 @@ class TestStreamingStatsRingTracking:
 
         ring_stats = streaming_stats.get_ring_stats(proc(12345), 0)
         assert ring_stats is not None
-        assert ring_stats["pause"][0].count() == 1
-        assert ring_stats["pause"][0].sum() == 5_000
-        assert ring_stats["pause"][0].count() == streaming_stats.metrics["pause"][0].count()
-        assert ring_stats["pause"][0].sum() == streaming_stats.metrics["pause"][0].sum()
+        assert ring_stats[PAUSE_KEY][0].count() == 1
+        assert ring_stats[PAUSE_KEY][0].sum() == 5_000
+        assert ring_stats[PAUSE_KEY][0].count() == streaming_stats.metrics[PAUSE_KEY][0].count()
+        assert ring_stats[PAUSE_KEY][0].sum() == streaming_stats.metrics[PAUSE_KEY][0].sum()
 
     def test_per_ring_metrics_match_totals_for_a_single_ring(
         self,
@@ -298,4 +299,4 @@ class TestStreamingStatsReadTime:
         assert streaming_stats.count() == 1
         assert streaming_stats.read_time.count() == 1
         assert streaming_stats.read_time.sum() == 42_000
-        assert streaming_stats.metrics["pause"][0].sum() == 1_000_000
+        assert streaming_stats.metrics[PAUSE_KEY][0].sum() == 1_000_000

@@ -34,16 +34,18 @@ from gcmon.model.schedule import MIN_RATE_NS
 from gcmon.stats.views import STATS_OFF_WORDS, StatsView, TableFormat
 from gcmon.support.time_units import secs_to_ns
 
-logger = logging.getLogger("gcmon")
+from ...support.vocabulary import FORMAT_JSONL, FORMAT_PERFETTO, FORMAT_STDOUT, PROGRAM_NAME
+
+logger = logging.getLogger(PROGRAM_NAME)
 
 # Every format `--format` takes, in the order the help lists them. The parser
 # and the GCMON_FORMAT refusal below read the same tuple, so a word one accepts
 # is a word the other accepts.
-FORMATS = ("perfetto", "jsonl", "stdout")
+FORMATS = (FORMAT_PERFETTO, FORMAT_JSONL, FORMAT_STDOUT)
 
 # Formats whose exporters implement EventsExporter.add_rss_sample. The others
 # inherit the no-op base implementation and silently discard RSS samples.
-RSS_CAPABLE_FORMATS = ("perfetto",)
+RSS_CAPABLE_FORMATS = (FORMAT_PERFETTO,)
 
 
 def _rate_argument(text: str) -> float:
@@ -210,7 +212,7 @@ def get_monitoring_options(
     rss_enabled = args.rss
     rss_interval = args.rss_interval
 
-    if output_format != "stdout":
+    if output_format != FORMAT_STDOUT:
         logger.info("Output: %s", output_path)
     logger.info("Format: %s", output_format)
     logger.info("Rate: %ss", rate)
@@ -259,7 +261,7 @@ def get_monitoring_options(
         logger.error("RSS interval must be positive, got %s", rss_interval)
         return None
 
-    if output_format != "stdout":
+    if output_format != FORMAT_STDOUT:
         resolved = output_path.resolve()
         if not resolved.parent.is_dir():
             logger.error("Output directory does not exist: %s", resolved.parent)

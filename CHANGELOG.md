@@ -9,6 +9,7 @@
 - A query that joined `thread_track` joins `process_track`. Every row gcmon draws carries its process's `upid`
 - An interpreter's loss row is named `GC Loss`, under its `Interpreter {iid}` group, where it was `GC Loss {iid}` beside the process track
 - A `heap_size` counter track is named `heap_size`, on its `Interpreter {iid}` group, where it was `Thread {iid} heap_size` beside the process track. A query matching `name = 'heap_size'` finds it again
+- Every sub-step slice carries the `GC ` prefix its `--stats` row already carried: `GC Mark Alive(0)`, `GC Fill Increment(0)`, `GC Deduce Unreachable(0)` and the rest, where the slice was `Mark Alive(0)` and the row `GC Mark Alive`. `GC Fill Increment` also takes the row's capital `I`. Categories are unchanged, so `gc.deduce(gen=0)` still matches
 
 ### Bugfixes
 

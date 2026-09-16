@@ -11,18 +11,21 @@ from gcmon.cli.shared.parser_factory import ParserFactory
 from gcmon.monitoring.target_process import ExternalProcess, ProcessFactory
 from gcmon.monitoring.wait_policy import StartupTimeoutPolicy
 
-logger = logging.getLogger("gcmon")
+from ...model.names import PID
+from ...support.vocabulary import CMD_MONITOR, PROGRAM_NAME
+
+logger = logging.getLogger(PROGRAM_NAME)
 
 
 def add_parser(parser_factory: ParserFactory) -> argparse.ArgumentParser:
     """Add the 'monitor' subparser and return it."""
     parser = parser_factory(
-        "monitor",
+        CMD_MONITOR,
         help="Monitor a process's garbage collection",
         description="Monitor Python's garbage collector and export statistics.",
     )
     parser.add_argument(
-        "pid",
+        PID,
         type=int,
         help="Process ID to monitor",
     )

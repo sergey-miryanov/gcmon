@@ -5,8 +5,20 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from gcmon.model.data import GCStatsInfo
+from gcmon.model.names import (
+    CLEAR_WEAKREFS,
+    DEDUCE_UNREACHABLE,
+    DELETE_GARBAGE,
+    FILL_INCREMENT,
+    FINALIZE_GARBAGE,
+    GC_PAUSE_NAME,
+    HANDLE_RESURRECTED,
+    HANDLE_WEAKREFS,
+    MARK_ALIVE,
+)
 from gcmon.stats.metrics import (
     METRICS,
+    PAUSE_KEY,
     ClearWeakrefsMetric,
     DeduceUnreachableMetric,
     DeleteGarbageMetric,
@@ -24,7 +36,7 @@ class TestPauseMetric:
 
     def test_name(self) -> None:
         metric = PauseMetric()
-        assert metric.name == "GC Pause"
+        assert metric.name == GC_PAUSE_NAME
 
     def test_get_values(
         self,
@@ -54,7 +66,7 @@ class TestMarkAliveMetric:
 
     def test_name(self) -> None:
         metric = MarkAliveMetric()
-        assert metric.name == "GC Mark Alive"
+        assert metric.name == MARK_ALIVE.label
 
     def test_get_values(
         self,
@@ -85,7 +97,7 @@ class TestFillIncrementMetric:
 
     def test_name(self) -> None:
         metric = FillIncrementMetric()
-        assert metric.name == "GC Fill Increment"
+        assert metric.name == FILL_INCREMENT.label
 
     def test_get_values(
         self,
@@ -116,7 +128,7 @@ class TestDeduceUnreachableMetric:
 
     def test_name(self) -> None:
         metric = DeduceUnreachableMetric()
-        assert metric.name == "GC Deduce Unreachable"
+        assert metric.name == DEDUCE_UNREACHABLE.label
 
     def test_get_values(
         self,
@@ -147,7 +159,7 @@ class TestHandleWeakrefsMetric:
 
     def test_name(self) -> None:
         metric = HandleWeakrefsMetric()
-        assert metric.name == "GC Handle Weakrefs Callbacks"
+        assert metric.name == HANDLE_WEAKREFS.label
 
     def test_get_values(
         self,
@@ -178,7 +190,7 @@ class TestFinalizeGarbageMetric:
 
     def test_name(self) -> None:
         metric = FinalizeGarbageMetric()
-        assert metric.name == "GC Finalize Garbage"
+        assert metric.name == FINALIZE_GARBAGE.label
 
     def test_get_values(
         self,
@@ -209,7 +221,7 @@ class TestHandleResurrectedMetric:
 
     def test_name(self) -> None:
         metric = HandleResurrectedMetric()
-        assert metric.name == "GC Handle Resurrected"
+        assert metric.name == HANDLE_RESURRECTED.label
 
     def test_get_values(
         self,
@@ -240,7 +252,7 @@ class TestClearWeakrefsMetric:
 
     def test_name(self) -> None:
         metric = ClearWeakrefsMetric()
-        assert metric.name == "GC Clear Weakrefs"
+        assert metric.name == CLEAR_WEAKREFS.label
 
     def test_get_values(
         self,
@@ -271,7 +283,7 @@ class TestDeleteGarbageMetric:
 
     def test_name(self) -> None:
         metric = DeleteGarbageMetric()
-        assert metric.name == "GC Delete Garbage"
+        assert metric.name == DELETE_GARBAGE.label
 
     def test_get_values(
         self,
@@ -302,7 +314,7 @@ class TestMetricDictionaries:
 
     def test_metrics_keys(self) -> None:
         expected_keys = {
-            "pause",
+            PAUSE_KEY,
             "mark_alive",
             "fill_increment",
             "deduce_unreachable",
@@ -315,7 +327,7 @@ class TestMetricDictionaries:
         assert set(METRICS) == expected_keys
 
     def test_metrics_instances(self) -> None:
-        assert isinstance(METRICS["pause"], PauseMetric)
+        assert isinstance(METRICS[PAUSE_KEY], PauseMetric)
         assert isinstance(METRICS["mark_alive"], MarkAliveMetric)
         assert isinstance(METRICS["fill_increment"], FillIncrementMetric)
         assert isinstance(METRICS["deduce_unreachable"], DeduceUnreachableMetric)

@@ -20,6 +20,7 @@ from pathlib import Path
 
 import pytest
 
+from gcmon.support.vocabulary import ENCODING
 from tests.architecture.test_layering import SRC
 
 pytestmark = pytest.mark.architecture
@@ -40,7 +41,7 @@ def uses(root: Path, name: str) -> list[str]:
     for path in sorted(root.rglob("*.py")):
         if "__pycache__" in path.parts:
             continue
-        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        tree = ast.parse(path.read_text(encoding=ENCODING), filename=str(path))
         for node in ast.walk(tree):
             if isinstance(node, ast.Name | ast.Attribute | ast.alias) and _identifier(node) == name:
                 found.add(f"{path.relative_to(root).as_posix()}:{node.lineno}")

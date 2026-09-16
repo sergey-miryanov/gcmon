@@ -10,9 +10,11 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+from gcmon.support.vocabulary import ENCODING, PROGRAM_NAME
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 ADR_DIR = REPO_ROOT / "docs" / "adr"
-SRC = REPO_ROOT / "src" / "gcmon"
+SRC = REPO_ROOT / "src" / PROGRAM_NAME
 
 TEMPLATE = "0000-template.md"
 TESTS = "tests"
@@ -24,13 +26,13 @@ LINK = re.compile(r"^- \*\*(Amended by|Supersedes|Status):\*\*(.*?)(?=^- |\n\n)"
 
 
 def modules_of(path: Path) -> list[str]:
-    m = FIELD.search(path.read_text(encoding="utf-8"))
+    m = FIELD.search(path.read_text(encoding=ENCODING))
     assert m is not None, f"{path.name} has no Modules field"
     return [part.strip() for part in m.group(1).split(",")]
 
 
 def index_modules() -> dict[str, str]:
-    text = (ADR_DIR / "README.md").read_text(encoding="utf-8")
+    text = (ADR_DIR / "README.md").read_text(encoding=ENCODING)
     return {m.group(1): m.group(2).strip() for m in INDEX_ROW.finditer(text)}
 
 
@@ -69,7 +71,7 @@ class TestTheIndexAgreesWithTheHeaders:
 class TestEveryRecordLinkResolves:
     def test_header_links_point_at_a_record(self) -> None:
         for path in RECORDS:
-            text = path.read_text(encoding="utf-8")
+            text = path.read_text(encoding=ENCODING)
             for field in LINK.finditer(text):
                 for target in re.findall(r"\]\((\d{4}-[^)]+\.md)\)", field.group(2)):
                     assert (ADR_DIR / target).exists(), f"{path.name} -> {target}"

@@ -14,6 +14,7 @@ from gcmon.monitoring.monitor import EventsMonitor
 from gcmon.monitoring.target_process import ExternalProcess
 from gcmon.monitoring.wait_policy import no_wait_policy
 from gcmon.stats.streaming_stats import StreamingStats
+from gcmon.support.vocabulary import PROGRAM_NAME
 from tests.data_helpers import create_instant_msg
 from tests.helpers import FakeEventsReader, MockExporter, create_mock_stats_item
 
@@ -29,7 +30,7 @@ def _caplog_gcmon(caplog: pytest.LogCaptureFixture) -> Generator[pytest.LogCaptu
     logger (e.g. the pyperf hook entry point) does not leak across tests and
     duplicate log records to stderr in subsequent tests.
     """
-    logger = logging.getLogger("gcmon")
+    logger = logging.getLogger(PROGRAM_NAME)
     original_level = logger.level
     original_handlers = list(logger.handlers)
     try:

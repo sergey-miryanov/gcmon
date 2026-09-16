@@ -5,8 +5,9 @@ from collections.abc import Callable, Set
 
 from ..exporters.exporter import EventsExporter
 from ..model.process import Process
+from ..support.vocabulary import PROGRAM_NAME
 
-logger = logging.getLogger("gcmon")
+logger = logging.getLogger(PROGRAM_NAME)
 
 __all__ = ["RssSampler"]
 

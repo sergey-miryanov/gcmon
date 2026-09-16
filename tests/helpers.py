@@ -13,13 +13,29 @@ from perfetto.protos.perfetto.trace.perfetto_trace_pb2 import Trace, TracePacket
 from perfetto.trace_processor import TraceProcessor, TraceProcessorConfig
 
 from gcmon.exporters.exporter import EventsExporter
+from gcmon.exporters.trace_converter import counter_display_name
 from gcmon.model.data import GCStatsInfo, GenLoss, LossMsg
+from gcmon.model.names import (
+    CANDIDATES,
+    COLLECTED,
+    COLLECTIONS,
+    DURATION,
+    GEN,
+    HEAP_SIZE,
+    IID,
+    PID,
+    TS_START,
+    TS_STOP,
+    TYPE,
+    UNCOLLECTABLE,
+)
 from gcmon.model.process import Process
 from gcmon.model.protocol import TGCStatsInfo, TInstantMsg, TLossMsg
-from gcmon.model.trace_event import InterpreterTrack, LossTrack, ProcessTrack
+from gcmon.model.trace_event import Counter, InterpreterTrack, LossTrack, ProcessTrack, Track
 from gcmon.monitoring.events_reader import EventsReader
 from gcmon.monitoring.monitor import EventsMonitor
 from gcmon.monitoring.process_registry import ProcessRegistry
+from gcmon.support.vocabulary import ENCODING
 from tests.perfetto_prebuilt import trace_processor_bin
 
 zstd: ModuleType | None
@@ -81,6 +97,16 @@ def interpreter_track(pid: int, iid: int, pid_epoch: int = 1) -> InterpreterTrac
 def loss_track(pid: int, iid: int, pid_epoch: int = 1) -> LossTrack:
     """Interpreter *iid*'s loss row on *pid*. See :func:`process_track`."""
     return LossTrack(proc(pid, pid_epoch), iid)
+
+
+def gen_counter(track: Track, gen: int, metric: str, ts: int, value: float) -> Counter:
+    """One generation's counter series, named the way the converter names it.
+
+    The display name is derived rather than passed: it is a function of the
+    generation and the metric, and spelling both out let a test assert a name
+    the converter would never write.
+    """
+    return Counter(track, metric, counter_display_name(gen, metric), ts, value)
 
 
 def monitored(*pids: int) -> ProcessRegistry:
@@ -426,17 +452,17 @@ def create_jsonl_record(
     duration: float = 1.0,
 ) -> dict[str, int | float]:
     return {
-        "pid": pid,
-        "gen": gen,
-        "iid": iid,
-        "ts_start": ts_start,
-        "ts_stop": ts_stop,
-        "heap_size": heap_size,
-        "collections": collections,
-        "collected": collected,
-        "uncollectable": uncollectable,
-        "candidates": candidates,
-        "duration": duration,
+        PID: pid,
+        GEN: gen,
+        IID: iid,
+        TS_START: ts_start,
+        TS_STOP: ts_stop,
+        HEAP_SIZE: heap_size,
+        COLLECTIONS: collections,
+        COLLECTED: collected,
+        UNCOLLECTABLE: uncollectable,
+        CANDIDATES: candidates,
+        DURATION: duration,
     }
 
 
@@ -455,7 +481,7 @@ def assert_valid_jsonl_format(file_path: Path) -> list[JsonlRecord]:
     assert file_path.exists(), f"File {file_path} does not exist"
 
     data: list[JsonlRecord] = []
-    with open(file_path, encoding="utf-8") as f:
+    with open(file_path, encoding=ENCODING) as f:
         for line_no, line in enumerate(f, 1):
             line = line.strip()
             if not line:
@@ -532,7 +558,7 @@ def assert_valid_perfetto_trace(file_path: Path) -> list[TracePacket]:
 
 
 def assert_is_instant_msg(msg: JsonlRecord, **expected: str | int) -> None:
-    assert msg["type"] == "i"
+    assert msg[TYPE] == "i"
 
     for key, value in expected.items():
         assert msg[key] == value

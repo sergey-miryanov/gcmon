@@ -8,6 +8,8 @@ from gcmon.model.schedule import MIN_RATE_NS
 from gcmon.stats.views import TableFormat
 from gcmon.support.time_units import secs_to_ns
 
+from ...support.vocabulary import DEFAULT_JSONL_FILE, DEFAULT_TRACE_FILE, FORMAT_JSONL, FORMAT_PERFETTO
+
 # Environment variable names for CLI options
 ENV_PREFIX = "GCMON"
 ENV_OUTPUT = f"{ENV_PREFIX}_OUTPUT"
@@ -68,9 +70,9 @@ def get_env_output() -> Path:
     output_str = os.environ.get(ENV_OUTPUT)
     if output_str:
         return Path(output_str)
-    if get_env_format() == "jsonl":
-        return Path("gcmon.jsonl")
-    return Path("gcmon.pftrace")
+    if get_env_format() == FORMAT_JSONL:
+        return Path(DEFAULT_JSONL_FILE)
+    return Path(DEFAULT_TRACE_FILE)
 
 
 def parse_rate(text: str) -> float:
@@ -158,7 +160,7 @@ def get_env_format() -> str:
     format_str = os.environ.get(ENV_FORMAT)
     if format_str and format_str.strip():
         return format_str.strip().lower()
-    return "perfetto"
+    return FORMAT_PERFETTO
 
 
 def get_env_thread_id() -> int:

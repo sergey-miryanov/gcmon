@@ -9,13 +9,15 @@ import signal
 import subprocess
 import sys
 
+from .vocabulary import ENCODING, PROGRAM_NAME
+
 __all__ = ["log_process_output", "terminate_process"]
 
 # Timeout constants
 DEFAULT_GRACEFUL_TIMEOUT = 5.0  # seconds: timeout for graceful shutdown
 DEFAULT_FORCE_TIMEOUT = 2.0  # seconds: timeout for forceful termination
 
-_logger = logging.getLogger("gcmon")
+_logger = logging.getLogger(PROGRAM_NAME)
 
 
 def _send_sigint(process: subprocess.Popen[bytes]) -> None:
@@ -167,7 +169,7 @@ def log_process_output(process: subprocess.Popen[bytes], stdout_data: bytes) -> 
     WARNING level. Successful exits (code 0) produce no output.
     """
     # Decode output (handle None from terminate_process)
-    stdout_str = stdout_data.decode("utf-8", errors="replace").strip()
+    stdout_str = stdout_data.decode(ENCODING, errors="replace").strip()
 
     # Check if process has exited
     if process.poll() is None:

@@ -1,15 +1,20 @@
 """Statistics output formatting for GC monitoring."""
 
 from pathlib import Path
-from typing import Any
+from typing import Any, Final
 
 from ..model.process import Process
 from ..model.run_report import RunReport
 from ..support.time_units import dur_to_ms
-from .metrics import METRICS
+from .metrics import METRICS, PAUSE_KEY
 from .stats import Stats
 from .streaming_stats import PauseTotals, StreamingStats
 from .views import StatsView, TableFormat
+
+# The two labels a row carries instead of a ring, spelled once so a test
+# that reads the table back names the same thing the table prints.
+TOTAL_LABEL: Final = "Total"
+READ_TIME_LABEL: Final = "Read Time"
 
 _SEP_GROUP: Any = object()
 _SEP_PHASE: Any = object()
@@ -211,12 +216,12 @@ def print_stats(stats: StreamingStats, view: StatsView, table_format: TableForma
     first = True
     has_rows = False
     for metric_key, metric in METRICS.items():
-        rows = _build_rows(stats.metrics[metric_key], metric.name, totals, metric_key == "pause")
+        rows = _build_rows(stats.metrics[metric_key], metric.name, totals, metric_key == PAUSE_KEY)
         if rows:
             if has_rows:
                 all_rows.append(_SEP_PHASE)
             for row in rows:
-                all_rows.append(["Total" if first else "", *row])
+                all_rows.append([TOTAL_LABEL if first else "", *row])
                 first = False
             has_rows = True
 
@@ -231,7 +236,7 @@ def print_stats(stats: StreamingStats, view: StatsView, table_format: TableForma
         first = True
         has_rows = False
         for metric_key, metric in METRICS.items():
-            rows = _build_rows(ring_data.get(metric_key, {}), metric.name, ring_totals, metric_key == "pause")
+            rows = _build_rows(ring_data.get(metric_key, {}), metric.name, ring_totals, metric_key == PAUSE_KEY)
             if rows:
                 if has_rows:
                     all_rows.append(_SEP_PHASE)
@@ -246,7 +251,7 @@ def print_stats(stats: StreamingStats, view: StatsView, table_format: TableForma
     rt = stats.read_time
     if rt.count() > 0:
         all_rows.append(_SEP_GROUP)
-        all_rows.append(["", "Read Time", *_format_stats(rt), "", ""])
+        all_rows.append(["", READ_TIME_LABEL, *_format_stats(rt), "", ""])
 
     if not all_rows:
         print("No GC statistics collected.")

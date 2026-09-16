@@ -16,10 +16,14 @@ from perfetto.protos.perfetto.trace.perfetto_trace_pb2 import (
 
 from gcmon.exporters.perfetto_format import convert_trace_events_to_perfetto
 from gcmon.exporters.perfetto_process_lifetime import (
+    _PROCESS_LIFETIME_TRACK_NAME,
+    _PROCESS_ROW_PREFIX,
+    _PROCESS_ROW_SLICE_NAME,
     _clip_spans_to_laminar,
     _emit_process_lifetime_track_descriptor,
     emit_retired_process_row,
     finalize_perfetto_packets,
+    process_track_name,
 )
 from gcmon.exporters.perfetto_proto import ProcessOrdering, TrackEventType
 from gcmon.exporters.perfetto_track_state import PerfettoTrackState, ProcessSpan
@@ -29,6 +33,18 @@ from gcmon.exporters.trace_converter import (
     duration_text,
 )
 from gcmon.model.data import GCStatsInfo
+from gcmon.model.names import (
+    CLIPPED,
+    CMDLINE,
+    LOST_COUNT,
+    LOST_PAUSE,
+    LOST_PAUSE_NS,
+    PID,
+    PID_EPOCH,
+    REAL_END_TS,
+    REAL_START_TS,
+    SAMPLED_COUNT,
+)
 from gcmon.model.process import Process
 from gcmon.model.trace_event import TraceEvent
 from tests.exporters.perfetto_helpers import (
@@ -45,12 +61,6 @@ from tests.helpers import (
     create_mock_stats_item,
     proc,
 )
-
-# Name of the shared top-level Perfetto track that holds one slice per
-# pid spanning the first-to-last non-meta event timestamps for that
-# pid. Must match ``_PROCESS_LIFETIME_TRACK_NAME`` in
-# ``gcmon.exporters.perfetto_process_lifetime``.
-_PROCESS_LIFETIME_TRACK_NAME: str = "Processes"
 
 
 def _process_descriptors(packets: list[bytes]) -> dict[str, TrackDescriptor]:
@@ -113,20 +123,24 @@ def _finalize_spans(
         if event_type == TrackEventType.SLICE_BEGIN:
             assert open_slice is None, f"BEGIN for {name!r} while {open_slice} is still open"
             open_slice = (name, ts)
-            real[int(name.removeprefix("Process "))] = (
-                int(annotations["real_start_ts"]),
-                int(annotations["real_end_ts"]),
+            real[int(name.removeprefix(_PROCESS_ROW_PREFIX))] = (
+                int(annotations[REAL_START_TS]),
+                int(annotations[REAL_END_TS]),
             )
         else:
             assert open_slice is not None, f"slice END for {name!r} at ts {ts} with nothing open"
             open_name, open_ts = open_slice
             assert open_name == name, f"slice END for {name!r} closed {open_name!r}"
-            intervals[int(name.removeprefix("Process "))] = (open_ts, ts)
+            intervals[int(name.removeprefix(_PROCESS_ROW_PREFIX))] = (open_ts, ts)
             open_slice = None
     assert open_slice is None, f"unclosed slice left open: {open_slice}"
     assert intervals.keys() == real.keys()
 
-    begins = [(ts, int(name.removeprefix("Process "))) for ts, t, name, _ in emitted if t == TrackEventType.SLICE_BEGIN]
+    begins = [
+        (ts, int(name.removeprefix(_PROCESS_ROW_PREFIX)))
+        for ts, t, name, _ in emitted
+        if t == TrackEventType.SLICE_BEGIN
+    ]
     for i, (ts, pid) in enumerate(begins):
         for later_ts, later_pid in begins[i + 1 :]:
             if later_ts != ts:
@@ -388,10 +402,10 @@ class TestProcessLifetimeLaminarClipping:
             (
                 500,
                 TrackEventType.SLICE_BEGIN,
-                "Process 100",
-                {"pid": 100, "pid_epoch": 1, "real_start_ts": 500, "real_end_ts": 5_000, "clipped": False},
+                process_track_name(proc(100)),
+                {PID: 100, PID_EPOCH: 1, REAL_START_TS: 500, REAL_END_TS: 5_000, CLIPPED: False},
             ),
-            (5_000, TrackEventType.SLICE_END, "Process 100", {}),
+            (5_000, TrackEventType.SLICE_END, process_track_name(proc(100)), {}),
         ]
 
     def test_descriptor_refuses_a_second_emission(self) -> None:
@@ -540,20 +554,20 @@ class TestProcessLifetimeSlices:
         assert len(begin_packets) == 1, f"expected exactly one slice BEGIN on Processes track, got {len(begin_packets)}"
         first_packet = begin_packets[0]
         assert first_packet.timestamp == 1_000
-        assert first_packet.track_event.name == "Process 100"
+        assert first_packet.track_event.name == process_track_name(proc(100))
         annotations = first_packet.track_event.debug_annotations
         assert [a.name for a in annotations] == [
-            "cmdline",
-            "pid",
-            "pid_epoch",
-            "real_start_ts",
-            "real_end_ts",
-            "clipped",
+            CMDLINE,
+            PID,
+            PID_EPOCH,
+            REAL_START_TS,
+            REAL_END_TS,
+            CLIPPED,
         ]
         by_name = {a.name: a for a in annotations}
-        assert by_name["cmdline"].string_value == "python3 -m fake_target"
-        assert by_name["real_start_ts"].int_value == 1_000
-        assert by_name["real_end_ts"].int_value == 2_000
+        assert by_name[CMDLINE].string_value == "python3 -m fake_target"
+        assert by_name[REAL_START_TS].int_value == 1_000
+        assert by_name[REAL_END_TS].int_value == 2_000
 
     def test_process_lifetime_slice_begin_no_cmdline_omits_arg(self) -> None:
         """When the process carries no cmdline, the slice BEGIN on
@@ -586,7 +600,7 @@ class TestProcessLifetimeSlices:
                 begin_packets.append(packet)
         assert len(begin_packets) == 1
         annotations = begin_packets[0].track_event.debug_annotations
-        assert [a.name for a in annotations] == ["pid", "pid_epoch", "real_start_ts", "real_end_ts", "clipped"]
+        assert [a.name for a in annotations] == [PID, PID_EPOCH, REAL_START_TS, REAL_END_TS, CLIPPED]
 
     def test_process_lifetime_slice_end_at_last_event_ts(self) -> None:
         """The ``Process <pid>`` slice END is emitted at the ts of the
@@ -619,7 +633,7 @@ class TestProcessLifetimeSlices:
         assert len(end_packets) == 1, f"expected exactly one slice END on Processes track, got {len(end_packets)}"
         # Last non-meta event ts in this fixture is 2_000 (ts_stop).
         assert end_packets[0].timestamp == 2_000
-        assert end_packets[0].track_event.name == "Process 100"
+        assert end_packets[0].track_event.name == process_track_name(proc(100))
 
     def test_process_lifetime_two_pids_one_shared_track(self) -> None:
         """Two distinct pids share the same ``Processes`` track UUID and
@@ -676,31 +690,31 @@ class TestProcessLifetimeSlices:
             (
                 500,
                 TrackEventType.SLICE_BEGIN,
-                "Process 100",
+                process_track_name(proc(100)),
                 {
-                    "cmdline": "python3 -m early_target",
-                    "pid": 100,
-                    "pid_epoch": 1,
-                    "real_start_ts": 500,
-                    "real_end_ts": 1_500,
-                    "clipped": True,
+                    CMDLINE: "python3 -m early_target",
+                    PID: 100,
+                    PID_EPOCH: 1,
+                    REAL_START_TS: 500,
+                    REAL_END_TS: 1_500,
+                    CLIPPED: True,
                 },
             ),
-            (999, TrackEventType.SLICE_END, "Process 100", {}),
+            (999, TrackEventType.SLICE_END, process_track_name(proc(100)), {}),
             (
                 1_000,
                 TrackEventType.SLICE_BEGIN,
-                "Process 200",
+                process_track_name(proc(200)),
                 {
-                    "cmdline": "python3 -m late_target",
-                    "pid": 200,
-                    "pid_epoch": 1,
-                    "real_start_ts": 1_000,
-                    "real_end_ts": 5_000,
-                    "clipped": False,
+                    CMDLINE: "python3 -m late_target",
+                    PID: 200,
+                    PID_EPOCH: 1,
+                    REAL_START_TS: 1_000,
+                    REAL_END_TS: 5_000,
+                    CLIPPED: False,
                 },
             ),
-            (5_000, TrackEventType.SLICE_END, "Process 200", {}),
+            (5_000, TrackEventType.SLICE_END, process_track_name(proc(200)), {}),
         ]
 
     def test_two_processes_on_one_pid_name_their_own_programs(self) -> None:
@@ -745,31 +759,31 @@ class TestProcessLifetimeSlices:
             (
                 1_000,
                 TrackEventType.SLICE_BEGIN,
-                "Process 100",
+                process_track_name(proc(100)),
                 {
-                    "cmdline": "python3 -m first_target",
-                    "pid": 100,
-                    "pid_epoch": 1,
-                    "real_start_ts": 1_000,
-                    "real_end_ts": 2_000,
-                    "clipped": False,
+                    CMDLINE: "python3 -m first_target",
+                    PID: 100,
+                    PID_EPOCH: 1,
+                    REAL_START_TS: 1_000,
+                    REAL_END_TS: 2_000,
+                    CLIPPED: False,
                 },
             ),
-            (2_000, TrackEventType.SLICE_END, "Process 100", {}),
+            (2_000, TrackEventType.SLICE_END, process_track_name(proc(100)), {}),
             (
                 3_000,
                 TrackEventType.SLICE_BEGIN,
-                "Process 100#2",
+                process_track_name(proc(100, 2)),
                 {
-                    "cmdline": "python3 -m second_target",
-                    "pid": 100,
-                    "pid_epoch": 2,
-                    "real_start_ts": 3_000,
-                    "real_end_ts": 4_000,
-                    "clipped": False,
+                    CMDLINE: "python3 -m second_target",
+                    PID: 100,
+                    PID_EPOCH: 2,
+                    REAL_START_TS: 3_000,
+                    REAL_END_TS: 4_000,
+                    CLIPPED: False,
                 },
             ),
-            (4_000, TrackEventType.SLICE_END, "Process 100#2", {}),
+            (4_000, TrackEventType.SLICE_END, process_track_name(proc(100, 2)), {}),
         ]
 
     def test_process_lifetime_idempotent_across_converts(self) -> None:
@@ -819,17 +833,17 @@ class TestProcessLifetimeSlices:
             (
                 1_000,
                 TrackEventType.SLICE_BEGIN,
-                "Process 100",
+                process_track_name(proc(100)),
                 {
-                    "cmdline": "python3 -m fake_target",
-                    "pid": 100,
-                    "pid_epoch": 1,
-                    "real_start_ts": 1_000,
-                    "real_end_ts": 4_000,
-                    "clipped": False,
+                    CMDLINE: "python3 -m fake_target",
+                    PID: 100,
+                    PID_EPOCH: 1,
+                    REAL_START_TS: 1_000,
+                    REAL_END_TS: 4_000,
+                    CLIPPED: False,
                 },
             ),
-            (4_000, TrackEventType.SLICE_END, "Process 100", {}),
+            (4_000, TrackEventType.SLICE_END, process_track_name(proc(100)), {}),
         ]
 
 
@@ -886,8 +900,8 @@ class TestAQuietProcessGetsARow:
         state, packets = self._quiet_only()
         descriptors = _process_descriptors(packets)
 
-        assert list(descriptors) == ["Process 100"]
-        described = descriptors["Process 100"]
+        assert list(descriptors) == [process_track_name(proc(100))]
+        described = descriptors[process_track_name(proc(100))]
         assert described.process.pid == state.get_row_pid(self.QUIET)
         assert described.process.start_timestamp_ns == 500
         assert list(described.process.cmdline) == list(self.QUIET_CMDLINE)
@@ -900,7 +914,7 @@ class TestAQuietProcessGetsARow:
         row_uuid = state.get_process_track_uuid(self.QUIET)
 
         assert _row_slices(packets, row_uuid) == [
-            (500, TrackEventType.SLICE_BEGIN, "Lifetime"),
+            (500, TrackEventType.SLICE_BEGIN, _PROCESS_ROW_SLICE_NAME),
             (5_000, TrackEventType.SLICE_END, ""),
         ]
 
@@ -922,8 +936,8 @@ class TestAQuietProcessGetsARow:
         described = _process_descriptors([*descriptors, *closeout])
 
         assert {name: td.sibling_order_rank for name, td in described.items()} == {
-            "Process 200": 0,
-            "Process 100": 1,
+            process_track_name(proc(200)): 0,
+            process_track_name(proc(100)): 1,
         }
 
     def test_a_described_process_is_not_described_twice(self) -> None:
@@ -931,8 +945,8 @@ class TestAQuietProcessGetsARow:
         every process it holds and must leave that one alone."""
         _state, descriptors, closeout = self._quiet_and_busy()
 
-        assert list(_process_descriptors(descriptors)) == ["Process 200"]
-        assert list(_process_descriptors(closeout)) == ["Process 100"]
+        assert list(_process_descriptors(descriptors)) == [process_track_name(proc(200))]
+        assert list(_process_descriptors(closeout)) == [process_track_name(proc(100))]
 
 
 class TestARetiredProcessRowGoesOutEarly:
@@ -960,9 +974,9 @@ class TestARetiredProcessRowGoesOutEarly:
         the command line on, and the bar that keeps it rendered."""
         state, packets = self._retire()
 
-        assert list(_process_descriptors(packets)) == ["Process 100"]
+        assert list(_process_descriptors(packets)) == [process_track_name(proc(100))]
         assert _row_slices(packets, state.get_process_track_uuid(self.RETIRED)) == [
-            (500, TrackEventType.SLICE_BEGIN, "Lifetime"),
+            (500, TrackEventType.SLICE_BEGIN, _PROCESS_ROW_SLICE_NAME),
             (5_000, TrackEventType.SLICE_END, ""),
         ]
 
@@ -991,8 +1005,11 @@ class TestARetiredProcessRowGoesOutEarly:
             if event_type == TrackEventType.SLICE_BEGIN
         ]
 
-        assert [(ts, name) for ts, name, _ in begins] == [(500, "Process 100"), (2_000, "Process 200")]
-        assert begins[0][2]["real_end_ts"] == 5_000, "the observed pair is untouched by clipping"
+        assert [(ts, name) for ts, name, _ in begins] == [
+            (500, process_track_name(proc(100))),
+            (2_000, process_track_name(proc(200))),
+        ]
+        assert begins[0][2][REAL_END_TS] == 5_000, "the observed pair is untouched by clipping"
 
     def test_a_process_with_no_span_writes_nothing(self) -> None:
         """gcmon never observed it, so there is nothing to draw."""
@@ -1117,8 +1134,8 @@ class TestWhatCloseAlreadyKnows:
             for _ts, event_type, name, annotations in lifetime_slices(closeout, lifetime_uuid)
             if event_type == TrackEventType.SLICE_BEGIN
         }
-        assert by_name["Process 100"]["clipped"] is True
-        assert by_name["Process 200"]["clipped"] is False
+        assert by_name[process_track_name(proc(100))][CLIPPED] is True
+        assert by_name[process_track_name(proc(200))][CLIPPED] is False
 
     def test_clipped_goes_out_on_both_kinds_of_slice(self) -> None:
         """Written whichever way it reads, so a consumer asks for the value
@@ -1128,14 +1145,14 @@ class TestWhatCloseAlreadyKnows:
 
         for _ts, event_type, name, annotations in lifetime_slices(closeout, lifetime_uuid):
             if event_type == TrackEventType.SLICE_BEGIN:
-                assert isinstance(annotations["clipped"], bool), name
+                assert isinstance(annotations[CLIPPED], bool), name
 
     def test_the_bar_does_not_carry_clipped(self) -> None:
         """A retired process's bar is written before the sweep decides
         anything, so no bar can carry a verdict."""
         state, closeout = self._crossing()
 
-        assert "clipped" not in self._begin(closeout, state.get_process_track_uuid(self.BUSY))
+        assert CLIPPED not in self._begin(closeout, state.get_process_track_uuid(self.BUSY))
 
     def test_the_shared_slice_does_not_carry_interpreters(self) -> None:
         """One count per process, on the row that is the process."""
@@ -1182,7 +1199,7 @@ class TestWhatGcmonReadAndMissed:
         self._convert(state, self._records(self.BUSY, 3))
         closeout = finalize_perfetto_packets(state, sequence_id=1)
 
-        assert self._bar(closeout, state, self.BUSY)["sampled_count"] == 3
+        assert self._bar(closeout, state, self.BUSY)[SAMPLED_COUNT] == 3
 
     def test_a_process_that_lost_nothing_carries_its_whole_count(self) -> None:
         """The case the loss path gets wrong: ``observed_count`` rides on a
@@ -1193,10 +1210,10 @@ class TestWhatGcmonReadAndMissed:
         closeout = finalize_perfetto_packets(state, sequence_id=1)
 
         bar = self._bar(closeout, state, self.BUSY)
-        assert bar["sampled_count"] == 5
-        assert bar["lost_count"] == 0
-        assert bar["lost_pause_ns"] == 0
-        assert bar["lost_pause"] == "0ns"
+        assert bar[SAMPLED_COUNT] == 5
+        assert bar[LOST_COUNT] == 0
+        assert bar[LOST_PAUSE_NS] == 0
+        assert bar[LOST_PAUSE] == "0ns"
 
     def test_the_sub_phases_of_a_record_do_not_inflate_the_count(self) -> None:
         """One record is many slices and many counters. The count is of
@@ -1205,7 +1222,7 @@ class TestWhatGcmonReadAndMissed:
         self._convert(state, convert_item_to_trace_format(self.BUSY, create_mock_incremental_item()))
         closeout = finalize_perfetto_packets(state, sequence_id=1)
 
-        assert self._bar(closeout, state, self.BUSY)["sampled_count"] == 1
+        assert self._bar(closeout, state, self.BUSY)[SAMPLED_COUNT] == 1
 
     def test_a_process_gcmon_read_nothing_from_reads_zero(self) -> None:
         state = PerfettoTrackState()
@@ -1214,8 +1231,8 @@ class TestWhatGcmonReadAndMissed:
         closeout = finalize_perfetto_packets(state, sequence_id=1)
 
         bar = self._bar(closeout, state, self.BUSY)
-        assert bar["sampled_count"] == 0
-        assert bar["lost_count"] == 0
+        assert bar[SAMPLED_COUNT] == 0
+        assert bar[LOST_COUNT] == 0
 
     def test_loss_intervals_sum_across_the_interpreters(self) -> None:
         state = PerfettoTrackState()
@@ -1228,7 +1245,7 @@ class TestWhatGcmonReadAndMissed:
         )
         closeout = finalize_perfetto_packets(state, sequence_id=1)
 
-        assert self._bar(closeout, state, self.BUSY)["lost_count"] == 10
+        assert self._bar(closeout, state, self.BUSY)[LOST_COUNT] == 10
 
     def test_lost_pause_reads_the_way_the_loss_slice_writes_it(self) -> None:
         """Same helper, so an operator reading a ``GC Loss`` bar and a
@@ -1241,8 +1258,8 @@ class TestWhatGcmonReadAndMissed:
         closeout = finalize_perfetto_packets(state, sequence_id=1)
 
         bar = self._bar(closeout, state, self.BUSY)
-        assert bar["lost_pause_ns"] == 3_316_458_100
-        assert bar["lost_pause"] == duration_text(3_316_458_100)
+        assert bar[LOST_PAUSE_NS] == 3_316_458_100
+        assert bar[LOST_PAUSE] == duration_text(3_316_458_100)
 
     def test_the_totals_run_across_batches(self) -> None:
         """A buffered export converts in flushes, and the bar goes out
@@ -1254,8 +1271,8 @@ class TestWhatGcmonReadAndMissed:
         closeout = finalize_perfetto_packets(state, sequence_id=1)
 
         bar = self._bar(closeout, state, self.BUSY)
-        assert bar["sampled_count"] == 5
-        assert bar["lost_count"] == 8
+        assert bar[SAMPLED_COUNT] == 5
+        assert bar[LOST_COUNT] == 8
 
     def test_each_process_carries_its_own_totals(self) -> None:
         state = PerfettoTrackState()
@@ -1269,10 +1286,10 @@ class TestWhatGcmonReadAndMissed:
         )
         closeout = finalize_perfetto_packets(state, sequence_id=1)
 
-        assert self._bar(closeout, state, self.BUSY)["sampled_count"] == 1
-        assert self._bar(closeout, state, self.BUSY)["lost_count"] == 0
-        assert self._bar(closeout, state, self.OTHER)["sampled_count"] == 4
-        assert self._bar(closeout, state, self.OTHER)["lost_count"] == 2
+        assert self._bar(closeout, state, self.BUSY)[SAMPLED_COUNT] == 1
+        assert self._bar(closeout, state, self.BUSY)[LOST_COUNT] == 0
+        assert self._bar(closeout, state, self.OTHER)[SAMPLED_COUNT] == 4
+        assert self._bar(closeout, state, self.OTHER)[LOST_COUNT] == 2
 
     def test_a_retired_process_carries_them_on_its_early_bar(self) -> None:
         """The bar leaves before close, and all four are final the moment
@@ -1283,8 +1300,8 @@ class TestWhatGcmonReadAndMissed:
         early = emit_retired_process_row(self.BUSY, state, sequence_id=1)
 
         bar = self._bar(early, state, self.BUSY)
-        assert bar["sampled_count"] == 3
-        assert bar["lost_count"] == 9
+        assert bar[SAMPLED_COUNT] == 3
+        assert bar[LOST_COUNT] == 9
 
     def test_the_shared_slice_carries_none_of_them(self) -> None:
         """One reading per process, on the row that is the process."""
@@ -1298,8 +1315,8 @@ class TestWhatGcmonReadAndMissed:
             for _ts, event_type, _name, annotations in lifetime_slices(closeout, lifetime_uuid)
             if event_type == TrackEventType.SLICE_BEGIN
         )
-        assert "sampled_count" not in shared
-        assert "lost_count" not in shared
+        assert SAMPLED_COUNT not in shared
+        assert LOST_COUNT not in shared
 
 
 class TestCloseoutAtFinalize:

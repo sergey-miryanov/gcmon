@@ -20,8 +20,13 @@ from gcmon.exporters.perfetto_builders import (
     build_track_event,
 )
 from gcmon.exporters.perfetto_proto import TrackEventType
+from gcmon.exporters.trace_converter import counter_display_name
+from gcmon.model.names import CLIPPED, COLLECTED, DURATION, NAME, TYPE
 
 
+# The builders take a name and write it down. What the name says is the
+# caller's business, so these spell one out rather than ask the exporter
+# what it would have called the row.
 class TestBuildTrackDescriptor:
     def test_process_descriptor(self) -> None:
         data = build_track_descriptor(uuid=100, name="Process 100", pid=100)
@@ -73,18 +78,20 @@ class TestBuildTrackDescriptor:
         assert len(descriptor.process.cmdline) == 0
 
     def test_counter_descriptor(self) -> None:
-        data = build_track_descriptor(uuid=300, name="G0 collected", parent_uuid=200, is_counter=True)
+        data = build_track_descriptor(
+            uuid=300, name=counter_display_name(0, COLLECTED), parent_uuid=200, is_counter=True
+        )
         descriptor = TrackDescriptor()
         descriptor.ParseFromString(data)
         assert descriptor.uuid == 300
-        assert descriptor.name == "G0 collected"
+        assert descriptor.name == counter_display_name(0, COLLECTED)
         assert descriptor.parent_uuid == 200
         assert descriptor.counter.SerializeToString() == b""
 
     def test_counter_descriptor_with_share_key(self) -> None:
         data = build_track_descriptor(
             uuid=300,
-            name="G0 collected",
+            name=counter_display_name(0, COLLECTED),
             parent_uuid=200,
             is_counter=True,
             y_axis_share_key="collected",
@@ -92,7 +99,7 @@ class TestBuildTrackDescriptor:
         descriptor = TrackDescriptor()
         descriptor.ParseFromString(data)
         assert descriptor.uuid == 300
-        assert descriptor.name == "G0 collected"
+        assert descriptor.name == counter_display_name(0, COLLECTED)
         assert descriptor.parent_uuid == 200
         assert descriptor.HasField("counter")
         assert descriptor.counter.y_axis_share_key == "collected"
@@ -127,7 +134,7 @@ class TestBuildCounterDescriptor:
     def test_y_axis_share_key_emitted_at_field_8(self) -> None:
         data = build_track_descriptor(
             uuid=300,
-            name="G0 collected",
+            name=counter_display_name(0, COLLECTED),
             parent_uuid=200,
             is_counter=True,
             y_axis_share_key="collected",
@@ -140,7 +147,7 @@ class TestBuildCounterDescriptor:
     def test_no_y_axis_share_key_emits_empty_submessage(self) -> None:
         data = build_track_descriptor(
             uuid=300,
-            name="G0 collected",
+            name=counter_display_name(0, COLLECTED),
             parent_uuid=200,
             is_counter=True,
         )
@@ -163,7 +170,7 @@ class TestBuildCounterDescriptor:
     def test_only_share_key_field_is_set_no_other_counter_fields(self) -> None:
         data = build_track_descriptor(
             uuid=300,
-            name="G0 duration",
+            name=counter_display_name(0, DURATION),
             parent_uuid=200,
             is_counter=True,
             y_axis_share_key="duration",
@@ -171,7 +178,7 @@ class TestBuildCounterDescriptor:
         descriptor = TrackDescriptor()
         descriptor.ParseFromString(data)
         assert descriptor.HasField("counter")
-        assert not descriptor.counter.HasField("type")
+        assert not descriptor.counter.HasField(TYPE)
         assert len(descriptor.counter.categories) == 0
         assert not descriptor.counter.HasField("unit")
         assert not descriptor.counter.HasField("unit_multiplier")
@@ -182,7 +189,7 @@ class TestBuildCounterDescriptor:
     def test_y_axis_share_key_empty_string_treated_as_none(self) -> None:
         data = build_track_descriptor(
             uuid=300,
-            name="G0 collected",
+            name=counter_display_name(0, COLLECTED),
             parent_uuid=200,
             is_counter=True,
             y_axis_share_key="",
@@ -247,7 +254,7 @@ class TestBuildTrackEvent:
         track_event.ParseFromString(data)
         assert track_event.type == TrackEvent.Type.TYPE_SLICE_END
         assert track_event.track_uuid == 100
-        assert not track_event.HasField("name")
+        assert not track_event.HasField(NAME)
 
     def test_instant(self) -> None:
         data = build_track_event(type=TrackEventType.INSTANT, track_uuid=100, name="marker")
@@ -326,12 +333,12 @@ class TestBuildDebugAnnotationBool:
 
     def _parse(self, value: bool) -> DebugAnnotation:
         annotation = DebugAnnotation()
-        annotation.ParseFromString(_build_debug_annotation_bool("clipped", value))
+        annotation.ParseFromString(_build_debug_annotation_bool(CLIPPED, value))
         return annotation
 
     def test_true(self) -> None:
         annotation = self._parse(True)
-        assert annotation.name == "clipped"
+        assert annotation.name == CLIPPED
         assert annotation.bool_value is True
 
     def test_false_is_written_rather_than_omitted(self) -> None:

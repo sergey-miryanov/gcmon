@@ -19,12 +19,22 @@ from perfetto.protos.perfetto.trace.perfetto_trace_pb2 import TracePacket
 from perfetto.trace_processor import TraceProcessor
 
 from gcmon.exporters.perfetto_builders import build_trace
-from gcmon.exporters.perfetto_format import convert_trace_events_to_perfetto
+from gcmon.exporters.perfetto_format import _PAUSE_TRACK_NAME, convert_trace_events_to_perfetto
+from gcmon.exporters.perfetto_process_lifetime import process_track_name
 from gcmon.exporters.perfetto_proto import TrackEventType
 from gcmon.exporters.perfetto_track_state import PerfettoTrackState
+from gcmon.model.names import (
+    DEDUCE_UNREACHABLE,
+    DELETE_GARBAGE,
+    GENERATION,
+    MARK_ALIVE,
+    PAUSE,
+    gc_pause_slice_name,
+    phase_slice_name,
+)
 from gcmon.model.trace_event import Slice, TraceEvent
 from tests.exporters.perfetto_helpers import parse_track_descriptor
-from tests.helpers import interpreter_track, open_trace_processor
+from tests.helpers import interpreter_track, open_trace_processor, proc
 
 PID = 4242
 ROW = interpreter_track(PID, 0)
@@ -55,22 +65,25 @@ class TestASliceExpandsIntoAPair:
     """The packets one `Slice` produces, read back off the wire."""
 
     def test_a_slice_produces_a_begin_then_an_end(self) -> None:
-        _, packets = _convert([Slice(ROW, "GC Pause(0)", "gc.pause", 1_000, 1_500, {})])
+        _, packets = _convert([Slice(ROW, gc_pause_slice_name(0), PAUSE.category, 1_000, 1_500, {})])
         events = [p.track_event for p in _slice_packets(packets)]
         assert [e.type for e in events] == [TrackEventType.SLICE_BEGIN, TrackEventType.SLICE_END]
 
     def test_the_begin_carries_the_name_the_category_and_the_args(self) -> None:
-        _, packets = _convert([Slice(ROW, "GC Pause(0)", "gc.pause", 1_000, 1_500, {"generation": 0})])
+        _, packets = _convert([Slice(ROW, gc_pause_slice_name(0), PAUSE.category, 1_000, 1_500, {GENERATION: 0})])
         begin = _slice_packets(packets)[0]
         assert begin.timestamp == 1_000
-        assert begin.track_event.name == "GC Pause(0)"
+        assert begin.track_event.name == gc_pause_slice_name(0)
+        # Spelled out rather than imported: nothing else pins the value a
+        # reader filters on in Perfetto, and the constant would agree with
+        # itself after a rename.
         assert list(begin.track_event.categories) == ["gc.pause"]
-        assert [a.name for a in begin.track_event.debug_annotations] == ["generation"]
+        assert [a.name for a in begin.track_event.debug_annotations] == [GENERATION]
 
     def test_the_end_lands_at_ts_stop_and_carries_only_the_track(self) -> None:
         """A `Slice` states both its ends; the second packet is where the
         second one is written."""
-        _, packets = _convert([Slice(ROW, "GC Pause(0)", "gc.pause", 1_000, 1_500, {})])
+        _, packets = _convert([Slice(ROW, gc_pause_slice_name(0), PAUSE.category, 1_000, 1_500, {})])
         end = _slice_packets(packets)[1]
         assert end.timestamp == 1_500
         assert not end.track_event.name
@@ -78,28 +91,28 @@ class TestASliceExpandsIntoAPair:
         assert not end.track_event.debug_annotations
 
     def test_both_packets_name_the_track_the_slice_names(self) -> None:
-        _, packets = _convert([Slice(ROW, "GC Pause(0)", "gc.pause", 1_000, 1_500, {})])
+        _, packets = _convert([Slice(ROW, gc_pause_slice_name(0), PAUSE.category, 1_000, 1_500, {})])
         assert len({p.track_event.track_uuid for p in _slice_packets(packets)}) == 1
 
     def test_a_zero_length_slice_still_produces_both_packets(self) -> None:
         """A span whose ends are equal. BEGIN first, so it reads as
         ``dur = 0`` rather than ``-1`` (ADR-0011)."""
-        _, packets = _convert([Slice(ROW, "GC Pause(0)", "gc.pause", 1_000, 1_000, {})])
+        _, packets = _convert([Slice(ROW, gc_pause_slice_name(0), PAUSE.category, 1_000, 1_000, {})])
         events = _slice_packets(packets)
         assert [e.track_event.type for e in events] == [TrackEventType.SLICE_BEGIN, TrackEventType.SLICE_END]
         assert [e.timestamp for e in events] == [1_000, 1_000]
 
     def test_a_slice_describes_its_track_before_naming_it(self) -> None:
-        descriptors, _ = _convert([Slice(ROW, "GC Pause(0)", "gc.pause", 1_000, 1_500, {})])
+        descriptors, _ = _convert([Slice(ROW, gc_pause_slice_name(0), PAUSE.category, 1_000, 1_500, {})])
         named = [td.name for td in (parse_track_descriptor(d) for d in descriptors) if td is not None and td.name]
-        assert "Process 4242" in named
-        assert "GC Pauses" in named
+        assert process_track_name(proc(4242)) in named
+        assert _PAUSE_TRACK_NAME in named
 
     def test_a_slice_places_no_instant(self) -> None:
         """The conversion pass writes nothing but the pair. The process row
         is kept rendered by the ``Lifetime`` slice ``finalize_perfetto_packets``
         draws at close, which is not an instant and not emitted here."""
-        _, packets = _convert([Slice(ROW, "GC Pause(0)", "gc.pause", 1_000, 1_500, {})])
+        _, packets = _convert([Slice(ROW, gc_pause_slice_name(0), PAUSE.category, 1_000, 1_500, {})])
         instants = [p.track_event.name for p in _track_events(packets) if p.track_event.type == TrackEventType.INSTANT]
         assert instants == []
 
@@ -113,7 +126,7 @@ def _pause_row(tp: TraceProcessor) -> list[tuple[str, int, int, int]]:
             "JOIN process_track pt ON s.track_id = pt.id "
             "JOIN process p ON pt.upid = p.upid "
             # By name: `p.pid` is the row's, one gcmon hands out (ADR-0011).
-            f"WHERE pt.name = 'GC Pauses' AND p.name = 'Process {PID}' ORDER BY s.ts, s.depth"
+            f"WHERE pt.name = '{_PAUSE_TRACK_NAME}' AND p.name = '{process_track_name(proc(PID))}' ORDER BY s.ts, s.depth"
         )
     ]
 
@@ -195,17 +208,17 @@ class TestTheTraceProcessorBuildsTheNesting:
         each other, the last ending with it. Every tie above at once."""
         row = _as_read_back(
             [
-                Slice(ROW, "GC Pause(2)", "gc.pause", 1_000, 1_900, {}),
-                Slice(ROW, "Mark Alive(2)", "gc.mark.alive", 1_000, 1_200, {}),
-                Slice(ROW, "Deduce Unreachable(2)", "gc.deduce", 1_400, 1_700, {}),
-                Slice(ROW, "Delete Garbage(2)", "gc.delete", 1_700, 1_900, {}),
+                Slice(ROW, gc_pause_slice_name(2), PAUSE.category, 1_000, 1_900, {}),
+                Slice(ROW, phase_slice_name(MARK_ALIVE, 2), MARK_ALIVE.category, 1_000, 1_200, {}),
+                Slice(ROW, phase_slice_name(DEDUCE_UNREACHABLE, 2), DEDUCE_UNREACHABLE.category, 1_400, 1_700, {}),
+                Slice(ROW, phase_slice_name(DELETE_GARBAGE, 2), DELETE_GARBAGE.category, 1_700, 1_900, {}),
             ],
             tmp_path,
             "record",
         )
         assert row == [
-            ("GC Pause(2)", 1_000, 900, 0),
-            ("Mark Alive(2)", 1_000, 200, 1),
-            ("Deduce Unreachable(2)", 1_400, 300, 1),
-            ("Delete Garbage(2)", 1_700, 200, 1),
+            (gc_pause_slice_name(2), 1_000, 900, 0),
+            (phase_slice_name(MARK_ALIVE, 2), 1_000, 200, 1),
+            (phase_slice_name(DEDUCE_UNREACHABLE, 2), 1_400, 300, 1),
+            (phase_slice_name(DELETE_GARBAGE, 2), 1_700, 200, 1),
         ]

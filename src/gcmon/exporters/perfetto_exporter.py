@@ -5,6 +5,7 @@ from collections.abc import Set
 from pathlib import Path
 from typing import override
 
+from ..model.names import RSS
 from ..model.process import Process
 from ..model.protocol import TGCStatsInfo, TInstantMsg, TLossMsg
 from ..model.trace_event import Counter, Instant, ProcessTrack, TraceEvent
@@ -65,7 +66,7 @@ class PerfettoExporter(EventsExporter):
 
     @override
     def add_rss_sample(self, process: Process, rss_bytes: int, ts_ns: int) -> None:
-        self._enqueue([Counter(ProcessTrack(process), "rss", "rss", ts_ns, rss_bytes)])
+        self._enqueue([Counter(ProcessTrack(process), RSS, RSS, ts_ns, rss_bytes)])
 
     @override
     def add_loss_event(self, process: Process, item: TLossMsg) -> None:

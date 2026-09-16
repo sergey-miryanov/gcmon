@@ -3,6 +3,13 @@ from pathlib import Path
 
 import pytest
 
+from gcmon.support.vocabulary import (
+    DEFAULT_JSONL_FILE,
+    DEFAULT_TRACE_FILE,
+    FORMAT_JSONL,
+    FORMAT_PERFETTO,
+    FORMAT_STDOUT,
+)
 from tests.helpers import DefaultsValue
 
 
@@ -12,7 +19,7 @@ class TestEnvVarDefaults:
     @pytest.mark.parametrize(
         "env_var, getter_suffix, default",
         [
-            ("ENV_OUTPUT", "output", Path("gcmon.pftrace")),
+            ("ENV_OUTPUT", "output", Path(DEFAULT_TRACE_FILE)),
             ("ENV_RATE", "rate", 0.1),
             ("ENV_DURATION", "duration", None),
             ("ENV_THREAD_ID", "thread_id", 0),
@@ -146,9 +153,9 @@ class TestEnvFormat:
 
     def test_default(self, monkeypatch: pytest.MonkeyPatch, env_module: types.ModuleType) -> None:
         monkeypatch.delenv(env_module.ENV_FORMAT, raising=False)
-        assert env_module.get_env_format() == "perfetto"
+        assert env_module.get_env_format() == FORMAT_PERFETTO
 
-    @pytest.mark.parametrize("value, expected", [("stdout", "stdout"), ("jsonl", "jsonl")])
+    @pytest.mark.parametrize("value, expected", [(FORMAT_STDOUT, FORMAT_STDOUT), (FORMAT_JSONL, FORMAT_JSONL)])
     def test_valid_values(
         self, monkeypatch: pytest.MonkeyPatch, env_module: types.ModuleType, value: str, expected: str
     ) -> None:
@@ -169,9 +176,9 @@ class TestEnvOutputSpecialCases:
     """Tests for GCMON_OUTPUT special behavior."""
 
     def test_default_format_jsonl(self, monkeypatch: pytest.MonkeyPatch, env_module: types.ModuleType) -> None:
-        monkeypatch.setenv(env_module.ENV_FORMAT, "jsonl")
+        monkeypatch.setenv(env_module.ENV_FORMAT, FORMAT_JSONL)
         monkeypatch.delenv(env_module.ENV_OUTPUT, raising=False)
-        assert env_module.get_env_output() == Path("gcmon.jsonl")
+        assert env_module.get_env_output() == Path(DEFAULT_JSONL_FILE)
 
     @pytest.mark.parametrize("value", [" jsonl ", "JSONL", "\tjsonl\n"])
     def test_the_default_name_reads_the_variable_the_way_the_format_does(
@@ -182,8 +189,8 @@ class TestEnvOutputSpecialCases:
         monkeypatch.setenv(env_module.ENV_FORMAT, value)
         monkeypatch.delenv(env_module.ENV_OUTPUT, raising=False)
 
-        assert env_module.get_env_format() == "jsonl"
-        assert env_module.get_env_output() == Path("gcmon.jsonl")
+        assert env_module.get_env_format() == FORMAT_JSONL
+        assert env_module.get_env_output() == Path(DEFAULT_JSONL_FILE)
 
 
 class TestEnvStats:
@@ -243,7 +250,7 @@ class TestEnvVarEmpty:
     @pytest.mark.parametrize(
         "env_var, getter_suffix, default",
         [
-            ("ENV_OUTPUT", "output", Path("gcmon.pftrace")),
+            ("ENV_OUTPUT", "output", Path(DEFAULT_TRACE_FILE)),
             ("ENV_RATE", "rate", 0.1),
             ("ENV_DURATION", "duration", None),
             ("ENV_THREAD_ID", "thread_id", 0),
@@ -251,7 +258,7 @@ class TestEnvVarEmpty:
             ("ENV_SERVER_HOST", "server_host", "localhost"),
             ("ENV_SERVER_PORT", "server_port", 9999),
             ("ENV_VERBOSE", "verbose", 0),
-            ("ENV_FORMAT", "format", "perfetto"),
+            ("ENV_FORMAT", "format", FORMAT_PERFETTO),
             ("ENV_STATS", "stats", None),
             ("ENV_TABLE_FORMAT", "table_format", None),
             ("ENV_CONTROL_NAME", "control_name", None),

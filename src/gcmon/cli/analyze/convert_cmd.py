@@ -9,7 +9,9 @@ from pathlib import Path
 from gcmon.analysis.combine import combine_files
 from gcmon.cli.shared.parser_factory import ParserFactory
 
-logger = logging.getLogger("gcmon")
+from ...support.vocabulary import CMD_COMBINE, FORMAT_JSONL, FORMAT_PERFETTO, PROGRAM_NAME
+
+logger = logging.getLogger(PROGRAM_NAME)
 
 
 def add_parser(parser_factory: ParserFactory) -> argparse.ArgumentParser:
@@ -22,7 +24,7 @@ def add_parser(parser_factory: ParserFactory) -> argparse.ArgumentParser:
         The created combine subparser.
     """
     parser = parser_factory(
-        "combine",
+        CMD_COMBINE,
         help="Combine multiple JSONL captures into one trace file",
         description=(
             "Combine multiple JSONL captures into a single JSONL capture or "
@@ -61,8 +63,8 @@ def add_parser(parser_factory: ParserFactory) -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--output-format",
-        choices=["perfetto", "jsonl"],
-        default="perfetto",
+        choices=[FORMAT_PERFETTO, FORMAT_JSONL],
+        default=FORMAT_PERFETTO,
         help="Output file format: perfetto (binary protobuf) or jsonl (default: perfetto)",
     )
     parser.set_defaults(func=cmd_combine)

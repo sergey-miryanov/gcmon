@@ -7,6 +7,7 @@ import msgspec
 
 from ..exporters.trace_converter import convert_to_trace_format
 from ..model.data import from_mapping
+from ..model.names import PID
 from ..model.protocol import (
     JsonlRecord,
     TItem,
@@ -25,6 +26,7 @@ from ..model.protocol import (
     to_mapping,
 )
 from ..model.trace_event import TraceEvent
+from ..support.vocabulary import ENCODING
 
 __all__ = [
     "convert_jsonl_to_trace_format",
@@ -35,7 +37,7 @@ __all__ = [
 
 
 def json_to_item(data: TMapping) -> tuple[int, TItem]:
-    pid = data["pid"]
+    pid = data[PID]
     # A pid gcmon wrote decodes as an int, and every line of a capture carries
     # one. Anything else goes through a lax convert, so a pid written as a
     # string still reads.
@@ -47,7 +49,7 @@ def json_to_item(data: TMapping) -> tuple[int, TItem]:
 def read_jsonl(filename: Path) -> dict[int, list[TItem]]:
     items: dict[int, list[TItem]] = {}
     first = True
-    with open(filename, encoding="utf-8") as f:
+    with open(filename, encoding=ENCODING) as f:
         for line in f:
             line = line.strip()
             if not line:
@@ -78,7 +80,7 @@ def write_jsonl(filename: Path, items: Mapping[int, Sequence[TItem]]) -> None:
     with open(filename, "wb") as f:
         for pid, pid_items in items.items():
             for item in pid_items:
-                rec: JsonlRecord = {"pid": pid}
+                rec: JsonlRecord = {PID: pid}
                 rec.update(to_mapping(item))
                 f.write(msgspec.json.encode(rec))
                 f.write(b"\n")

@@ -14,8 +14,10 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from gcmon.cli.monitor.monitoring_options import MonitoringOptions
+from gcmon.model.names import DURATION, PID, RSS
 from gcmon.stats.streaming_stats import PauseTotals
 from gcmon.stats.views import TableFormat
+from gcmon.support.vocabulary import CMD_MONITOR, FORMAT_PERFETTO, PROGRAM_NAME
 from tests.helpers import DefaultsValue
 
 
@@ -23,18 +25,18 @@ class MonitorArgsFactory:
     """Factory for creating monitor command Namespace objects."""
 
     _defaults: ClassVar[dict[str, DefaultsValue]] = {
-        "pid": 12345,
+        PID: 12345,
         "output": Path("test.pftrace"),
         "rate": 0.1,
-        "duration": 0.05,
+        DURATION: 0.05,
         "verbose": 1,
-        "format": "perfetto",
+        "format": FORMAT_PERFETTO,
         "thread_id": 0,
         "flush_threshold": 100,
         "stats": None,
         "table_format": None,
         "control_name": None,
-        "rss": False,
+        RSS: False,
         "rss_interval": 1.0,
     }
 
@@ -55,7 +57,7 @@ def monitor_args() -> MonitorArgsFactory:
 
 @pytest.fixture
 def gcmon_cmd() -> list[str]:
-    return [sys.executable, "-m", "gcmon"]
+    return [sys.executable, "-m", PROGRAM_NAME]
 
 
 @pytest.fixture
@@ -73,7 +75,7 @@ def run_monitor(gcmon_cmd: list[str]) -> Callable[..., subprocess.CompletedProce
         cwd: str | Path | None = None,
         env: Mapping[str, str] | None = None,
     ) -> subprocess.CompletedProcess[str]:
-        cmd = gcmon_cmd + ["monitor", "12345"] + (extra_args or [])
+        cmd = gcmon_cmd + [CMD_MONITOR, "12345"] + (extra_args or [])
         return subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, cwd=cwd, env=env)
 
     return _run
@@ -94,7 +96,7 @@ def run_monitor_self(gcmon_cmd: list[str]) -> Callable[..., subprocess.Completed
         cwd: str | Path | None = None,
         env: Mapping[str, str] | None = None,
     ) -> subprocess.CompletedProcess[str]:
-        cmd = gcmon_cmd + ["monitor", "-1"] + (extra_args or [])
+        cmd = gcmon_cmd + [CMD_MONITOR, "-1"] + (extra_args or [])
         return subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, cwd=cwd, env=env)
 
     return _run
@@ -112,8 +114,8 @@ def monitoring_options() -> Callable[..., MonitoringOptions]:
         defaults: dict[str, Any] = {
             "output_path": Path("test.pftrace"),
             "rate": 0.1,
-            "duration": 0.05,
-            "output_format": "perfetto",
+            DURATION: 0.05,
+            "output_format": FORMAT_PERFETTO,
             "flush_threshold": 100,
             "duration_label": "until interrupted",
             "stats_view": None,

@@ -6,8 +6,10 @@ from contextlib import AbstractContextManager
 from pathlib import Path
 from typing import TextIO, override
 
+from ..model.names import PID
 from ..model.process import Process
 from ..model.protocol import JsonlRecord, TGCStatsInfo, TInstantMsg, TLossMsg, to_mapping
+from ..support.vocabulary import ENCODING
 from .exporter import EventsExporter
 
 __all__ = ["JsonlExporter"]
@@ -35,7 +37,7 @@ class JsonlExporter(EventsExporter):
     @override
     def add_event(self, process: Process, item: TGCStatsInfo) -> None:
         event: JsonlRecord = {
-            "pid": process.pid,
+            PID: process.pid,
         }
         event.update(to_mapping(item))
 
@@ -54,7 +56,7 @@ class JsonlExporter(EventsExporter):
     @override
     def add_loss_event(self, process: Process, item: TLossMsg) -> None:
         event: JsonlRecord = {
-            "pid": process.pid,
+            PID: process.pid,
         }
         event.update(to_mapping(item))
 
@@ -73,7 +75,7 @@ class JsonlExporter(EventsExporter):
     @override
     def add_instant_event(self, process: Process, item: TInstantMsg) -> None:
         event: JsonlRecord = {
-            "pid": process.pid,
+            PID: process.pid,
         }
         event.update(to_mapping(item))
 
@@ -99,7 +101,7 @@ class JsonlExporter(EventsExporter):
 
     def _open_writer(self) -> AbstractContextManager[TextIO]:
         assert self._output_path is not None
-        return open(self._output_path, "a", encoding="utf-8")
+        return open(self._output_path, "a", encoding=ENCODING)
 
     @override
     def close(self) -> None:

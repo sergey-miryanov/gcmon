@@ -4,7 +4,9 @@ import re
 from enum import StrEnum
 from typing import Final, NamedTuple
 
-PREFIX: Final = "gcmon"
+from ..support.vocabulary import PROGRAM_NAME
+
+PREFIX: Final = PROGRAM_NAME
 
 
 class Side(StrEnum):

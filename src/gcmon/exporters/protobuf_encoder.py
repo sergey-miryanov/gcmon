@@ -2,6 +2,8 @@
 
 import struct
 
+from ..support.vocabulary import ENCODING
+
 __all__ = [
     "encode_bytes_field",
     "encode_double_field",
@@ -50,7 +52,7 @@ def encode_fixed64_field(field_number: int, value: int) -> bytes:
 
 
 def encode_string_field(field_number: int, value: str) -> bytes:
-    encoded = value.encode("utf-8")
+    encoded = value.encode(ENCODING)
     return encode_field_key(field_number, WIRE_TYPE_LENGTH_DELIMITED) + encode_varint(len(encoded)) + encoded
 
 

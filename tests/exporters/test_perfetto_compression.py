@@ -23,6 +23,8 @@ from gcmon.exporters import PerfettoExporter
 from gcmon.exporters.encoder import _CODEC, _DEFLATE, Codec, _resolve_codec
 from gcmon.exporters.perfetto_proto import TraceField, TracePacketField
 from gcmon.exporters.protobuf_encoder import encode_bytes_field
+from gcmon.exporters.trace_converter import counter_display_name
+from gcmon.model.names import COLLECTED, GC_LOSS_CATEGORY, PAUSE, gc_pause_slice_name, phase_category
 from tests.helpers import (
     HAS_LIBZSTD,
     assert_valid_perfetto_trace,
@@ -35,10 +37,10 @@ from tests.helpers import (
 )
 
 _PID: int = 4242
-_PAUSE_NAME: str = "GC Pause(0)"
-_LOSS_CATEGORY: str = "gc.loss"
-_PAUSE_CATEGORY: str = "gc.pause(gen=0)"
-_COUNTER_NAME: str = "G0 collected"
+_PAUSE_NAME: str = gc_pause_slice_name(0)
+_LOSS_CATEGORY: str = GC_LOSS_CATEGORY
+_PAUSE_CATEGORY: str = phase_category(PAUSE, 0)
+_COUNTER_NAME: str = counter_display_name(0, COLLECTED)
 _COLLECTED: int = 17
 
 # ``_CODEC`` is ``_DEFLATE`` on a build without libzstd, and listing both

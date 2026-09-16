@@ -3,6 +3,8 @@
 import pytest
 
 from gcmon.model.marks import Mark, Side, format_mark, parse_mark
+from gcmon.model.names import NAME
+from gcmon.support.vocabulary import PROGRAM_NAME
 
 
 class TestRoundTrip:
@@ -47,11 +49,11 @@ class TestTheWriterNeverBeatsTheReader:
 
 class TestParsingSomethingElse:
     @pytest.mark.parametrize(
-        "name",
+        NAME,
         [
             "",
             "start GC monitor",
-            "gcmon",
+            PROGRAM_NAME,
             "gcmon:bm_base64:1",
             "gcmon:bm_base64:1:1:begin:extra",
             "gcmon:bm_base64:1:begin",

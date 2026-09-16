@@ -11,6 +11,18 @@ importer needs one name.
 
 from collections.abc import Sequence
 
+from ..model.names import (
+    ALIVE_SIZE,
+    CANDIDATES,
+    CLEAR_WEAKREFS_COUNT,
+    COLLECTED,
+    DELETED_GARBAGE_COUNT,
+    DURATION,
+    FINALIZED_GARBAGE_COUNT,
+    HEAP_SIZE,
+    INCREMENT_SIZE,
+    UNCOLLECTABLE,
+)
 from ..model.trace_event import (
     Counter,
     Instant,
@@ -82,8 +94,13 @@ _COUNTER_GROUP_NAME: str = "GC Metrics"
 _INTERPRETER_LIST_NAME: str = "Python Interpreters"
 
 
+# The fixed half of an interpreter group's name, named for the same
+# reason as the process row's.
+_INTERPRETER_GROUP_PREFIX: str = "Interpreter "
+
+
 def _interpreter_group_name(iid: int) -> str:
-    return f"Interpreter {iid}"
+    return f"{_INTERPRETER_GROUP_PREFIX}{iid}"
 
 
 _PAUSE_TRACK_NAME: str = "GC Pauses"
@@ -95,15 +112,14 @@ _LOSS_TRACK_NAME: str = "GC Loss"
 #
 # `rss` is not here: a `ProcessTrack` owns it, so parenting it to the process
 # row is its identity rather than a policy.
-_HEAP_METRIC: str = "heap_size"
-_TOPLEVEL_COUNTER_METRICS: frozenset[str] = frozenset({_HEAP_METRIC})
+_TOPLEVEL_COUNTER_METRICS: frozenset[str] = frozenset({HEAP_SIZE})
 
 # What an interpreter group holds, top to bottom (ADR-0027). Each row ranks by
 # its index here, so this tuple is the whole statement of the order.
 _INTERPRETER_ROW_ORDER: tuple[str, ...] = (
     _PAUSE_TRACK_NAME,
     _LOSS_TRACK_NAME,
-    _HEAP_METRIC,
+    HEAP_SIZE,
     _COUNTER_GROUP_NAME,
 )
 _INTERPRETER_ROW_RANKS: dict[str, int] = {name: rank for rank, name in enumerate(_INTERPRETER_ROW_ORDER)}
@@ -112,15 +128,15 @@ _INTERPRETER_ROW_RANKS: dict[str, int] = {name: rank for rank, name in enumerate
 # because it parents to the process track, which is OS-scoped, and the trace
 # processor discards a rank there (ADR-0003).
 _COUNTER_ORDER: tuple[str, ...] = (
-    "collected",
-    "uncollectable",
-    "candidates",
-    "duration",
-    "increment_size",
-    "alive_size",
-    "finalized_garbage_count",
-    "deleted_garbage_count",
-    "clear_weakrefs_count",
+    COLLECTED,
+    UNCOLLECTABLE,
+    CANDIDATES,
+    DURATION,
+    INCREMENT_SIZE,
+    ALIVE_SIZE,
+    FINALIZED_GARBAGE_COUNT,
+    DELETED_GARBAGE_COUNT,
+    CLEAR_WEAKREFS_COUNT,
 )
 _COUNTER_RANKS: dict[str, int] = {metric: rank for rank, metric in enumerate(_COUNTER_ORDER)}
 
@@ -277,7 +293,7 @@ def _emit_counter_track_descriptor(
             display_name,
             parent_uuid=interpreter_uuid,
             is_counter=True,
-            sibling_order_rank=_INTERPRETER_ROW_RANKS[_HEAP_METRIC],
+            sibling_order_rank=_INTERPRETER_ROW_RANKS[HEAP_SIZE],
         )
         return ctr_uuid, [*packets, build_trace_packet(sequence_id, track_descriptor=desc)]
     group_uuid, group_packets = _emit_counter_group_descriptor(track, state, sequence_id)

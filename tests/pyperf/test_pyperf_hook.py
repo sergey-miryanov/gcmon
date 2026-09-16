@@ -17,12 +17,19 @@ from unittest.mock import patch
 import pytest
 
 from gcmon.control.control_server import CONTROL_ADDRESS_ENV, ControlServer, _make_address
+from gcmon.exporters.perfetto_process_lifetime import process_track_name
 from gcmon.model.marks import Mark, Side, parse_mark
+from gcmon.model.names import NAME
 from gcmon.model.process import Process
 from gcmon.model.protocol import TInstantMsg
 from gcmon.monitoring.events_reader import RemoteEventsReader, TargetUnavailable
-from gcmon.pyperf.hook import GCMonitorHook, _get_env_pyperf_hook_control_timeout, gcmon_hook
-from tests.helpers import MockExporter, monitored, open_trace_processor
+from gcmon.pyperf.hook import (
+    ENV_PYPERF_HOOK_CONTROL_TIMEOUT,
+    GCMonitorHook,
+    _get_env_pyperf_hook_control_timeout,
+    gcmon_hook,
+)
+from tests.helpers import MockExporter, monitored, open_trace_processor, proc
 from tests.monitoring.test_events_reader import target_executable
 
 
@@ -84,7 +91,7 @@ class TestAccumulateAndLand:
 
         assert sink.marks() == [], "a mark crossed a process boundary while the benchmark was running"
 
-        hook.teardown({"name": "bm_base64"})
+        hook.teardown({NAME: "bm_base64"})
 
         marks = sink.wait_for(4)
         assert _sides(marks) == [Side.BEGIN, Side.END, Side.BEGIN, Side.END]
@@ -103,7 +110,7 @@ class TestAccumulateAndLand:
 
         time.sleep(0.05)
         sent_no_earlier_than = time.monotonic_ns()
-        hook.teardown({"name": "bm_base64"})
+        hook.teardown({NAME: "bm_base64"})
 
         begin, end = sink.wait_for(2)
         assert before <= begin.ts < end.ts <= after
@@ -113,7 +120,7 @@ class TestAccumulateAndLand:
         hook = gcmon_hook()
         with hook:
             pass
-        hook.teardown({"name": "bm_base64"})
+        hook.teardown({NAME: "bm_base64"})
 
         assert {m.pid for m in sink.wait_for(2)} == {os.getpid()}
 
@@ -121,7 +128,7 @@ class TestAccumulateAndLand:
         hook = gcmon_hook()
         with hook:
             pass
-        hook.teardown({"name": "bm:odd name"})
+        hook.teardown({NAME: "bm:odd name"})
 
         assert {m.mark.bench for m in sink.wait_for(2)} == {"bm_odd_name"}
 
@@ -131,13 +138,13 @@ class TestRegionNumbering:
         first = gcmon_hook()
         with first:
             pass
-        first.teardown({"name": "bm_base64"})
+        first.teardown({NAME: "bm_base64"})
         assert sink.wait_for(2)
 
         second = gcmon_hook()
         with second:
             pass
-        second.teardown({"name": "bm_base64"})
+        second.teardown({NAME: "bm_base64"})
 
         regions = [m.mark.region for m in sink.wait_for(4)]
         assert regions[2] == regions[0] + 1, "the second instance restarted the count and reused a mark name"
@@ -147,13 +154,13 @@ class TestRegionNumbering:
         warmups = gcmon_hook()
         with warmups:
             pass
-        warmups.teardown({"name": "bm_base64"})
+        warmups.teardown({NAME: "bm_base64"})
 
         values = gcmon_hook()
         for _ in range(3):
             with values:
                 pass
-        values.teardown({"name": "bm_base64"})
+        values.teardown({NAME: "bm_base64"})
 
         # Each hook has its own connection, and the server reads one message
         # per connection per pass, so arrival order interleaves the two. A
@@ -172,17 +179,17 @@ class TestRegionNumbering:
         first = gcmon_hook()
         with first:
             pass
-        first.teardown({"name": "bm_base64"})
+        first.teardown({NAME: "bm_base64"})
         started_at = sink.wait_for(2)[0].mark.region
 
         abandoned = gcmon_hook()
         abandoned.__enter__()
-        abandoned.teardown({"name": "bm_base64"})
+        abandoned.teardown({NAME: "bm_base64"})
 
         third = gcmon_hook()
         with third:
             pass
-        third.teardown({"name": "bm_base64"})
+        third.teardown({NAME: "bm_base64"})
 
         regions = [m.mark.region for m in sink.wait_for(4)]
         assert regions[2] == started_at + 1
@@ -192,7 +199,7 @@ class TestRegionNumbering:
         for _ in range(3):
             with hook:
                 pass
-        hook.teardown({"name": "bm_base64"})
+        hook.teardown({NAME: "bm_base64"})
 
         regions = [m.mark.region for m in sink.wait_for(6)]
         assert regions == sorted(regions)
@@ -227,7 +234,7 @@ class TestTheMarksInATrace:
             hook = gcmon_hook()
             with hook:
                 pass
-            hook.teardown({"name": "bm_base64"})
+            hook.teardown({NAME: "bm_base64"})
             deadline = time.monotonic() + 5
             while exporter.instants < 2 and time.monotonic() < deadline:
                 time.sleep(0.01)
@@ -241,7 +248,7 @@ class TestTheMarksInATrace:
                     "SELECT s.name AS name FROM slice s "
                     "JOIN process_track pt ON s.track_id = pt.id "
                     "JOIN process p ON pt.upid = p.upid "
-                    f"WHERE p.name = 'Process {os.getpid()}' AND s.dur = 0 AND s.name LIKE 'gcmon:%' "
+                    f"WHERE p.name = '{process_track_name(proc(os.getpid()))}' AND s.dur = 0 AND s.name LIKE 'gcmon:%' "
                     "ORDER BY s.ts"
                 )
             )
@@ -260,7 +267,7 @@ class TestAnUnfinishedRegion:
         hook = gcmon_hook()
 
         hook.__enter__()
-        hook.teardown({"name": "bm_base64"})
+        hook.teardown({NAME: "bm_base64"})
 
         assert sink.wait_for(1, timeout=0.5) == [], "half a region reached the trace"
 
@@ -270,7 +277,7 @@ class TestAnUnfinishedRegion:
         with hook:
             pass
         hook.__enter__()
-        hook.teardown({"name": "bm_base64"})
+        hook.teardown({NAME: "bm_base64"})
 
         assert _sides(sink.wait_for(2)) == [Side.BEGIN, Side.END]
 
@@ -288,7 +295,7 @@ class TestTheHookDoesNothingElse:
         hook = gcmon_hook()
         with hook:
             pass
-        hook.teardown({"name": "bm_base64"})
+        hook.teardown({NAME: "bm_base64"})
 
         assert len(sink.wait_for(2)) == 2
 
@@ -298,7 +305,7 @@ class TestTheHookDoesNothingElse:
         hook = gcmon_hook()
         with hook:
             pass
-        hook.teardown({"name": "bm_base64"})
+        hook.teardown({NAME: "bm_base64"})
         assert len(sink.wait_for(2)) == 2
 
         assert list(tmp_path.iterdir()) == []
@@ -308,10 +315,10 @@ class TestTheHookDoesNothingElse:
         with hook:
             pass
 
-        metadata: dict[str, object] = {"name": "bm_base64", "loops": 4}
+        metadata: dict[str, object] = {NAME: "bm_base64", "loops": 4}
         hook.teardown(metadata)
 
-        assert metadata == {"name": "bm_base64", "loops": 4}
+        assert metadata == {NAME: "bm_base64", "loops": 4}
 
 
 # A target that collects on demand. The one in ``tests/test_events_reader``
@@ -394,7 +401,7 @@ class TestNoMonitorIsARefusal:
 
     def test_an_address_nobody_is_listening_on_refuses_the_run(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv(CONTROL_ADDRESS_ENV, _make_address("nobody-is-listening"))
-        monkeypatch.setenv("GCMON_PYPERF_HOOK_CONTROL_TIMEOUT", "0.2")
+        monkeypatch.setenv(ENV_PYPERF_HOOK_CONTROL_TIMEOUT, "0.2")
 
         with pytest.raises(Exception) as caught:
             gcmon_hook()
@@ -433,9 +440,9 @@ class TestGetEnvControlTimeout:
             assert _get_env_pyperf_hook_control_timeout() == 10.0
 
     def test_custom_value(self) -> None:
-        with patch.dict(os.environ, {"GCMON_PYPERF_HOOK_CONTROL_TIMEOUT": "30"}):
+        with patch.dict(os.environ, {ENV_PYPERF_HOOK_CONTROL_TIMEOUT: "30"}):
             assert _get_env_pyperf_hook_control_timeout() == 30.0
 
     def test_invalid_value_returns_default(self) -> None:
-        with patch.dict(os.environ, {"GCMON_PYPERF_HOOK_CONTROL_TIMEOUT": "not-a-number"}):
+        with patch.dict(os.environ, {ENV_PYPERF_HOOK_CONTROL_TIMEOUT: "not-a-number"}):
             assert _get_env_pyperf_hook_control_timeout() == 10.0

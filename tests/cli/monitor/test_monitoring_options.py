@@ -8,27 +8,30 @@ from pathlib import Path
 
 import pytest
 
-from gcmon.cli.monitor._env import ENV_RATE
+from gcmon.cli.monitor._env import ENV_FORMAT, ENV_RATE, ENV_STATS
 from gcmon.cli.monitor.monitoring_options import (
     RSS_CAPABLE_FORMATS,
     MonitoringOptions,
     add_monitoring_options,
     get_monitoring_options,
 )
+from gcmon.model.names import DURATION, RSS
+from gcmon.stats.stats_output import TOTAL_LABEL
 from gcmon.stats.views import STATS_OFF_WORDS, StatsView, TableFormat
+from gcmon.support.vocabulary import CMD_MONITOR, CMD_RUN, FORMAT_JSONL, FORMAT_PERFETTO, FORMAT_STDOUT, PROGRAM_NAME
 
 
 def _make_args(**overrides: object) -> Namespace:
     defaults: dict[str, object] = {
         "output": Path("trace.json"),
         "rate": 0.1,
-        "duration": 0.05,
-        "format": "perfetto",
+        DURATION: 0.05,
+        "format": FORMAT_PERFETTO,
         "flush_threshold": 100,
         "stats": None,
         "table_format": TableFormat.PLAIN,
         "control_name": None,
-        "rss": False,
+        RSS: False,
         "rss_interval": 1.0,
     }
     return Namespace(**{**defaults, **overrides})
@@ -57,7 +60,7 @@ class TestOutputPathValidation:
 
     def test_stdout_format_skips_path_validation(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
         monkeypatch.chdir(tmp_path)
-        args = _make_args(output=Path("nonexistent/trace.json"), format="stdout")
+        args = _make_args(output=Path("nonexistent/trace.json"), format=FORMAT_STDOUT)
         result = get_monitoring_options(args)
         assert result is not None
 
@@ -139,7 +142,7 @@ class TestRssFormatWarning:
     """--rss is accepted for every format, but only some exporters implement
     add_rss_sample; the rest discard the samples and must say so."""
 
-    @pytest.mark.parametrize("output_format", ["jsonl", "stdout"])
+    @pytest.mark.parametrize("output_format", [FORMAT_JSONL, FORMAT_STDOUT])
     def test_unsupported_format_warns(self, output_format: str, caplog: pytest.LogCaptureFixture) -> None:
         caplog.set_level(logging.WARNING)
         args = _make_args(rss=True, format=output_format)
@@ -158,7 +161,7 @@ class TestRssFormatWarning:
 
     def test_rss_disabled_does_not_warn_on_unsupported_format(self, caplog: pytest.LogCaptureFixture) -> None:
         caplog.set_level(logging.WARNING)
-        args = _make_args(rss=False, format="jsonl")
+        args = _make_args(rss=False, format=FORMAT_JSONL)
         result = get_monitoring_options(args)
         assert result is not None
         assert "RSS tracking is not supported" not in caplog.text
@@ -180,22 +183,22 @@ class TestTheFormatEnvironmentVariable:
         # be built after the test sets it.
         return get_monitoring_options(_create_parser().parse_args(argv))
 
-    @pytest.mark.parametrize("word", ["perfetto", "jsonl", "stdout"])
+    @pytest.mark.parametrize("word", [FORMAT_PERFETTO, FORMAT_JSONL, FORMAT_STDOUT])
     def test_each_word_is_taken(self, monkeypatch: pytest.MonkeyPatch, word: str) -> None:
-        monkeypatch.setenv("GCMON_FORMAT", word)
+        monkeypatch.setenv(ENV_FORMAT, word)
 
-        result = self._options(["monitor", "12345"])
+        result = self._options([CMD_MONITOR, "12345"])
 
         assert result is not None
         assert result.output_format == word
 
     def test_unset_gives_perfetto(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.delenv("GCMON_FORMAT", raising=False)
+        monkeypatch.delenv(ENV_FORMAT, raising=False)
 
-        result = self._options(["monitor", "12345"])
+        result = self._options([CMD_MONITOR, "12345"])
 
         assert result is not None
-        assert result.output_format == "perfetto"
+        assert result.output_format == FORMAT_PERFETTO
 
     @pytest.mark.parametrize("value", ["chrome", "trace", "chrome+perfetto", "pftrace"])
     def test_a_word_the_flag_would_refuse_fails_the_run(
@@ -204,12 +207,12 @@ class TestTheFormatEnvironmentVariable:
         """`GCMON_FORMAT=chrome` from an older release stops the run at
         startup rather than writing a format nobody asked for."""
         caplog.set_level(logging.ERROR)
-        monkeypatch.setenv("GCMON_FORMAT", value)
+        monkeypatch.setenv(ENV_FORMAT, value)
 
-        assert self._options(["monitor", "12345"]) is None
-        assert "GCMON_FORMAT" in caplog.text
+        assert self._options([CMD_MONITOR, "12345"]) is None
+        assert ENV_FORMAT in caplog.text
         assert value in caplog.text
-        for remaining in ("perfetto", "jsonl", "stdout"):
+        for remaining in (FORMAT_PERFETTO, FORMAT_JSONL, FORMAT_STDOUT):
             assert remaining in caplog.text
 
     def test_the_rejected_value_is_never_echoed_as_accepted(
@@ -218,9 +221,9 @@ class TestTheFormatEnvironmentVariable:
         """Spec 0040's complaint, which this shape closes: the log used to
         read `Format: perfetto` for a run configured as `chrome`."""
         caplog.set_level(logging.INFO)
-        monkeypatch.setenv("GCMON_FORMAT", "chrome")
+        monkeypatch.setenv(ENV_FORMAT, "chrome")
 
-        self._options(["monitor", "12345"])
+        self._options([CMD_MONITOR, "12345"])
 
         assert "Format: perfetto" not in caplog.text
 
@@ -233,15 +236,17 @@ class TestTheStatsFlagCarriesTheView:
 
         return _create_parser().parse_args(argv)
 
-    @pytest.mark.parametrize("word, view", [("total", StatsView.TOTAL), ("full", StatsView.FULL)])
+    @pytest.mark.parametrize(
+        "word, view", [(StatsView.TOTAL.value, StatsView.TOTAL), (StatsView.FULL.value, StatsView.FULL)]
+    )
     def test_each_word_selects_its_view(self, word: str, view: StatsView) -> None:
-        result = get_monitoring_options(self._parse(["monitor", "12345", f"--stats={word}"]))
+        result = get_monitoring_options(self._parse([CMD_MONITOR, "12345", f"--stats={word}"]))
 
         assert result is not None
         assert result.stats_view is view
 
     def test_no_flag_asks_for_no_table(self) -> None:
-        result = get_monitoring_options(self._parse(["monitor", "12345"]))
+        result = get_monitoring_options(self._parse([CMD_MONITOR, "12345"]))
 
         assert result is not None
         assert result.stats_view is None
@@ -249,9 +254,9 @@ class TestTheStatsFlagCarriesTheView:
     @pytest.mark.parametrize(
         "argv",
         [
-            ["monitor", "12345", "--stats=total"],
-            ["monitor", "12345", "--stats", "total"],
-            ["monitor", "--stats", "total", "12345"],
+            [CMD_MONITOR, "12345", "--stats=total"],
+            [CMD_MONITOR, "12345", "--stats", StatsView.TOTAL.value],
+            [CMD_MONITOR, "--stats", StatsView.TOTAL.value, "12345"],
         ],
     )
     def test_the_pid_survives_the_flag(self, argv: list[str]) -> None:
@@ -260,25 +265,25 @@ class TestTheStatsFlagCarriesTheView:
 
     def test_a_bare_flag_is_refused(self, capsys: pytest.CaptureFixture[str]) -> None:
         with pytest.raises(SystemExit) as exit_info:
-            self._parse(["monitor", "12345", "--stats"])
+            self._parse([CMD_MONITOR, "12345", "--stats"])
 
         assert exit_info.value.code != 0
         err = capsys.readouterr().err
-        assert "total" in err
-        assert "full" in err
+        assert StatsView.TOTAL.value in err
+        assert StatsView.FULL.value in err
 
     def test_an_unknown_value_is_refused(self, capsys: pytest.CaptureFixture[str]) -> None:
         """`all` reads as the wider view and is not one."""
         with pytest.raises(SystemExit) as exit_info:
-            self._parse(["monitor", "12345", "--stats=all"])
+            self._parse([CMD_MONITOR, "12345", "--stats=all"])
 
         assert exit_info.value.code != 0
         err = capsys.readouterr().err
-        assert "total" in err
-        assert "full" in err
+        assert StatsView.TOTAL.value in err
+        assert StatsView.FULL.value in err
 
     def test_run_takes_the_same_two_words(self) -> None:
-        result = get_monitoring_options(self._parse(["run", "--stats=total", "-m", "timeit"]))
+        result = get_monitoring_options(self._parse([CMD_RUN, "--stats=total", "-m", "timeit"]))
 
         assert result is not None
         assert result.stats_view is StatsView.TOTAL
@@ -296,36 +301,38 @@ class TestTheStatsEnvironmentVariable:
         # be built after the test sets it.
         return get_monitoring_options(_create_parser().parse_args(argv))
 
-    @pytest.mark.parametrize("word, view", [("total", StatsView.TOTAL), ("full", StatsView.FULL)])
+    @pytest.mark.parametrize(
+        "word, view", [(StatsView.TOTAL.value, StatsView.TOTAL), (StatsView.FULL.value, StatsView.FULL)]
+    )
     def test_each_word_selects_its_view(self, monkeypatch: pytest.MonkeyPatch, word: str, view: StatsView) -> None:
-        monkeypatch.setenv("GCMON_STATS", word)
+        monkeypatch.setenv(ENV_STATS, word)
 
-        result = self._options(["monitor", "12345"])
+        result = self._options([CMD_MONITOR, "12345"])
 
         assert result is not None
         assert result.stats_view is view
 
-    @pytest.mark.parametrize("value", ["Total", "TOTAL", " total", "total\n"])
+    @pytest.mark.parametrize("value", [TOTAL_LABEL, "TOTAL", " total", "total\n"])
     def test_case_insensitive_and_stripped(self, monkeypatch: pytest.MonkeyPatch, value: str) -> None:
-        monkeypatch.setenv("GCMON_STATS", value)
+        monkeypatch.setenv(ENV_STATS, value)
 
-        result = self._options(["monitor", "12345"])
+        result = self._options([CMD_MONITOR, "12345"])
 
         assert result is not None
         assert result.stats_view is StatsView.TOTAL
 
     def test_the_flag_wins(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.setenv("GCMON_STATS", "full")
+        monkeypatch.setenv(ENV_STATS, StatsView.FULL.value)
 
-        result = self._options(["monitor", "12345", "--stats=total"])
+        result = self._options([CMD_MONITOR, "12345", "--stats=total"])
 
         assert result is not None
         assert result.stats_view is StatsView.TOTAL
 
     def test_unset_asks_for_no_table(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.delenv("GCMON_STATS", raising=False)
+        monkeypatch.delenv(ENV_STATS, raising=False)
 
-        result = self._options(["monitor", "12345"])
+        result = self._options([CMD_MONITOR, "12345"])
 
         assert result is not None
         assert result.stats_view is None
@@ -336,11 +343,11 @@ class TestTheStatsEnvironmentVariable:
     ) -> None:
         """`GCMON_STATS=1` from an older release stops the run at startup."""
         caplog.set_level(logging.ERROR)
-        monkeypatch.setenv("GCMON_STATS", value)
+        monkeypatch.setenv(ENV_STATS, value)
 
-        assert self._options(["monitor", "12345"]) is None
-        assert "total" in caplog.text
-        assert "full" in caplog.text
+        assert self._options([CMD_MONITOR, "12345"]) is None
+        assert StatsView.TOTAL.value in caplog.text
+        assert StatsView.FULL.value in caplog.text
         assert value in caplog.text
 
     def test_the_message_names_the_variable(
@@ -348,11 +355,11 @@ class TestTheStatsEnvironmentVariable:
     ) -> None:
         """argparse checks the flag's own values, so only the variable gets here."""
         caplog.set_level(logging.ERROR)
-        monkeypatch.setenv("GCMON_STATS", "1")
+        monkeypatch.setenv(ENV_STATS, "1")
 
-        self._options(["monitor", "12345"])
+        self._options([CMD_MONITOR, "12345"])
 
-        assert "GCMON_STATS" in caplog.text
+        assert ENV_STATS in caplog.text
 
 
 class TestTheWordsThatTurnTheTableOff:
@@ -367,7 +374,7 @@ class TestTheWordsThatTurnTheTableOff:
 
     @pytest.mark.parametrize("word", STATS_OFF_WORDS)
     def test_the_flag_takes_each_of_them(self, word: str) -> None:
-        result = get_monitoring_options(self._parse(["monitor", "12345", f"--stats={word}"]))
+        result = get_monitoring_options(self._parse([CMD_MONITOR, "12345", f"--stats={word}"]))
 
         assert result is not None
         assert result.stats_view is None
@@ -376,9 +383,9 @@ class TestTheWordsThatTurnTheTableOff:
     def test_the_variable_takes_each_of_them(self, monkeypatch: pytest.MonkeyPatch, word: str) -> None:
         from gcmon.cli.main import _create_parser
 
-        monkeypatch.setenv("GCMON_STATS", word)
+        monkeypatch.setenv(ENV_STATS, word)
 
-        result = get_monitoring_options(_create_parser().parse_args(["monitor", "12345"]))
+        result = get_monitoring_options(_create_parser().parse_args([CMD_MONITOR, "12345"]))
 
         assert result is not None
         assert result.stats_view is None
@@ -387,9 +394,9 @@ class TestTheWordsThatTurnTheTableOff:
     def test_the_variable_is_case_insensitive_and_stripped(self, monkeypatch: pytest.MonkeyPatch, value: str) -> None:
         from gcmon.cli.main import _create_parser
 
-        monkeypatch.setenv("GCMON_STATS", value)
+        monkeypatch.setenv(ENV_STATS, value)
 
-        result = get_monitoring_options(_create_parser().parse_args(["monitor", "12345"]))
+        result = get_monitoring_options(_create_parser().parse_args([CMD_MONITOR, "12345"]))
 
         assert result is not None
         assert result.stats_view is None
@@ -398,23 +405,23 @@ class TestTheWordsThatTurnTheTableOff:
         """Why "no table" needs a spelling of its own."""
         from gcmon.cli.main import _create_parser
 
-        monkeypatch.setenv("GCMON_STATS", "full")
+        monkeypatch.setenv(ENV_STATS, StatsView.FULL.value)
 
-        result = get_monitoring_options(_create_parser().parse_args(["monitor", "12345", "--stats=no"]))
+        result = get_monitoring_options(_create_parser().parse_args([CMD_MONITOR, "12345", "--stats=no"]))
 
         assert result is not None
         assert result.stats_view is None
 
     def test_the_pid_survives_them(self) -> None:
-        assert self._parse(["monitor", "--stats", "off", "12345"]).pid == 12345
+        assert self._parse([CMD_MONITOR, "--stats", "off", "12345"]).pid == 12345
 
     @pytest.mark.parametrize("word", ["1", "true", "yes", "on"])
     def test_their_truthy_opposites_are_still_refused(self, capsys: pytest.CaptureFixture[str], word: str) -> None:
         with pytest.raises(SystemExit) as exit_info:
-            self._parse(["monitor", "12345", f"--stats={word}"])
+            self._parse([CMD_MONITOR, "12345", f"--stats={word}"])
 
         assert exit_info.value.code != 0
-        assert "total" in capsys.readouterr().err
+        assert StatsView.TOTAL.value in capsys.readouterr().err
 
 
 class TestRateValidation:
@@ -428,7 +435,7 @@ class TestRateValidation:
     def test_a_rate_under_the_minimum_is_refused(self, caplog: pytest.LogCaptureFixture, rate: float) -> None:
         """Below a millisecond the spin guard is longer than the interval asked
         for, so no tick can start on time (ADR-0019)."""
-        with caplog.at_level(logging.ERROR, logger="gcmon"):
+        with caplog.at_level(logging.ERROR, logger=PROGRAM_NAME):
             assert get_monitoring_options(_make_args(rate=rate)) is None
 
         assert "0.001 seconds" in caplog.text
@@ -448,7 +455,7 @@ class TestRateValidation:
         asked for."""
         monkeypatch.setenv(ENV_RATE, "1e-3")
 
-        with caplog.at_level(logging.ERROR, logger="gcmon"):
+        with caplog.at_level(logging.ERROR, logger=PROGRAM_NAME):
             assert get_monitoring_options(_make_args(rate=None)) is None
 
         assert ENV_RATE in caplog.text

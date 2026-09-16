@@ -8,6 +8,16 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from gcmon.cli.monitor._env import (
+    ENV_DURATION,
+    ENV_FLUSH_THRESHOLD,
+    ENV_FORMAT,
+    ENV_OUTPUT,
+    ENV_RATE,
+    ENV_VERBOSE,
+)
+from gcmon.model.names import DURATION, PID
+from gcmon.support.vocabulary import CMD_MONITOR, DEFAULT_TRACE_FILE, FORMAT_JSONL, FORMAT_PERFETTO, FORMAT_STDOUT
 from tests.cli.monitor.conftest import MonitorArgsFactory
 from tests.helpers import assert_valid_perfetto_trace
 
@@ -37,8 +47,8 @@ class TestCmdMonitorFormat:
     @pytest.mark.parametrize(
         "fmt, extra_kwargs",
         [
-            ("stdout", {}),
-            ("jsonl", {"thread_id": 99, "flush_threshold": 50}),
+            (FORMAT_STDOUT, {}),
+            (FORMAT_JSONL, {"thread_id": 99, "flush_threshold": 50}),
         ],
     )
     def test_cmd_monitor_format(
@@ -62,9 +72,9 @@ class TestCmdMonitorValidation:
     @pytest.mark.parametrize(
         "override, expected_msg",
         [
-            ({"pid": -2}, "PID must be positive"),
+            ({PID: -2}, "PID must be positive"),
             ({"rate": 0}, "Rate must be at least 0.001 seconds"),
-            ({"duration": 0}, "Duration must be positive"),
+            ({DURATION: 0}, "Duration must be positive"),
             ({"flush_threshold": 0}, "Flush threshold must be positive"),
         ],
     )
@@ -124,7 +134,7 @@ class TestCliBasicRun:
 
     def test_default_output_file(self, run_monitor_self: Any, tmp_path: Path) -> None:
         assert run_monitor_self(["-d", "0.3"], cwd=tmp_path).returncode == 0
-        assert (tmp_path / "gcmon.pftrace").exists()
+        assert (tmp_path / DEFAULT_TRACE_FILE).exists()
         assert not (tmp_path / "gcmon.json").exists()
 
     def test_custom_rate(self, run_monitor_self: Any, tmp_path: Path) -> None:
@@ -175,35 +185,35 @@ class TestCliOutput:
 
 class TestCliStdoutFormat:
     def test_jsonl_output(self, run_monitor: Any, tmp_path: Path) -> None:
-        result = run_monitor(["--format", "stdout", "-d", "0.3"], cwd=tmp_path)
+        result = run_monitor(["--format", FORMAT_STDOUT, "-d", "0.3"], cwd=tmp_path)
         assert result.returncode == 0
         for line in result.stdout.strip().split("\n"):
             line = line.strip()
             if line.startswith("{"):
                 data: dict[str, Any] = json.loads(line)
-                assert "pid" in data
+                assert PID in data
 
     def test_verbose(self, run_monitor: Any, tmp_path: Path) -> None:
-        result = run_monitor(["--format", "stdout", "-d", "0.3", "-v"], cwd=tmp_path)
+        result = run_monitor(["--format", FORMAT_STDOUT, "-d", "0.3", "-v"], cwd=tmp_path)
         assert "Monitoring PID: 12345" in result.stderr
         assert "Format: stdout" in result.stderr
 
     def test_quiet(self, run_monitor: Any, tmp_path: Path) -> None:
-        result = run_monitor(["--format", "stdout", "-d", "0.5"], cwd=tmp_path)
+        result = run_monitor(["--format", FORMAT_STDOUT, "-d", "0.5"], cwd=tmp_path)
         assert "Monitoring PID" not in result.stderr
 
 
 class TestCliJsonlFormat:
     def test_basic(self, run_monitor: Any, tmp_path: Path) -> None:
         output_file = tmp_path / "test.jsonl"
-        result = run_monitor(["--format", "jsonl", "-o", str(output_file), "-d", "0.1", "-v"])
+        result = run_monitor(["--format", FORMAT_JSONL, "-o", str(output_file), "-d", "0.1", "-v"])
         assert "Format: jsonl" in result.stderr
 
     def test_cli_overrides_env(self, run_monitor_self: Any, tmp_path: Path) -> None:
         output_file = tmp_path / "test.pftrace"
         env = os.environ.copy()
-        env["GCMON_FORMAT"] = "jsonl"
-        run_monitor_self(["--format", "perfetto", "-o", str(output_file), "-d", "0.3"], env=env)
+        env[ENV_FORMAT] = FORMAT_JSONL
+        run_monitor_self(["--format", FORMAT_PERFETTO, "-o", str(output_file), "-d", "0.3"], env=env)
         assert output_file.exists()
         assert_valid_perfetto_trace(output_file)
 
@@ -222,7 +232,7 @@ class TestTheDroppedFormatsAreRefusedByName:
 
         assert result.returncode == 2
         assert fmt in result.stderr
-        for remaining in ("perfetto", "jsonl", "stdout"):
+        for remaining in (FORMAT_PERFETTO, FORMAT_JSONL, FORMAT_STDOUT):
             assert remaining in result.stderr
 
     @pytest.mark.parametrize("fmt", ["chrome", "trace", "chrome+perfetto"])
@@ -237,12 +247,12 @@ class TestTheDroppedFormatsAreRefusedByName:
         this word reaches the validator, which refuses it instead of logging
         `Format: perfetto` for a run configured as something else."""
         env = os.environ.copy()
-        env["GCMON_FORMAT"] = "chrome"
+        env[ENV_FORMAT] = "chrome"
 
         result = run_monitor(["-d", "0.1"], cwd=tmp_path, env=env)
 
         assert result.returncode != 0
-        assert "GCMON_FORMAT" in result.stderr
+        assert ENV_FORMAT in result.stderr
         assert "chrome" in result.stderr
         assert "Format: perfetto" not in result.stderr
         assert list(tmp_path.iterdir()) == []
@@ -258,65 +268,65 @@ class TestCliEnvVars:
 
     def test_output(self, monkeypatch: pytest.MonkeyPatch, run_monitor_self: Any, tmp_path: Path) -> None:
         output_file = tmp_path / "env_test_trace.pftrace"
-        monkeypatch.setenv("GCMON_OUTPUT", str(output_file))
+        monkeypatch.setenv(ENV_OUTPUT, str(output_file))
         assert run_monitor_self(["-d", "0.3"]).returncode == 0
         assert output_file.exists()
 
     def test_output_cli_override(self, monkeypatch: pytest.MonkeyPatch, run_monitor_self: Any, tmp_path: Path) -> None:
-        monkeypatch.setenv("GCMON_OUTPUT", str(tmp_path / "env_trace.pftrace"))
+        monkeypatch.setenv(ENV_OUTPUT, str(tmp_path / "env_trace.pftrace"))
         cli_file = tmp_path / "cli_trace.pftrace"
         assert run_monitor_self(["-o", str(cli_file), "-d", "0.3"]).returncode == 0
         assert cli_file.exists()
         assert not (tmp_path / "env_trace.pftrace").exists()
 
     def test_rate(self, monkeypatch: pytest.MonkeyPatch, run_monitor: Any, tmp_path: Path) -> None:
-        monkeypatch.setenv("GCMON_RATE", "0.05")
+        monkeypatch.setenv(ENV_RATE, "0.05")
         result = run_monitor(["-o", str(tmp_path / "test_trace.json"), "-d", "0.3", "-v"])
         assert "Rate: 0.05" in result.stderr
 
     def test_rate_cli_override(self, monkeypatch: pytest.MonkeyPatch, run_monitor: Any, tmp_path: Path) -> None:
-        monkeypatch.setenv("GCMON_RATE", "0.05")
+        monkeypatch.setenv(ENV_RATE, "0.05")
         result = run_monitor(["-o", str(tmp_path / "test_trace.json"), "-r", "0.2", "-d", "0.3", "-v"])
         assert "Rate: 0.2" in result.stderr
 
     def test_duration(self, monkeypatch: pytest.MonkeyPatch, run_monitor: Any, tmp_path: Path) -> None:
-        monkeypatch.setenv("GCMON_DURATION", "0.5")
+        monkeypatch.setenv(ENV_DURATION, "0.5")
         result = run_monitor(["-o", str(tmp_path / "test_trace.json"), "-v"])
         assert "Duration: 0.5" in result.stderr
 
     def test_duration_cli_override(self, monkeypatch: pytest.MonkeyPatch, run_monitor: Any, tmp_path: Path) -> None:
-        monkeypatch.setenv("GCMON_DURATION", "0.5")
+        monkeypatch.setenv(ENV_DURATION, "0.5")
         result = run_monitor(["-o", str(tmp_path / "test_trace.json"), "-d", "0.3", "-v"])
         assert "Duration: 0.3" in result.stderr
 
     def test_format(self, monkeypatch: pytest.MonkeyPatch, run_monitor: Any, tmp_path: Path) -> None:
-        monkeypatch.setenv("GCMON_FORMAT", "stdout")
+        monkeypatch.setenv(ENV_FORMAT, FORMAT_STDOUT)
         result = run_monitor(["-d", "0.3", "-v"])
         assert "Format: stdout" in result.stderr
 
     def test_format_cli_override(self, monkeypatch: pytest.MonkeyPatch, run_monitor: Any, tmp_path: Path) -> None:
-        monkeypatch.setenv("GCMON_FORMAT", "stdout")
-        result = run_monitor(["--format", "perfetto", "-d", "0.3", "-v"])
+        monkeypatch.setenv(ENV_FORMAT, FORMAT_STDOUT)
+        result = run_monitor(["--format", FORMAT_PERFETTO, "-d", "0.3", "-v"])
         assert "Format: perfetto" in result.stderr
 
     @pytest.mark.parametrize("value", ["1", "true", "yes", "on"])
     def test_verbose_truthy_values(self, monkeypatch: pytest.MonkeyPatch, run_monitor: Any, value: str) -> None:
-        monkeypatch.setenv("GCMON_VERBOSE", value)
+        monkeypatch.setenv(ENV_VERBOSE, value)
         result = run_monitor(["-d", "0.3"])
         assert "Monitoring PID: 12345" in result.stderr
 
     def test_verbose_cli_override(self, monkeypatch: pytest.MonkeyPatch, run_monitor: Any) -> None:
-        monkeypatch.setenv("GCMON_VERBOSE", "0")
+        monkeypatch.setenv(ENV_VERBOSE, "0")
         result = run_monitor(["-d", "0.3", "-v"])
         assert "Monitoring PID: 12345" in result.stderr
 
     def test_multiple_vars(self, monkeypatch: pytest.MonkeyPatch, run_monitor_self: Any, tmp_path: Path) -> None:
         output_file = tmp_path / "multi_env_test.pftrace"
-        monkeypatch.setenv("GCMON_OUTPUT", str(output_file))
-        monkeypatch.setenv("GCMON_RATE", "0.05")
-        monkeypatch.setenv("GCMON_DURATION", "0.4")
-        monkeypatch.setenv("GCMON_VERBOSE", "1")
-        monkeypatch.setenv("GCMON_FORMAT", "perfetto")
+        monkeypatch.setenv(ENV_OUTPUT, str(output_file))
+        monkeypatch.setenv(ENV_RATE, "0.05")
+        monkeypatch.setenv(ENV_DURATION, "0.4")
+        monkeypatch.setenv(ENV_VERBOSE, "1")
+        monkeypatch.setenv(ENV_FORMAT, FORMAT_PERFETTO)
         result = run_monitor_self([])
         assert output_file.exists()
         assert "Rate: 0.05" in result.stderr
@@ -324,17 +334,17 @@ class TestCliEnvVars:
 
     def test_flush_threshold(self, monkeypatch: pytest.MonkeyPatch, run_monitor: Any, tmp_path: Path) -> None:
         output_file = tmp_path / "test.jsonl"
-        monkeypatch.setenv("GCMON_FLUSH_THRESHOLD", "50")
-        assert run_monitor(["--format", "jsonl", "-o", str(output_file), "-d", "0.1", "-v"]).returncode == 0
+        monkeypatch.setenv(ENV_FLUSH_THRESHOLD, "50")
+        assert run_monitor(["--format", FORMAT_JSONL, "-o", str(output_file), "-d", "0.1", "-v"]).returncode == 0
 
     def test_flush_threshold_cli_override(
         self, monkeypatch: pytest.MonkeyPatch, run_monitor: Any, tmp_path: Path
     ) -> None:
         output_file = tmp_path / "test.jsonl"
-        monkeypatch.setenv("GCMON_FLUSH_THRESHOLD", "50")
+        monkeypatch.setenv(ENV_FLUSH_THRESHOLD, "50")
         assert (
             run_monitor(
-                ["--format", "jsonl", "-o", str(output_file), "--flush-threshold", "200", "-d", "0.1"]
+                ["--format", FORMAT_JSONL, "-o", str(output_file), "--flush-threshold", "200", "-d", "0.1"]
             ).returncode
             == 0
         )
@@ -342,17 +352,17 @@ class TestCliEnvVars:
     def test_env_output_default_format_jsonl(
         self, monkeypatch: pytest.MonkeyPatch, run_monitor: Any, tmp_path: Path
     ) -> None:
-        monkeypatch.setenv("GCMON_FORMAT", "jsonl")
+        monkeypatch.setenv(ENV_FORMAT, FORMAT_JSONL)
         assert run_monitor(["-d", "0.1"], cwd=tmp_path).returncode == 0
 
 
 class TestCliEnvHelp:
     def test_monitor_help_shows_env_vars(self, gcmon_cmd: list[str]) -> None:
         result = subprocess.run(
-            [*gcmon_cmd, "monitor", "--help"],
+            [*gcmon_cmd, CMD_MONITOR, "--help"],
             capture_output=True,
             text=True,
             check=True,
         )
-        for var in ("GCMON_OUTPUT", "GCMON_RATE", "GCMON_DURATION", "GCMON_VERBOSE", "GCMON_FORMAT"):
+        for var in (ENV_OUTPUT, ENV_RATE, ENV_DURATION, ENV_VERBOSE, ENV_FORMAT):
             assert var in result.stdout

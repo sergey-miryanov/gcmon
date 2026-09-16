@@ -7,6 +7,8 @@ from typing import Any
 
 import pytest
 
+from gcmon.support.vocabulary import ENCODING
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPT_PATH = REPO_ROOT / ".github" / "scripts" / "extract_changelog.py"
 
@@ -39,7 +41,7 @@ def fake_changelog(tmp_path: Path) -> Path:
             ## Version 0.1.0 (2026-05-22)
             - initial release
         """),
-        encoding="utf-8",
+        encoding=ENCODING,
     )
     return p
 
@@ -173,7 +175,7 @@ class TestMainWritesToGitHubOutput:
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         out_file = tmp_path / "gh_output"
-        out_file.write_text("", encoding="utf-8")
+        out_file.write_text("", encoding=ENCODING)
         original_changelog = extract_changelog.CHANGELOG_PATH
         original_pyproject = extract_changelog.PYPROJECT_PATH
         extract_changelog.CHANGELOG_PATH = fake_changelog
@@ -186,7 +188,7 @@ class TestMainWritesToGitHubOutput:
             extract_changelog.CHANGELOG_PATH = original_changelog
             extract_changelog.PYPROJECT_PATH = original_pyproject
         assert rc == 0
-        content = out_file.read_text(encoding="utf-8")
+        content = out_file.read_text(encoding=ENCODING)
         assert content.startswith("body<<EOF\n")
         assert content.endswith("EOF\n")
         assert "- new feature" in content
@@ -200,7 +202,7 @@ class TestMainWritesToGitHubOutput:
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         out_file = tmp_path / "gh_output"
-        out_file.write_text("preface=true\n", encoding="utf-8")
+        out_file.write_text("preface=true\n", encoding=ENCODING)
         original_changelog = extract_changelog.CHANGELOG_PATH
         original_pyproject = extract_changelog.PYPROJECT_PATH
         extract_changelog.CHANGELOG_PATH = fake_changelog
@@ -213,7 +215,7 @@ class TestMainWritesToGitHubOutput:
             extract_changelog.CHANGELOG_PATH = original_changelog
             extract_changelog.PYPROJECT_PATH = original_pyproject
         assert rc == 0
-        content = out_file.read_text(encoding="utf-8")
+        content = out_file.read_text(encoding=ENCODING)
         assert content.startswith("preface=true\n")
         assert "body<<EOF\n" in content
 
@@ -226,7 +228,7 @@ class TestMainWritesToGitHubOutput:
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         out_file = tmp_path / "gh_output"
-        out_file.write_text("", encoding="utf-8")
+        out_file.write_text("", encoding=ENCODING)
         original_changelog = extract_changelog.CHANGELOG_PATH
         original_pyproject = extract_changelog.PYPROJECT_PATH
         extract_changelog.CHANGELOG_PATH = fake_changelog
@@ -241,7 +243,7 @@ class TestMainWritesToGitHubOutput:
         assert rc == 0
         captured = capsys.readouterr()
         assert captured.out.strip() == "- new feature\n- bug fix"
-        assert "body<<EOF" in out_file.read_text(encoding="utf-8")
+        assert "body<<EOF" in out_file.read_text(encoding=ENCODING)
 
     def test_exits_nonzero_on_missing_version(
         self,
@@ -269,7 +271,7 @@ class TestMainWritesToGitHubOutput:
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         out_file = tmp_path / "gh_output"
-        out_file.write_text("", encoding="utf-8")
+        out_file.write_text("", encoding=ENCODING)
         original_changelog = extract_changelog.CHANGELOG_PATH
         extract_changelog.CHANGELOG_PATH = fake_changelog
         monkeypatch.setenv("GITHUB_OUTPUT", str(out_file))
@@ -278,4 +280,4 @@ class TestMainWritesToGitHubOutput:
             extract_changelog.main()
         finally:
             extract_changelog.CHANGELOG_PATH = original_changelog
-        assert out_file.read_text(encoding="utf-8") == ""
+        assert out_file.read_text(encoding=ENCODING) == ""

@@ -9,11 +9,13 @@ from typing import Any
 from ..control.control_client import ControlClient, connect_with_retry
 from ..control.control_server import CONTROL_ADDRESS_ENV
 from ..model.marks import Side, format_mark
+from ..model.names import NAME
+from ..support.vocabulary import PROGRAM_NAME
 
 ENV_PYPERF_HOOK_VERBOSE = "GCMON_PYPERF_HOOK_VERBOSE"
 ENV_PYPERF_HOOK_CONTROL_TIMEOUT = "GCMON_PYPERF_HOOK_CONTROL_TIMEOUT"
 
-logger = logging.getLogger("gcmon")
+logger = logging.getLogger(PROGRAM_NAME)
 
 _regions = 0
 """Regions counted across the process, not within one hook."""
@@ -108,7 +110,7 @@ class GCMonitorHook:
         Pyperf calls this once it is done with a process, and it is the first
         point at which ``metadata['name']`` names the benchmark.
         """
-        self._send_marks(metadata.get("name", ""))
+        self._send_marks(metadata.get(NAME, ""))
         self._control_client.close()
 
 

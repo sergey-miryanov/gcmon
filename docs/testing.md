@@ -51,6 +51,64 @@ The `stress-test` and `fuzz-test` jobs are skipped on `main` and on
 - The contract is no deadlock and no uncaught exception. The operating system
   decides the interleaving, so a test does not assert on it.
 
+## Naming a value the code also holds
+
+A name the outside world sees is pinned in one place and imported everywhere
+else. Three files hold the pins:
+
+| File | What it pins | Against |
+|---|---|---|
+| `tests/exporters/test_track_names_are_documented.py` | every track and slice name | `docs/formats.md` |
+| `tests/infra/test_env_names_are_documented.py` | every environment variable | `docs/cli.md`, `docs/pyperf.md` |
+| `tests/model/test_names.py` | that the table is shaped right and agrees with what a conversion writes | the converter |
+| `tests/infra/test_vocabulary_is_used.py` | that no module respells a word the two vocabulary modules own | the modules themselves |
+
+Every other test imports the constant or the formatter, so renaming a row, a
+slice or a variable touches the code, its page and one tuple rather than every
+assertion that mentions it. A name two packages render lives in
+`gcmon.model.names`, the base `exporters` and `stats` share: `GC_PHASES` is
+where a phase's label and category are decided, and a `--stats` row and a
+timeline slice read it rather than each spelling the phase out. The metric
+constants beside it are the same word in three roles, a record attribute, a
+JSONL field and a counter track, so a test that builds a record and a test
+that reads the trace back cannot disagree about it.
+
+Derive a name the code derives. A per-generation counter's display name is a
+function of its generation and its metric, so `tests/helpers.py` has
+`gen_counter` build it; passing both the metric and the finished name let a
+test assert a name the converter would never write.
+
+`gcmon.support.vocabulary` holds what is not a name in a trace: the program
+name, the encoding, the subcommands and the words `--format` takes. It sits in
+`support` because `analysis` and `exporters` branch on the format words and
+may not import `cli`.
+
+A test that reads a constant back and asserts it equals its own literal is not
+a pin. The rename that changes the constant changes the assertion in the same
+edit, so it fails only when someone is already looking at it. Pin a name
+against something written independently: a page under `docs/`, or the code
+that emits it. `tests/model/test_names.py` checks the phase table against the
+converter for that reason, and spells no name out.
+
+Two forms keep their literal whatever the rule says, because a name defeats
+them. `sys.platform == "win32"` and `hasattr(item, "gen")` are how mypy and
+pyrefly narrow a platform and a union; written as constants the checkers see
+both branches. `tests/infra/test_vocabulary_is_used.py` lists every such site
+with its reason, so the exception is visible rather than assumed.
+
+The exception is a value that is not a name gcmon draws. The Chrome capture in
+`tests/cli/analyze/test_convert_cmd.py` is a file an earlier release wrote;
+the two process names in
+`tests/exporters/test_perfetto_emission_order_fuzz.py` are labels a stack has
+to tell apart; the names in `tests/exporters/test_perfetto_builders.py` are
+arguments to a builder that writes down whatever it is handed. Each says so in
+a comment.
+
+Import for a value the test does not care about, such as the category on a
+`Slice` it builds only to read back. Keep the literal for a threshold or a
+default the test exists to hold still: `OVERRUN_SHARE` read back from the code
+would assert nothing.
+
 ## Where each kind of test lives
 
 | Directory | What it holds |

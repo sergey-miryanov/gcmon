@@ -16,6 +16,7 @@ from gcmon.model.poll_status import PollStatus
 from gcmon.model.process import Process
 from gcmon.model.protocol import TGCStatsInfo
 from gcmon.monitoring.monitor import EventsMonitor
+from gcmon.stats.metrics import PAUSE_KEY
 from gcmon.stats.streaming_stats import StreamingStats
 from tests.helpers import FakeEventsReader, MockExporter, create_mock_stats_item, polled, proc
 
@@ -284,7 +285,7 @@ class TestSettlingAnExitedPid:
         assert stats._running_rings == {}
         ring = stats.get_ring_stats(proc(PID), 0)
         assert ring is not None
-        assert ring["pause"][0].percentiles == {50: 1_000, 90: 1_000, 95: 1_000, 99: 1_000}
+        assert ring[PAUSE_KEY][0].percentiles == {50: 1_000, 90: 1_000, 95: 1_000, 99: 1_000}
 
     def test_a_successor_on_the_same_pid_gets_a_block_of_its_own(
         self, monitor: EventsMonitor, stats: StreamingStats

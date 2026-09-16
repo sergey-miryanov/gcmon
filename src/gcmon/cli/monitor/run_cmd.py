@@ -12,13 +12,15 @@ from gcmon.monitoring.child_process_runner import ChildProcessRunner
 from gcmon.monitoring.target_process import ProcessFactory
 from gcmon.monitoring.wait_policy import StartupTimeoutPolicy
 
-logger = logging.getLogger("gcmon")
+from ...support.vocabulary import CMD_RUN, PROGRAM_NAME
+
+logger = logging.getLogger(PROGRAM_NAME)
 
 
 def add_parser(parser_factory: ParserFactory) -> argparse.ArgumentParser:
     """Add the 'run' subparser and return it."""
     parser = parser_factory(
-        "run",
+        CMD_RUN,
         help="Run a Python script/module with GC monitoring",
         description="Run a Python script or module with GC monitoring enabled. "
         "All arguments after -m/--module or -s/--script are passed verbatim to the target.",

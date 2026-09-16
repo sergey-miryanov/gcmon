@@ -14,6 +14,7 @@ from gcmon.exporters.perfetto_process_lifetime import process_track_name
 from gcmon.exporters.perfetto_track_state import PerfettoTrackState
 from gcmon.exporters.trace_converter import convert_item_to_trace_format
 from gcmon.model.data import GCStatsInfo
+from gcmon.model.names import NAME
 from gcmon.model.trace_event import Instant, TraceEvent
 from tests.exporters.perfetto_helpers import (
     parse_track_descriptor,
@@ -77,7 +78,7 @@ class TestProcessOrderingByFirstTs:
         # Nothing gcmon draws is a thread track, so there is no thread
         # ordering to ask for (ADR-0027).
         assert not td.HasField("thread_ordering")
-        assert not td.HasField("name")
+        assert not td.HasField(NAME)
         assert not td.HasField("process")
         assert not td.HasField("thread")
         assert not td.HasField("counter")
@@ -420,9 +421,9 @@ class TestReusedPidRanksAndStampsPerProcess:
         descriptors, _ = convert_trace_events_to_perfetto(events, state, sequence_id=1)
 
         assert {name: td.sibling_order_rank for name, td in self._by_name(descriptors).items()} == {
-            "Process 10": 0,
-            "Process 10#2": 1,
-            "Process 20": 2,
+            process_track_name(proc(10)): 0,
+            process_track_name(proc(10, 2)): 1,
+            process_track_name(proc(20)): 2,
         }
 
     def test_a_successor_is_stamped_with_its_own_first_observation(self) -> None:
@@ -439,8 +440,8 @@ class TestReusedPidRanksAndStampsPerProcess:
         descriptors, _ = convert_trace_events_to_perfetto(events, state, sequence_id=1)
 
         assert {name: td.process.start_timestamp_ns for name, td in self._by_name(descriptors).items()} == {
-            "Process 10": 1_000,
-            "Process 10#2": 2_000,
+            process_track_name(proc(10)): 1_000,
+            process_track_name(proc(10, 2)): 2_000,
         }
 
     def test_each_descriptor_carries_a_pid_of_its_own(self) -> None:
@@ -456,6 +457,6 @@ class TestReusedPidRanksAndStampsPerProcess:
         descriptors, _ = convert_trace_events_to_perfetto(events, state, sequence_id=1)
 
         pids = {name: td.process.pid for name, td in self._by_name(descriptors).items()}
-        assert sorted(pids) == ["Process 10", "Process 10#2"]
+        assert sorted(pids) == [process_track_name(proc(10)), process_track_name(proc(10, 2))]
         assert len(set(pids.values())) == 2, f"two processes share a row pid: {pids}"
         assert 10 not in pids.values(), f"a row pid is gcmon's, not the operating system's: {pids}"

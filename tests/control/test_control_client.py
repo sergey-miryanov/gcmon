@@ -7,13 +7,15 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from gcmon.control.control_client import ControlClient, _default_connect, connect_with_retry
+from gcmon.control.control_server import CONTROL_ADDRESS_ENV
+from gcmon.model.names import PID, TS
 
 
 def assert_payload(mock_conn: MagicMock, expected_msg: str, *, call_index: int = 0) -> dict[str, int | str]:
     payload: dict[str, int | str] = mock_conn.send.call_args_list[call_index][0][0]
     assert payload["msg"] == expected_msg
-    assert payload["pid"] == os.getpid()
-    assert isinstance(payload["ts"], int)
+    assert payload[PID] == os.getpid()
+    assert isinstance(payload[TS], int)
     return payload
 
 
@@ -82,18 +84,18 @@ class TestInstantMsg:
     def test_stamps_at_send_time_without_ts(self, client: ControlClient, mock_conn: MagicMock) -> None:
         with patch("gcmon.control.control_client.time.monotonic_ns", return_value=98765):
             client.instant_msg("mark")
-        assert assert_payload(mock_conn, "mark")["ts"] == 98765
+        assert assert_payload(mock_conn, "mark")[TS] == 98765
 
     def test_carries_the_given_ts(self, client: ControlClient, mock_conn: MagicMock) -> None:
         with patch("gcmon.control.control_client.time.monotonic_ns", return_value=98765):
             client.instant_msg("mark", ts=111)
-        assert assert_payload(mock_conn, "mark")["ts"] == 111
+        assert assert_payload(mock_conn, "mark")[TS] == 111
 
     def test_a_later_send_does_not_inherit_the_ts(self, client: ControlClient, mock_conn: MagicMock) -> None:
         with patch("gcmon.control.control_client.time.monotonic_ns", return_value=98765):
             client.instant_msg("first", ts=111)
             client.instant_msg("second")
-        assert assert_payload(mock_conn, "second", call_index=1)["ts"] == 98765
+        assert assert_payload(mock_conn, "second", call_index=1)[TS] == 98765
 
 
 class TestSend:
@@ -101,7 +103,7 @@ class TestSend:
         with patch("gcmon.control.control_client.time.monotonic_ns", return_value=98765):
             client._send("test")
         mock_conn.send.assert_called_once()
-        assert mock_conn.send.call_args[0][0]["ts"] == 98765
+        assert mock_conn.send.call_args[0][0][TS] == 98765
 
     def test_noop_when_not_connected(self, disconnected_client: ControlClient) -> None:
         disconnected_client._send("test")
@@ -135,14 +137,14 @@ class TestConnectionLifecycle:
         mock_connection_factory.assert_called_once_with("test-address")
 
     def test_ensure_connected_returns_none_without_address(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.delenv("GCMON_CONTROL_ADDRESS", raising=False)
+        monkeypatch.delenv(CONTROL_ADDRESS_ENV, raising=False)
         client = ControlClient(connection_factory=MagicMock())
         assert client._ensure_connected() is None
 
     def test_ensure_connected_falls_back_to_env_var(
         self, monkeypatch: pytest.MonkeyPatch, mock_connection_factory: MagicMock, mock_conn: MagicMock
     ) -> None:
-        monkeypatch.setenv("GCMON_CONTROL_ADDRESS", "env-address")
+        monkeypatch.setenv(CONTROL_ADDRESS_ENV, "env-address")
         client = ControlClient(connection_factory=mock_connection_factory)
         assert client._ensure_connected() is mock_conn
         mock_connection_factory.assert_called_once_with("env-address")

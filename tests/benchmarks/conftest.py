@@ -10,6 +10,25 @@ from __future__ import annotations
 from typing import Any
 
 from gcmon.model.data import GCStatsInfo
+from gcmon.model.names import (
+    ALIVE_SIZE,
+    CANDIDATES,
+    COLLECTED,
+    COLLECTIONS,
+    DURATION,
+    GEN,
+    HEAP_SIZE,
+    IID,
+    INCREMENT_SIZE,
+    PID,
+    TS_FILL_INCREMENT_START,
+    TS_FILL_INCREMENT_STOP,
+    TS_MARK_ALIVE_START,
+    TS_MARK_ALIVE_STOP,
+    TS_START,
+    TS_STOP,
+    UNCOLLECTABLE,
+)
 
 
 def make_gc_event(i: int, *, pid: int = 12345, iid: int = 0, gen: int = 0) -> GCStatsInfo:
@@ -58,22 +77,22 @@ def make_jsonl_record(i: int, *, pid: int = 12345, iid: int = 0, gen: int = 0) -
     """Build a JSONL record dict matching the on-disk gcmon export format."""
     base = 1_000_000_000 + i * 5_000_000
     return {
-        "pid": pid,
+        PID: pid,
         "tid": iid,
-        "gen": gen,
-        "iid": iid,
-        "ts_start": base,
-        "ts_stop": base + 4_000_000,
-        "heap_size": 20_000 + i,
-        "collections": 5 + i,
-        "collected": 50 + i,
-        "uncollectable": i % 3,
-        "candidates": 10 + i,
-        "duration": 0.004,
-        "increment_size": 1_024 + i,
-        "alive_size": 2_048 + i,
-        "ts_mark_alive_start": base + 10_000,
-        "ts_mark_alive_stop": base + 810_000,
-        "ts_fill_increment_start": base + 820_000,
-        "ts_fill_increment_stop": base + 1_620_000,
+        GEN: gen,
+        IID: iid,
+        TS_START: base,
+        TS_STOP: base + 4_000_000,
+        HEAP_SIZE: 20_000 + i,
+        COLLECTIONS: 5 + i,
+        COLLECTED: 50 + i,
+        UNCOLLECTABLE: i % 3,
+        CANDIDATES: 10 + i,
+        DURATION: 0.004,
+        INCREMENT_SIZE: 1_024 + i,
+        ALIVE_SIZE: 2_048 + i,
+        TS_MARK_ALIVE_START: base + 10_000,
+        TS_MARK_ALIVE_STOP: base + 810_000,
+        TS_FILL_INCREMENT_START: base + 820_000,
+        TS_FILL_INCREMENT_STOP: base + 1_620_000,
     }

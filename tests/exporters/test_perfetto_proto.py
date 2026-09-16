@@ -27,6 +27,7 @@ from gcmon.exporters.perfetto_proto import (
     TrackEventField,
     TrackEventType,
 )
+from gcmon.model.names import CMDLINE, NAME, PID, TYPE
 
 
 class TestPerfettoProtoConstants:
@@ -50,7 +51,7 @@ class TestPerfettoProtoConstants:
         assert desc is not None
         f = desc.fields_by_name
         assert f["uuid"].number == TrackDescriptorField.UUID
-        assert f["name"].number == TrackDescriptorField.NAME
+        assert f[NAME].number == TrackDescriptorField.NAME
         assert f["process"].number == TrackDescriptorField.PROCESS
         assert f["parent_uuid"].number == TrackDescriptorField.PARENT_UUID
         assert f["counter"].number == TrackDescriptorField.COUNTER
@@ -63,8 +64,8 @@ class TestPerfettoProtoConstants:
         desc = ProcessDescriptor.DESCRIPTOR
         assert desc is not None
         f = desc.fields_by_name
-        assert f["pid"].number == ProcessDescriptorField.PID
-        assert f["cmdline"].number == ProcessDescriptorField.CMDLINE
+        assert f[PID].number == ProcessDescriptorField.PID
+        assert f[CMDLINE].number == ProcessDescriptorField.CMDLINE
         assert f["process_name"].number == ProcessDescriptorField.PROCESS_NAME
         assert f["start_timestamp_ns"].number == ProcessDescriptorField.START_TIMESTAMP_NS
 
@@ -72,7 +73,7 @@ class TestPerfettoProtoConstants:
         desc = CounterDescriptor.DESCRIPTOR
         assert desc is not None
         f = desc.fields_by_name
-        assert f["type"].number == CounterDescriptorField.TYPE
+        assert f[TYPE].number == CounterDescriptorField.TYPE
         assert f["categories"].number == CounterDescriptorField.CATEGORIES
         assert f["unit"].number == CounterDescriptorField.UNIT
         assert f["unit_multiplier"].number == CounterDescriptorField.UNIT_MULTIPLIER
@@ -84,11 +85,11 @@ class TestPerfettoProtoConstants:
         desc = TrackEvent.DESCRIPTOR
         assert desc is not None
         f = desc.fields_by_name
-        assert f["type"].number == TrackEventField.TYPE
+        assert f[TYPE].number == TrackEventField.TYPE
         assert f["track_uuid"].number == TrackEventField.TRACK_UUID
         assert f["debug_annotations"].number == TrackEventField.DEBUG_ANNOTATIONS
         assert f["categories"].number == TrackEventField.CATEGORIES
-        assert f["name"].number == TrackEventField.NAME
+        assert f[NAME].number == TrackEventField.NAME
         assert f["counter_value"].number == TrackEventField.COUNTER_VALUE
         assert f["double_counter_value"].number == TrackEventField.DOUBLE_COUNTER_VALUE
         assert f["timestamp_delta_us"].number == TrackEventField.TIMESTAMP_DELTA_US
@@ -98,7 +99,7 @@ class TestPerfettoProtoConstants:
         desc = DebugAnnotation.DESCRIPTOR
         assert desc is not None
         f = desc.fields_by_name
-        assert f["name"].number == DebugAnnotationField.NAME
+        assert f[NAME].number == DebugAnnotationField.NAME
         assert f["bool_value"].number == DebugAnnotationField.BOOL_VALUE
         assert f["int_value"].number == DebugAnnotationField.INT_VALUE
         assert f["string_value"].number == DebugAnnotationField.STRING_VALUE

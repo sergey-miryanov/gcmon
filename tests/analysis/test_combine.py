@@ -14,7 +14,33 @@ from gcmon.analysis.jsonl_io import (
     read_jsonl,
     write_jsonl,
 )
+from gcmon.exporters.trace_converter import counter_display_name
 from gcmon.model.data import LossMsg
+from gcmon.model.names import (
+    ALIVE_SIZE,
+    CANDIDATES,
+    COLLECTED,
+    COLLECTIONS,
+    GC_LOSS_CATEGORY,
+    GEN,
+    GENERATION,
+    GENS,
+    HEAP_SIZE,
+    IID,
+    INCREMENT_SIZE,
+    LOST_COUNT,
+    LOST_FROM,
+    LOST_PAUSE_NS,
+    OBSERVED_COUNT,
+    PAUSE,
+    PID,
+    RSS,
+    TS_START,
+    TS_STOP,
+    UNCOLLECTABLE,
+    gc_loss_slice_name,
+    gc_pause_slice_name,
+)
 from gcmon.model.trace_event import (
     Counter,
     EventArgs,
@@ -22,6 +48,7 @@ from gcmon.model.trace_event import (
     Slice,
     TraceEvent,
 )
+from gcmon.support.vocabulary import ENCODING, FORMAT_JSONL, FORMAT_PERFETTO
 from tests.analysis.conftest import make_inc_jsonl_record
 from tests.data_helpers import create_instant_msg
 from tests.helpers import (
@@ -68,18 +95,18 @@ def instant_events(path: Path) -> list[tuple[str, int]]:
 class TestNormalizeTraceTimestamps:
     def test_normalizes_to_zero(self) -> None:
         args: EventArgs = {
-            "generation": 0,
-            "iid": 1,
-            "collections": 1,
-            "heap_size": 100,
-            "collected": 10,
-            "uncollectable": 0,
-            "candidates": 5,
+            GENERATION: 0,
+            IID: 1,
+            COLLECTIONS: 1,
+            HEAP_SIZE: 100,
+            COLLECTED: 10,
+            UNCOLLECTABLE: 0,
+            CANDIDATES: 5,
         }
         e1 = Slice(interpreter_track(1, 1), name="e1", cat="c", ts_start=5_000_000, ts_stop=5_001_000, args=args)
         e2 = Counter(
             interpreter_track(1, 1),
-            metric="collected",
+            metric=COLLECTED,
             display_name="c1 collected",
             ts=3_000_000,
             value=10,
@@ -91,13 +118,13 @@ class TestNormalizeTraceTimestamps:
 
     def test_single_event_ts_becomes_zero(self) -> None:
         args: EventArgs = {
-            "generation": 0,
-            "iid": 1,
-            "collections": 1,
-            "heap_size": 100,
-            "collected": 10,
-            "uncollectable": 0,
-            "candidates": 5,
+            GENERATION: 0,
+            IID: 1,
+            COLLECTIONS: 1,
+            HEAP_SIZE: 100,
+            COLLECTED: 10,
+            UNCOLLECTABLE: 0,
+            CANDIDATES: 5,
         }
         e1 = Slice(interpreter_track(1, 1), name="e1", cat="c", ts_start=1_000_000, ts_stop=1_001_000, args=args)
         events: list[TraceEvent] = [e1]
@@ -111,13 +138,13 @@ class TestNormalizeTraceTimestamps:
 
     def test_per_pid_normalization(self) -> None:
         args: EventArgs = {
-            "generation": 0,
-            "iid": 1,
-            "collections": 1,
-            "heap_size": 100,
-            "collected": 10,
-            "uncollectable": 0,
-            "candidates": 5,
+            GENERATION: 0,
+            IID: 1,
+            COLLECTIONS: 1,
+            HEAP_SIZE: 100,
+            COLLECTED: 10,
+            UNCOLLECTABLE: 0,
+            CANDIDATES: 5,
         }
         e1 = Slice(interpreter_track(1, 1), name="e1", cat="c", ts_start=10_000_000, ts_stop=10_001_000, args=args)
         e2 = Slice(interpreter_track(1, 1), name="e2", cat="c", ts_start=12_000_000, ts_stop=12_001_000, args=args)
@@ -139,11 +166,26 @@ class TestNormalizeTraceTimestamps:
         shifting only the one it starts at would stretch every span back to
         the old origin without failing anything else.
         """
-        pause = Slice(interpreter_track(1, 0), name="GC Pause(0)", cat="gc", ts_start=8_000, ts_stop=9_000, args={})
-        counter = Counter(interpreter_track(1, 0), metric="collected", display_name="G0 collected", ts=8_000, value=1)
-        rss = Counter(process_track(1), metric="rss", display_name="rss", ts=6_000, value=4096)
+        pause = Slice(
+            interpreter_track(1, 0),
+            name=gc_pause_slice_name(0),
+            cat=PAUSE.category,
+            ts_start=8_000,
+            ts_stop=9_000,
+            args={},
+        )
+        counter = Counter(
+            interpreter_track(1, 0),
+            metric=COLLECTED,
+            display_name=counter_display_name(0, COLLECTED),
+            ts=8_000,
+            value=1,
+        )
+        rss = Counter(process_track(1), metric=RSS, display_name=RSS, ts=6_000, value=4096)
         mark = Instant(process_track(1), name="benchmark", ts=5_000)
-        loss = Slice(loss_track(1, 0), name="GC Loss(0)", cat="gc.loss", ts_start=5_000, ts_stop=7_000, args={})
+        loss = Slice(
+            loss_track(1, 0), name=gc_loss_slice_name([0]), cat=GC_LOSS_CATEGORY, ts_start=5_000, ts_stop=7_000, args={}
+        )
         events: list[TraceEvent] = [pause, counter, rss, mark, loss]
 
         _normalize_trace_timestamps(events)
@@ -155,13 +197,13 @@ class TestNormalizeTraceTimestamps:
 
     def test_negative_timestamps(self) -> None:
         args: EventArgs = {
-            "generation": 0,
-            "iid": 1,
-            "collections": 1,
-            "heap_size": 100,
-            "collected": 10,
-            "uncollectable": 0,
-            "candidates": 5,
+            GENERATION: 0,
+            IID: 1,
+            COLLECTIONS: 1,
+            HEAP_SIZE: 100,
+            COLLECTED: 10,
+            UNCOLLECTABLE: 0,
+            CANDIDATES: 5,
         }
         e1 = Slice(interpreter_track(1, 1), name="e1", cat="c", ts_start=-100, ts_stop=900, args=args)
         e2 = Slice(interpreter_track(1, 1), name="e2", cat="c", ts_start=-500, ts_stop=500, args=args)
@@ -177,9 +219,9 @@ class TestCombineFiles:
         out = tmp_path / "out.jsonl"
         r = create_jsonl_record(pid=1)
         f1.write_bytes(msgspec.json.encode(r) + b"\n")
-        combine_files([f1], out, output_format="jsonl")
-        lines = out.read_text(encoding="utf-8").strip().split("\n")
-        assert json.loads(lines[0])["pid"] == 1
+        combine_files([f1], out, output_format=FORMAT_JSONL)
+        lines = out.read_text(encoding=ENCODING).strip().split("\n")
+        assert json.loads(lines[0])[PID] == 1
 
     def test_an_unknown_output_format_raises(self, tmp_path: Path) -> None:
         """`cmd_combine` never reaches this: argparse `choices` refuses the word
@@ -197,10 +239,10 @@ class TestCombineFiles:
             msgspec.json.encode(r2),
         ]
         f1.write_bytes(b"\n".join(lines) + b"\n")
-        combine_files([f1], out, normalize=True, output_format="jsonl")
-        records = [json.loads(line) for line in out.read_text(encoding="utf-8").strip().split("\n") if line]
-        assert records[0]["ts_start"] == 5_000_000
-        assert records[1]["ts_start"] == 0
+        combine_files([f1], out, normalize=True, output_format=FORMAT_JSONL)
+        records = [json.loads(line) for line in out.read_text(encoding=ENCODING).strip().split("\n") if line]
+        assert records[0][TS_START] == 5_000_000
+        assert records[1][TS_START] == 0
 
     def test_jsonl_to_jsonl_merges_same_pid(self, tmp_path: Path) -> None:
         f1 = tmp_path / "a.jsonl"
@@ -210,10 +252,10 @@ class TestCombineFiles:
             f.write_bytes(
                 msgspec.json.encode(create_jsonl_record(pid=pid)) + b"\n",
             )
-        combine_files([f1, f2], out, output_format="jsonl")
-        records = [json.loads(line) for line in out.read_text(encoding="utf-8").strip().split("\n") if line]
+        combine_files([f1, f2], out, output_format=FORMAT_JSONL)
+        records = [json.loads(line) for line in out.read_text(encoding=ENCODING).strip().split("\n") if line]
         assert len(records) == 2
-        assert {r["pid"] for r in records} == {1, 2}
+        assert {r[PID] for r in records} == {1, 2}
 
     def test_jsonl_to_jsonl_append_same_pid(self, tmp_path: Path) -> None:
         f1 = tmp_path / "a.jsonl"
@@ -225,21 +267,21 @@ class TestCombineFiles:
             f.write_bytes(
                 b"\n".join(msgspec.json.encode(r) for r in lines) + b"\n",
             )
-        combine_files([f1, f2], out, output_format="jsonl")
-        records = [json.loads(line) for line in out.read_text(encoding="utf-8").strip().split("\n") if line]
+        combine_files([f1, f2], out, output_format=FORMAT_JSONL)
+        records = [json.loads(line) for line in out.read_text(encoding=ENCODING).strip().split("\n") if line]
         assert len(records) == 2
-        assert records[0]["ts_start"] == 1000
-        assert records[1]["ts_start"] == 3000
+        assert records[0][TS_START] == 1000
+        assert records[1][TS_START] == 3000
 
     def test_jsonl_to_jsonl_with_incremental(self, tmp_path: Path) -> None:
         f1 = tmp_path / "a.jsonl"
         out = tmp_path / "out.jsonl"
         record = make_inc_jsonl_record(pid=1, ts_start=1000, ts_stop=5000)
         f1.write_bytes(msgspec.json.encode(record) + b"\n")
-        combine_files([f1], out, output_format="jsonl")
-        records = [json.loads(line) for line in out.read_text(encoding="utf-8").strip().split("\n") if line]
-        assert records[0]["increment_size"] == 500
-        assert records[0]["alive_size"] == 300
+        combine_files([f1], out, output_format=FORMAT_JSONL)
+        records = [json.loads(line) for line in out.read_text(encoding=ENCODING).strip().split("\n") if line]
+        assert records[0][INCREMENT_SIZE] == 500
+        assert records[0][ALIVE_SIZE] == 300
 
     def test_an_instant_record_reaches_the_trace(self, tmp_path: Path) -> None:
         """A monitored run writes one of these at startup, so a capture
@@ -252,7 +294,7 @@ class TestCombineFiles:
             {42: [create_instant_msg(name="GC monitor started", ts=1_400_000_000), create_mock_stats_item(iid=0)]},
         )
 
-        combine_files([source], out, output_format="perfetto")
+        combine_files([source], out, output_format=FORMAT_PERFETTO)
 
         assert ("GC monitor started", 1_400_000_000) in instant_events(out)
 
@@ -263,9 +305,9 @@ class TestJsonlLossRoundTrip:
     silently loses the spans the live run drew."""
 
     def _msg(self, **kw: int) -> LossMsg:
-        kw.setdefault("iid", 1)
-        kw.setdefault("ts_start", 5_000)
-        kw.setdefault("ts_stop", 6_000)
+        kw.setdefault(IID, 1)
+        kw.setdefault(TS_START, 5_000)
+        kw.setdefault(TS_STOP, 6_000)
         return create_mock_loss_item(**kw)
 
     def test_the_line_carries_every_field(self, tmp_path: Path) -> None:
@@ -278,18 +320,18 @@ class TestJsonlLossRoundTrip:
             path, {42: [self._msg(gen=1, observed_count=4, lost_from=413, lost_count=5, lost_pause_ns=8_100_000)]}
         )
 
-        assert json.loads(path.read_text(encoding="utf-8")) == {
-            "pid": 42,
-            "iid": 1,
-            "ts_start": 5_000,
-            "ts_stop": 6_000,
-            "gens": [
+        assert json.loads(path.read_text(encoding=ENCODING)) == {
+            PID: 42,
+            IID: 1,
+            TS_START: 5_000,
+            TS_STOP: 6_000,
+            GENS: [
                 {
-                    "gen": 1,
-                    "observed_count": 4,
-                    "lost_from": 413,
-                    "lost_count": 5,
-                    "lost_pause_ns": 8_100_000,
+                    GEN: 1,
+                    OBSERVED_COUNT: 4,
+                    LOST_FROM: 413,
+                    LOST_COUNT: 5,
+                    LOST_PAUSE_NS: 8_100_000,
                 }
             ],
         }
@@ -318,8 +360,8 @@ class TestJsonlLossRoundTrip:
 
         write_jsonl(path, {42: [self._msg(lost_count=76)]})
 
-        record = json.loads(path.read_text(encoding="utf-8"))
-        assert record["iid"] == 1
+        record = json.loads(path.read_text(encoding=ENCODING))
+        assert record[IID] == 1
         assert "tid" not in record
 
     def test_normalize_shifts_a_loss_span(self) -> None:
@@ -360,11 +402,11 @@ class TestJsonlLossRoundTrip:
         msg = self._msg(ts_start=3_000_000, ts_stop=5_000_000, lost_count=76)
         write_jsonl(source, {42: [msg, create_mock_stats_item(iid=1, ts_start=5_000_000, ts_stop=6_000_000)]})
 
-        combine_files([source], out, output_format="perfetto", normalize=True)
+        combine_files([source], out, output_format=FORMAT_PERFETTO, normalize=True)
 
         assert gc_slices(out) == [
-            ("GC Loss(0)", 0, 2_000_000),
-            ("GC Pause(0)", 2_000_000, 3_000_000),
+            (gc_loss_slice_name([0]), 0, 2_000_000),
+            (gc_pause_slice_name(0), 2_000_000, 3_000_000),
         ]
 
     def test_combine_jsonl_to_jsonl_keeps_the_span(self, tmp_path: Path) -> None:
@@ -373,6 +415,6 @@ class TestJsonlLossRoundTrip:
         msg = self._msg(lost_count=76)
         write_jsonl(source, {42: [msg]})
 
-        combine_files([source], out, output_format="jsonl")
+        combine_files([source], out, output_format=FORMAT_JSONL)
 
         assert read_jsonl(out) == {42: [msg]}

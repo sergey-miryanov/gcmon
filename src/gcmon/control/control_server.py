@@ -18,10 +18,13 @@ from gcmon.exporters.exporter import EventsExporter
 from gcmon.model.data import instant_msg
 from gcmon.model.process import ProcessLookup
 
-logger = logging.getLogger("gcmon")
+from ..support.vocabulary import PROGRAM_NAME
+from .protocol import MSG_START, MSG_STOP, START_EVENT, STOP_EVENT
+
+logger = logging.getLogger(PROGRAM_NAME)
 
 CONTROL_ADDRESS_ENV = "GCMON_CONTROL_ADDRESS"
-_PREFIX = "gcmon-"
+_PREFIX = f"{PROGRAM_NAME}-"
 
 READER_POLL_INTERVAL = 0.1
 LISTENER_BACKLOG = 128
@@ -176,12 +179,12 @@ class ControlServer:
         try:
             m = msg.msg
             pid = msg.pid
-            if m == "start":
-                m = "start GC monitor"
+            if m == MSG_START:
+                m = START_EVENT
                 with self._lock:
                     self._enabled.pop(pid, None)
-            elif m == "stop":
-                m = "stop GC monitor"
+            elif m == MSG_STOP:
+                m = STOP_EVENT
                 with self._lock:
                     self._enabled[pid] = False
             self._add_event(m, pid, msg.ts)

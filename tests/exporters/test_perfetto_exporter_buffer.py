@@ -7,6 +7,7 @@ from pathlib import Path
 from gcmon.exporters import PerfettoExporter
 from gcmon.exporters.trace_converter import convert_item_to_trace_format
 from gcmon.model.data import GCStatsInfo
+from gcmon.model.names import RSS, gc_loss_slice_name
 from gcmon.model.trace_event import (
     Counter,
     Slice,
@@ -68,8 +69,8 @@ class TestAddRssSample:
         assert len(counters) == 1
         c = counters[0]
         assert c.track == process_track(100)
-        assert c.metric == "rss"
-        assert c.display_name == "rss"
+        assert c.metric == RSS
+        assert c.display_name == RSS
         assert c.value == 4096
         assert c.ts == 1_000_000
 
@@ -95,7 +96,7 @@ class TestAddLossEvent:
         )
 
         span = next(e for e in exporter._buffer if isinstance(e, Slice))
-        assert (span.name, span.ts_start, span.ts_stop) == ("GC Loss(0)", 1_000, 2_000)
+        assert (span.name, span.ts_start, span.ts_stop) == (gc_loss_slice_name([0]), 1_000, 2_000)
 
     def test_it_lands_on_the_loss_track(self, tmp_path: Path) -> None:
         exporter = self._make_exporter(tmp_path)

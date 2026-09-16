@@ -9,6 +9,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from gcmon.monitoring.rss_sampler import RssSampler, _default_rss_sampler, _noop_rss_sampler
+from gcmon.support.vocabulary import PROGRAM_NAME
 from tests.helpers import proc
 
 SEC = 1_000_000_000
@@ -98,7 +99,7 @@ class TestRssSampler:
             raise RuntimeError("oops")
 
         sampler = RssSampler(exporter, interval=0.0, rss_provider=failing_provider)
-        logger = logging.getLogger("gcmon")
+        logger = logging.getLogger(PROGRAM_NAME)
         logger.setLevel(logging.DEBUG)
         sampler._last_sample_ns = -1 * SEC
         sampler.tick(now_ns=0, live={proc(1)})

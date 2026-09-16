@@ -5,10 +5,11 @@ import threading
 from collections.abc import Callable, Set
 
 from ..model.process import Process
+from ..support.vocabulary import PROGRAM_NAME
 
 __all__ = ["CmdlineProvider", "CmdlineSink", "ProcessRegistry", "read_cmdline"]
 
-logger = logging.getLogger("gcmon")
+logger = logging.getLogger(PROGRAM_NAME)
 
 type CmdlineProvider = Callable[[int], tuple[str, ...] | None]
 type CmdlineSink = Callable[[Process, tuple[str, ...] | None], None]

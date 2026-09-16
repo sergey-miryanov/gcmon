@@ -2,6 +2,38 @@
 
 from collections.abc import Mapping, Sequence
 
+from ..model.names import (
+    ALIVE_SIZE,
+    CANDIDATES,
+    CLEAR_WEAKREFS,
+    CLEAR_WEAKREFS_COUNT,
+    COLLECTED,
+    COLLECTIONS,
+    DEDUCE_UNREACHABLE,
+    DELETE_GARBAGE,
+    DELETED_GARBAGE_COUNT,
+    DURATION,
+    FILL_INCREMENT,
+    FINALIZE_GARBAGE,
+    FINALIZED_GARBAGE_COUNT,
+    GC_LOSS_CATEGORY,
+    GENERATION,
+    HANDLE_RESURRECTED,
+    HANDLE_WEAKREFS,
+    HEAP_SIZE,
+    IID,
+    INCREMENT_SIZE,
+    LOST_COUNT,
+    LOST_PAUSE,
+    LOST_PAUSE_NS,
+    MARK_ALIVE,
+    OBSERVED_COUNT,
+    PAUSE,
+    UNCOLLECTABLE,
+    gc_loss_slice_name,
+    phase_category,
+    phase_slice_name,
+)
 from ..model.process import Process
 from ..model.protocol import (
     TGCStatsInfo,
@@ -33,16 +65,20 @@ from ..model.trace_event import (
 )
 
 __all__ = [
-    "GC_PAUSE_CATEGORY",
     "convert_item_to_trace_format",
     "convert_loss_to_trace_format",
     "convert_to_trace_format",
+    "counter_display_name",
 ]
 
-# The category of the one slice every record produces, whatever phases it
-# ran. It is what lets a reader of the event stream count records: the
-# sub-phase slices and the counters are per record too, but conditional.
-GC_PAUSE_CATEGORY: str = "gc.pause"
+
+def counter_display_name(gen: int, metric: str) -> str:
+    """What a per-generation counter track is called.
+
+    The generation is in the name because the tracks sit side by side
+    under one group and the metric alone would repeat (ADR-0027).
+    """
+    return f"G{gen} {metric}"
 
 
 def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[TraceEvent]:
@@ -53,37 +89,37 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
     ts_stop_ns = item.ts_stop
 
     pause_data: EventArgs = {
-        "generation": gen,
-        "iid": iid,
-        "collections": item.collections,
-        "heap_size": item.heap_size,
-        "collected": item.collected,
-        "uncollectable": item.uncollectable,
-        "candidates": item.candidates,
+        GENERATION: gen,
+        IID: iid,
+        COLLECTIONS: item.collections,
+        HEAP_SIZE: item.heap_size,
+        COLLECTED: item.collected,
+        UNCOLLECTABLE: item.uncollectable,
+        CANDIDATES: item.candidates,
     }
 
     counter_data: dict[str, int | float] = {
-        "collected": item.collected,
-        "candidates": item.candidates,
-        "duration": item.duration,
+        COLLECTED: item.collected,
+        CANDIDATES: item.candidates,
+        DURATION: item.duration,
     }
     if item.uncollectable:
-        counter_data["uncollectable"] = item.uncollectable
+        counter_data[UNCOLLECTABLE] = item.uncollectable
 
     if has_incremental(item) and gen < 2:
-        pause_data["increment_size"] = item.increment_size
+        pause_data[INCREMENT_SIZE] = item.increment_size
 
     if has_mark_alive(item) and gen > 0:
-        pause_data["alive_size"] = item.alive_size
+        pause_data[ALIVE_SIZE] = item.alive_size
 
     if has_finalize_garbage(item):
-        pause_data["finalized_garbage_count"] = item.finalized_garbage_count
+        pause_data[FINALIZED_GARBAGE_COUNT] = item.finalized_garbage_count
 
     if has_delete_garbage(item):
-        pause_data["deleted_garbage_count"] = item.deleted_garbage_count
+        pause_data[DELETED_GARBAGE_COUNT] = item.deleted_garbage_count
 
     if has_clear_weakrefs(item):
-        pause_data["clear_weakrefs_count"] = item.clear_weakrefs_count
+        pause_data[CLEAR_WEAKREFS_COUNT] = item.clear_weakrefs_count
 
     events: list[TraceEvent] = []
     # Ahead of the sub-phases nested inside it, so its BEGIN wins the tie
@@ -91,8 +127,8 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
     events.append(
         Slice(
             track,
-            f"GC Pause({gen})",
-            f"{GC_PAUSE_CATEGORY}(gen={gen})",
+            phase_slice_name(PAUSE, gen),
+            phase_category(PAUSE, gen),
             ts_start_ns,
             ts_stop_ns,
             pause_data,
@@ -100,12 +136,12 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
     )
 
     if has_mark_alive(item) and item.ts_mark_alive_stop - item.ts_mark_alive_start > 0:
-        inc_data: EventArgs = {"generation": gen, "iid": iid, "alive_size": item.alive_size}
+        inc_data: EventArgs = {GENERATION: gen, IID: iid, ALIVE_SIZE: item.alive_size}
         events.append(
             Slice(
                 track,
-                f"Mark Alive({gen})",
-                f"gc.mark.alive(gen={gen})",
+                phase_slice_name(MARK_ALIVE, gen),
+                phase_category(MARK_ALIVE, gen),
                 item.ts_mark_alive_start,
                 item.ts_mark_alive_stop,
                 inc_data,
@@ -113,12 +149,12 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
         )
 
     if has_incremental(item) and item.ts_fill_increment_stop - item.ts_fill_increment_start > 0:
-        inc_data = {"generation": gen, "iid": iid, "increment_size": item.increment_size}
+        inc_data = {GENERATION: gen, IID: iid, INCREMENT_SIZE: item.increment_size}
         events.append(
             Slice(
                 track,
-                f"Fill increment({gen})",
-                f"gc.increment(gen={gen})",
+                phase_slice_name(FILL_INCREMENT, gen),
+                phase_category(FILL_INCREMENT, gen),
                 item.ts_fill_increment_start,
                 item.ts_fill_increment_stop,
                 inc_data,
@@ -126,12 +162,12 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
         )
 
     if has_deduce_unreachable(item) and item.ts_deduce_unreachable_stop - item.ts_deduce_unreachable_start > 0:
-        inc_data = {"generation": gen, "iid": iid, "candidates": item.candidates}
+        inc_data = {GENERATION: gen, IID: iid, CANDIDATES: item.candidates}
         events.append(
             Slice(
                 track,
-                f"Deduce Unreachable({gen})",
-                f"gc.deduce(gen={gen})",
+                phase_slice_name(DEDUCE_UNREACHABLE, gen),
+                phase_category(DEDUCE_UNREACHABLE, gen),
                 item.ts_deduce_unreachable_start,
                 item.ts_deduce_unreachable_stop,
                 inc_data,
@@ -139,12 +175,12 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
         )
 
     if has_handle_weakrefs(item) and item.ts_handle_weakref_callbacks_stop - item.ts_handle_weakref_callbacks_start > 0:
-        inc_data = {"generation": gen, "iid": iid}
+        inc_data = {GENERATION: gen, IID: iid}
         events.append(
             Slice(
                 track,
-                f"Handle Weakrefs Callbacks({gen})",
-                f"gc.weakrefs(gen={gen})",
+                phase_slice_name(HANDLE_WEAKREFS, gen),
+                phase_category(HANDLE_WEAKREFS, gen),
                 item.ts_handle_weakref_callbacks_start,
                 item.ts_handle_weakref_callbacks_stop,
                 inc_data,
@@ -152,12 +188,12 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
         )
 
     if has_finalize_garbage(item) and item.ts_finalize_garbage_stop - item.ts_handle_weakref_callbacks_stop > 0:
-        inc_data = {"generation": gen, "iid": iid, "finalized_garbage_count": item.finalized_garbage_count}
+        inc_data = {GENERATION: gen, IID: iid, FINALIZED_GARBAGE_COUNT: item.finalized_garbage_count}
         events.append(
             Slice(
                 track,
-                f"Finalize Garbage({gen})",
-                f"gc.finalize(gen={gen})",
+                phase_slice_name(FINALIZE_GARBAGE, gen),
+                phase_category(FINALIZE_GARBAGE, gen),
                 item.ts_handle_weakref_callbacks_stop,
                 item.ts_finalize_garbage_stop,
                 inc_data,
@@ -165,12 +201,12 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
         )
 
     if has_handle_resurrected(item) and item.ts_handle_resurrected_stop - item.ts_finalize_garbage_stop > 0:
-        inc_data = {"generation": gen, "iid": iid}
+        inc_data = {GENERATION: gen, IID: iid}
         events.append(
             Slice(
                 track,
-                f"Handle Resurrected({gen})",
-                f"gc.resurrect(gen={gen})",
+                phase_slice_name(HANDLE_RESURRECTED, gen),
+                phase_category(HANDLE_RESURRECTED, gen),
                 item.ts_finalize_garbage_stop,
                 item.ts_handle_resurrected_stop,
                 inc_data,
@@ -178,12 +214,12 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
         )
 
     if has_clear_weakrefs(item) and item.ts_clear_weakrefs_stop - item.ts_handle_resurrected_stop > 0:
-        inc_data = {"generation": gen, "iid": iid, "clear_weakrefs_count": item.clear_weakrefs_count}
+        inc_data = {GENERATION: gen, IID: iid, CLEAR_WEAKREFS_COUNT: item.clear_weakrefs_count}
         events.append(
             Slice(
                 track,
-                f"Clear Weakrefs({gen})",
-                f"gc.clear_weakrefs(gen={gen})",
+                phase_slice_name(CLEAR_WEAKREFS, gen),
+                phase_category(CLEAR_WEAKREFS, gen),
                 item.ts_handle_resurrected_stop,
                 item.ts_clear_weakrefs_stop,
                 inc_data,
@@ -191,12 +227,12 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
         )
 
     if has_delete_garbage(item) and item.ts_delete_garbage_stop - item.ts_delete_garbage_start > 0:
-        inc_data = {"generation": gen, "iid": iid, "deleted_garbage_count": item.deleted_garbage_count}
+        inc_data = {GENERATION: gen, IID: iid, DELETED_GARBAGE_COUNT: item.deleted_garbage_count}
         events.append(
             Slice(
                 track,
-                f"Delete Garbage({gen})",
-                f"gc.delete(gen={gen})",
+                phase_slice_name(DELETE_GARBAGE, gen),
+                phase_category(DELETE_GARBAGE, gen),
                 item.ts_delete_garbage_start,
                 item.ts_delete_garbage_stop,
                 inc_data,
@@ -204,20 +240,15 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
         )
 
     events.extend(
-        Counter(track, metric, f"G{gen} {metric}", ts_start_ns, value) for metric, value in counter_data.items()
+        Counter(track, metric, counter_display_name(gen, metric), ts_start_ns, value)
+        for metric, value in counter_data.items()
     )
 
     events.append(
         # Unqualified: the row sits inside the interpreter's own group, so no
         # two of them share a parent and the name does not have to tell them
         # apart (ADR-0027).
-        Counter(
-            track,
-            "heap_size",
-            "heap_size",
-            ts_start_ns,
-            item.heap_size,
-        )
+        Counter(track, HEAP_SIZE, HEAP_SIZE, ts_start_ns, item.heap_size)
     )
 
     return events
@@ -284,15 +315,15 @@ def _gen_loss_args(gen: TGenLoss) -> ArgGroup:
     gets ``lost_collections``, naming them on that generation's own counter
     with both ends included, and the pause they came to.
     """
-    args: ArgGroup = {"observed_count": gen.observed_count}
+    args: ArgGroup = {OBSERVED_COUNT: gen.observed_count}
     if not gen.lost_count:
-        args["lost_count"] = 0
+        args[LOST_COUNT] = 0
         return args
 
     args["lost_collections"] = lost_collections(gen.lost_from, gen.lost_count)
-    args["lost_count"] = gen.lost_count
-    args["lost_pause"] = duration_text(gen.lost_pause_ns)
-    args["lost_pause_ns"] = gen.lost_pause_ns
+    args[LOST_COUNT] = gen.lost_count
+    args[LOST_PAUSE] = duration_text(gen.lost_pause_ns)
+    args[LOST_PAUSE_NS] = gen.lost_pause_ns
     return args
 
 
@@ -313,20 +344,20 @@ def convert_loss_to_trace_format(process: Process, item: TLossMsg) -> list[Trace
     """
     track = LossTrack(process, item.iid)
     blind = [gen.gen for gen in item.gens if gen.lost_count]
-    name = f"GC Loss({','.join(str(gen) for gen in blind)})" if blind else "GC Loss"
-    category = "gc.loss"
+    name = gc_loss_slice_name(blind)
+    category = GC_LOSS_CATEGORY
 
     observed_count = sum(gen.observed_count for gen in item.gens)
     lost_count = sum(gen.lost_count for gen in item.gens)
     lost_pause_ns = sum(gen.lost_pause_ns for gen in item.gens)
 
     args: EventArgs = {
-        "iid": item.iid,
-        "observed_count": observed_count,
-        "lost_count": lost_count,
+        IID: item.iid,
+        OBSERVED_COUNT: observed_count,
+        LOST_COUNT: lost_count,
         "seen": seen_text(observed_count, lost_count),
-        "lost_pause": duration_text(lost_pause_ns),
-        "lost_pause_ns": lost_pause_ns,
+        LOST_PAUSE: duration_text(lost_pause_ns),
+        LOST_PAUSE_NS: lost_pause_ns,
     }
     for gen in item.gens:
         args[f"gen{gen.gen}"] = _gen_loss_args(gen)

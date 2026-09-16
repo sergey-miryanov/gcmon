@@ -15,8 +15,33 @@ from gcmon.analysis.jsonl_io import (
     write_jsonl,
 )
 from gcmon.model.data import GCStatsInfo, LossMsg
+from gcmon.model.names import (
+    ALIVE_SIZE,
+    CLEAR_WEAKREFS,
+    DEDUCE_UNREACHABLE,
+    DELETE_GARBAGE,
+    FILL_INCREMENT,
+    FINALIZE_GARBAGE,
+    GEN,
+    GENS,
+    HANDLE_RESURRECTED,
+    HANDLE_WEAKREFS,
+    HEAP_SIZE,
+    IID,
+    INCREMENT_SIZE,
+    LOST_COUNT,
+    LOST_FROM,
+    LOST_PAUSE_NS,
+    MARK_ALIVE,
+    OBSERVED_COUNT,
+    PID,
+    TS_START,
+    TS_STOP,
+    TYPE,
+)
 from gcmon.model.protocol import has_incremental
 from gcmon.model.trace_event import Counter, Slice
+from gcmon.support.vocabulary import ENCODING, FORMAT_PERFETTO
 from tests.analysis.conftest import make_inc_item, make_inc_jsonl_record
 from tests.data_helpers import create_instant_msg
 from tests.helpers import (
@@ -45,7 +70,7 @@ class TestJsonToItem:
 
     def test_pid_as_string(self) -> None:
         record = create_jsonl_record(pid=789)
-        data: JsonlRecord = {**record, "pid": "789"}
+        data: JsonlRecord = {**record, PID: "789"}
         pid, _ = json_to_item(data)
         assert pid == 789
 
@@ -82,7 +107,7 @@ class TestReadJsonl:
 
     def test_returns_empty_dict_for_empty_file(self, tmp_path: Path) -> None:
         path = tmp_path / "empty.jsonl"
-        path.write_text("", encoding="utf-8")
+        path.write_text("", encoding=ENCODING)
         result = read_jsonl(path)
         assert result == {}
 
@@ -95,7 +120,7 @@ class TestReadJsonl:
 
     def test_raises_on_malformed_json(self, tmp_path: Path) -> None:
         path = tmp_path / "bad.jsonl"
-        path.write_text("not valid json\n", encoding="utf-8")
+        path.write_text("not valid json\n", encoding=ENCODING)
         with pytest.raises(msgspec.DecodeError):
             read_jsonl(path)
 
@@ -107,12 +132,12 @@ class TestReadJsonl:
         path = tmp_path / "old.jsonl"
         gc_line = {**create_jsonl_record(pid=42, iid=1), "tid": 1}
         loss_line = {
-            "pid": 42,
+            PID: 42,
             "tid": -3,
-            "iid": 1,
-            "ts_start": 5_000,
-            "ts_stop": 6_000,
-            "gens": [{"gen": 0, "observed_count": 4, "lost_from": 413, "lost_count": 5, "lost_pause_ns": 8_100_000}],
+            IID: 1,
+            TS_START: 5_000,
+            TS_STOP: 6_000,
+            GENS: [{GEN: 0, OBSERVED_COUNT: 4, LOST_FROM: 413, LOST_COUNT: 5, LOST_PAUSE_NS: 8_100_000}],
         }
         path.write_bytes(msgspec.json.encode(gc_line) + b"\n" + msgspec.json.encode(loss_line) + b"\n")
 
@@ -139,8 +164,8 @@ class TestReadJsonl:
         old.write_bytes(msgspec.json.encode({**record, "tid": 1}) + b"\n")
         new.write_bytes(msgspec.json.encode(record) + b"\n")
 
-        combine_files([old], tmp_path / "old.pftrace", output_format="perfetto")
-        combine_files([new], tmp_path / "new.pftrace", output_format="perfetto")
+        combine_files([old], tmp_path / "old.pftrace", output_format=FORMAT_PERFETTO)
+        combine_files([new], tmp_path / "new.pftrace", output_format=FORMAT_PERFETTO)
 
         def packets(path: Path) -> list[str]:
             decoded: list[str] = []
@@ -157,7 +182,7 @@ class TestReadJsonl:
         array. Any other file opening that way gets the same message, which
         is the price of naming the one an operator is actually holding."""
         path = tmp_path / "old.json"
-        path.write_text('[\n{"ph": "B"}\n]\n', encoding="utf-8")
+        path.write_text('[\n{"ph": "B"}\n]\n', encoding=ENCODING)
 
         with pytest.raises(ValueError, match="Chrome Trace"):
             read_jsonl(path)
@@ -169,10 +194,10 @@ class TestWriteJsonl:
         item = create_mock_stats_item()
         write_jsonl(path, {12345: [item]})
 
-        lines = path.read_text(encoding="utf-8").strip().split("\n")
+        lines = path.read_text(encoding=ENCODING).strip().split("\n")
         assert len(lines) == 1
         record = json.loads(lines[0])
-        assert record["pid"] == 12345
+        assert record[PID] == 12345
 
     def test_writes_multiple_pids(self, tmp_path: Path) -> None:
         path = tmp_path / "out.jsonl"
@@ -180,25 +205,25 @@ class TestWriteJsonl:
         item2 = create_mock_stats_item(gen=1)
         write_jsonl(path, {1: [item1], 2: [item2]})
 
-        lines = path.read_text(encoding="utf-8").strip().split("\n")
+        lines = path.read_text(encoding=ENCODING).strip().split("\n")
         assert len(lines) == 2
-        pids = {json.loads(line)["pid"] for line in lines}
+        pids = {json.loads(line)[PID] for line in lines}
         assert pids == {1, 2}
 
     def test_writes_incremental_fields(self, tmp_path: Path) -> None:
         path = tmp_path / "out.jsonl"
         item = make_inc_item(increment_size=500, alive_size=300)
         write_jsonl(path, {1: [item]})
-        lines = path.read_text(encoding="utf-8").strip().split("\n")
+        lines = path.read_text(encoding=ENCODING).strip().split("\n")
         record = json.loads(lines[0])
-        assert record["pid"] == 1
-        assert record["increment_size"] == 500
-        assert record["alive_size"] == 300
+        assert record[PID] == 1
+        assert record[INCREMENT_SIZE] == 500
+        assert record[ALIVE_SIZE] == 300
 
     def test_empty_items_produces_empty_file(self, tmp_path: Path) -> None:
         path = tmp_path / "empty.jsonl"
         write_jsonl(path, {})
-        content = path.read_text(encoding="utf-8")
+        content = path.read_text(encoding=ENCODING)
         assert content == ""
 
     def test_multiple_events_per_pid(self, tmp_path: Path) -> None:
@@ -206,18 +231,18 @@ class TestWriteJsonl:
         item1 = create_mock_stats_item(gen=0)
         item2 = create_mock_stats_item(gen=1)
         write_jsonl(path, {1: [item1, item2]})
-        lines = path.read_text(encoding="utf-8").strip().split("\n")
+        lines = path.read_text(encoding=ENCODING).strip().split("\n")
         assert len(lines) == 2
-        assert all(json.loads(line)["pid"] == 1 for line in lines)
+        assert all(json.loads(line)[PID] == 1 for line in lines)
 
     def test_writes_instant_msg(self, tmp_path: Path) -> None:
         path = tmp_path / "out.jsonl"
         item = create_instant_msg(name="event", ts=1_000)
         write_jsonl(path, {1: [item]})
-        lines = path.read_text(encoding="utf-8").strip().split("\n")
+        lines = path.read_text(encoding=ENCODING).strip().split("\n")
         assert len(lines) == 1
         record = json.loads(lines[0])
-        assert record["type"] == "i"
+        assert record[TYPE] == "i"
         assert "tid" not in record
 
 
@@ -279,7 +304,7 @@ class TestConvertJsonlToTraceFormat:
 
     def test_empty_file_returns_empty_list(self, tmp_path: Path) -> None:
         path = tmp_path / "empty.jsonl"
-        path.write_text("", encoding="utf-8")
+        path.write_text("", encoding=ENCODING)
         events = convert_jsonl_to_trace_format(path)
         assert events == []
 
@@ -289,14 +314,14 @@ class TestConvertJsonlToTraceFormat:
         path.write_bytes(msgspec.json.encode(record) + b"\n")
         events = convert_jsonl_to_trace_format(path)
         spans = [e for e in events if isinstance(e, Slice)]
-        assert any("Mark Alive" in e.name for e in spans)
-        assert any("Fill increment" in e.name for e in spans)
-        assert any("Deduce Unreachable" in e.name for e in spans)
-        assert any("Handle Weakrefs" in e.name for e in spans)
-        assert any("Finalize Garbage" in e.name for e in spans)
-        assert any("Handle Resurrected" in e.name for e in spans)
-        assert any("Clear Weakrefs" in e.name for e in spans)
-        assert any("Delete Garbage" in e.name for e in spans)
+        assert any(MARK_ALIVE.label in e.name for e in spans)
+        assert any(FILL_INCREMENT.label in e.name for e in spans)
+        assert any(DEDUCE_UNREACHABLE.label in e.name for e in spans)
+        assert any(HANDLE_WEAKREFS.label in e.name for e in spans)
+        assert any(FINALIZE_GARBAGE.label in e.name for e in spans)
+        assert any(HANDLE_RESURRECTED.label in e.name for e in spans)
+        assert any(CLEAR_WEAKREFS.label in e.name for e in spans)
+        assert any(DELETE_GARBAGE.label in e.name for e in spans)
 
     def test_multiple_pids_each_get_their_own_tracks(self, tmp_path: Path) -> None:
         path = tmp_path / "multi.jsonl"
@@ -328,11 +353,11 @@ class TestAnOldFormatLossRecord:
 
     def _line(self, **kw: int) -> dict[str, int]:
         return {
-            "pid": 42,
+            PID: 42,
             "tid": -3,
-            "iid": 1,
-            "ts_start": 5_000,
-            "ts_stop": 6_000,
+            IID: 1,
+            TS_START: 5_000,
+            TS_STOP: 6_000,
             "lost_gen_0": kw.pop("lost_gen_0", 76),
             "lost_gen_1": 5,
             "lost_gen_2": 0,
@@ -351,7 +376,7 @@ class TestAnOldFormatLossRecord:
         with pytest.raises(msgspec.ValidationError) as excinfo:
             json_to_item(self._line())
 
-        assert "gen" in str(excinfo.value)
+        assert GEN in str(excinfo.value)
 
     def test_reading_the_file_raises(self, tmp_path: Path) -> None:
         with pytest.raises(msgspec.ValidationError):
@@ -365,7 +390,7 @@ class TestAnOldFormatLossRecord:
             combine_files(
                 [self._write(tmp_path)],
                 tmp_path / "out.pftrace",
-                output_format="perfetto",
+                output_format=FORMAT_PERFETTO,
             )
 
     def test_a_per_generation_record_is_refused_the_same_way(self) -> None:
@@ -376,18 +401,18 @@ class TestAnOldFormatLossRecord:
         would put a pause on an interpreter's own row for an interval nothing
         was observed in."""
         line = {
-            "pid": 42,
+            PID: 42,
             "tid": -3,
-            "iid": 1,
-            "gen": 1,
-            "ts_start": 5_000,
-            "ts_stop": 6_000,
-            "lost_from": 413,
-            "lost_count": 5,
-            "lost_pause_ns": 8_100_000,
+            IID: 1,
+            GEN: 1,
+            TS_START: 5_000,
+            TS_STOP: 6_000,
+            LOST_FROM: 413,
+            LOST_COUNT: 5,
+            LOST_PAUSE_NS: 8_100_000,
         }
 
         with pytest.raises(msgspec.ValidationError) as excinfo:
             json_to_item(line)
 
-        assert "heap_size" in str(excinfo.value)
+        assert HEAP_SIZE in str(excinfo.value)

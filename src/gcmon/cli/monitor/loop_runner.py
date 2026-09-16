@@ -19,7 +19,9 @@ from gcmon.stats.stats_output import print_stats, summary_lines
 from gcmon.stats.streaming_stats import StreamingStats
 from gcmon.support import replace_signals
 
-logger = logging.getLogger("gcmon")
+from ...support.vocabulary import FORMAT_STDOUT, PROGRAM_NAME
+
+logger = logging.getLogger(PROGRAM_NAME)
 
 
 def run_monitoring_loop(
@@ -94,7 +96,7 @@ def run_monitoring_loop(
             runner.wait(timeout=2.0)
             returncode = runner.returncode or 0
 
-        trace_path = None if options.output_format == "stdout" else options.output_path
+        trace_path = None if options.output_format == FORMAT_STDOUT else options.output_path
         for line in summary_lines(stats, trace_path, show_stats=options.stats_view is not None, pacing=pacing):
             logger.info("%s", line)
 

@@ -8,22 +8,67 @@ from perfetto.protos.perfetto.trace.perfetto_trace_pb2 import (
 )
 
 from gcmon.exporters.perfetto_format import (
+    _COUNTER_GROUP_NAME,
     _COUNTER_RANKS,
+    _INTERPRETER_GROUP_PREFIX,
     _INTERPRETER_LIST_NAME,
+    _LOSS_TRACK_NAME,
+    _PAUSE_TRACK_NAME,
     _UNLISTED_COUNTER_RANK,
+    _interpreter_group_name,
     convert_trace_events_to_perfetto,
 )
-from gcmon.exporters.perfetto_process_lifetime import _PROCESS_ROW_SLICE_NAME, finalize_perfetto_packets
+from gcmon.exporters.perfetto_process_lifetime import (
+    _PROCESS_ROW_SLICE_NAME,
+    finalize_perfetto_packets,
+    process_track_name,
+)
 from gcmon.exporters.perfetto_proto import TrackEventType
 from gcmon.exporters.perfetto_track_state import PerfettoTrackState
 from gcmon.exporters.trace_converter import convert_item_to_trace_format, convert_loss_to_trace_format
 from gcmon.model.data import GCStatsInfo, LossMsg
+from gcmon.model.names import (
+    CANDIDATES,
+    CLEAR_WEAKREFS,
+    CLEAR_WEAKREFS_COUNT,
+    CLIPPED,
+    COLLECTED,
+    COLLECTIONS,
+    DEDUCE_UNREACHABLE,
+    DELETE_GARBAGE,
+    DELETED_GARBAGE_COUNT,
+    DURATION,
+    FILL_INCREMENT,
+    FINALIZE_GARBAGE,
+    FINALIZED_GARBAGE_COUNT,
+    GC_LOSS_NAME,
+    GENERATION,
+    HANDLE_RESURRECTED,
+    HANDLE_WEAKREFS,
+    HEAP_SIZE,
+    IID,
+    LOST_COUNT,
+    LOST_PAUSE,
+    LOST_PAUSE_NS,
+    MARK_ALIVE,
+    NAME,
+    OBSERVED_COUNT,
+    PID,
+    PID_EPOCH,
+    REAL_END_TS,
+    REAL_START_TS,
+    RSS,
+    UNCOLLECTABLE,
+    gc_pause_slice_name,
+    phase_slice_name,
+)
 from gcmon.model.trace_event import (
     Counter,
     Instant,
     TraceEvent,
     Track,
 )
+from gcmon.support.vocabulary import CMD_RUN
 from tests.exporters.perfetto_helpers import (
     convert_item,
     lifetime_slices,
@@ -129,8 +174,8 @@ class TestConvertItemToPerfettoPackets:
                     cmdlines[td.name] = tuple(td.process.cmdline)
 
         assert cmdlines == {
-            "Process 100": ("python", "first.py"),
-            "Process 100#2": ("python", "second.py"),
+            process_track_name(proc(100)): ("python", "first.py"),
+            process_track_name(proc(100, 2)): ("python", "second.py"),
         }
 
     def test_basic_item_emits_descriptors(self) -> None:
@@ -219,11 +264,11 @@ class TestConvertItemToPerfettoPackets:
         assert group_seen, "GC Counters group track descriptor was not emitted"
         # heap_size is a top-level counter: parented to the interpreter's own
         # group, beside `GC Metrics` rather than inside it.
-        assert per_metric_parent["heap_size"] == interpreter_uuid
+        assert per_metric_parent[HEAP_SIZE] == interpreter_uuid
         assert proc_uuid not in per_metric_parent.values()
         # Per-gen counters are parented to the GC Counters group.
         for name, parent_uuid in per_metric_parent.items():
-            if name != "heap_size":
+            if name != HEAP_SIZE:
                 assert parent_uuid == group_uuid, f"{name!r} should parent to group"
 
     def test_basic_item_emits_pause_slice(self) -> None:
@@ -262,7 +307,7 @@ class TestConvertItemToPerfettoPackets:
             if (
                 packet.track_event.type == TrackEvent.Type.TYPE_SLICE_BEGIN
                 and packet.track_event.track_uuid != lifetime_uuid
-                and packet.track_event.name == "GC Pause(0)"
+                and packet.track_event.name == gc_pause_slice_name(0)
             ):
                 begin_packet = p
                 break
@@ -272,7 +317,7 @@ class TestConvertItemToPerfettoPackets:
         assert first_packet.timestamp == 1_000
         assert first_packet.HasField("track_event")
         assert first_packet.track_event.type == TrackEvent.Type.TYPE_SLICE_BEGIN
-        assert first_packet.track_event.name == "GC Pause(0)"
+        assert first_packet.track_event.name == gc_pause_slice_name(0)
 
     def test_basic_item_emits_counter_events(self) -> None:
         state = PerfettoTrackState()
@@ -400,15 +445,15 @@ class TestConvertItemToPerfettoPackets:
             packet.ParseFromString(p)
             if packet.HasField("track_event") and packet.track_event.type == TrackEvent.Type.TYPE_SLICE_BEGIN:
                 slice_begins.append(packet.track_event.name or None)
-        assert "GC Pause(1)" in slice_begins
-        assert "Mark Alive(1)" in slice_begins
-        assert "Fill increment(1)" in slice_begins
-        assert "Deduce Unreachable(1)" in slice_begins
-        assert "Handle Weakrefs Callbacks(1)" in slice_begins
-        assert "Finalize Garbage(1)" in slice_begins
-        assert "Handle Resurrected(1)" in slice_begins
-        assert "Clear Weakrefs(1)" in slice_begins
-        assert "Delete Garbage(1)" in slice_begins
+        assert gc_pause_slice_name(1) in slice_begins
+        assert phase_slice_name(MARK_ALIVE, 1) in slice_begins
+        assert phase_slice_name(FILL_INCREMENT, 1) in slice_begins
+        assert phase_slice_name(DEDUCE_UNREACHABLE, 1) in slice_begins
+        assert phase_slice_name(HANDLE_WEAKREFS, 1) in slice_begins
+        assert phase_slice_name(FINALIZE_GARBAGE, 1) in slice_begins
+        assert phase_slice_name(HANDLE_RESURRECTED, 1) in slice_begins
+        assert phase_slice_name(CLEAR_WEAKREFS, 1) in slice_begins
+        assert phase_slice_name(DELETE_GARBAGE, 1) in slice_begins
 
     def test_uncollectable_counter_omitted_when_zero(self) -> None:
         state = PerfettoTrackState()
@@ -510,9 +555,9 @@ class TestConvertItemToPerfettoPackets:
             )
         assert duration_track_uuid in descriptors
         parent, rank, _ = descriptors[duration_track_uuid]
-        assert rank == _COUNTER_RANKS["duration"]
+        assert rank == _COUNTER_RANKS[DURATION]
         assert parent != 0
-        assert descriptors[parent][2] == "GC Metrics"
+        assert descriptors[parent][2] == _COUNTER_GROUP_NAME
 
     def _make_full_incremental_item(self) -> GCStatsInfo:
         return GCStatsInfo(
@@ -575,31 +620,31 @@ class TestConvertItemToPerfettoPackets:
     def test_finalize_garbage_substep_has_count_annotation(self) -> None:
         state = PerfettoTrackState()
         _, packets = convert_item(proc(100), self._make_full_incremental_item(), state, sequence_id=1)
-        anns = self._annotations_for_slice(packets, "Finalize Garbage(1)")
-        assert ("finalized_garbage_count", 42) in anns
-        assert all(name not in ("deleted_garbage_count", "clear_weakrefs_count") for name, _ in anns)
+        anns = self._annotations_for_slice(packets, phase_slice_name(FINALIZE_GARBAGE, 1))
+        assert (FINALIZED_GARBAGE_COUNT, 42) in anns
+        assert all(name not in (DELETED_GARBAGE_COUNT, CLEAR_WEAKREFS_COUNT) for name, _ in anns)
 
     def test_clear_weakrefs_substep_has_count_annotation(self) -> None:
         state = PerfettoTrackState()
         _, packets = convert_item(proc(100), self._make_full_incremental_item(), state, sequence_id=1)
-        anns = self._annotations_for_slice(packets, "Clear Weakrefs(1)")
-        assert ("clear_weakrefs_count", 7) in anns
-        assert all(name not in ("finalized_garbage_count", "deleted_garbage_count") for name, _ in anns)
+        anns = self._annotations_for_slice(packets, phase_slice_name(CLEAR_WEAKREFS, 1))
+        assert (CLEAR_WEAKREFS_COUNT, 7) in anns
+        assert all(name not in (FINALIZED_GARBAGE_COUNT, DELETED_GARBAGE_COUNT) for name, _ in anns)
 
     def test_delete_garbage_substep_has_count_annotation(self) -> None:
         state = PerfettoTrackState()
         _, packets = convert_item(proc(100), self._make_full_incremental_item(), state, sequence_id=1)
-        anns = self._annotations_for_slice(packets, "Delete Garbage(1)")
-        assert ("deleted_garbage_count", 13) in anns
-        assert all(name not in ("finalized_garbage_count", "clear_weakrefs_count") for name, _ in anns)
+        anns = self._annotations_for_slice(packets, phase_slice_name(DELETE_GARBAGE, 1))
+        assert (DELETED_GARBAGE_COUNT, 13) in anns
+        assert all(name not in (FINALIZED_GARBAGE_COUNT, CLEAR_WEAKREFS_COUNT) for name, _ in anns)
 
     def test_deduce_unreachable_substep_has_candidates_annotation(self) -> None:
         state = PerfettoTrackState()
         item = self._make_full_incremental_item()
         _, packets = convert_item(proc(100), item, state, sequence_id=1)
-        anns = self._annotations_for_slice(packets, "Deduce Unreachable(1)")
-        assert ("candidates", item.candidates) in anns
-        assert ("generation", 1) in anns
+        anns = self._annotations_for_slice(packets, phase_slice_name(DEDUCE_UNREACHABLE, 1))
+        assert (CANDIDATES, item.candidates) in anns
+        assert (GENERATION, 1) in anns
 
     def test_zero_duration_subphase_skipped(self) -> None:
         state = PerfettoTrackState()
@@ -628,8 +673,8 @@ class TestConvertItemToPerfettoPackets:
             packet.ParseFromString(p)
             if packet.HasField("track_event") and packet.track_event.type == TrackEvent.Type.TYPE_SLICE_BEGIN:
                 slice_names.append(packet.track_event.name or None)
-        assert "Mark Alive(1)" not in slice_names
-        assert "Fill increment(1)" in slice_names
+        assert phase_slice_name(MARK_ALIVE, 1) not in slice_names
+        assert phase_slice_name(FILL_INCREMENT, 1) in slice_names
 
     def test_multiple_threads(self) -> None:
         state = PerfettoTrackState()
@@ -679,7 +724,7 @@ class TestConvertItemToPerfettoPackets:
             duration=0.001,
         )
         _, packets = convert_item(proc(100), item, state, sequence_id=1)
-        # The "Process 100" slice begin on the shared "Processes" track
+        # The process_track_name(proc(100)) slice begin on the shared "Processes" track
         # precedes the GC pause slice begin. Identify the GC pause slice
         # by its name.
         lifetime_uuid = state.get_or_create_process_lifetime_track_uuid()
@@ -690,7 +735,7 @@ class TestConvertItemToPerfettoPackets:
             if (
                 packet.track_event.type == TrackEvent.Type.TYPE_SLICE_BEGIN
                 and packet.track_event.track_uuid != lifetime_uuid
-                and packet.track_event.name == "GC Pause(0)"
+                and packet.track_event.name == gc_pause_slice_name(0)
             ):
                 begin_packet = packet
                 break
@@ -702,7 +747,7 @@ class TestConvertItemToPerfettoPackets:
             assert not ann.HasField("name_iid"), (
                 "field 1 of DebugAnnotation is `name_iid` (uint64); the annotation name must not be written there"
             )
-            assert ann.HasField("name")
+            assert ann.HasField(NAME)
 
     def test_debug_annotations_on_pause(self) -> None:
         state = PerfettoTrackState()
@@ -729,7 +774,7 @@ class TestConvertItemToPerfettoPackets:
             if (
                 packet.track_event.type == TrackEvent.Type.TYPE_SLICE_BEGIN
                 and packet.track_event.track_uuid != lifetime_uuid
-                and packet.track_event.name == "GC Pause(0)"
+                and packet.track_event.name == gc_pause_slice_name(0)
             ):
                 begin_packet = p
                 break
@@ -743,13 +788,13 @@ class TestConvertItemToPerfettoPackets:
             name = ann.name or None
             val = ann.int_value if ann.HasField("int_value") else None
             ann_values.append((name, val))
-        assert ("generation", 0) in ann_values
-        assert ("iid", 0) in ann_values
-        assert ("collections", 5) in ann_values
-        assert ("heap_size", 1000) in ann_values
-        assert ("collected", 10) in ann_values
-        assert ("uncollectable", 2) in ann_values
-        assert ("candidates", 3) in ann_values
+        assert (GENERATION, 0) in ann_values
+        assert (IID, 0) in ann_values
+        assert (COLLECTIONS, 5) in ann_values
+        assert (HEAP_SIZE, 1000) in ann_values
+        assert (COLLECTED, 10) in ann_values
+        assert (UNCOLLECTABLE, 2) in ann_values
+        assert (CANDIDATES, 3) in ann_values
 
 
 class TestConvertInstantToPerfettoPacket:
@@ -785,8 +830,8 @@ class TestConvertInstantToPerfettoPacket:
                 names.append(packet.track_event.name or None)
         assert names == [
             "start GC monitor",
-            "Process 100",
-            "Process 100",
+            process_track_name(proc(100)),
+            process_track_name(proc(100)),
             _PROCESS_ROW_SLICE_NAME,
             None,
         ]
@@ -831,10 +876,10 @@ class TestConvertInstantToPerfettoPacket:
             (
                 5_000,
                 TrackEventType.SLICE_BEGIN,
-                "Process 100",
-                {"pid": 100, "pid_epoch": 1, "real_start_ts": 5_000, "real_end_ts": 10_000, "clipped": False},
+                process_track_name(proc(100)),
+                {PID: 100, PID_EPOCH: 1, REAL_START_TS: 5_000, REAL_END_TS: 10_000, CLIPPED: False},
             ),
-            (10_000, TrackEventType.SLICE_END, "Process 100", {}),
+            (10_000, TrackEventType.SLICE_END, process_track_name(proc(100)), {}),
         ]
 
     def test_instant_after_gc_event_no_duplicate_descriptor(self) -> None:
@@ -866,8 +911,8 @@ class TestConvertInstantToPerfettoPacket:
             [
                 Counter(
                     interpreter_track(100, 0),
-                    metric="heap_size",
-                    display_name="heap_size",
+                    metric=HEAP_SIZE,
+                    display_name=HEAP_SIZE,
                     ts=1_000,
                     value=1234,
                 ),
@@ -883,7 +928,7 @@ class TestConvertInstantToPerfettoPacket:
                 td = packet.track_descriptor
                 if td.HasField("counter") and td.name:
                     track_names.append(td.name)
-        assert "heap_size" in track_names
+        assert HEAP_SIZE in track_names
         assert "heap_size heap_size" not in track_names
 
     def test_shared_heap_size_track_reused_across_generations(self) -> None:
@@ -913,9 +958,9 @@ class TestConvertInstantToPerfettoPacket:
             duration=0.001,
         )
         convert_item(proc(100), item_g0, state, sequence_id=1)
-        uuid_after_g0 = state.get_or_create_counter_track_uuid(interpreter_track(100, 0), "heap_size")
+        uuid_after_g0 = state.get_or_create_counter_track_uuid(interpreter_track(100, 0), HEAP_SIZE)
         convert_item(proc(100), item_g1, state, sequence_id=1)
-        uuid_after_g1 = state.get_or_create_counter_track_uuid(interpreter_track(100, 0), "heap_size")
+        uuid_after_g1 = state.get_or_create_counter_track_uuid(interpreter_track(100, 0), HEAP_SIZE)
         assert uuid_after_g0 == uuid_after_g1
 
 
@@ -941,13 +986,13 @@ class TestAnInstantCanCarryArgs:
 
     def test_the_args_reach_the_packet_as_debug_annotations(self) -> None:
         track_event = self._instant_packet(
-            Instant(process_track(100), "benchmark", 1_000, {"benchmark": "json_loads", "run": 3})
+            Instant(process_track(100), "benchmark", 1_000, {"benchmark": "json_loads", CMD_RUN: 3})
         )
         annotations = {
             a.name: (a.string_value or None, a.int_value if a.HasField("int_value") else None)
             for a in track_event.debug_annotations
         }
-        assert annotations == {"benchmark": ("json_loads", None), "run": (None, 3)}
+        assert annotations == {"benchmark": ("json_loads", None), CMD_RUN: (None, 3)}
 
     def test_an_instant_with_no_args_writes_no_annotations_field(self) -> None:
         """The bytes an instant produces today, so the field costs a trace
@@ -1005,20 +1050,22 @@ class TestATrackIsDescribedOffTheEventsOnIt:
         state = PerfettoTrackState()
         descriptors, _ = convert_trace_events_to_perfetto(self._pid_events(100), state, sequence_id=1)
         names = self._named(descriptors)
-        assert "Process 100" in names
-        assert "GC Pauses" in names
-        assert names.index("Process 100") < names.index("Interpreter 0") < names.index("GC Pauses"), (
-            f"each parent must precede its child; got {names}"
-        )
+        assert process_track_name(proc(100)) in names
+        assert _PAUSE_TRACK_NAME in names
+        assert (
+            names.index(process_track_name(proc(100)))
+            < names.index(_interpreter_group_name(0))
+            < names.index(_PAUSE_TRACK_NAME)
+        ), f"each parent must precede its child; got {names}"
 
     def test_an_rss_only_pid_gets_a_process_row_and_no_thread_row(self) -> None:
         state = PerfettoTrackState()
         descriptors, _ = convert_trace_events_to_perfetto(
-            [Counter(process_track(100), "rss", "rss", 1_000, 4096)],
+            [Counter(process_track(100), RSS, RSS, 1_000, 4096)],
             state,
             sequence_id=1,
         )
-        assert "Process 100" in self._named(descriptors)
+        assert process_track_name(proc(100)) in self._named(descriptors)
         parsed = [parse_track_descriptor(d) for d in descriptors]
         assert not any(td.HasField("thread") for td in parsed if td is not None)
 
@@ -1029,7 +1076,7 @@ class TestATrackIsDescribedOffTheEventsOnIt:
             state,
             sequence_id=1,
         )
-        assert "Process 100" in self._named(descriptors)
+        assert process_track_name(proc(100)) in self._named(descriptors)
         parsed = [parse_track_descriptor(d) for d in descriptors]
         assert not any(td.HasField("thread") for td in parsed if td is not None)
 
@@ -1037,8 +1084,8 @@ class TestATrackIsDescribedOffTheEventsOnIt:
         state = PerfettoTrackState()
         first, _ = convert_trace_events_to_perfetto(self._pid_events(100), state, sequence_id=1)
         second, _ = convert_trace_events_to_perfetto(self._pid_events(100), state, sequence_id=1)
-        assert "Process 100" in self._named(first)
-        assert "GC Pauses" in self._named(first)
+        assert process_track_name(proc(100)) in self._named(first)
+        assert _PAUSE_TRACK_NAME in self._named(first)
         assert self._named(second) == []
 
     def test_a_second_interpreter_is_described_when_it_first_collects(self) -> None:
@@ -1048,8 +1095,10 @@ class TestATrackIsDescribedOffTheEventsOnIt:
         convert_trace_events_to_perfetto(self._pid_events(100, iid=0), state, sequence_id=1)
         later, _ = convert_trace_events_to_perfetto(self._pid_events(100, iid=1), state, sequence_id=1)
         names = self._named(later)
-        assert names[:2] == ["Interpreter 1", "GC Pauses"], f"the group it parents to comes first; got {names}"
-        assert "Process 100" not in names
+        assert names[:2] == [_interpreter_group_name(1), _PAUSE_TRACK_NAME], (
+            f"the group it parents to comes first; got {names}"
+        )
+        assert process_track_name(proc(100)) not in names
 
 
 class TestTheInterpreterGroupsAreDerived:
@@ -1091,7 +1140,7 @@ class TestTheInterpreterGroupsAreDerived:
         # No rank: the process track is OS-scoped and discards one (ADR-0003).
         assert not listing.HasField("sibling_order_rank")
 
-        group = described["Interpreter 0"]
+        group = described[_interpreter_group_name(0)]
         assert group.parent_uuid == listing.uuid
         assert group.child_ordering == 3
         assert group.sibling_order_rank == 0
@@ -1100,9 +1149,11 @@ class TestTheInterpreterGroupsAreDerived:
         state = PerfettoTrackState()
         descriptors, _ = convert_trace_events_to_perfetto(self._events(100), state, sequence_id=1)
         names = [td.name for td in (parse_track_descriptor(d) for d in descriptors) if td is not None and td.name]
-        assert names.index("Process 100") < names.index(_INTERPRETER_LIST_NAME) < names.index("Interpreter 0"), (
-            f"each parent must precede its child; got {names}"
-        )
+        assert (
+            names.index(process_track_name(proc(100)))
+            < names.index(_INTERPRETER_LIST_NAME)
+            < names.index(_interpreter_group_name(0))
+        ), f"each parent must precede its child; got {names}"
 
     def test_the_list_sorts_below_the_process_row(self) -> None:
         """A rename has to keep the list under the row it belongs to.
@@ -1127,7 +1178,7 @@ class TestTheInterpreterGroupsAreDerived:
         described = self._by_name(later)
 
         assert _INTERPRETER_LIST_NAME not in described, "the list is described once per process"
-        group = described["Interpreter 1"]
+        group = described[_interpreter_group_name(1)]
         assert group.parent_uuid == state.get_or_create_interpreter_list_track_uuid(proc(100))
         assert group.sibling_order_rank == 1
 
@@ -1141,8 +1192,8 @@ class TestTheInterpreterGroupsAreDerived:
             sequence_id=1,
         )
         described = self._by_name(later)
-        assert "GC Loss" in described, "the loss row still describes itself"
-        assert "Interpreter 0" not in described, "interpreter 0's group is already described"
+        assert _LOSS_TRACK_NAME in described, "the loss row still describes itself"
+        assert _interpreter_group_name(0) not in described, "interpreter 0's group is already described"
         assert _INTERPRETER_LIST_NAME not in described
 
     def test_a_process_that_only_reported_rss_derives_neither(self) -> None:
@@ -1150,13 +1201,13 @@ class TestTheInterpreterGroupsAreDerived:
         an interpreter owns was named here."""
         state = PerfettoTrackState()
         descriptors, _ = convert_trace_events_to_perfetto(
-            [Counter(process_track(100), "rss", "rss", 1_000, 4096)],
+            [Counter(process_track(100), RSS, RSS, 1_000, 4096)],
             state,
             sequence_id=1,
         )
         described = self._by_name(descriptors)
         assert _INTERPRETER_LIST_NAME not in described
-        assert not any(name.startswith("Interpreter ") for name in described)
+        assert not any(name.startswith(_INTERPRETER_GROUP_PREFIX) for name in described)
 
 
 class TestTheRowsInsideAnInterpreterGroupAreRanked:
@@ -1196,7 +1247,7 @@ class TestTheRowsInsideAnInterpreterGroupAreRanked:
         group_uuid = state.get_or_create_interpreter_group_track_uuid(proc(100), 0)
         rows = sorted((td for td in parsed if td.parent_uuid == group_uuid), key=lambda td: td.sibling_order_rank)
 
-        assert [td.name for td in rows] == ["GC Pauses", "GC Loss", "heap_size", "GC Metrics"]
+        assert [td.name for td in rows] == [_PAUSE_TRACK_NAME, _LOSS_TRACK_NAME, HEAP_SIZE, _COUNTER_GROUP_NAME]
         assert [td.sibling_order_rank for td in rows] == [0, 1, 2, 3], "ranks must be distinct for the order to hold"
 
 
@@ -1222,7 +1273,7 @@ class TestACounterTakesItsRankFromItsMetric:
     def test_a_counter_on_the_process_track_carries_no_rank(self) -> None:
         """The process track is OS-scoped, so the trace processor throws a
         child's rank away (ADR-0003). Writing one says otherwise."""
-        found = self._counter(process_track(100), "rss")
+        found = self._counter(process_track(100), RSS)
 
         assert not found[0].HasField("sibling_order_rank")
 
@@ -1247,14 +1298,14 @@ class TestLossTrackDescriptor:
 
     def _loss_descriptors(self, descriptors: list[bytes]) -> list[TrackDescriptor]:
         parsed = [parse_track_descriptor(d) for d in descriptors]
-        return [td for td in parsed if td is not None and td.name.startswith("GC Loss")]
+        return [td for td in parsed if td is not None and td.name.startswith(_LOSS_TRACK_NAME)]
 
     def test_the_track_is_described(self) -> None:
         state = PerfettoTrackState()
 
         found = self._loss_descriptors(self._convert([self._msg(iid=0)], state))
 
-        assert [td.name for td in found] == ["GC Loss"]
+        assert [td.name for td in found] == [_LOSS_TRACK_NAME]
 
     def test_each_interpreter_gets_one_inside_its_own_group(self) -> None:
         """Two rows, identically named. What tells them apart is the group
@@ -1263,7 +1314,7 @@ class TestLossTrackDescriptor:
 
         found = self._loss_descriptors(self._convert([self._msg(iid=0), self._msg(iid=1)], state))
 
-        assert [td.name for td in found] == ["GC Loss", "GC Loss"]
+        assert [td.name for td in found] == [_LOSS_TRACK_NAME, _LOSS_TRACK_NAME]
         assert [td.parent_uuid for td in found] == [
             state.get_or_create_interpreter_group_track_uuid(proc(100), 0),
             state.get_or_create_interpreter_group_track_uuid(proc(100), 1),
@@ -1332,7 +1383,7 @@ class TestTheMissingCollectionsAnnotation:
         for raw in packets:
             packet = TracePacket()
             packet.ParseFromString(raw)
-            if packet.HasField("track_event") and packet.track_event.name.startswith("GC Loss("):
+            if packet.HasField("track_event") and packet.track_event.name.startswith(f"{GC_LOSS_NAME}("):
                 return packet.track_event
         raise AssertionError("no GC Loss slice in the packets")
 
@@ -1371,8 +1422,8 @@ class TestTheMissingCollectionsAnnotation:
     def test_the_counts_beside_it_stay_integers(self) -> None:
         group = self._group(self._msg(lost_from=11, lost_count=1), 1)
 
-        assert group["lost_count"] == 1
-        assert group["lost_pause_ns"] == 200
+        assert group[LOST_COUNT] == 1
+        assert group[LOST_PAUSE_NS] == 200
 
     def test_the_pause_total_reaches_the_wire_both_ways(self) -> None:
         """The nanoseconds are what SQL sums; the text beside them is what a
@@ -1380,8 +1431,8 @@ class TestTheMissingCollectionsAnnotation:
         job it is bad at."""
         group = self._group(self._msg(lost_from=11, lost_count=1), 1)
 
-        assert group["lost_pause"] == "200ns"
-        assert group["lost_pause_ns"] == 200
+        assert group[LOST_PAUSE] == "200ns"
+        assert group[LOST_PAUSE_NS] == 200
 
     def test_a_group_carries_entries_and_no_value_of_its_own(self) -> None:
         """``dict_entries`` sits outside the proto's ``value`` oneof, so an
@@ -1395,12 +1446,12 @@ class TestTheMissingCollectionsAnnotation:
 
         assert not group.HasField("string_value")
         assert not group.HasField("int_value")
-        assert {entry.name for entry in group.dict_entries} >= {"observed_count", "lost_count"}
+        assert {entry.name for entry in group.dict_entries} >= {OBSERVED_COUNT, LOST_COUNT}
 
     def test_the_totals_stay_at_the_top_level(self) -> None:
         """Ungrouped, so the figure a reader wants first is the one they see
         first rather than one node down."""
         top = self._top(self._msg(lost_from=11, lost_count=1))
 
-        assert top["lost_count"] == 1
+        assert top[LOST_COUNT] == 1
         assert top["seen"] == "75.0% (3 of 4)"

@@ -20,6 +20,7 @@ from gcmon.monitoring.monitor import PollReport
 from gcmon.monitoring.monitor_loop import MonitorLoop
 from gcmon.monitoring.rss_sampler import RssSampler
 from gcmon.monitoring.run_policy import InfinityRunner, Runner
+from gcmon.support.vocabulary import CMD_MONITOR
 from tests.helpers import proc
 
 
@@ -433,7 +434,7 @@ class TestTheLoopHoldsNoPerPidState:
 
         parameters = set(inspect.signature(MonitorLoop.__init__).parameters)
 
-        assert parameters == {"self", "monitor", "runner", "rate", "rss_sampler"}
+        assert parameters == {"self", CMD_MONITOR, "runner", "rate", "rss_sampler"}
 
 
 class TestADeadTargetDoesNotExtendTheRun:

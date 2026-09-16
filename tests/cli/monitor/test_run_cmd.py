@@ -15,6 +15,20 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from gcmon.analysis.jsonl_io import read_jsonl
+from gcmon.model.names import (
+    CANDIDATES,
+    COLLECTED,
+    COLLECTIONS,
+    DURATION,
+    GEN,
+    HEAP_SIZE,
+    PID,
+    RSS,
+    TS_START,
+    TS_STOP,
+    UNCOLLECTABLE,
+)
+from gcmon.support.vocabulary import CMD_RUN, FORMAT_JSONL, FORMAT_PERFETTO, FORMAT_STDOUT, PROGRAM_NAME
 from tests.helpers import assert_valid_perfetto_trace
 
 # =============================================================================
@@ -28,16 +42,16 @@ def assert_jsonl_format(output_file: Path) -> None:
 
 
 def assert_stdout_format(output: str) -> None:
-    assert "pid" in output
-    assert "gen" in output
-    assert "ts_start" in output
-    assert "ts_stop" in output
-    assert "heap_size" in output
-    assert "collections" in output
-    assert "collected" in output
-    assert "uncollectable" in output
-    assert "candidates" in output
-    assert "duration" in output
+    assert PID in output
+    assert GEN in output
+    assert TS_START in output
+    assert TS_STOP in output
+    assert HEAP_SIZE in output
+    assert COLLECTIONS in output
+    assert COLLECTED in output
+    assert UNCOLLECTABLE in output
+    assert CANDIDATES in output
+    assert DURATION in output
 
 
 def get_long_running_script(*args: str) -> str:
@@ -64,7 +78,7 @@ sys.stdout.flush()
 
 def _print_output(tool: str, pid: int, result: subprocess.CompletedProcess[str] | subprocess.TimeoutExpired) -> None:
     print(f"--- {tool} PID {pid} ---")
-    out = getattr(result, "stdout", None) or getattr(result, "output", "")
+    out = getattr(result, FORMAT_STDOUT, None) or getattr(result, "output", "")
     err = getattr(result, "stderr", None) or ""
     if out:
         print("STDOUT")
@@ -188,8 +202,8 @@ def run_script(
         sys.executable,
         "-u",
         "-m",
-        "gcmon",
-        "run",
+        PROGRAM_NAME,
+        CMD_RUN,
         *gc_opts,
         "-s",
         str(script_file.as_posix()),
@@ -210,8 +224,8 @@ def run_module(
         sys.executable,
         "-u",
         "-m",
-        "gcmon",
-        "run",
+        PROGRAM_NAME,
+        CMD_RUN,
         *gc_opts,
         "-m",
         str(module_name),
@@ -247,14 +261,14 @@ class TestCmdRunUnit:
             "script_args": [],
             "output": Path("test.pftrace"),
             "rate": 0.1,
-            "duration": 0.05,
+            DURATION: 0.05,
             "verbose": 1,
-            "format": "perfetto",
+            "format": FORMAT_PERFETTO,
             "flush_threshold": 100,
             "stats": None,
             "table_format": None,
             "control_name": None,
-            "rss": False,
+            RSS: False,
             "rss_interval": 1.0,
         }
         return Namespace(**{**defaults, **overrides})
@@ -376,7 +390,7 @@ class TestRunCommandScriptMode:
         script_file = tmp_path / "test_script.py"
         script_file.write_text(get_long_running_script("print('Args: ', sys.argv[1:])"))
 
-        gc_args = ["-vvv", "--format", "perfetto", "-o", str(output_file)]
+        gc_args = ["-vvv", "--format", FORMAT_PERFETTO, "-o", str(output_file)]
         result = run_script(script_file, "arg1", "arg2", "--flag", gc_args=gc_args)
 
         with print_on_failure(result):
@@ -391,7 +405,7 @@ class TestRunCommandScriptMode:
         script_file = tmp_path / "test_script.py"
         script_file.write_text(get_long_running_script("print('Args: ', sys.argv[1:])"))
 
-        gc_args = ["-vvv", "--format", "jsonl", "-o", str(output_file)]
+        gc_args = ["-vvv", "--format", FORMAT_JSONL, "-o", str(output_file)]
         result = run_script(script_file, "arg1", "arg2", "--flag", gc_args=gc_args)
 
         with print_on_failure(result):
@@ -405,7 +419,7 @@ class TestRunCommandScriptMode:
         script_file = tmp_path / "test_script.py"
         script_file.write_text(get_long_running_script("print('Args: ', sys.argv[1:])"))
 
-        gc_args = ["-vvv", "--format", "stdout"]
+        gc_args = ["-vvv", "--format", FORMAT_STDOUT]
         result = run_script(script_file, "arg1", "arg2", "--flag", gc_args=gc_args)
 
         with print_on_failure(result):
@@ -423,7 +437,7 @@ class TestRunCommandScriptMode:
         script_file.write_text(get_long_running_script("print('Args: ', sys.argv[1:])"))
 
         # gcmon options BEFORE -s, script args AFTER (including overlapping --format, -v)
-        gc_args = ["-vvv", "--format", "perfetto", "-o", str(output_file)]
+        gc_args = ["-vvv", "--format", FORMAT_PERFETTO, "-o", str(output_file)]
         result = run_script(script_file, "--format", "json", "-v", "--format", "csv", gc_args=gc_args)
 
         with print_on_failure(result):
@@ -450,7 +464,7 @@ class TestRunCommandModuleMode:
     def test_run_module_long_running_perfetto_format(self, tmp_path: Path) -> None:
         output_file = tmp_path / "trace.pftrace"
 
-        gc_args = ["-vvv", "--format", "perfetto", "-o", str(output_file)]
+        gc_args = ["-vvv", "--format", FORMAT_PERFETTO, "-o", str(output_file)]
         result = run_module("test", "test_gc", "-v", gc_args=gc_args)
 
         with print_on_failure(result):
@@ -460,7 +474,7 @@ class TestRunCommandModuleMode:
     def test_run_module_long_running_jsonl_format(self, tmp_path: Path) -> None:
         output_file = tmp_path / "trace.jsonl"
 
-        gc_args = ["-vvv", "--format", "jsonl", "-o", str(output_file)]
+        gc_args = ["-vvv", "--format", FORMAT_JSONL, "-o", str(output_file)]
         result = run_module("test", "test_gc", "-v", gc_args=gc_args)
 
         with print_on_failure(result):
@@ -468,7 +482,7 @@ class TestRunCommandModuleMode:
             assert_jsonl_format(output_file)
 
     def test_run_module_long_running_stdout_format(self) -> None:
-        gc_args = ["-vvv", "--format", "stdout"]
+        gc_args = ["-vvv", "--format", FORMAT_STDOUT]
         result = run_module("test", "test_gc", "-v", gc_args=gc_args)
 
         with print_on_failure(result):
@@ -482,7 +496,7 @@ class TestRunCommandModuleMode:
         output_file = tmp_path / "trace.pftrace"
 
         # gcmon options BEFORE -m, script args AFTER (including overlapping --format, -v)
-        gc_args = ["-v", "--format", "perfetto", "-o", str(output_file)]
+        gc_args = ["-v", "--format", FORMAT_PERFETTO, "-o", str(output_file)]
         result = run_module("test", "test_gc", "-v", gc_args=gc_args)
 
         with print_on_failure(result):
@@ -541,8 +555,8 @@ class TestRunCommandHelp:
             [
                 sys.executable,
                 "-m",
-                "gcmon",
-                "run",
+                PROGRAM_NAME,
+                CMD_RUN,
                 "--help",
             ],
             capture_output=True,
@@ -570,8 +584,8 @@ class TestRunCommandHelp:
             [
                 sys.executable,
                 "-m",
-                "gcmon",
-                "run",
+                PROGRAM_NAME,
+                CMD_RUN,
                 "--help",
             ],
             capture_output=True,

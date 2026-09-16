@@ -1,5 +1,6 @@
 """What identifies a `Process`, and what it may not carry."""
 
+from gcmon.model.names import PID, PID_EPOCH
 from gcmon.model.process import Process
 
 
@@ -10,7 +11,7 @@ class TestAProcessIsThePairAndNothingElse:
     dict on several times per event (ADR-0025)."""
 
     def test_the_struct_holds_the_pair_alone(self) -> None:
-        assert Process.__struct_fields__ == ("pid", "pid_epoch")
+        assert Process.__struct_fields__ == (PID, PID_EPOCH)
 
     def test_two_naming_the_same_process_are_equal(self) -> None:
         assert Process(12345, 1) == Process(12345, 1)

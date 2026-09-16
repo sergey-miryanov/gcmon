@@ -32,7 +32,19 @@ from perfetto.trace_processor import TraceProcessor
 
 from gcmon.analysis.combine import combine_files
 from gcmon.analysis.jsonl_io import read_jsonl, write_jsonl
+from gcmon.model.names import (
+    GC_LOSS_NAME,
+    GEN,
+    GENS,
+    LOST_COUNT,
+    LOST_PAUSE_NS,
+    OBSERVED_COUNT,
+    TS_START,
+    TS_STOP,
+    gc_loss_slice_name,
+)
 from gcmon.model.protocol import TItem, is_loss
+from gcmon.support.vocabulary import ENCODING, FORMAT_JSONL, FORMAT_PERFETTO
 from tests.exporters.loss_row import (
     IID,
     PID,
@@ -47,8 +59,8 @@ from tests.helpers import create_mock_loss_item, loss_track, open_trace_processo
 LOSS_ROW = loss_track(PID, IID)
 
 LIVE_ROW: list[SliceRow] = [
-    ("GC Loss(0,1,2)", 1_000_000, 10_000_000, 0),
-    ("GC Loss(0,1,2)", 10_000_000, 20_000_000, 0),
+    (gc_loss_slice_name([0, 1, 2]), 1_000_000, 10_000_000, 0),
+    (gc_loss_slice_name([0, 1, 2]), 10_000_000, 20_000_000, 0),
 ]
 """The row `three_generations` draws, in the nanoseconds a trace carries.
 
@@ -68,7 +80,7 @@ def _capture(tmp_path: Path, name: str = "capture.jsonl") -> Path:
 def _combined(tmp_path: Path, source: Path, name: str = "combined") -> Iterator[TraceProcessor]:
     """Combine *source* to Perfetto and load the result into the processor."""
     out = tmp_path / f"{name}.pftrace"
-    combine_files([source], out, output_format="perfetto")
+    combine_files([source], out, output_format=FORMAT_PERFETTO)
 
     with open_trace_processor(out) as tp:
         yield tp
@@ -84,7 +96,7 @@ def _loss_row(tp: TraceProcessor) -> list[SliceRow]:
         (row.name, row.ts, row.ts + row.dur, row.depth)
         for row in tp.query(
             "SELECT s.name, s.ts, s.dur, s.depth FROM slice s JOIN track t ON s.track_id = t.id "
-            "WHERE t.name LIKE 'GC Loss%' ORDER BY s.ts, s.depth"
+            f"WHERE t.name LIKE '{GC_LOSS_NAME}%' ORDER BY s.ts, s.depth"
         )
     ]
 
@@ -107,7 +119,7 @@ def _loss_args(tp: TraceProcessor) -> list[dict[str, Any]]:
     for row in tp.query(
         "SELECT s.ts, a.flat_key, a.string_value, a.int_value "
         "FROM slice s JOIN track t ON s.track_id = t.id JOIN args a ON a.arg_set_id = s.arg_set_id "
-        "WHERE t.name LIKE 'GC Loss%' ORDER BY s.ts, a.flat_key"
+        f"WHERE t.name LIKE '{GC_LOSS_NAME}%' ORDER BY s.ts, a.flat_key"
     ):
         if not row.flat_key.startswith("debug."):
             continue
@@ -129,8 +141,8 @@ class TestTheCombinedRowIsTheLiveRow:
         with _combined(tmp_path, _capture(tmp_path)) as tp:
             assert _misplaced_ends(tp) == 0
             assert [(name, depth) for name, _s, _e, depth in _loss_row(tp)] == [
-                ("GC Loss(0,1,2)", 0),
-                ("GC Loss(0,1,2)", 0),
+                (gc_loss_slice_name([0, 1, 2]), 0),
+                (gc_loss_slice_name([0, 1, 2]), 0),
             ]
 
     def test_every_span_keeps_its_interval(self, tmp_path: Path) -> None:
@@ -170,7 +182,7 @@ class TestTheCombinedRowIsTheLiveRow:
         with _combined(tmp_path, _capture(tmp_path)) as tp:
             args = _loss_args(tp)
 
-        assert [(a["observed_count"], a["lost_count"], a["lost_pause_ns"]) for a in args] == [
+        assert [(a[OBSERVED_COUNT], a[LOST_COUNT], a[LOST_PAUSE_NS]) for a in args] == [
             (3, 6, 600_000),
             (3, 6, 600_000),
         ]
@@ -182,17 +194,17 @@ class TestTheFileCarriesTheIntervals:
     drawing so that a regression says which half broke."""
 
     def test_one_line_per_poll_interval(self, tmp_path: Path) -> None:
-        lines = [json.loads(line) for line in _capture(tmp_path).read_text(encoding="utf-8").splitlines() if line]
+        lines = [json.loads(line) for line in _capture(tmp_path).read_text(encoding=ENCODING).splitlines() if line]
 
-        assert [(r["ts_start"], r["ts_stop"]) for r in lines if "gens" in r] == [
+        assert [(r[TS_START], r[TS_STOP]) for r in lines if GENS in r] == [
             (POLL_TIMES[0], POLL_TIMES[1]),
             (POLL_TIMES[1], POLL_TIMES[2]),
         ]
 
     def test_each_line_names_every_generation_in_its_interval(self, tmp_path: Path) -> None:
-        lines = [json.loads(line) for line in _capture(tmp_path).read_text(encoding="utf-8").splitlines() if line]
+        lines = [json.loads(line) for line in _capture(tmp_path).read_text(encoding=ENCODING).splitlines() if line]
 
-        assert [[entry["gen"] for entry in r["gens"]] for r in lines if "gens" in r] == [[0, 1, 2], [0, 1, 2]]
+        assert [[entry[GEN] for entry in r[GENS]] for r in lines if GENS in r] == [[0, 1, 2], [0, 1, 2]]
 
     def test_a_jsonl_to_jsonl_pass_does_not_reshuffle_them(self, tmp_path: Path) -> None:
         """`combine` can also write JSONL, and a capture that went through it
@@ -200,7 +212,7 @@ class TestTheFileCarriesTheIntervals:
         source = _capture(tmp_path)
         out = tmp_path / "combined.jsonl"
 
-        combine_files([source], out, output_format="jsonl")
+        combine_files([source], out, output_format=FORMAT_JSONL)
 
         assert [item for item in read_jsonl(out)[PID] if is_loss(item)] == [
             item for item in read_jsonl(source)[PID] if is_loss(item)

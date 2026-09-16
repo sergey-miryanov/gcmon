@@ -14,6 +14,8 @@ from typing import Protocol
 import pytest
 from perfetto.protos.perfetto.trace.perfetto_trace_pb2 import TracePacket, TrackEvent
 
+from gcmon.model.names import GC_PAUSE_NAME, PID, TS_START
+from gcmon.support.vocabulary import CMD_COMBINE, ENCODING, FORMAT_JSONL, FORMAT_PERFETTO, PROGRAM_NAME
 from tests.helpers import JsonlRecord, create_jsonl_record, perfetto_packets
 
 
@@ -45,7 +47,7 @@ def make_raw_file(tmp_path: Path) -> RawFileFactory:
 
     def _make(name: str, content: str) -> Path:
         path = tmp_path / name
-        path.write_text(content, encoding="utf-8")
+        path.write_text(content, encoding=ENCODING)
         return path
 
     return _make
@@ -57,7 +59,7 @@ def make_jsonl_file(tmp_path: Path) -> JsonlFileFactory:
 
     def _make(name: str, records: list[dict[str, int | float]]) -> Path:
         path = tmp_path / name
-        with open(path, "w", encoding="utf-8") as f:
+        with open(path, "w", encoding=ENCODING) as f:
             for rec in records:
                 f.write(json.dumps(rec) + "\n")
         return path
@@ -70,7 +72,7 @@ def run_combine() -> Combiner:
     def _run(
         inputs: list[Path], output: Path | None = None, extra_args: list[str] | None = None
     ) -> subprocess.CompletedProcess[str]:
-        cmd = [sys.executable, "-m", "gcmon", "combine"]
+        cmd = [sys.executable, "-m", PROGRAM_NAME, CMD_COMBINE]
         cmd.extend(str(f) for f in inputs)
         if output:
             cmd += ["-o", str(output)]
@@ -129,7 +131,7 @@ def pause_timestamps(path: Path) -> list[int]:
         for pkt in perfetto_packets(path.read_bytes())
         if pkt.HasField("track_event")
         and pkt.track_event.type == TrackEvent.Type.TYPE_SLICE_BEGIN
-        and pkt.track_event.name.startswith("GC Pause")
+        and pkt.track_event.name.startswith(GC_PAUSE_NAME)
     ]
 
 
@@ -137,7 +139,7 @@ def assert_valid_jsonl(path: Path) -> list[JsonlRecord]:
     """Validate that a file contains valid JSONL (one JSON object per line)."""
     assert path.exists(), f"File {path} does not exist"
     records: list[JsonlRecord] = []
-    with open(path, encoding="utf-8") as f:
+    with open(path, encoding=ENCODING) as f:
         for idx, line in enumerate(f):
             line = line.strip()
             if not line:
@@ -159,7 +161,7 @@ def _args(inputs: list[Path], output: Path, **overrides: object) -> Namespace:
         "output": output,
         "verbose": 1,
         "normalize": False,
-        "output_format": "perfetto",
+        "output_format": FORMAT_PERFETTO,
     }
     return Namespace(**{**defaults, **overrides})
 
@@ -175,7 +177,9 @@ def test_cmd_combine_basic(make_jsonl_file: JsonlFileFactory, tmp_path: Path) ->
     assert output.read_bytes()
 
 
-@pytest.mark.parametrize("output_format, output_name", [("perfetto", "output.pftrace"), ("jsonl", "output.jsonl")])
+@pytest.mark.parametrize(
+    "output_format, output_name", [(FORMAT_PERFETTO, "output.pftrace"), (FORMAT_JSONL, "output.jsonl")]
+)
 def test_cmd_combine_file_not_found(
     caplog: pytest.LogCaptureFixture, tmp_path: Path, output_format: str, output_name: str
 ) -> None:
@@ -187,7 +191,9 @@ def test_cmd_combine_file_not_found(
     assert "Error combining files" in caplog.text
 
 
-@pytest.mark.parametrize("output_format, output_name", [("perfetto", "output.pftrace"), ("jsonl", "output.jsonl")])
+@pytest.mark.parametrize(
+    "output_format, output_name", [(FORMAT_PERFETTO, "output.pftrace"), (FORMAT_JSONL, "output.jsonl")]
+)
 def test_cmd_combine_invalid_json(
     caplog: pytest.LogCaptureFixture,
     make_raw_file: RawFileFactory,
@@ -362,25 +368,25 @@ class TestCliCombineJsonlToJsonl:
         f1 = make_jsonl_file("data1.jsonl", [create_jsonl_record()])
         output = tmp_path / "combined.jsonl"
 
-        result = run_combine([f1], output=output, extra_args=["--output-format", "jsonl"])
+        result = run_combine([f1], output=output, extra_args=["--output-format", FORMAT_JSONL])
 
         assert result.returncode == 0
         records = assert_valid_jsonl(output)
-        assert records[0]["pid"] == 123
-        assert records[0]["ts_start"] == 1_000_000
+        assert records[0][PID] == 123
+        assert records[0][TS_START] == 1_000_000
 
     def test_multiple_files(self, make_jsonl_file: JsonlFileFactory, run_combine: Combiner, tmp_path: Path) -> None:
         f1 = make_jsonl_file("data1.jsonl", [create_jsonl_record(pid=123, gen=0)])
         f2 = make_jsonl_file("data2.jsonl", [create_jsonl_record(pid=456, gen=1)])
         output = tmp_path / "combined.jsonl"
 
-        result = run_combine([f1, f2], output=output, extra_args=["--output-format", "jsonl"])
+        result = run_combine([f1, f2], output=output, extra_args=["--output-format", FORMAT_JSONL])
 
         assert result.returncode == 0
         records = assert_valid_jsonl(output)
         assert len(records) == 2
-        assert records[0]["pid"] == 123
-        assert records[1]["pid"] == 456
+        assert records[0][PID] == 123
+        assert records[1][PID] == 456
 
     def test_normalize(self, make_jsonl_file: JsonlFileFactory, run_combine: Combiner, tmp_path: Path) -> None:
         """The JSONL path zeroes each pid across the whole merge, where the
@@ -394,14 +400,14 @@ class TestCliCombineJsonlToJsonl:
         )
         output = tmp_path / "combined.jsonl"
 
-        result = run_combine([f1], output=output, extra_args=["--output-format", "jsonl", "--normalize"])
+        result = run_combine([f1], output=output, extra_args=["--output-format", FORMAT_JSONL, "--normalize"])
 
         assert result.returncode == 0
         records = assert_valid_jsonl(output)
-        assert records[0]["ts_start"] == 0
-        assert records[1]["ts_start"] == 5_000_000
-        assert records[0]["pid"] == 123
-        assert records[1]["pid"] == 123
+        assert records[0][TS_START] == 0
+        assert records[1][TS_START] == 5_000_000
+        assert records[0][PID] == 123
+        assert records[1][PID] == 123
 
 
 # =============================================================================
@@ -424,7 +430,7 @@ class TestTheChromeInputIsGone:
         `--input-format chrome` a thing an operator could type."""
         f1 = make_jsonl_file("data.jsonl", [create_jsonl_record()])
 
-        result = run_combine([f1], output=combine_output, extra_args=["--input-format", "jsonl"])
+        result = run_combine([f1], output=combine_output, extra_args=["--input-format", FORMAT_JSONL])
 
         assert result.returncode == 2
         assert "--input-format" in result.stderr
@@ -440,8 +446,8 @@ class TestTheChromeInputIsGone:
         result = run_combine([f1], output=combine_output, extra_args=["--output-format", "chrome"])
 
         assert result.returncode == 2
-        assert "perfetto" in result.stderr
-        assert "jsonl" in result.stderr
+        assert FORMAT_PERFETTO in result.stderr
+        assert FORMAT_JSONL in result.stderr
 
     def test_a_chrome_file_is_named_rather_than_parsed(
         self,
@@ -453,6 +459,8 @@ class TestTheChromeInputIsGone:
         first character of a Chrome trace is the `[` of a JSON array, so
         without the check msgspec would report a malformed line 1 and the file
         would read as corrupt."""
+        # Spelled out: a capture from an earlier release is a file that
+        # already exists, not something gcmon writes today.
         chrome = make_raw_file("old.json", '[\n{"ph":"B","name":"GC Pause(0)","ts":1,"pid":1,"tid":0,"cat":"gc"}\n]\n')
 
         result = run_combine([chrome], output=combine_output)
@@ -476,8 +484,8 @@ class TestCliCombineHelp:
 
         assert "--output-format" in result.stdout
         assert "--input-format" not in result.stdout
-        assert "jsonl" in result.stdout
-        assert "perfetto" in result.stdout
+        assert FORMAT_JSONL in result.stdout
+        assert FORMAT_PERFETTO in result.stdout
         assert "chrome" not in result.stdout
 
 
@@ -495,7 +503,7 @@ class TestCliCombineJsonlToPerfetto:
     ) -> None:
         f1 = make_jsonl_file("data.jsonl", [create_jsonl_record()])
 
-        result = run_combine([f1], output=combine_output, extra_args=["--output-format", "perfetto", "-v"])
+        result = run_combine([f1], output=combine_output, extra_args=["--output-format", FORMAT_PERFETTO, "-v"])
 
         assert result.returncode == 0, result.stderr
         assert "Output format: perfetto" in result.stderr
@@ -517,7 +525,7 @@ class TestCliCombineJsonlToPerfetto:
         )
 
         result = run_combine(
-            [f1], output=combine_output, extra_args=["--output-format", "perfetto", "--normalize", "-v"]
+            [f1], output=combine_output, extra_args=["--output-format", FORMAT_PERFETTO, "--normalize", "-v"]
         )
 
         assert result.returncode == 0, result.stderr

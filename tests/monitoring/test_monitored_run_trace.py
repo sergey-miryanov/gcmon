@@ -77,14 +77,17 @@ import pytest
 from perfetto.protos.perfetto.trace.perfetto_trace_pb2 import TracePacket, TrackEvent
 
 from gcmon.exporters.perfetto_exporter import PerfettoExporter
+from gcmon.exporters.perfetto_process_lifetime import _PROCESS_LIFETIME_TRACK_NAME, process_track_name
 from gcmon.model.data import GCStatsInfo
+from gcmon.model.names import COLLECTIONS, GC_LOSS_NAME, GC_PAUSE_NAME, GENERATION, PID
 from gcmon.monitoring.monitor import EventsMonitor
 from gcmon.monitoring.monitor_loop import MonitorLoop
 from gcmon.monitoring.run_policy import Runner
 from gcmon.monitoring.target_process import ExternalProcess
 from gcmon.monitoring.wait_policy import no_wait_policy
 from gcmon.stats.streaming_stats import StreamingStats
-from tests.helpers import FakeEventsReader, perfetto_packets
+from gcmon.support.vocabulary import DEFAULT_TRACE_FILE, ENCODING
+from tests.helpers import FakeEventsReader, perfetto_packets, proc
 from tests.monitoring.test_loss_replay import MS, READ_COST_NS, RING_SIZES, capture_records, ring_at
 
 FIXTURE = Path(__file__).resolve().parent.parent / "fixtures" / "monitored_run_perfetto_trace.txt"
@@ -301,7 +304,7 @@ class MonitoredRun:
         system's pid and the epoch and is the only place either of them
         appears on a descriptor (ADR-0011).
         """
-        prefix = f"Process {pid}"
+        prefix = process_track_name(proc(pid))
         return {
             packet.track_descriptor.process.pid
             for packet in self.packets()
@@ -410,7 +413,7 @@ def run_monitored(output: Path) -> MonitoredRun:
 
 @pytest.fixture(scope="module")
 def run(tmp_path_factory: pytest.TempPathFactory) -> MonitoredRun:
-    return run_monitored(tmp_path_factory.mktemp("trace") / "gcmon.pftrace")
+    return run_monitored(tmp_path_factory.mktemp("trace") / DEFAULT_TRACE_FILE)
 
 
 class TestTheScriptIsWorthPinning:
@@ -445,7 +448,7 @@ class TestTheScriptIsWorthPinning:
             for packet in run.packets()
             if packet.HasField("track_event")
             for annotation in packet.track_event.debug_annotations
-            if annotation.name == "pid"
+            if annotation.name == PID
         }
 
         assert annotated == {TARGET_PID, CHILD_PID}
@@ -455,8 +458,8 @@ class TestTheScriptIsWorthPinning:
         and leave ADR-0015's loss arithmetic out of the fixture entirely."""
         names = run.slice_names()
 
-        assert any(name.startswith("GC Pause(") for name in names)
-        assert any(name.startswith("GC Loss(") for name in names)
+        assert any(name.startswith(f"{GC_PAUSE_NAME}(") for name in names)
+        assert any(name.startswith(f"{GC_LOSS_NAME}(") for name in names)
 
     def test_both_pids_get_a_span_on_the_processes_track(self, run: MonitoredRun) -> None:
         """The minimap, and the reason this leg is the one worth pinning.
@@ -465,9 +468,15 @@ class TestTheScriptIsWorthPinning:
         only the Perfetto exporter overrides it. A run whose spans went missing
         here would still write every pause and every loss slice.
         """
-        drawn = run.begins_on(run.track_uuid("Processes"))
+        drawn = run.begins_on(run.track_uuid(_PROCESS_LIFETIME_TRACK_NAME))
 
-        assert sorted(drawn) == sorted([f"Process {TARGET_PID}", f"Process {CHILD_PID}", f"Process {CHILD_PID}#2"])
+        assert sorted(drawn) == sorted(
+            [
+                process_track_name(proc(TARGET_PID)),
+                process_track_name(proc(CHILD_PID)),
+                process_track_name(proc(CHILD_PID, 2)),
+            ]
+        )
 
     def test_the_clock_was_spent_exactly(self, run: MonitoredRun) -> None:
         """One read to seed the grid, then per tick one to stamp it, two per
@@ -480,7 +489,7 @@ class TestTheScriptIsWorthPinning:
 class TestTheTracesAreIdentical:
     def test_the_packets_match_the_fixture(self, run: MonitoredRun) -> None:
         """The guard. See the module docstring before regenerating."""
-        expected = FIXTURE.read_text(encoding="utf-8")
+        expected = FIXTURE.read_text(encoding=ENCODING)
 
         # Line by line first: the stored form is one field per line under a
         # header naming the packet, so this is the assertion that prints a diff
@@ -521,12 +530,12 @@ class TestTheChildLeavingIsVisible:
             event = packet.track_event
             if event.type != TrackEvent.Type.TYPE_SLICE_BEGIN:
                 continue
-            if not event.name.startswith("GC Pause("):
+            if not event.name.startswith(f"{GC_PAUSE_NAME}("):
                 continue
             if by_track.get(event.track_uuid) not in row_pids:
                 continue
             annotations = {ann.name: ann.int_value for ann in event.debug_annotations}
-            drawn.append((annotations["generation"], annotations["collections"]))
+            drawn.append((annotations[GENERATION], annotations[COLLECTIONS]))
         return drawn
 
     def test_the_child_draws_on_both_of_its_rows(self, run: MonitoredRun) -> None:
@@ -538,7 +547,7 @@ class TestTheChildLeavingIsVisible:
             for packet in run.packets()
             if packet.HasField("track_event")
             and packet.track_event.type == TrackEvent.Type.TYPE_SLICE_BEGIN
-            and packet.track_event.name.startswith("GC Pause(")
+            and packet.track_event.name.startswith(f"{GC_PAUSE_NAME}(")
             and by_track.get(uuid := packet.track_event.track_uuid) in row_pids
         }
 
@@ -565,11 +574,11 @@ def _regenerate() -> None:
     import tempfile
 
     with tempfile.TemporaryDirectory() as tmp:
-        produced = run_monitored(Path(tmp) / "gcmon.pftrace")
+        produced = run_monitored(Path(tmp) / DEFAULT_TRACE_FILE)
 
     text = produced.text()
     FIXTURE.parent.mkdir(parents=True, exist_ok=True)
-    FIXTURE.write_text(text, encoding="utf-8", newline="\n")
+    FIXTURE.write_text(text, encoding=ENCODING, newline="\n")
     print(f"wrote {FIXTURE} ({len(text)} chars, {len(produced.packets())} packets)")
 
 

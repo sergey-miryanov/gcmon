@@ -16,10 +16,12 @@ import pytest
 
 from gcmon.exporters.perfetto_builders import build_trace, build_trace_packet, build_track_event
 from gcmon.exporters.perfetto_process_lifetime import (
+    _PROCESS_LIFETIME_TRACK_NAME,
     ClippedSpan,
     _clip_spans_to_laminar,
     _emit_process_lifetime_slice,
     _emit_process_lifetime_track_descriptor,
+    process_track_name,
 )
 from gcmon.exporters.perfetto_proto import TrackEventType
 from gcmon.exporters.perfetto_track_state import PerfettoTrackState, ProcessSpan
@@ -74,14 +76,15 @@ def _slices_as_read_back(packets: list[bytes], tmp_path: Path, name: str) -> tup
         slices = {
             row.name: (row.ts, row.dur)
             for row in tp.query(
-                "SELECT s.name, s.ts, s.dur FROM slice s JOIN track t ON s.track_id = t.id WHERE t.name = 'Processes'"
+                f"SELECT s.name, s.ts, s.dur FROM slice s JOIN track t ON s.track_id = t.id "
+                f"WHERE t.name = '{_PROCESS_LIFETIME_TRACK_NAME}'"
             )
         }
     return misplaced, slices
 
 
 def _expected(clipped: list[ClippedSpan]) -> dict[str, tuple[int, int]]:
-    return {f"Process {one.process}": (one.start_ts, one.end_ts - one.start_ts) for one in clipped}
+    return {process_track_name(one.process): (one.start_ts, one.end_ts - one.start_ts) for one in clipped}
 
 
 @pytest.mark.parametrize("seed", range(TRIALS))
@@ -206,6 +209,8 @@ def test_a_named_end_matches_by_name_not_by_stack_position(tmp_path: Path) -> No
         )
 
     # "Process A" is closed while "Process B" sits above it on the stack.
+    # Two names the stack can tell apart, not rows gcmon draws, so they are
+    # spelled out rather than built from a pid.
     packets = [
         _emit_process_lifetime_track_descriptor(state, SEQUENCE_ID),
         event(0, TrackEventType.SLICE_BEGIN, "Process A"),

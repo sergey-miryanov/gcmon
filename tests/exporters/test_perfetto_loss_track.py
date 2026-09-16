@@ -19,10 +19,18 @@ from pathlib import Path
 import pytest
 
 from gcmon.exporters.perfetto_builders import build_trace
-from gcmon.exporters.perfetto_format import convert_trace_events_to_perfetto, finalize_perfetto_packets
+from gcmon.exporters.perfetto_format import (
+    _LOSS_TRACK_NAME,
+    _PAUSE_TRACK_NAME,
+    _interpreter_group_name,
+    convert_trace_events_to_perfetto,
+    finalize_perfetto_packets,
+)
+from gcmon.exporters.perfetto_process_lifetime import _PROCESS_LIFETIME_TRACK_NAME, process_track_name
 from gcmon.exporters.perfetto_track_state import PerfettoTrackState
 from gcmon.exporters.trace_converter import convert_item_to_trace_format, convert_loss_to_trace_format
 from gcmon.model.data import GCStatsInfo, LossMsg
+from gcmon.model.names import GC_LOSS_NAME, gc_loss_slice_name, gc_pause_slice_name
 from gcmon.model.trace_event import TraceEvent
 from tests.helpers import create_mock_loss_item, open_trace_processor, proc
 
@@ -78,7 +86,7 @@ def _load(events: list[TraceEvent], tmp_path: Path, name: str) -> tuple[int, lis
                 "SELECT t.name AS track_name, s.name, s.ts, s.dur "
                 "FROM slice s JOIN track t ON s.track_id = t.id "
                 "WHERE s.depth = 0 "
-                f"AND t.name NOT IN ('Processes', 'Process {PID}') "
+                f"AND t.name NOT IN ('{_PROCESS_LIFETIME_TRACK_NAME}', '{process_track_name(proc(PID))}') "
                 "ORDER BY s.ts"
             )
         ]
@@ -109,7 +117,7 @@ def _loss_row(events: list[TraceEvent], tmp_path: Path, name: str) -> tuple[int,
             (row.name, row.ts, row.dur, row.depth)
             for row in tp.query(
                 "SELECT s.name, s.ts, s.dur, s.depth FROM slice s JOIN track t ON s.track_id = t.id "
-                "WHERE t.name LIKE 'GC Loss%' ORDER BY s.ts, s.depth"
+                f"WHERE t.name LIKE '{GC_LOSS_NAME}%' ORDER BY s.ts, s.depth"
             )
         ]
     return misplaced, slices
@@ -143,9 +151,9 @@ def test_a_loss_span_lands_on_its_own_track(tmp_path: Path) -> None:
 
     assert misplaced == 0
     assert slices == [
-        ("GC Pauses", "GC Pause(0)", 1_000, 1_000),
-        ("GC Loss", "GC Loss(0)", 2_000, 7_000),
-        ("GC Pauses", "GC Pause(0)", 9_000, 1_000),
+        (_PAUSE_TRACK_NAME, gc_pause_slice_name(0), 1_000, 1_000),
+        (_LOSS_TRACK_NAME, gc_loss_slice_name([0]), 2_000, 7_000),
+        (_PAUSE_TRACK_NAME, gc_pause_slice_name(0), 9_000, 1_000),
     ]
 
 
@@ -154,7 +162,7 @@ def test_the_bar_is_the_whole_interval(tmp_path: Path) -> None:
     interval between two reads, not where in it the lost records ran."""
     _, slices = _load(_events(_loss(2_000, 9_000, 500)), tmp_path, "fills_gap")
 
-    loss = next((ts, dur) for _t, name, ts, dur in slices if name == "GC Loss(0)")
+    loss = next((ts, dur) for _t, name, ts, dur in slices if name == gc_loss_slice_name([0]))
     assert loss == (2_000, 7_000)
 
 
@@ -170,11 +178,11 @@ def test_two_interpreters_get_two_rows(tmp_path: Path) -> None:
             for row in tp.query(
                 "SELECT ig.name AS iname, t.id AS id FROM track t "
                 "JOIN track ig ON t.parent_id = ig.id "
-                "WHERE t.name = 'GC Loss' ORDER BY ig.name"
+                f"WHERE t.name = '{_LOSS_TRACK_NAME}' ORDER BY ig.name"
             )
         ]
 
-    assert [iname for iname, _id in rows] == ["Interpreter 0", "Interpreter 7"]
+    assert [iname for iname, _id in rows] == [_interpreter_group_name(0), _interpreter_group_name(7)]
     assert len({track_id for _iname, track_id in rows}) == 2, f"the two rows merged: {rows}"
 
 
@@ -185,7 +193,7 @@ def _process_slices(events: list[TraceEvent], tmp_path: Path, name: str) -> list
             (row.track_name, row.name, row.ts, row.dur)
             for row in tp.query(
                 "SELECT t.name AS track_name, s.name, s.ts, s.dur FROM slice s "
-                f"JOIN track t ON s.track_id = t.id WHERE t.name = 'Process {PID}'"
+                f"JOIN track t ON s.track_id = t.id WHERE t.name = '{process_track_name(proc(PID))}'"
             )
         ]
 
@@ -213,8 +221,8 @@ def test_consecutive_intervals_come_back_as_neighbours(tmp_path: Path) -> None:
 
     assert misplaced == 0
     assert slices == [
-        ("GC Loss(0)", 2_000, 3_000, 0),
-        ("GC Loss(0)", 5_000, 4_000, 0),
+        (gc_loss_slice_name([0]), 2_000, 3_000, 0),
+        (gc_loss_slice_name([0]), 5_000, 4_000, 0),
     ]
 
 

@@ -15,6 +15,7 @@ from gcmon.monitoring.process_registry import ProcessRegistry
 from gcmon.monitoring.target_process import ExternalProcess
 from gcmon.monitoring.wait_policy import WaitPolicy, WaitPolicyFactory, no_wait_policy
 from gcmon.stats.streaming_stats import StreamingStats
+from gcmon.support.vocabulary import PROGRAM_NAME
 from tests.helpers import FakeEventsReader, MockExporter, create_mock_stats_item, proc
 
 NO_RECORDS: list[TGCStatsInfo] = []
@@ -202,7 +203,7 @@ class TestGCMonitor:
         traceback on stderr every time a monitored process finishes."""
         mock_read.side_effect = TargetUnavailable("PID 12345 is not readable: [Errno 3] No such process")
 
-        with caplog.at_level(logging.DEBUG, logger="gcmon"):
+        with caplog.at_level(logging.DEBUG, logger=PROGRAM_NAME):
             assert monitor._poll(12345).status == PollStatus.INVALID_PROCESS
 
         assert [r for r in caplog.records if r.levelno >= logging.WARNING] == []
@@ -216,7 +217,7 @@ class TestGCMonitor:
         of one line per pid per tick for as long as the run lasts."""
         mock_read.side_effect = TargetUnavailable("PID 12345 is not readable: Failed to get Python runtime address")
 
-        with caplog.at_level(logging.DEBUG, logger="gcmon"):
+        with caplog.at_level(logging.DEBUG, logger=PROGRAM_NAME):
             monitor._poll(12345)
             monitor._poll(12345)
 
@@ -233,7 +234,7 @@ class TestGCMonitor:
             TargetUnavailable("PID 12345 is not readable: Failed to read interpreter state address"),
         ]
 
-        with caplog.at_level(logging.DEBUG, logger="gcmon"):
+        with caplog.at_level(logging.DEBUG, logger=PROGRAM_NAME):
             for _ in range(2):
                 monitor._poll(12345)
 
@@ -251,7 +252,7 @@ class TestGCMonitor:
             TargetUnavailable("PID 12345 is not readable: No interpreter state found"),
         ]
 
-        with caplog.at_level(logging.DEBUG, logger="gcmon"):
+        with caplog.at_level(logging.DEBUG, logger=PROGRAM_NAME):
             for _ in range(3):
                 monitor._poll(12345)
 
@@ -702,7 +703,7 @@ class TestOnePruneOverOneSet:
         them has gone and the one that read them did not (ADR-0025), so the
         log is where the prune shows.
         """
-        with caplog.at_level(logging.DEBUG, logger="gcmon"):
+        with caplog.at_level(logging.DEBUG, logger=PROGRAM_NAME):
             _drive(
                 _monitor(exporter),
                 listings=[[999], [], [999]],
@@ -741,7 +742,7 @@ class TestOnePruneOverOneSet:
         number is a new process, and its first failed poll is news even where
         it failed the way its predecessor did.
         """
-        with caplog.at_level(logging.DEBUG, logger="gcmon"):
+        with caplog.at_level(logging.DEBUG, logger=PROGRAM_NAME):
             _drive(
                 _monitor(exporter),
                 listings=[[999], [999], [], [999]],

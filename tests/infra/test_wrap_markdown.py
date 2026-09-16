@@ -5,6 +5,8 @@ import textwrap
 from pathlib import Path
 from typing import Any
 
+from gcmon.support.vocabulary import ENCODING
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SCRIPT_PATH = REPO_ROOT / ".github" / "scripts" / "wrap_markdown.py"
 
@@ -216,7 +218,7 @@ class TestTheToolIsStable:
         """
         unstable = []
         for path in sorted(REPO_ROOT.glob("specs/*.md")) + sorted(REPO_ROOT.glob("docs/**/*.md")):
-            original = path.read_text(encoding="utf-8", newline="")
+            original = path.read_text(encoding=ENCODING, newline="")
             if "\r" in original or wrap_markdown._indented_code(original):
                 continue
             once = wrap_markdown.rewrap(original, 78)

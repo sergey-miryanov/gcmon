@@ -7,10 +7,13 @@ from pathlib import Path
 import msgspec
 import pytest
 
+from gcmon.model.names import PID
+from gcmon.support.vocabulary import CMD_COMBINE, CMD_MONITOR, CMD_RUN, PROGRAM_NAME
+
 
 @pytest.fixture
 def gcmon_cli() -> list[str]:
-    return [sys.executable, "-m", "gcmon"]
+    return [sys.executable, "-m", PROGRAM_NAME]
 
 
 @pytest.fixture
@@ -32,7 +35,7 @@ class TestSetupLogging:
 
         for handler in logging.root.handlers[:]:
             logging.root.removeHandler(handler)
-        logging.getLogger("gcmon").handlers.clear()
+        logging.getLogger(PROGRAM_NAME).handlers.clear()
 
     @pytest.mark.parametrize(
         "verbose_count, expected_level",
@@ -46,7 +49,7 @@ class TestSetupLogging:
         import logging
 
         cli_module._setup_logging(verbose_count=verbose_count)
-        logger = logging.getLogger("gcmon")
+        logger = logging.getLogger(PROGRAM_NAME)
         assert logger.level == getattr(logging, expected_level)
 
 
@@ -62,7 +65,7 @@ def test_main_combine_command(tmp_path: Path) -> None:
     input_file = tmp_path / "input.jsonl"
     input_file.write_bytes(msgspec.json.encode(create_jsonl_record()) + b"\n")
 
-    assert cli.main(["combine", str(input_file), "-o", str(tmp_path / "output.pftrace")]) == 0
+    assert cli.main([CMD_COMBINE, str(input_file), "-o", str(tmp_path / "output.pftrace")]) == 0
 
 
 def test_main_no_subcommand_exits_2(capsys: pytest.CaptureFixture[str]) -> None:
@@ -74,7 +77,7 @@ def test_main_no_subcommand_exits_2(capsys: pytest.CaptureFixture[str]) -> None:
     assert excinfo.value.code == 2
     captured = capsys.readouterr()
     assert "the following arguments are required: command" in captured.err
-    for subcommand in ("monitor", "combine", "run"):
+    for subcommand in (CMD_MONITOR, CMD_COMBINE, CMD_RUN):
         assert subcommand in captured.err
 
 
@@ -104,28 +107,28 @@ def test_main_subcommands_dispatch(monkeypatch: pytest.MonkeyPatch, tmp_path: Pa
     calls: list[str] = []
 
     def mock_monitor(args: object) -> int:
-        calls.append("monitor")
+        calls.append(CMD_MONITOR)
         return 0
 
     def mock_run(args: object) -> int:
-        calls.append("run")
+        calls.append(CMD_RUN)
         return 0
 
     def mock_combine(args: object) -> int:
-        calls.append("combine")
+        calls.append(CMD_COMBINE)
         return 0
 
     monkeypatch.setattr("gcmon.cli.monitor.monitor_cmd.cmd_monitor", mock_monitor)
-    assert cli.main(["monitor", "12345"]) == 0
-    assert calls == ["monitor"]
+    assert cli.main([CMD_MONITOR, "12345"]) == 0
+    assert calls == [CMD_MONITOR]
 
     monkeypatch.setattr("gcmon.cli.monitor.run_cmd.cmd_run", mock_run)
-    assert cli.main(["run", "-m", "timeit"]) == 0
-    assert calls == ["monitor", "run"]
+    assert cli.main([CMD_RUN, "-m", "timeit"]) == 0
+    assert calls == [CMD_MONITOR, CMD_RUN]
 
     monkeypatch.setattr("gcmon.cli.analyze.convert_cmd.cmd_combine", mock_combine)
-    assert cli.main(["combine", str(tmp_path / "in.jsonl"), "-o", str(tmp_path / "out.pftrace")]) == 0
-    assert calls == ["monitor", "run", "combine"]
+    assert cli.main([CMD_COMBINE, str(tmp_path / "in.jsonl"), "-o", str(tmp_path / "out.pftrace")]) == 0
+    assert calls == [CMD_MONITOR, CMD_RUN, CMD_COMBINE]
 
 
 # =============================================================================
@@ -141,15 +144,15 @@ class TestCliHelp:
                 "",
                 [
                     "Monitor Python's garbage collector",
-                    "monitor",
-                    "combine",
-                    "run",
+                    CMD_MONITOR,
+                    CMD_COMBINE,
+                    CMD_RUN,
                 ],
             ),
             (
-                "monitor",
+                CMD_MONITOR,
                 [
-                    "pid",
+                    PID,
                     "--output",
                     "--rate",
                     "--duration",
@@ -160,9 +163,9 @@ class TestCliHelp:
                     "--rss-interval",
                 ],
             ),
-            ("combine", ["Combine multiple JSONL captures", "inputs", "--output"]),
+            (CMD_COMBINE, ["Combine multiple JSONL captures", "inputs", "--output"]),
             (
-                "run",
+                CMD_RUN,
                 [
                     "Run a Python script or module",
                     "--module",
@@ -190,7 +193,7 @@ class TestCliVersion:
     def test_version_flag(self, gcmon_cli: list[str]) -> None:
         result = subprocess.run([*gcmon_cli, "--version"], capture_output=True, text=True)
         assert result.returncode == 0
-        assert result.stdout.strip() == importlib.metadata.version("gcmon")
+        assert result.stdout.strip() == importlib.metadata.version(PROGRAM_NAME)
 
     def test_package_attribute_matches_cli(self, gcmon_cli: list[str]) -> None:
         import gcmon
@@ -225,13 +228,13 @@ class TestCliVersion:
 
 class TestCliMonitor:
     def test_missing_pid(self, gcmon_cli: list[str]) -> None:
-        result = subprocess.run([*gcmon_cli, "monitor"], capture_output=True, text=True)
+        result = subprocess.run([*gcmon_cli, CMD_MONITOR], capture_output=True, text=True)
         assert result.returncode != 0
         assert "the following arguments are required: pid" in result.stderr
 
     def test_explicit_command(self, gcmon_cli: list[str]) -> None:
         result = subprocess.run(
-            [*gcmon_cli, "monitor", "12345", "-d", "0.1"],
+            [*gcmon_cli, CMD_MONITOR, "12345", "-d", "0.1"],
             capture_output=True,
             text=True,
             timeout=5,

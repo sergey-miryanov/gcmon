@@ -24,7 +24,10 @@ from gcmon.exporters import (
 from gcmon.exporters.perfetto_format import (
     TrackEventType,
 )
+from gcmon.exporters.perfetto_process_lifetime import _PROCESS_ROW_SLICE_NAME
+from gcmon.model.names import GC_PAUSE_NAME, LOST_COUNT, SAMPLED_COUNT, TYPE
 from gcmon.model.protocol import TGCStatsInfo, TInstantMsg
+from gcmon.support.vocabulary import ENCODING, FORMAT_JSONL, FORMAT_PERFETTO, FORMAT_STDOUT
 from tests.data_helpers import create_instant_msg
 from tests.helpers import (
     JsonlRecord,
@@ -129,7 +132,7 @@ class JsonlFileCapture(OutputCapture):
         if not self._path.exists():
             return []
         out: list[JsonlRecord] = []
-        for ln in self._path.read_text(encoding="utf-8").splitlines():
+        for ln in self._path.read_text(encoding=ENCODING).splitlines():
             if not ln:
                 continue
             out.append(json.loads(ln))
@@ -138,11 +141,11 @@ class JsonlFileCapture(OutputCapture):
     @override
     def count_completes(self) -> int:
         # GC events: no 'type' field. Instant events: type == 'i'.
-        return sum(1 for e in self._lines() if e.get("type") != "i")
+        return sum(1 for e in self._lines() if e.get(TYPE) != "i")
 
     @override
     def count_instants(self) -> int:
-        return sum(1 for e in self._lines() if e.get("type") == "i")
+        return sum(1 for e in self._lines() if e.get(TYPE) == "i")
 
 
 def _get_track_event(packet: TracePacket) -> TrackEvent | None:
@@ -220,15 +223,15 @@ class StdoutCapture(OutputCapture):
 
     @override
     def count_completes(self) -> int:
-        return sum(1 for e in self._lines() if e.get("type") != "i")
+        return sum(1 for e in self._lines() if e.get(TYPE) != "i")
 
     @override
     def count_instants(self) -> int:
-        return sum(1 for e in self._lines() if e.get("type") == "i")
+        return sum(1 for e in self._lines() if e.get(TYPE) == "i")
 
 
 class _JsonlExporterFactory:
-    name = "jsonl"
+    name = FORMAT_JSONL
 
     def build(self, tmp_path: Path, threshold: int) -> tuple[EventsExporter, OutputCapture]:
         path = tmp_path / f"out_{self.name}.dat"
@@ -237,7 +240,7 @@ class _JsonlExporterFactory:
 
 
 class _PerfettoFactory:
-    name = "perfetto"
+    name = FORMAT_PERFETTO
 
     def build(self, tmp_path: Path, threshold: int) -> tuple[EventsExporter, OutputCapture]:
         path = tmp_path / f"out_{self.name}.pb"
@@ -246,7 +249,7 @@ class _PerfettoFactory:
 
 
 class _StdoutFactory:
-    name = "stdout"
+    name = FORMAT_STDOUT
 
     def build(
         self, tmp_path: Path, threshold: int
@@ -522,10 +525,10 @@ class TestCaptureTotalsUnderLoad:
         totals: list[tuple[int, int]] = []
         for packet in perfetto_packets(path.read_bytes()):
             track_event = _get_track_event(packet)
-            if track_event is None or track_event.name != "Lifetime":
+            if track_event is None or track_event.name != _PROCESS_ROW_SLICE_NAME:
                 continue
             annotations = {ann.name: ann.int_value for ann in track_event.debug_annotations}
-            totals.append((annotations["sampled_count"], annotations["lost_count"]))
+            totals.append((annotations[SAMPLED_COUNT], annotations[LOST_COUNT]))
         assert len(totals) == 1, f"expected one Lifetime bar, got {len(totals)}"
         return totals[0]
 
@@ -542,9 +545,9 @@ class TestCaptureTotalsUnderLoad:
             track_event = _get_track_event(packet)
             if track_event is None:
                 continue
-            if track_event.name == "Lifetime":
+            if track_event.name == _PROCESS_ROW_SLICE_NAME:
                 return pauses
-            if track_event.type == TrackEventType.SLICE_BEGIN and track_event.name.startswith("GC Pause"):
+            if track_event.type == TrackEventType.SLICE_BEGIN and track_event.name.startswith(GC_PAUSE_NAME):
                 pauses += 1
         raise AssertionError("the trace carries no Lifetime bar")
 

@@ -8,6 +8,24 @@ import pytest
 
 from gcmon.exporters import StdoutExporter
 from gcmon.model.data import LossMsg
+from gcmon.model.names import (
+    CANDIDATES,
+    COLLECTED,
+    COLLECTIONS,
+    DURATION,
+    GEN,
+    GENS,
+    HEAP_SIZE,
+    IID,
+    LOST_COUNT,
+    LOST_FROM,
+    LOST_PAUSE_NS,
+    OBSERVED_COUNT,
+    PID,
+    TS_START,
+    TS_STOP,
+    UNCOLLECTABLE,
+)
 from gcmon.model.protocol import TGCStatsInfo
 from tests.conftest import DEFAULT_PID
 from tests.helpers import create_mock_loss_item, create_mock_stats_item, proc
@@ -43,16 +61,16 @@ class TestStdoutExporter:
         data: dict[str, Any] = json.loads(output)
 
         # Verify all fields are present
-        assert data["pid"] == 12345
-        assert data["iid"] == 0
-        assert data["gen"] == 0
-        assert data["ts_start"] == 1_500_000_000
-        assert data["collections"] == 50
-        assert data["collected"] == 200
-        assert data["uncollectable"] == 10
-        assert data["candidates"] == 40
-        assert data["heap_size"] == 52428800
-        assert data["duration"] == 0.005
+        assert data[PID] == 12345
+        assert data[IID] == 0
+        assert data[GEN] == 0
+        assert data[TS_START] == 1_500_000_000
+        assert data[COLLECTIONS] == 50
+        assert data[COLLECTED] == 200
+        assert data[UNCOLLECTABLE] == 10
+        assert data[CANDIDATES] == 40
+        assert data[HEAP_SIZE] == 52428800
+        assert data[DURATION] == 0.005
 
     def test_add_event_multiple_events(
         self, mock_stats_item_batch: list[TGCStatsInfo], capsys: pytest.CaptureFixture[str]
@@ -73,7 +91,7 @@ class TestStdoutExporter:
         # Verify each line is valid JSON with correct generation
         for i, line in enumerate(lines):
             data: dict[str, Any] = json.loads(line)
-            assert data["gen"] == i
+            assert data[GEN] == i
 
     def test_close_with_flush(self, mock_stats_item: TGCStatsInfo, capsys: pytest.CaptureFixture[str]) -> None:
         """Test close() flushes stdout."""
@@ -127,7 +145,7 @@ class TestStdoutExporter:
         captured = capsys.readouterr()
         data: dict[str, Any] = json.loads(captured.out.strip())
 
-        assert data["iid"] == 42
+        assert data[IID] == 42
 
     def test_pid_in_output(self, mock_stats_item: TGCStatsInfo, capsys: pytest.CaptureFixture[str]) -> None:
         """Test that PID appears in output."""
@@ -138,7 +156,7 @@ class TestStdoutExporter:
         captured = capsys.readouterr()
         data: dict[str, Any] = json.loads(captured.out.strip())
 
-        assert data["pid"] == 99999
+        assert data[PID] == 99999
 
 
 class TestStdoutLossRecords:
@@ -162,22 +180,20 @@ class TestStdoutLossRecords:
     def test_it_writes_one_line(self, capsys: pytest.CaptureFixture[str]) -> None:
         data = self._emit(capsys)
 
-        assert data["pid"] == DEFAULT_PID
-        assert (data["ts_start"], data["ts_stop"]) == (1_000, 9_000)
+        assert data[PID] == DEFAULT_PID
+        assert (data[TS_START], data[TS_STOP]) == (1_000, 9_000)
 
     def test_it_carries_the_counts_and_the_pause(self, capsys: pytest.CaptureFixture[str]) -> None:
         """One entry per generation the interval touched, counts and all: the
         stream is the whole record, so anything left out of it is gone."""
         data = self._emit(capsys)
 
-        assert data["gens"] == [
-            {"gen": 1, "observed_count": 4, "lost_from": 0, "lost_count": 76, "lost_pause_ns": 8_100_000}
-        ]
+        assert data[GENS] == [{GEN: 1, OBSERVED_COUNT: 4, LOST_FROM: 0, LOST_COUNT: 76, LOST_PAUSE_NS: 8_100_000}]
 
     def test_it_names_the_interpreter_that_lost_the_records(self, capsys: pytest.CaptureFixture[str]) -> None:
         """A stream and a capture of the same run agree on which interpreter
         lost the records, and neither carries a track number."""
         data = self._emit(capsys)
 
-        assert data["iid"] == 3
+        assert data[IID] == 3
         assert "tid" not in data

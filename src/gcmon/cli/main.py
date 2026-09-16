@@ -6,6 +6,7 @@ import sys
 from collections.abc import Sequence
 from typing import Any
 
+from ..support.vocabulary import CMD_RUN, PROGRAM_NAME
 from ._version import installed_version
 from .analyze import add_combine_parser
 from .monitor import (
@@ -38,7 +39,7 @@ class _VersionAction(argparse.Action):
 def _create_parser() -> argparse.ArgumentParser:
     """Create the argument parser with subcommands."""
     parser = argparse.ArgumentParser(
-        prog="gcmon",
+        prog=PROGRAM_NAME,
         description="Monitor Python's garbage collector and export statistics.",
     )
     parser.add_argument(
@@ -71,7 +72,7 @@ def _setup_logging(verbose_count: int) -> None:
         level = logging.INFO
     else:
         level = logging.WARNING
-    logger = logging.getLogger("gcmon")
+    logger = logging.getLogger(PROGRAM_NAME)
     logger.setLevel(level)
 
     # Only add handler if none exists
@@ -128,7 +129,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # For run command, split args at the first target option (-m/-s/--module/--script)
     # Everything before goes to gcmon, everything after goes to the script
-    if argv and argv[0] == "run":
+    if argv and argv[0] == CMD_RUN:
         gc_args, script_args = _split_run_args(argv)
         args = parser.parse_args(gc_args)
         args.script_args = script_args

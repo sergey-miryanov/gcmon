@@ -7,6 +7,7 @@ import pytest
 from gcmon.monitoring.events_reader import RemoteEventsReader
 from gcmon.stats.streaming_stats import PauseTotals
 from gcmon.stats.views import StatsView
+from gcmon.support.vocabulary import FORMAT_STDOUT
 
 
 class TestRunMonitoringLoop:
@@ -100,7 +101,7 @@ class TestRunMonitoringLoop:
 
         mock_loop_runner_deps["StreamingStats"].return_value.count.return_value = 0
 
-        run_monitoring_loop(mock_factory, mock_wait_policy_factory, monitoring_options(output_format="stdout"))
+        run_monitoring_loop(mock_factory, mock_wait_policy_factory, monitoring_options(output_format=FORMAT_STDOUT))
 
         assert "Trace saved to" not in caplog.text
 

@@ -7,9 +7,22 @@ from pathlib import Path
 import pytest
 
 from gcmon.model.data import GCStatsInfo
+from gcmon.model.names import (
+    CLEAR_WEAKREFS,
+    DEDUCE_UNREACHABLE,
+    DELETE_GARBAGE,
+    FILL_INCREMENT,
+    FINALIZE_GARBAGE,
+    HANDLE_RESURRECTED,
+    HANDLE_WEAKREFS,
+    MARK_ALIVE,
+    gc_pause_slice_name,
+)
 from gcmon.model.run_report import RunReport
 from gcmon.stats.stats import Stats
 from gcmon.stats.stats_output import (
+    READ_TIME_LABEL,
+    TOTAL_LABEL,
     _build_rows,
     _print_table,
     print_stats,
@@ -42,7 +55,7 @@ class TestStatsOutput:
 
         print_stats(stats, StatsView.FULL)
         captured = capsys.readouterr()
-        assert "GC Pause(0)" in captured.out
+        assert gc_pause_slice_name(0) in captured.out
         assert "Metric" in captured.out
         assert "Count" in captured.out
         assert "Sum" in captured.out
@@ -70,9 +83,9 @@ class TestStatsOutput:
         print_stats(stats, StatsView.FULL)
         captured = capsys.readouterr()
 
-        assert "GC Pause(0)" in captured.out
-        assert "GC Pause(1)" in captured.out
-        assert "GC Pause(2)" in captured.out
+        assert gc_pause_slice_name(0) in captured.out
+        assert gc_pause_slice_name(1) in captured.out
+        assert gc_pause_slice_name(2) in captured.out
         assert "Metric" in captured.out
         assert "Count" in captured.out
         assert "Sum" in captured.out
@@ -224,7 +237,7 @@ class TestPrintStatsEdgeCases:
 
         print_stats(stats, StatsView.FULL)
         captured = capsys.readouterr()
-        assert "Total" in captured.out
+        assert TOTAL_LABEL in captured.out
 
     def test_incremental_metrics_output(
         self,
@@ -242,14 +255,14 @@ class TestPrintStatsEdgeCases:
 
         print_stats(stats, StatsView.FULL)
         captured = capsys.readouterr()
-        assert "GC Mark Alive" in captured.out
-        assert "GC Fill Increment" in captured.out
-        assert "GC Deduce Unreachable" in captured.out
-        assert "GC Handle Weakrefs Callbacks" in captured.out
-        assert "GC Finalize Garbage" in captured.out
-        assert "GC Handle Resurrected" in captured.out
-        assert "GC Clear Weakrefs" in captured.out
-        assert "GC Delete Garbage" in captured.out
+        assert MARK_ALIVE.label in captured.out
+        assert FILL_INCREMENT.label in captured.out
+        assert DEDUCE_UNREACHABLE.label in captured.out
+        assert HANDLE_WEAKREFS.label in captured.out
+        assert FINALIZE_GARBAGE.label in captured.out
+        assert HANDLE_RESURRECTED.label in captured.out
+        assert CLEAR_WEAKREFS.label in captured.out
+        assert DELETE_GARBAGE.label in captured.out
 
     def test_pause_row_printed_in_milliseconds(
         self,
@@ -262,10 +275,10 @@ class TestPrintStatsEdgeCases:
 
         print_stats(stats, StatsView.FULL)
         captured = capsys.readouterr()
-        pause_line = next(line for line in captured.out.splitlines() if "GC Pause(0)" in line)
+        pause_line = next(line for line in captured.out.splitlines() if gc_pause_slice_name(0) in line)
         cells = [c.strip() for c in pause_line.strip().strip("|").split("|")]
         # PID, Metric, Count, Sum, Avg, P50, P90, P95, P99 - durations in milliseconds
-        assert cells[1] == "GC Pause(0)"
+        assert cells[1] == gc_pause_slice_name(0)
         assert cells[2] == "2"
         assert cells[3] == "4.000"
         assert cells[4] == "2.000"
@@ -280,7 +293,7 @@ class TestPrintStatsEdgeCases:
 
         print_stats(stats, StatsView.FULL)
         captured = capsys.readouterr()
-        assert "Read Time" not in captured.out
+        assert READ_TIME_LABEL not in captured.out
 
     def test_read_time_row_printed(
         self,
@@ -294,11 +307,11 @@ class TestPrintStatsEdgeCases:
 
         print_stats(stats, StatsView.FULL)
         captured = capsys.readouterr()
-        read_time_line = next(line for line in captured.out.splitlines() if "Read Time" in line)
+        read_time_line = next(line for line in captured.out.splitlines() if READ_TIME_LABEL in line)
         cells = [c.strip() for c in read_time_line.strip().strip("|").split("|")]
         # PID, Metric, Count, Sum, Avg, P50, P90, P95, P99 - durations in milliseconds
         assert cells[0] == ""
-        assert cells[1] == "Read Time"
+        assert cells[1] == READ_TIME_LABEL
         assert cells[2] == "2"
         assert cells[3] == "4.000"
         assert cells[4] == "2.000"
@@ -310,7 +323,7 @@ class TestPrintStatsEdgeCases:
         print_stats(stats, StatsView.FULL)
         captured = capsys.readouterr()
         assert "No GC statistics collected." not in captured.out
-        assert "Read Time" in captured.out
+        assert READ_TIME_LABEL in captured.out
         assert "2.500" in captured.out
 
     def test_markdown_format(
@@ -385,7 +398,7 @@ class TestTheTablePrintsRings:
         print_stats(self._one_interpreter(), StatsView.FULL)
         rows = table_rows(capsys.readouterr().out)
 
-        total = next(row for row in rows if row[0] == "Total")
+        total = next(row for row in rows if row[0] == TOTAL_LABEL)
         ring = next(row for row in rows if row[0] == "12345:0")
 
         assert total[1:] == ring[1:]
@@ -402,13 +415,13 @@ class TestTheTablePrintsRings:
         print_stats(self._two_interpreters(), StatsView.FULL)
         rows = table_rows(capsys.readouterr().out)
 
-        p99 = {row[0]: row[8] for row in rows if row[0] in ("Total", "12345:0", "12345:1")}
-        p50 = {row[0]: row[5] for row in rows if row[0] in ("Total", "12345:0", "12345:1")}
+        p99 = {row[0]: row[8] for row in rows if row[0] in (TOTAL_LABEL, "12345:0", "12345:1")}
+        p50 = {row[0]: row[5] for row in rows if row[0] in (TOTAL_LABEL, "12345:0", "12345:1")}
 
         assert p99["12345:0"] == "1.000"
         assert p99["12345:1"] == "20.000"
         # The blend sits between the two, describing neither.
-        assert p50["Total"] not in (p50["12345:0"], p50["12345:1"])
+        assert p50[TOTAL_LABEL] not in (p50["12345:0"], p50["12345:1"])
 
     def _one_starved_interpreter(self) -> StreamingStats:
         """Interpreter 0 read all three of its collections; interpreter 1 read
@@ -426,11 +439,11 @@ class TestTheTablePrintsRings:
         print_stats(self._one_starved_interpreter(), StatsView.FULL)
         rows = table_rows(capsys.readouterr().out)
 
-        cov = {row[0]: row[9] for row in rows if row[0] in ("Total", "12345:0", "12345:1")}
+        cov = {row[0]: row[9] for row in rows if row[0] in (TOTAL_LABEL, "12345:0", "12345:1")}
 
         assert cov["12345:0"] == "100.0%"
         assert cov["12345:1"] == "10.0%"
-        assert cov["Total"] == "30.8%"
+        assert cov[TOTAL_LABEL] == "30.8%"
 
     def test_a_ring_that_lost_nothing_prints_one_number_per_cell(self, capsys: pytest.CaptureFixture[str]) -> None:
         """`3/3` beside a neighbour's `1/10` would say nothing was lost twice
@@ -458,7 +471,7 @@ class TestTheTablePrintsRings:
         stats.record_read_time(500_000)
 
         print_stats(stats, StatsView.FULL)
-        read_time = next(row for row in table_rows(capsys.readouterr().out) if row[1] == "Read Time")
+        read_time = next(row for row in table_rows(capsys.readouterr().out) if row[1] == READ_TIME_LABEL)
 
         assert read_time[0] == ""
 
@@ -531,7 +544,7 @@ class TestLossColumns:
         stats.record_read_time(500_000)
 
         print_stats(stats, StatsView.FULL)
-        lines = [ln for ln in capsys.readouterr().out.splitlines() if "Read Time" in ln]
+        lines = [ln for ln in capsys.readouterr().out.splitlines() if READ_TIME_LABEL in ln]
 
         assert lines[0].rstrip().endswith("|      |      |") or lines[0].count("|") == 12
 
@@ -782,7 +795,7 @@ class TestTheTwoViews:
         rows = table_rows(self._out(capsys, self._two_interpreters(), StatsView.TOTAL))
         labels = [row[0] for row in rows[1:]]
 
-        assert "Total" in labels
+        assert TOTAL_LABEL in labels
         assert [label for label in labels if ":" in label] == []
 
     def test_total_still_ends_on_the_read_time(self, capsys: pytest.CaptureFixture[str]) -> None:
@@ -790,7 +803,7 @@ class TestTheTwoViews:
         the rings keeps it."""
         rows = table_rows(self._out(capsys, self._two_interpreters(), StatsView.TOTAL))
 
-        assert rows[-1][1] == "Read Time"
+        assert rows[-1][1] == READ_TIME_LABEL
 
     def test_total_is_the_head_of_full(self, capsys: pytest.CaptureFixture[str]) -> None:
         """The regression guard: every line the narrower view prints before
@@ -802,7 +815,7 @@ class TestTheTwoViews:
         stats = self._two_interpreters()
         total = self._out(capsys, stats, StatsView.TOTAL).splitlines()
         full = self._out(capsys, stats, StatsView.FULL).splitlines()
-        head = total[: next(i for i, line in enumerate(total) if "Read Time" in line)]
+        head = total[: next(i for i, line in enumerate(total) if READ_TIME_LABEL in line)]
 
         assert full[: len(head)] == head
 
@@ -827,7 +840,7 @@ class TestTheTwoViews:
         added = full[len(total) :]
 
         assert [row[0] for row in added] == ["12345:0"]
-        assert [row[1:] for row in added] == [row[1:] for row in total if row[0] == "Total"]
+        assert [row[1:] for row in added] == [row[1:] for row in total if row[0] == TOTAL_LABEL]
 
     def test_the_untracked_note_is_full_only(self, capsys: pytest.CaptureFixture[str]) -> None:
         """It reconciles ring rows against the run, and `total` prints none."""

@@ -21,9 +21,11 @@ A trace carries these:
 - **`GC Pauses` track**: one row per interpreter, under that interpreter's
   group, holding one **`GC Pause(gen)` slice** per GC run gcmon read, carrying
   that run's counters as args.
-- **Sub-step slices** nested inside a pause: Mark Alive, Fill increment,
-  Deduce Unreachable, Handle Weakrefs Callbacks, Finalize Garbage, Handle
-  Resurrected, Clear Weakrefs, Delete Garbage.
+- **Sub-step slices** nested inside a pause, each named for its generation the
+  way the pause is: `GC Mark Alive`, `GC Fill Increment`,
+  `GC Deduce Unreachable`, `GC Handle Weakrefs Callbacks`,
+  `GC Finalize Garbage`, `GC Handle Resurrected`, `GC Clear Weakrefs`,
+  `GC Delete Garbage`. A `--stats` row carries the same name.
 - **Counter tracks** per generation, `G{gen}`, carrying `collected`,
   `candidates`, `duration` and `uncollectable`, inside that interpreter's
   `GC Metrics` group, with `heap_size` beside the group rather than inside it,
@@ -57,9 +59,10 @@ A trace carries these:
   read; see [The `Lifetime` slice](#the-lifetime-slice). It reads longer than
   the same process's `Processes` slice wherever that one was cut short.
 
-> **Note:** sub-step slices (Mark Alive, Fill increment, Deduce Unreachable,
-> …) need a CPython build carrying the extra GC instrumentation. A standard
-> build gives the top-level `GC Pause` slices and the counters.
+> **Note:** sub-step slices (`GC Mark Alive`, `GC Fill Increment`,
+> `GC Deduce Unreachable`, …) need a CPython build carrying the extra GC
+> instrumentation. A standard build gives the top-level `GC Pause` slices and
+> the counters.
 
 ### The `Lifetime` slice
 

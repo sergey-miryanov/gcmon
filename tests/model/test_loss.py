@@ -13,6 +13,7 @@ import pytest
 
 from gcmon.model.data import GCStatsInfo
 from gcmon.model.loss import RingAccumulator
+from gcmon.model.names import GEN, LOST_COUNT, LOST_FROM, LOST_PAUSE_NS, OBSERVED_COUNT
 from gcmon.support.time_units import secs_to_ns
 from tests.helpers import TS0, build_run, create_mock_stats_item, true_pause_ns
 
@@ -120,11 +121,11 @@ class TestGapDetection:
         entry = accumulator.ingest([events[2]])
 
         assert set(msgspec.structs.asdict(entry)) == {
-            "gen",
-            "observed_count",
-            "lost_from",
-            "lost_count",
-            "lost_pause_ns",
+            GEN,
+            OBSERVED_COUNT,
+            LOST_FROM,
+            LOST_COUNT,
+            LOST_PAUSE_NS,
         }
 
     def test_a_pause_shortfall_floors_at_zero(self, accumulator: RingAccumulator) -> None:

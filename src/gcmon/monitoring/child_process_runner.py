@@ -8,11 +8,12 @@ from typing import Self, override
 
 from ..control.control_server import set_control_env
 from ..support.process_terminator import log_process_output, terminate_process
+from ..support.vocabulary import ENCODING, PROGRAM_NAME
 from .target_process import TargetProcess
 
 __all__ = ["ChildProcess", "ChildProcessRunner"]
 
-logger = logging.getLogger("gcmon")
+logger = logging.getLogger(PROGRAM_NAME)
 
 
 class ChildProcess(TargetProcess):
@@ -131,7 +132,7 @@ class ChildProcessRunner:
 
         if self._process.poll() is not None:
             stdout_data, _ = self._process.communicate()
-            stdout_str = stdout_data.decode("utf-8", errors="replace").strip()
+            stdout_str = stdout_data.decode(ENCODING, errors="replace").strip()
 
             logger.debug("Subprocess exited immediately: %s", stdout_str)
             raise RuntimeError("Subprocess exited immediately.")
@@ -250,6 +251,6 @@ class ProcessStdoutReader:
 
         for line in iter(pipe.readline, b""):
             if line:
-                print(line.decode("utf-8", errors="replace"), end="", flush=True)
+                print(line.decode(ENCODING, errors="replace"), end="", flush=True)
             if self._stop_event.is_set():
                 break

@@ -9,6 +9,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
+from gcmon.model.names import NAME
 from gcmon.support.process_terminator import _is_signal_exit_code, terminate_process
 
 
@@ -22,7 +23,7 @@ def patched_logger(mock_logger: Mock) -> Generator[Mock]:
 def unix_terminator(mock_process: Mock, patched_logger: Mock) -> Generator[Mock]:
     mock_process.returncode = None
     mock_process.poll.side_effect = lambda: mock_process.returncode
-    with patch.object(os, "name", "posix"):
+    with patch.object(os, NAME, "posix"):
         yield mock_process
 
 
@@ -30,7 +31,7 @@ def unix_terminator(mock_process: Mock, patched_logger: Mock) -> Generator[Mock]
 def nt_terminator(mock_process: Mock, patched_logger: Mock) -> Generator[Mock]:
     mock_process.returncode = None
     mock_process.poll.side_effect = lambda: mock_process.returncode
-    with patch.object(os, "name", "nt"):
+    with patch.object(os, NAME, "nt"):
         yield mock_process
 
 

@@ -8,6 +8,19 @@ the process's own row. See ADR-0011.
 
 from typing import NamedTuple
 
+from ..model.names import (
+    CLIPPED,
+    CMDLINE,
+    LOST_COUNT,
+    LOST_PAUSE,
+    LOST_PAUSE_NS,
+    PAUSE,
+    PID,
+    PID_EPOCH,
+    REAL_END_TS,
+    REAL_START_TS,
+    SAMPLED_COUNT,
+)
 from ..model.process import Process
 from ..model.trace_event import LossTrack, Slice, TraceEvent
 from .perfetto_builders import (
@@ -24,7 +37,7 @@ from .perfetto_proto import (
     TrackEventType,
 )
 from .perfetto_track_state import PerfettoTrackState, ProcessSpan
-from .trace_converter import GC_PAUSE_CATEGORY, duration_text
+from .trace_converter import duration_text
 
 __all__ = ["emit_retired_process_row", "finalize_perfetto_packets", "process_track_name"]
 
@@ -53,9 +66,14 @@ _PROCESS_LIFETIME_TRACK_NAME: str = "Processes"
 _PROCESS_ROW_SLICE_NAME: str = "Lifetime"
 
 
+# The fixed half of a process row's name. A reader groups on it and a
+# test slices it back off, so it is named rather than repeated.
+_PROCESS_ROW_PREFIX: str = "Process "
+
+
 def process_track_name(process: Process) -> str:
     """What *process* is called (ADR-0011)."""
-    return f"Process {process}"
+    return f"{_PROCESS_ROW_PREFIX}{process}"
 
 
 def _emit_root_descriptor(
@@ -133,7 +151,7 @@ def _cmdline_annotation(process: Process, state: PerfettoTrackState) -> list[byt
     cmdline = state.get_cmdline(process)
     if not cmdline:
         return []
-    return [_build_debug_annotation_string("cmdline", " ".join(cmdline))]
+    return [_build_debug_annotation_string(CMDLINE, " ".join(cmdline))]
 
 
 def _emit_process_lifetime_slice(
@@ -152,13 +170,13 @@ def _emit_process_lifetime_slice(
     name = process_track_name(span.process)
     debug_annotations = [
         *_cmdline_annotation(span.process, state),
-        _build_debug_annotation_int("pid", span.process.pid),
-        _build_debug_annotation_int("pid_epoch", span.process.pid_epoch),
-        _build_debug_annotation_int("real_start_ts", span.real_start_ts),
-        _build_debug_annotation_int("real_end_ts", span.real_end_ts),
+        _build_debug_annotation_int(PID, span.process.pid),
+        _build_debug_annotation_int(PID_EPOCH, span.process.pid_epoch),
+        _build_debug_annotation_int(REAL_START_TS, span.real_start_ts),
+        _build_debug_annotation_int(REAL_END_TS, span.real_end_ts),
         # On the slice the sweep decides rather than on the bar, which a
         # retired process writes before the sweep has decided anything.
-        _build_debug_annotation_bool("clipped", span.end_ts != span.real_end_ts),
+        _build_debug_annotation_bool(CLIPPED, span.end_ts != span.real_end_ts),
     ]
     return [
         build_trace_packet(
@@ -214,13 +232,13 @@ def _emit_process_row_lifetime_slice(
     lost_pause_ns = state.get_lost_pause_ns(span.process)
     debug_annotations = [
         *_cmdline_annotation(span.process, state),
-        _build_debug_annotation_int("pid", span.process.pid),
-        _build_debug_annotation_int("pid_epoch", span.process.pid_epoch),
+        _build_debug_annotation_int(PID, span.process.pid),
+        _build_debug_annotation_int(PID_EPOCH, span.process.pid_epoch),
         _build_debug_annotation_int("interpreters", state.get_interpreter_count(span.process)),
-        _build_debug_annotation_int("sampled_count", state.get_sampled_count(span.process)),
-        _build_debug_annotation_int("lost_count", state.get_lost_count(span.process)),
-        _build_debug_annotation_string("lost_pause", duration_text(lost_pause_ns)),
-        _build_debug_annotation_int("lost_pause_ns", lost_pause_ns),
+        _build_debug_annotation_int(SAMPLED_COUNT, state.get_sampled_count(span.process)),
+        _build_debug_annotation_int(LOST_COUNT, state.get_lost_count(span.process)),
+        _build_debug_annotation_string(LOST_PAUSE, duration_text(lost_pause_ns)),
+        _build_debug_annotation_int(LOST_PAUSE_NS, lost_pause_ns),
     ]
     return [
         build_trace_packet(
@@ -333,13 +351,13 @@ def _record_capture_totals(
         # is where the per-interval sums already are. It writes both
         # unconditionally and as ints, so anything else is a bug rather than
         # a shape to tolerate.
-        lost_count = event.args["lost_count"]
-        lost_pause_ns = event.args["lost_pause_ns"]
+        lost_count = event.args[LOST_COUNT]
+        lost_pause_ns = event.args[LOST_PAUSE_NS]
         assert isinstance(lost_count, int) and isinstance(lost_pause_ns, int), (
             f"a GC Loss slice must carry integer totals, got {lost_count!r} and {lost_pause_ns!r}"
         )
         state.record_loss(event.track.process, lost_count, lost_pause_ns)
-    elif event.cat.startswith(GC_PAUSE_CATEGORY):
+    elif event.cat.startswith(PAUSE.category):
         state.record_sampled(event.track.process)
 
 

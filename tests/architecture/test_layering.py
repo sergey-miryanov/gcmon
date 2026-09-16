@@ -15,9 +15,11 @@ from pathlib import Path
 
 import pytest
 
+from gcmon.support.vocabulary import ENCODING, PROGRAM_NAME
+
 pytestmark = pytest.mark.architecture
 
-PACKAGE = "gcmon"
+PACKAGE = PROGRAM_NAME
 SRC = Path(__file__).resolve().parent.parent.parent / "src" / PACKAGE
 
 ALLOWED: dict[str, frozenset[str]] = {
@@ -126,7 +128,7 @@ def import_graph(root: Path) -> list[Import]:
         if "__pycache__" in path.parts:
             continue
         module = ".".join(path.relative_to(root).with_suffix("").parts)
-        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        tree = ast.parse(path.read_text(encoding=ENCODING), filename=str(path))
         for node in ast.walk(tree):
             if not isinstance(node, ast.Import | ast.ImportFrom):
                 continue

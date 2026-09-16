@@ -4,6 +4,44 @@ from types import SimpleNamespace
 import pytest
 
 from gcmon.model.data import GCStatsInfo, GenLoss, InstantMsg, LossMsg
+from gcmon.model.names import (
+    ALIVE_SIZE,
+    CANDIDATES,
+    CLEAR_WEAKREFS_COUNT,
+    COLLECTED,
+    COLLECTIONS,
+    DELETED_GARBAGE_COUNT,
+    DURATION,
+    FINALIZED_GARBAGE_COUNT,
+    GEN,
+    GENS,
+    HEAP_SIZE,
+    IID,
+    INCREMENT_SIZE,
+    LOST_COUNT,
+    LOST_FROM,
+    LOST_PAUSE_NS,
+    NAME,
+    OBSERVED_COUNT,
+    TS,
+    TS_CLEAR_WEAKREFS_STOP,
+    TS_DEDUCE_UNREACHABLE_START,
+    TS_DEDUCE_UNREACHABLE_STOP,
+    TS_DELETE_GARBAGE_START,
+    TS_DELETE_GARBAGE_STOP,
+    TS_FILL_INCREMENT_START,
+    TS_FILL_INCREMENT_STOP,
+    TS_FINALIZE_GARBAGE_STOP,
+    TS_HANDLE_RESURRECTED_STOP,
+    TS_HANDLE_WEAKREF_CALLBACKS_START,
+    TS_HANDLE_WEAKREF_CALLBACKS_STOP,
+    TS_MARK_ALIVE_START,
+    TS_MARK_ALIVE_STOP,
+    TS_START,
+    TS_STOP,
+    TYPE,
+    UNCOLLECTABLE,
+)
 from gcmon.model.protocol import (
     has_clear_weakrefs,
     has_deduce_unreachable,
@@ -248,20 +286,20 @@ class TestToMappingPartial:
             ts_fill_increment_stop=1_001_000,
         )
         result = to_mapping(item)
-        assert result["increment_size"] == 500
-        assert result["ts_fill_increment_start"] == 1_000_500
-        assert result["ts_fill_increment_stop"] == 1_001_000
-        assert "alive_size" not in result
-        assert "ts_mark_alive_start" not in result
-        assert "ts_deduce_unreachable_start" not in result
-        assert "ts_handle_weakref_callbacks_start" not in result
-        assert "ts_finalize_garbage_stop" not in result
-        assert "ts_handle_resurrected_stop" not in result
-        assert "ts_clear_weakrefs_stop" not in result
-        assert "ts_delete_garbage_start" not in result
-        assert "finalized_garbage_count" not in result
-        assert "deleted_garbage_count" not in result
-        assert "clear_weakrefs_count" not in result
+        assert result[INCREMENT_SIZE] == 500
+        assert result[TS_FILL_INCREMENT_START] == 1_000_500
+        assert result[TS_FILL_INCREMENT_STOP] == 1_001_000
+        assert ALIVE_SIZE not in result
+        assert TS_MARK_ALIVE_START not in result
+        assert TS_DEDUCE_UNREACHABLE_START not in result
+        assert TS_HANDLE_WEAKREF_CALLBACKS_START not in result
+        assert TS_FINALIZE_GARBAGE_STOP not in result
+        assert TS_HANDLE_RESURRECTED_STOP not in result
+        assert TS_CLEAR_WEAKREFS_STOP not in result
+        assert TS_DELETE_GARBAGE_START not in result
+        assert FINALIZED_GARBAGE_COUNT not in result
+        assert DELETED_GARBAGE_COUNT not in result
+        assert CLEAR_WEAKREFS_COUNT not in result
 
     def test_mark_alive_only(self) -> None:
         item = self._make_item(
@@ -270,20 +308,20 @@ class TestToMappingPartial:
             ts_mark_alive_stop=1_001_000,
         )
         result = to_mapping(item)
-        assert result["alive_size"] == 300
-        assert result["ts_mark_alive_start"] == 1_000_500
-        assert result["ts_mark_alive_stop"] == 1_001_000
-        assert "increment_size" not in result
-        assert "ts_fill_increment_start" not in result
-        assert "ts_deduce_unreachable_start" not in result
-        assert "ts_handle_weakref_callbacks_start" not in result
-        assert "ts_finalize_garbage_stop" not in result
-        assert "ts_handle_resurrected_stop" not in result
-        assert "ts_clear_weakrefs_stop" not in result
-        assert "ts_delete_garbage_start" not in result
-        assert "finalized_garbage_count" not in result
-        assert "deleted_garbage_count" not in result
-        assert "clear_weakrefs_count" not in result
+        assert result[ALIVE_SIZE] == 300
+        assert result[TS_MARK_ALIVE_START] == 1_000_500
+        assert result[TS_MARK_ALIVE_STOP] == 1_001_000
+        assert INCREMENT_SIZE not in result
+        assert TS_FILL_INCREMENT_START not in result
+        assert TS_DEDUCE_UNREACHABLE_START not in result
+        assert TS_HANDLE_WEAKREF_CALLBACKS_START not in result
+        assert TS_FINALIZE_GARBAGE_STOP not in result
+        assert TS_HANDLE_RESURRECTED_STOP not in result
+        assert TS_CLEAR_WEAKREFS_STOP not in result
+        assert TS_DELETE_GARBAGE_START not in result
+        assert FINALIZED_GARBAGE_COUNT not in result
+        assert DELETED_GARBAGE_COUNT not in result
+        assert CLEAR_WEAKREFS_COUNT not in result
 
     def test_deduce_unreachable_only(self) -> None:
         item = self._make_item(
@@ -291,19 +329,19 @@ class TestToMappingPartial:
             ts_deduce_unreachable_stop=1_001_000,
         )
         result = to_mapping(item)
-        assert result["ts_deduce_unreachable_start"] == 1_000_500
-        assert result["ts_deduce_unreachable_stop"] == 1_001_000
-        assert "increment_size" not in result
-        assert "alive_size" not in result
-        assert "ts_mark_alive_start" not in result
-        assert "ts_handle_weakref_callbacks_start" not in result
-        assert "ts_finalize_garbage_stop" not in result
-        assert "ts_handle_resurrected_stop" not in result
-        assert "ts_clear_weakrefs_stop" not in result
-        assert "ts_delete_garbage_start" not in result
-        assert "finalized_garbage_count" not in result
-        assert "deleted_garbage_count" not in result
-        assert "clear_weakrefs_count" not in result
+        assert result[TS_DEDUCE_UNREACHABLE_START] == 1_000_500
+        assert result[TS_DEDUCE_UNREACHABLE_STOP] == 1_001_000
+        assert INCREMENT_SIZE not in result
+        assert ALIVE_SIZE not in result
+        assert TS_MARK_ALIVE_START not in result
+        assert TS_HANDLE_WEAKREF_CALLBACKS_START not in result
+        assert TS_FINALIZE_GARBAGE_STOP not in result
+        assert TS_HANDLE_RESURRECTED_STOP not in result
+        assert TS_CLEAR_WEAKREFS_STOP not in result
+        assert TS_DELETE_GARBAGE_START not in result
+        assert FINALIZED_GARBAGE_COUNT not in result
+        assert DELETED_GARBAGE_COUNT not in result
+        assert CLEAR_WEAKREFS_COUNT not in result
 
     def test_finalize_garbage_only(self) -> None:
         item = self._make_item(
@@ -311,10 +349,10 @@ class TestToMappingPartial:
             finalized_garbage_count=42,
         )
         result = to_mapping(item)
-        assert result["ts_finalize_garbage_stop"] == 1_005_000
-        assert result["finalized_garbage_count"] == 42
-        assert "deleted_garbage_count" not in result
-        assert "clear_weakrefs_count" not in result
+        assert result[TS_FINALIZE_GARBAGE_STOP] == 1_005_000
+        assert result[FINALIZED_GARBAGE_COUNT] == 42
+        assert DELETED_GARBAGE_COUNT not in result
+        assert CLEAR_WEAKREFS_COUNT not in result
 
     def test_delete_garbage_only(self) -> None:
         item = self._make_item(
@@ -323,11 +361,11 @@ class TestToMappingPartial:
             deleted_garbage_count=13,
         )
         result = to_mapping(item)
-        assert result["ts_delete_garbage_start"] == 1_008_000
-        assert result["ts_delete_garbage_stop"] == 1_009_000
-        assert result["deleted_garbage_count"] == 13
-        assert "finalized_garbage_count" not in result
-        assert "clear_weakrefs_count" not in result
+        assert result[TS_DELETE_GARBAGE_START] == 1_008_000
+        assert result[TS_DELETE_GARBAGE_STOP] == 1_009_000
+        assert result[DELETED_GARBAGE_COUNT] == 13
+        assert FINALIZED_GARBAGE_COUNT not in result
+        assert CLEAR_WEAKREFS_COUNT not in result
 
     def test_clear_weakrefs_only(self) -> None:
         item = self._make_item(
@@ -335,10 +373,10 @@ class TestToMappingPartial:
             clear_weakrefs_count=7,
         )
         result = to_mapping(item)
-        assert result["ts_clear_weakrefs_stop"] == 1_007_000
-        assert result["clear_weakrefs_count"] == 7
-        assert "finalized_garbage_count" not in result
-        assert "deleted_garbage_count" not in result
+        assert result[TS_CLEAR_WEAKREFS_STOP] == 1_007_000
+        assert result[CLEAR_WEAKREFS_COUNT] == 7
+        assert FINALIZED_GARBAGE_COUNT not in result
+        assert DELETED_GARBAGE_COUNT not in result
 
     def test_all_partial_phases(self) -> None:
         item = self._make_item(
@@ -362,24 +400,24 @@ class TestToMappingPartial:
             deleted_garbage_count=13,
         )
         result = to_mapping(item)
-        assert result["increment_size"] == 500
-        assert result["alive_size"] == 300
-        assert result["ts_mark_alive_start"] == 1_000_500
-        assert result["ts_mark_alive_stop"] == 1_001_000
-        assert result["ts_fill_increment_start"] == 1_001_500
-        assert result["ts_fill_increment_stop"] == 1_002_000
-        assert result["ts_deduce_unreachable_start"] == 1_002_500
-        assert result["ts_deduce_unreachable_stop"] == 1_003_000
-        assert result["ts_handle_weakref_callbacks_start"] == 1_003_000
-        assert result["ts_handle_weakref_callbacks_stop"] == 1_004_000
-        assert result["ts_finalize_garbage_stop"] == 1_005_000
-        assert result["finalized_garbage_count"] == 42
-        assert result["ts_handle_resurrected_stop"] == 1_006_000
-        assert result["ts_clear_weakrefs_stop"] == 1_007_000
-        assert result["clear_weakrefs_count"] == 7
-        assert result["ts_delete_garbage_start"] == 1_008_000
-        assert result["ts_delete_garbage_stop"] == 1_009_000
-        assert result["deleted_garbage_count"] == 13
+        assert result[INCREMENT_SIZE] == 500
+        assert result[ALIVE_SIZE] == 300
+        assert result[TS_MARK_ALIVE_START] == 1_000_500
+        assert result[TS_MARK_ALIVE_STOP] == 1_001_000
+        assert result[TS_FILL_INCREMENT_START] == 1_001_500
+        assert result[TS_FILL_INCREMENT_STOP] == 1_002_000
+        assert result[TS_DEDUCE_UNREACHABLE_START] == 1_002_500
+        assert result[TS_DEDUCE_UNREACHABLE_STOP] == 1_003_000
+        assert result[TS_HANDLE_WEAKREF_CALLBACKS_START] == 1_003_000
+        assert result[TS_HANDLE_WEAKREF_CALLBACKS_STOP] == 1_004_000
+        assert result[TS_FINALIZE_GARBAGE_STOP] == 1_005_000
+        assert result[FINALIZED_GARBAGE_COUNT] == 42
+        assert result[TS_HANDLE_RESURRECTED_STOP] == 1_006_000
+        assert result[TS_CLEAR_WEAKREFS_STOP] == 1_007_000
+        assert result[CLEAR_WEAKREFS_COUNT] == 7
+        assert result[TS_DELETE_GARBAGE_START] == 1_008_000
+        assert result[TS_DELETE_GARBAGE_STOP] == 1_009_000
+        assert result[DELETED_GARBAGE_COUNT] == 13
 
 
 class TestToMapping:
@@ -387,58 +425,58 @@ class TestToMapping:
         result = to_mapping(simple_item)
 
         assert isinstance(result, Mapping)
-        assert result["gen"] == 0
-        assert result["iid"] == 1
-        assert result["ts_start"] == 1_000_000
-        assert result["ts_stop"] == 2_000_000
-        assert result["heap_size"] == 1024
-        assert result["collections"] == 5
-        assert result["collected"] == 50
-        assert result["uncollectable"] == 0
-        assert result["candidates"] == 10
-        assert result["duration"] == 0.005
-        assert "increment_size" not in result
+        assert result[GEN] == 0
+        assert result[IID] == 1
+        assert result[TS_START] == 1_000_000
+        assert result[TS_STOP] == 2_000_000
+        assert result[HEAP_SIZE] == 1024
+        assert result[COLLECTIONS] == 5
+        assert result[COLLECTED] == 50
+        assert result[UNCOLLECTABLE] == 0
+        assert result[CANDIDATES] == 10
+        assert result[DURATION] == 0.005
+        assert INCREMENT_SIZE not in result
 
     def test_incremental_item(self, incremental_item: GCStatsInfo) -> None:
         result = to_mapping(incremental_item)
 
         assert isinstance(result, Mapping)
-        assert result["gen"] == 1
-        assert result["iid"] == 2
-        assert result["ts_start"] == 3_000_000
-        assert result["ts_stop"] == 4_000_000
-        assert result["heap_size"] == 2048
-        assert result["collections"] == 10
-        assert result["collected"] == 100
-        assert result["uncollectable"] == 1
-        assert result["candidates"] == 20
-        assert result["duration"] == 0.01
-        assert result["increment_size"] == 500
-        assert result["alive_size"] == 300
-        assert result["ts_mark_alive_start"] == 3_000_500
-        assert result["ts_mark_alive_stop"] == 3_001_000
-        assert result["ts_fill_increment_start"] == 3_001_500
-        assert result["ts_fill_increment_stop"] == 3_002_000
-        assert result["ts_deduce_unreachable_start"] == 3_002_500
-        assert result["ts_deduce_unreachable_stop"] == 3_003_000
-        assert result["ts_handle_weakref_callbacks_start"] == 3_003_000
-        assert result["ts_handle_weakref_callbacks_stop"] == 3_004_000
-        assert result["ts_finalize_garbage_stop"] == 3_005_000
-        assert result["finalized_garbage_count"] == 42
-        assert result["ts_handle_resurrected_stop"] == 3_006_000
-        assert result["ts_clear_weakrefs_stop"] == 3_007_000
-        assert result["clear_weakrefs_count"] == 7
-        assert result["ts_delete_garbage_start"] == 3_008_000
-        assert result["ts_delete_garbage_stop"] == 3_009_000
-        assert result["deleted_garbage_count"] == 13
+        assert result[GEN] == 1
+        assert result[IID] == 2
+        assert result[TS_START] == 3_000_000
+        assert result[TS_STOP] == 4_000_000
+        assert result[HEAP_SIZE] == 2048
+        assert result[COLLECTIONS] == 10
+        assert result[COLLECTED] == 100
+        assert result[UNCOLLECTABLE] == 1
+        assert result[CANDIDATES] == 20
+        assert result[DURATION] == 0.01
+        assert result[INCREMENT_SIZE] == 500
+        assert result[ALIVE_SIZE] == 300
+        assert result[TS_MARK_ALIVE_START] == 3_000_500
+        assert result[TS_MARK_ALIVE_STOP] == 3_001_000
+        assert result[TS_FILL_INCREMENT_START] == 3_001_500
+        assert result[TS_FILL_INCREMENT_STOP] == 3_002_000
+        assert result[TS_DEDUCE_UNREACHABLE_START] == 3_002_500
+        assert result[TS_DEDUCE_UNREACHABLE_STOP] == 3_003_000
+        assert result[TS_HANDLE_WEAKREF_CALLBACKS_START] == 3_003_000
+        assert result[TS_HANDLE_WEAKREF_CALLBACKS_STOP] == 3_004_000
+        assert result[TS_FINALIZE_GARBAGE_STOP] == 3_005_000
+        assert result[FINALIZED_GARBAGE_COUNT] == 42
+        assert result[TS_HANDLE_RESURRECTED_STOP] == 3_006_000
+        assert result[TS_CLEAR_WEAKREFS_STOP] == 3_007_000
+        assert result[CLEAR_WEAKREFS_COUNT] == 7
+        assert result[TS_DELETE_GARBAGE_START] == 3_008_000
+        assert result[TS_DELETE_GARBAGE_STOP] == 3_009_000
+        assert result[DELETED_GARBAGE_COUNT] == 13
 
     def test_instant_item(self, instant_item: InstantMsg) -> None:
         result = to_mapping(instant_item)
 
         assert isinstance(result, Mapping)
-        assert result["type"] == "i"
-        assert result["name"] == "start GC monitor"
-        assert result["ts"] == 5_000_000
+        assert result[TYPE] == "i"
+        assert result[NAME] == "start GC monitor"
+        assert result[TS] == 5_000_000
 
     def test_to_mapping_unknown_type_raises(self) -> None:
         import pytest
@@ -450,22 +488,22 @@ class TestToMapping:
         result = to_mapping(loss_item)
 
         assert isinstance(result, Mapping)
-        assert result["iid"] == 1
-        assert result["ts_start"] == 1_000
-        assert result["ts_stop"] == 2_000
+        assert result[IID] == 1
+        assert result[TS_START] == 1_000
+        assert result[TS_STOP] == 2_000
 
     def test_a_loss_item_names_every_generation_in_the_interval(self, loss_item: LossMsg) -> None:
         """One record per poll, so the counts are per generation and the
         record says which is which rather than carrying three sets and naming
         none of them."""
-        assert to_mapping(loss_item)["gens"] == [
-            {"gen": 1, "observed_count": 4, "lost_from": 42, "lost_count": 5, "lost_pause_ns": 8_100_000},
-            {"gen": 2, "observed_count": 1, "lost_from": 0, "lost_count": 0, "lost_pause_ns": 0},
+        assert to_mapping(loss_item)[GENS] == [
+            {GEN: 1, OBSERVED_COUNT: 4, LOST_FROM: 42, LOST_COUNT: 5, LOST_PAUSE_NS: 8_100_000},
+            {GEN: 2, OBSERVED_COUNT: 1, LOST_FROM: 0, LOST_COUNT: 0, LOST_PAUSE_NS: 0},
         ]
 
     def test_a_loss_item_carries_no_collections(self, loss_item: LossMsg) -> None:
         """What keeps ``is_gc_stats`` off it."""
-        assert "collections" not in to_mapping(loss_item)
+        assert COLLECTIONS not in to_mapping(loss_item)
 
 
 class TestIsLoss:

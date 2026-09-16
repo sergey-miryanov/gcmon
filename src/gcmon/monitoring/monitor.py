@@ -20,12 +20,13 @@ from ..model.poll_status import PollStatus
 from ..model.process import Process
 from ..model.protocol import TGCStatsInfo
 from ..stats.streaming_stats import StreamingStats
+from ..support.vocabulary import PROGRAM_NAME
 from .events_reader import EventsReader, TargetUnavailable
 from .process_registry import ProcessRegistry
 from .target_process import TargetProcess
 from .wait_policy import WaitPolicy, WaitPolicyFactory
 
-logger = logging.getLogger("gcmon")
+logger = logging.getLogger(PROGRAM_NAME)
 
 __all__ = ["EventsMonitor", "PollReport"]
 

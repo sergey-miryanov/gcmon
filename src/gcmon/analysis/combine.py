@@ -6,6 +6,7 @@ from ..exporters.encoder import ProtobufEventEncoder
 from ..exporters.trace_converter import convert_to_trace_format
 from ..model.protocol import TItem
 from ..model.trace_event import Slice, TraceEvent
+from ..support.vocabulary import FORMAT_JSONL, FORMAT_PERFETTO
 from .jsonl_io import normalize_jsonl_timestamps, read_jsonl, write_jsonl
 
 __all__ = [
@@ -46,13 +47,13 @@ def combine_files(
     input_paths: list[Path],
     output_path: Path,
     normalize: bool = False,
-    output_format: str = "perfetto",
+    output_format: str = FORMAT_PERFETTO,
 ) -> None:
     """Merge JSONL captures into one JSONL capture or one Perfetto trace.
 
     The two paths normalize over different scopes; ADR-0021 records why.
     """
-    if output_format == "jsonl":
+    if output_format == FORMAT_JSONL:
         all_items: dict[int, list[TItem]] = {}
 
         for input_path in input_paths:
@@ -69,7 +70,7 @@ def combine_files(
         write_jsonl(output_path, all_items)
         return
 
-    if output_format != "perfetto":
+    if output_format != FORMAT_PERFETTO:
         raise ValueError(f"Unsupported output format: {output_format}")
 
     trace_events: list[TraceEvent] = []

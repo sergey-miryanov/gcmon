@@ -7,6 +7,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from gcmon.stats.metrics import PAUSE_KEY
 from gcmon.stats.stats import HAS_DDSKETCH, Stats
 from gcmon.stats.streaming_stats import StreamingStats
 from tests.helpers import create_mock_stats_item, proc
@@ -577,7 +578,7 @@ class TestAProcessThatExits:
         ring = stats.get_ring_stats(proc(1), 0)
 
         assert ring is not None
-        assert ring["pause"][0].percentiles == {50: 1_000, 90: 1_000, 95: 1_000, 99: 1_000}
+        assert ring[PAUSE_KEY][0].percentiles == {50: 1_000, 90: 1_000, 95: 1_000, 99: 1_000}
 
     def test_count_and_sum_survive(self) -> None:
         totals = self._ran_and_exited().pause_totals(proc(1), 0, 0)
@@ -669,7 +670,7 @@ class TestAFanOutThatDeparts:
                 key: (
                     ring.declined,
                     ring.metrics is not None,
-                    None if ring.metrics is None else ring.metrics["pause"][0].percentiles,
+                    None if ring.metrics is None else ring.metrics[PAUSE_KEY][0].percentiles,
                     {gen: (loss.count, loss.pause_ns) for gen, loss in ring.loss.items()},
                     {gen: (totals.collections, totals.duration_s) for gen, totals in ring.cumulative.items()},
                 )
@@ -950,7 +951,7 @@ class TestAReusedPid:
         ring = self._reused().get_ring_stats(proc(1, 1), 0)
 
         assert ring is not None
-        assert ring["pause"][0].percentiles == {50: 1_000, 90: 1_000, 95: 1_000, 99: 1_000}
+        assert ring[PAUSE_KEY][0].percentiles == {50: 1_000, 90: 1_000, 95: 1_000, 99: 1_000}
 
     def test_the_loss_splits_between_them(self) -> None:
         """`Cov` and `F` read this, so a shared entry would print one

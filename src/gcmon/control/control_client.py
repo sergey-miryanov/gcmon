@@ -11,7 +11,10 @@ from typing import Any, Self
 
 from gcmon.control.control_server import CONTROL_ADDRESS_ENV
 
-logger = logging.getLogger("gcmon")
+from ..support.vocabulary import PROGRAM_NAME
+from .protocol import MSG, MSG_START, MSG_STOP, PID, TS
+
+logger = logging.getLogger(PROGRAM_NAME)
 
 
 def connect_with_retry(
@@ -63,9 +66,9 @@ class ControlClient:
 
     def _send(self, msg: str, ts: int | None = None) -> None:
         to_send = {
-            "msg": msg,
-            "pid": os.getpid(),
-            "ts": time.monotonic_ns() if ts is None else ts,
+            MSG: msg,
+            PID: os.getpid(),
+            TS: time.monotonic_ns() if ts is None else ts,
         }
 
         conn = self._ensure_connected()
@@ -87,14 +90,14 @@ class ControlClient:
 
     def start_monitoring(self) -> None:
         """Resume gcmon's polling of this process."""
-        self._send("start")
+        self._send(MSG_START)
 
     def stop_monitoring(self) -> None:
         """Suppress gcmon's polling of this process.
 
         The target keeps collecting through the gap.
         """
-        self._send("stop")
+        self._send(MSG_STOP)
 
     def instant_msg(self, msg: str, ts: int | None = None) -> None:
         """Record an instant.
