@@ -14,7 +14,7 @@ The track names stay in `exporters`. `GC Pauses` is a row and `GC Pause(0)`
 is a slice on it: two names, not one name in two spellings.
 """
 
-from collections.abc import Sequence
+from collections.abc import Callable, Mapping, Sequence
 from typing import Final, NamedTuple
 
 __all__ = [
@@ -40,6 +40,7 @@ __all__ = [
     "GC_PHASES",
     "GEN",
     "GENERATION",
+    "GENERATIONS",
     "GENS",
     "GEN_COUNTER_METRICS",
     "HANDLE_RESURRECTED",
@@ -89,27 +90,68 @@ __all__ = [
 ]
 
 
+# The generations CPython collects. Every name that carries one is spelled
+# for all three at import, which is what lets a conversion look a name up
+# instead of formatting it once per slice it emits.
+GENERATIONS: Final = (0, 1, 2)
+
+
+class _PerGeneration(dict[int, str]):
+    """One name, rendered for every generation, as a lookup.
+
+    Filled at import for the generations above, which is what a conversion
+    indexes. A record naming a generation outside them renders on demand
+    rather than raising, and is not kept: nothing a collector emits lands
+    there, so caching it would let a malformed capture grow the table.
+    """
+
+    def __init__(self, render: Callable[[int], str]) -> None:
+        super().__init__((gen, render(gen)) for gen in GENERATIONS)
+        self._render = render
+
+    def __missing__(self, gen: int) -> str:
+        return self._render(gen)
+
+
 class Phase(NamedTuple):
     """One phase of a collection, as the surfaces that draw it name it.
 
     `label` is what a reader sees, on a slice and in a `--stats` row alike.
     `category` is the Perfetto category the slice carries; `stats` has no
     use for it and ignores it.
+
+    `slice_names` and `categories` are those two spelled per generation,
+    rendered once by `_phase` below. A conversion emits up to nine slices
+    per record, so it reads them here rather than formatting them again.
     """
 
     label: str
     category: str
+    slice_names: Mapping[int, str]
+    categories: Mapping[int, str]
 
 
-PAUSE: Final = Phase("GC Pause", "gc.pause")
-MARK_ALIVE: Final = Phase("GC Mark Alive", "gc.mark.alive")
-FILL_INCREMENT: Final = Phase("GC Fill Increment", "gc.increment")
-DEDUCE_UNREACHABLE: Final = Phase("GC Deduce Unreachable", "gc.deduce")
-HANDLE_WEAKREFS: Final = Phase("GC Handle Weakrefs Callbacks", "gc.weakrefs")
-FINALIZE_GARBAGE: Final = Phase("GC Finalize Garbage", "gc.finalize")
-HANDLE_RESURRECTED: Final = Phase("GC Handle Resurrected", "gc.resurrect")
-CLEAR_WEAKREFS: Final = Phase("GC Clear Weakrefs", "gc.clear_weakrefs")
-DELETE_GARBAGE: Final = Phase("GC Delete Garbage", "gc.delete")
+def _phase(label: str, category: str) -> Phase:
+    """One row of the table, with its per-generation names rendered."""
+
+    def slice_name(gen: int) -> str:
+        return f"{label}({gen})"
+
+    def slice_category(gen: int) -> str:
+        return f"{category}(gen={gen})"
+
+    return Phase(label, category, _PerGeneration(slice_name), _PerGeneration(slice_category))
+
+
+PAUSE: Final = _phase("GC Pause", "gc.pause")
+MARK_ALIVE: Final = _phase("GC Mark Alive", "gc.mark.alive")
+FILL_INCREMENT: Final = _phase("GC Fill Increment", "gc.increment")
+DEDUCE_UNREACHABLE: Final = _phase("GC Deduce Unreachable", "gc.deduce")
+HANDLE_WEAKREFS: Final = _phase("GC Handle Weakrefs Callbacks", "gc.weakrefs")
+FINALIZE_GARBAGE: Final = _phase("GC Finalize Garbage", "gc.finalize")
+HANDLE_RESURRECTED: Final = _phase("GC Handle Resurrected", "gc.resurrect")
+CLEAR_WEAKREFS: Final = _phase("GC Clear Weakrefs", "gc.clear_weakrefs")
+DELETE_GARBAGE: Final = _phase("GC Delete Garbage", "gc.delete")
 
 # The pause first, then its sub-phases in the order the collector runs them.
 GC_PHASES: Final = (
@@ -228,8 +270,13 @@ GC_LOSS_CATEGORY: Final = "gc.loss"
 
 
 def phase_slice_name(phase: Phase, gen: int) -> str:
-    """The slice one generation's *phase* is drawn as."""
-    return f"{phase.label}({gen})"
+    """The slice one generation's *phase* is drawn as.
+
+    A reading of the table `_phase` rendered. The conversion loop indexes
+    `phase.slice_names` directly, since a call per slice is what this
+    spelling used to cost it; everything colder reads it through here.
+    """
+    return phase.slice_names[gen]
 
 
 def phase_category(phase: Phase, gen: int) -> str:
@@ -238,7 +285,7 @@ def phase_category(phase: Phase, gen: int) -> str:
     Filtering on the prefix reaches every generation, on the exact string
     reaches one.
     """
-    return f"{phase.category}(gen={gen})"
+    return phase.categories[gen]
 
 
 def gc_pause_slice_name(gen: int) -> str:

@@ -1,6 +1,7 @@
 """Shared conversion from GC stats items to TraceEvent objects."""
 
 from collections.abc import Mapping, Sequence
+from typing import Final
 
 from ..model.names import (
     ALIVE_SIZE,
@@ -17,7 +18,9 @@ from ..model.names import (
     FINALIZE_GARBAGE,
     FINALIZED_GARBAGE_COUNT,
     GC_LOSS_CATEGORY,
+    GEN_COUNTER_METRICS,
     GENERATION,
+    GENERATIONS,
     HANDLE_RESURRECTED,
     HANDLE_WEAKREFS,
     HEAP_SIZE,
@@ -31,8 +34,6 @@ from ..model.names import (
     PAUSE,
     UNCOLLECTABLE,
     gc_loss_slice_name,
-    phase_category,
-    phase_slice_name,
 )
 from ..model.process import Process
 from ..model.protocol import (
@@ -81,6 +82,14 @@ def counter_display_name(gen: int, metric: str) -> str:
     return f"G{gen} {metric}"
 
 
+# The same names, rendered once per generation the collector has. A pause
+# writes three or four of these counters, and the name is the same string
+# every time, so the conversion reads the row rather than building it.
+_COUNTER_DISPLAY_NAMES: Final[Mapping[int, Mapping[str, str]]] = {
+    gen: {metric: counter_display_name(gen, metric) for metric in GEN_COUNTER_METRICS} for gen in GENERATIONS
+}
+
+
 def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[TraceEvent]:
     gen = item.gen
     iid = item.iid
@@ -127,8 +136,8 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
     events.append(
         Slice(
             track,
-            phase_slice_name(PAUSE, gen),
-            phase_category(PAUSE, gen),
+            PAUSE.slice_names[gen],
+            PAUSE.categories[gen],
             ts_start_ns,
             ts_stop_ns,
             pause_data,
@@ -140,8 +149,8 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
         events.append(
             Slice(
                 track,
-                phase_slice_name(MARK_ALIVE, gen),
-                phase_category(MARK_ALIVE, gen),
+                MARK_ALIVE.slice_names[gen],
+                MARK_ALIVE.categories[gen],
                 item.ts_mark_alive_start,
                 item.ts_mark_alive_stop,
                 inc_data,
@@ -153,8 +162,8 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
         events.append(
             Slice(
                 track,
-                phase_slice_name(FILL_INCREMENT, gen),
-                phase_category(FILL_INCREMENT, gen),
+                FILL_INCREMENT.slice_names[gen],
+                FILL_INCREMENT.categories[gen],
                 item.ts_fill_increment_start,
                 item.ts_fill_increment_stop,
                 inc_data,
@@ -166,8 +175,8 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
         events.append(
             Slice(
                 track,
-                phase_slice_name(DEDUCE_UNREACHABLE, gen),
-                phase_category(DEDUCE_UNREACHABLE, gen),
+                DEDUCE_UNREACHABLE.slice_names[gen],
+                DEDUCE_UNREACHABLE.categories[gen],
                 item.ts_deduce_unreachable_start,
                 item.ts_deduce_unreachable_stop,
                 inc_data,
@@ -179,8 +188,8 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
         events.append(
             Slice(
                 track,
-                phase_slice_name(HANDLE_WEAKREFS, gen),
-                phase_category(HANDLE_WEAKREFS, gen),
+                HANDLE_WEAKREFS.slice_names[gen],
+                HANDLE_WEAKREFS.categories[gen],
                 item.ts_handle_weakref_callbacks_start,
                 item.ts_handle_weakref_callbacks_stop,
                 inc_data,
@@ -192,8 +201,8 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
         events.append(
             Slice(
                 track,
-                phase_slice_name(FINALIZE_GARBAGE, gen),
-                phase_category(FINALIZE_GARBAGE, gen),
+                FINALIZE_GARBAGE.slice_names[gen],
+                FINALIZE_GARBAGE.categories[gen],
                 item.ts_handle_weakref_callbacks_stop,
                 item.ts_finalize_garbage_stop,
                 inc_data,
@@ -205,8 +214,8 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
         events.append(
             Slice(
                 track,
-                phase_slice_name(HANDLE_RESURRECTED, gen),
-                phase_category(HANDLE_RESURRECTED, gen),
+                HANDLE_RESURRECTED.slice_names[gen],
+                HANDLE_RESURRECTED.categories[gen],
                 item.ts_finalize_garbage_stop,
                 item.ts_handle_resurrected_stop,
                 inc_data,
@@ -218,8 +227,8 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
         events.append(
             Slice(
                 track,
-                phase_slice_name(CLEAR_WEAKREFS, gen),
-                phase_category(CLEAR_WEAKREFS, gen),
+                CLEAR_WEAKREFS.slice_names[gen],
+                CLEAR_WEAKREFS.categories[gen],
                 item.ts_handle_resurrected_stop,
                 item.ts_clear_weakrefs_stop,
                 inc_data,
@@ -231,17 +240,22 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
         events.append(
             Slice(
                 track,
-                phase_slice_name(DELETE_GARBAGE, gen),
-                phase_category(DELETE_GARBAGE, gen),
+                DELETE_GARBAGE.slice_names[gen],
+                DELETE_GARBAGE.categories[gen],
                 item.ts_delete_garbage_start,
                 item.ts_delete_garbage_stop,
                 inc_data,
             )
         )
 
+    # A generation the table does not hold is spelled on the spot: no
+    # collector emits one, and a capture that carries one still converts.
+    counter_names = _COUNTER_DISPLAY_NAMES.get(gen)
+    if counter_names is None:
+        counter_names = {metric: counter_display_name(gen, metric) for metric in counter_data}
+
     events.extend(
-        Counter(track, metric, counter_display_name(gen, metric), ts_start_ns, value)
-        for metric, value in counter_data.items()
+        Counter(track, metric, counter_names[metric], ts_start_ns, value) for metric, value in counter_data.items()
     )
 
     events.append(
