@@ -90,11 +90,8 @@ against something written independently: a page under `docs/`, or the code
 that emits it. `tests/model/test_names.py` checks the phase table against the
 converter for that reason, and spells no name out.
 
-Two forms keep their literal whatever the rule says, because a name defeats
-them. `sys.platform == "win32"` and `hasattr(item, "gen")` are how mypy and
-pyrefly narrow a platform and a union; written as constants the checkers see
-both branches. `tests/infra/test_vocabulary_is_used.py` lists every such site
-with its reason, so the exception is visible rather than assumed.
+One form keeps its literal: `sys.platform == "win32"` is how mypy and pyrefly
+narrow a platform, and a constant defeats it.
 
 The exception is a value that is not a name gcmon draws. The Chrome capture in
 `tests/cli/analyze/test_convert_cmd.py` is a file an earlier release wrote;
