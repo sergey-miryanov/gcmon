@@ -274,7 +274,7 @@ class TestCombineFiles:
         records = [json.loads(line) for line in out.read_text(encoding=ENCODING).splitlines()]
         assert [record[TS_START] for record in records] == [5_000_000, 0]
 
-    def test_jsonl_to_jsonl_merges_same_pid(self, tmp_path: Path) -> None:
+    def test_jsonl_to_jsonl_keeps_a_pid_from_each_file(self, tmp_path: Path) -> None:
         f1 = tmp_path / "a.jsonl"
         f2 = tmp_path / "b.jsonl"
         out = tmp_path / "out.jsonl"
