@@ -23,6 +23,11 @@ class TestThePositionOfAnInstant:
         round, not the one it is waiting for."""
         assert position_of(250_000_000, 0, 100_000_000) == 2
 
+    def test_the_grid_starts_where_the_run_did(self) -> None:
+        """A monotonic clock starts nowhere in particular, and not on a
+        multiple of the rate."""
+        assert position_of(1_250_000_000, 1_030_000_000, 100_000_000) == 2
+
     def test_a_rate_that_is_not_one_has_no_grid_to_answer(self) -> None:
         """The division has no meaning without a rate, and the loop refuses
         one before a tick ever runs."""
@@ -42,6 +47,9 @@ class TestTheIdleToTheNextPosition:
         """A tick 50 ms over does not start the next one late: it goes to the
         position after, so starts stay on the grid."""
         assert idle_to_next_position(150_000_000, 0, 100_000_000) == 50_000_000
+
+    def test_the_next_position_is_on_the_run_s_own_grid(self) -> None:
+        assert idle_to_next_position(1_060_000_000, 1_030_000_000, 100_000_000) == 70_000_000
 
     def test_a_tick_ending_on_a_position_waits_a_whole_rate(self) -> None:
         """That position is now, so nothing can start on it any more."""
