@@ -604,17 +604,13 @@ class TestCombineNormalizePerfettoIntegration:
         )
         assert result.returncode == 0, result.stderr
         with open_trace_processor(out) as tp:
-            # pid=1001 records are all in file 1. After per-file normalization
-            # the first slice of pid=1001 has ts=0. Without --normalize, the
-            # same slice would have ts=1_500_000_000 ns. Assert that the
-            # minimum across the pid=1001 slice table is 0 (vs. 1.5B unnormalized).
-            rows = list(
-                tp.query(
-                    f"SELECT MIN(ts) AS min_ts FROM slice s {_process_filter(_PID_A)}",
-                )
-            )
-            assert len(rows) == 1
-            assert rows[0].min_ts == 0, f"expected min_ts=0 after per-file normalize, got {rows[0].min_ts}"
+            # One pid per file, so each minimum is a file's own zero. Without
+            # --normalize both sit at the capture's raw timestamps.
+            minimums = {
+                pid: next(iter(tp.query(f"SELECT MIN(ts) AS min_ts FROM slice s {_process_filter(pid)}"))).min_ts
+                for pid in (_PID_A, _PID_B)
+            }
+        assert minimums == {_PID_A: 0, _PID_B: 0}
 
 
 class TestTheTraceMatchesTheEventsItWasBuiltFrom:
