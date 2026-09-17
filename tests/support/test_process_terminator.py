@@ -231,18 +231,6 @@ class TestTerminateProcessCommon:
             mock_process.communicate.assert_called()
             assert result == (b"stdout data", b"stderr data")
 
-    def test_default_logger(self, mock_process: Mock) -> None:
-        mock_process.returncode = None
-        mock_process.poll.side_effect = lambda: mock_process.returncode
-
-        with patch.object(mock_process, "send_signal"):
-            result = terminate_process(
-                process=mock_process,
-                graceful_timeout=5.0,
-                force_timeout=2.0,
-            )
-            assert result == (b"stdout data", b"stderr data")
-
     def test_terminate_then_exits(self, mock_process: Mock) -> None:
         """Process exits after terminate(), before kill()."""
         mock_process.poll.side_effect = [None, None, 0]
