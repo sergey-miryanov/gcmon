@@ -81,15 +81,22 @@ def _sides(marks: Sequence[Marked]) -> list[str]:
 
 
 class TestAccumulateAndLand:
-    def test_two_regions_land_as_four_instants_at_teardown(self, sink: Sink) -> None:
+    def test_no_mark_crosses_while_the_benchmark_runs(self, sink: Sink) -> None:
+        """Waited for, since the server reads on a poll and a mark sent at
+        the region's end would not have arrived the instant after it."""
         hook = gcmon_hook()
 
         with hook:
             pass
+
+        assert sink.wait_for(1, timeout=0.5) == [], "a mark crossed a process boundary before teardown"
+
+    def test_two_regions_land_as_four_instants_at_teardown(self, sink: Sink) -> None:
+        hook = gcmon_hook()
         with hook:
             pass
-
-        assert sink.marks() == [], "a mark crossed a process boundary while the benchmark was running"
+        with hook:
+            pass
 
         hook.teardown({NAME: "bm_base64"})
 
