@@ -558,9 +558,9 @@ class TestLossColumns:
         stats.record_read_time(500_000)
 
         print_stats(stats, StatsView.FULL)
-        lines = [ln for ln in capsys.readouterr().out.splitlines() if READ_TIME_LABEL in ln]
+        read_time = next(row for row in table_rows(capsys.readouterr().out) if row[1] == READ_TIME_LABEL)
 
-        assert lines[0].rstrip().endswith("|      |      |") or lines[0].count("|") == 12
+        assert read_time[9:] == ["", ""]
 
     def test_cov_never_rounds_up_past_a_visible_gap(self, capsys: pytest.CaptureFixture[str]) -> None:
         """1763 of 1771 is 99.5%, but a coarser format would print 100% beside
