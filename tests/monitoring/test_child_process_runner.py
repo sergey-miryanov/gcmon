@@ -275,11 +275,10 @@ class TestContextManager:
         self, runner: ChildProcessRunner, mock_popen: Mock, mock_runner_terminate: Mock
     ) -> None:
         runner._process = mock_popen
-        try:
-            with runner:
-                raise ValueError("test error")
-        except ValueError:
-            pass
+
+        with pytest.raises(ValueError), runner:
+            raise ValueError("test error")
+
         mock_runner_terminate.assert_called_once()
 
 
