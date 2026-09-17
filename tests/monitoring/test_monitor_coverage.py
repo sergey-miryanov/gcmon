@@ -189,6 +189,6 @@ class TestCoverageWarning:
         poll(monitor, PID, [1])
         poll(monitor, PID, [10])
 
-        assert ADVISORY in caplog.text, "the warning has to fire for this to test anything"
-        assert "ring" not in caplog.text
-        assert "record" not in caplog.text
+        [warning] = [record.getMessage() for record in caplog.records]
+        assert "ring" not in warning
+        assert "record" not in warning
