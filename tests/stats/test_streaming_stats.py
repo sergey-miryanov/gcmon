@@ -3,6 +3,7 @@
 from collections.abc import Callable
 
 import numpy as np
+import pytest
 
 from gcmon.model.data import GCStatsInfo
 from gcmon.model.protocol import TGCStatsInfo
@@ -13,6 +14,19 @@ from tests.conftest import DEFAULT_PID
 from tests.helpers import proc
 
 TOLERANCE = 1e-12
+
+# How many values the list holds decides which pair of them a percentile
+# interpolates between, so each length is asked for the percentiles that
+# land on and between its own values.
+_DATA_AND_PERCENTILES = [
+    ([10.0, 20.0], [0, 50, 90, 95, 99, 100]),
+    ([1.0, 2.0, 3.0], [0, 25, 50, 75, 90, 95, 99, 100]),
+    ([float(v) for v in range(1, 11)], [0, 10, 25, 50, 75, 90, 95, 99, 100]),
+]
+
+
+def _percentile_cases() -> list[tuple[list[float], int]]:
+    return [(data, p) for data, percentiles in _DATA_AND_PERCENTILES for p in percentiles]
 
 
 class TestGetQuantileValue:
@@ -32,35 +46,19 @@ class TestGetQuantileValue:
         assert get_quantile_value([42.0], 95) == 42.0
         assert get_quantile_value([42.0], 99) == 42.0
 
-    def test_two_elements(self) -> None:
-        data = [10.0, 20.0]
-        for p in [0, 50, 90, 95, 99, 100]:
-            result = get_quantile_value(data, p)
-            expected = float(np.percentile(data, p, method="linear"))
-            assert abs(result - expected) < TOLERANCE
+    @pytest.mark.parametrize("data, percentile", _percentile_cases())
+    def test_matches_numpy_linear(self, data: list[float], percentile: int) -> None:
+        expected = float(np.percentile(data, percentile, method="linear"))
 
-    def test_three_elements(self) -> None:
-        data = [1.0, 2.0, 3.0]
-        for p in [0, 25, 50, 75, 90, 95, 99, 100]:
-            result = get_quantile_value(data, p)
-            expected = float(np.percentile(data, p, method="linear"))
-            assert abs(result - expected) < TOLERANCE
+        assert abs(get_quantile_value(data, percentile) - expected) < TOLERANCE
 
-    def test_matches_numpy_linear(self) -> None:
-        data = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]
-        for p in [0, 10, 25, 50, 75, 90, 95, 99, 100]:
-            result = get_quantile_value(data, p)
-            expected = float(np.percentile(data, p, method="linear"))
-            assert abs(result - expected) < TOLERANCE
+    @pytest.mark.parametrize("seed", range(20))
+    @pytest.mark.parametrize("percentile", [5, 10, 25, 50, 75, 90, 95, 99])
+    def test_random_data_matches_numpy(self, seed: int, percentile: int) -> None:
+        values = sorted(np.random.default_rng(seed).uniform(0, 1000, size=500).tolist())
+        expected = float(np.percentile(values, percentile, method="linear"))
 
-    def test_random_data_matches_numpy(self) -> None:
-        rng = np.random.default_rng(42)
-        for _ in range(20):
-            values = sorted(rng.uniform(0, 1000, size=500).tolist())
-            for p in [5, 10, 25, 50, 75, 90, 95, 99]:
-                result = get_quantile_value(values, p)
-                expected = float(np.percentile(values, p, method="linear"))
-                assert abs(result - expected) < TOLERANCE
+        assert abs(get_quantile_value(values, percentile) - expected) < TOLERANCE
 
 
 class TestStreamingStatsUpdate:
