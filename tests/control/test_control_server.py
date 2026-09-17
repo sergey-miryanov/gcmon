@@ -749,8 +749,10 @@ class TestControlServerClose:
         server: ControlServer = self._make_server()
         server.start()
         _send_msg(server, MSG_STOP, 42)
-        _wait_msg(server, 42, False)
+        assert _wait_msg(server, 42, False)
+
         server.close()
+
         assert server.is_enabled(42) is True
 
     def test_close_is_idempotent(self) -> None:
