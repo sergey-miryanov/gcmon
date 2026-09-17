@@ -10,8 +10,6 @@ from __future__ import annotations
 from pathlib import Path
 from typing import NamedTuple
 
-from perfetto.trace_processor import TraceProcessor
-
 from gcmon.exporters import PerfettoExporter
 from gcmon.exporters.perfetto_format import _interpreter_group_name
 from gcmon.exporters.perfetto_process_lifetime import process_track_name
@@ -246,18 +244,6 @@ def _write_trace_no_instant(tmp: Path, cmdline: tuple[str, ...] | None) -> Path:
     )
     exporter.close()
     return path
-
-
-def _misplaced_end_events(tp: TraceProcessor) -> int:
-    """Return the trace processor's ``misplaced_end_event`` counter.
-
-    The ``stats`` table is the trace processor's own diagnostics: each
-    row is a named counter the parser bumps when it hits something
-    wrong. ``misplaced_end_event`` (severity ``data_loss``) counts slice
-    ENDs that had nothing to close and were therefore thrown away.
-    """
-    rows = list(tp.query("SELECT value FROM stats WHERE name = 'misplaced_end_event'"))
-    return int(rows[0].value) if rows else 0
 
 
 _CROSS_A_START: int = 100_000_000

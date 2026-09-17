@@ -54,7 +54,7 @@ from tests.exporters.loss_row import (
     loss_slices,
     three_generations,
 )
-from tests.helpers import create_mock_loss_item, loss_track, open_trace_processor
+from tests.helpers import create_mock_loss_item, loss_track, misplaced_end_events, open_trace_processor
 
 LOSS_ROW = loss_track(PID, IID)
 
@@ -101,12 +101,6 @@ def _loss_row(tp: TraceProcessor) -> list[SliceRow]:
     ]
 
 
-def _misplaced_ends(tp: TraceProcessor) -> int:
-    """Zero even on a crossing row, which is why `_loss_row` reads depth."""
-    rows = list(tp.query("SELECT value FROM stats WHERE name = 'misplaced_end_event'"))
-    return int(rows[0].value) if rows else 0
-
-
 def _loss_args(tp: TraceProcessor) -> list[dict[str, Any]]:
     """The annotations of each loss slice, in timestamp order.
 
@@ -139,7 +133,7 @@ class TestTheCombinedRowIsTheLiveRow:
         file whose spans were emitted out of order nests here, and would have
         passed a check that only counted two loss slices."""
         with _combined(tmp_path, _capture(tmp_path)) as tp:
-            assert _misplaced_ends(tp) == 0
+            assert misplaced_end_events(tp) == 0
             assert [(name, depth) for name, _s, _e, depth in _loss_row(tp)] == [
                 (gc_loss_slice_name([0, 1, 2]), 0),
                 (gc_loss_slice_name([0, 1, 2]), 0),
@@ -246,7 +240,7 @@ class TestTheWalksCanFail:
         write_jsonl(source, {PID: self.crossing()})
 
         with _combined(tmp_path, source, "crossing") as tp:
-            assert _misplaced_ends(tp) == 0
+            assert misplaced_end_events(tp) == 0
             assert [depth for _name, _s, _e, depth in _loss_row(tp)] == [0, 1]
 
     def test_the_live_row_is_flat_to_begin_with(self) -> None:
@@ -283,7 +277,7 @@ def test_a_shuffled_file_still_draws_a_flat_row(tmp_path: Path) -> None:
     pair as nested rather than as neighbours.
     """
     with _combined(tmp_path, _shuffled_capture(tmp_path), "shuffled") as tp:
-        assert _misplaced_ends(tp) == 0
+        assert misplaced_end_events(tp) == 0
         assert _loss_row(tp) == LIVE_ROW
 
 

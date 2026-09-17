@@ -33,7 +33,7 @@ from gcmon.model.data import GCStatsInfo, LossMsg
 from gcmon.model.names import GC_LOSS_NAME, gc_loss_slice_name, gc_pause_slice_name
 from gcmon.model.trace_event import TraceEvent
 from tests.exporters.perfetto_helpers import pause_item
-from tests.helpers import create_mock_loss_item, open_trace_processor, proc
+from tests.helpers import create_mock_loss_item, misplaced_end_events, open_trace_processor, proc
 
 pytestmark = pytest.mark.fuzz
 
@@ -67,8 +67,7 @@ def _load(events: list[TraceEvent], tmp_path: Path, name: str) -> tuple[int, lis
     path = _write(events, tmp_path, name)
 
     with open_trace_processor(path) as tp:
-        rows = list(tp.query("SELECT value FROM stats WHERE name = 'misplaced_end_event'"))
-        misplaced = rows[0].value if rows else 0
+        misplaced = misplaced_end_events(tp)
         slices = [
             (row.track_name, row.name, row.ts, row.dur)
             for row in tp.query(
@@ -103,8 +102,7 @@ def _loss_row(events: list[TraceEvent], tmp_path: Path, name: str) -> tuple[int,
     up at all.
     """
     with open_trace_processor(_write(events, tmp_path, name)) as tp:
-        rows = list(tp.query("SELECT value FROM stats WHERE name = 'misplaced_end_event'"))
-        misplaced = rows[0].value if rows else 0
+        misplaced = misplaced_end_events(tp)
         slices = [
             (row.name, row.ts, row.dur, row.depth)
             for row in tp.query(

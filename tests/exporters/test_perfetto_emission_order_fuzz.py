@@ -26,7 +26,7 @@ from gcmon.exporters.perfetto_process_lifetime import (
 from gcmon.exporters.perfetto_proto import TrackEventType
 from gcmon.exporters.perfetto_track_state import PerfettoTrackState, ProcessSpan
 from tests.exporters.perfetto_helpers import span
-from tests.helpers import open_trace_processor
+from tests.helpers import misplaced_end_events, open_trace_processor
 
 pytestmark = pytest.mark.fuzz
 
@@ -71,8 +71,7 @@ def _slices_as_read_back(packets: list[bytes], tmp_path: Path, name: str) -> tup
     path = tmp_path / f"{name}.pftrace"
     path.write_bytes(build_trace(packets))
     with open_trace_processor(path) as tp:
-        rows = list(tp.query("SELECT value FROM stats WHERE name = 'misplaced_end_event'"))
-        misplaced = rows[0].value if rows else 0
+        misplaced = misplaced_end_events(tp)
         slices = {
             row.name: (row.ts, row.dur)
             for row in tp.query(

@@ -22,9 +22,9 @@ from tests.exporters.perfetto_integration.traces import (
     _LIVE_TICKS,
     _SECOND_PID,
     _SECOND_ROW_NAME,
-    _misplaced_end_events,
     _process_row_filter,
 )
+from tests.helpers import misplaced_end_events
 
 
 class TestMonitorReportedLiveness:
@@ -37,7 +37,7 @@ class TestMonitorReportedLiveness:
         """The two spans co-terminate on the last tick, so the later one
         nests inside the earlier and both ENDs land on one timestamp.
         The trace processor must still pair them."""
-        assert _misplaced_end_events(liveness_trace_processor) == 0
+        assert misplaced_end_events(liveness_trace_processor) == 0
 
     def test_liveness_only_pid_gets_exactly_one_slice(
         self,
@@ -234,7 +234,7 @@ class TestLivenessOnlyTrace:
         }
 
     def test_no_misplaced_end_events(self, liveness_only_trace_processor: TraceProcessor) -> None:
-        assert _misplaced_end_events(liveness_only_trace_processor) == 0
+        assert misplaced_end_events(liveness_only_trace_processor) == 0
 
     def test_both_pids_span_the_observed_range(
         self,

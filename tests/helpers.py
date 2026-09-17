@@ -510,6 +510,18 @@ def open_trace_processor(path: Path | str) -> Iterator[TraceProcessor]:
         tp.close()
 
 
+def misplaced_end_events(tp: TraceProcessor) -> int:
+    """How many slice ENDs the trace processor threw away for want of a
+    BEGIN to close: its own ``misplaced_end_event`` counter, of severity
+    ``data_loss``.
+
+    Exactly one row, so a processor that renames the counter fails every
+    caller here. A missing row read as zero would pass them all.
+    """
+    [row] = tp.query("SELECT value FROM stats WHERE name = 'misplaced_end_event'")
+    return int(row.value)
+
+
 def perfetto_packets(content: bytes) -> list[TracePacket]:
     """Every ``TracePacket`` in a serialized trace, in file order.
 

@@ -52,11 +52,11 @@ from tests.exporters.perfetto_integration.traces import (
     _ZERO_CROSSER_START,
     _ZERO_CROSSER_STOP,
     _ZERO_INSTANT_TS,
-    _misplaced_end_events,
     _process_row_filter,
 )
 from tests.helpers import (
     create_mock_stats_item,
+    misplaced_end_events,
     open_trace_processor,
     proc,
 )
@@ -476,7 +476,7 @@ class TestProcessesTrack:
         no slice to close. It is the trace processor reporting data loss
         directly, rather than an inference from the slice table.
         """
-        assert _misplaced_end_events(trace_processor) == 0
+        assert misplaced_end_events(trace_processor) == 0
 
     def test_slice_name_format(
         self,
@@ -561,7 +561,7 @@ class TestCrossingProcessSpans:
     """
 
     def test_no_misplaced_end_events(self, crossing_trace_processor: TraceProcessor) -> None:
-        assert _misplaced_end_events(crossing_trace_processor) == 0
+        assert misplaced_end_events(crossing_trace_processor) == 0
 
     def test_earlier_span_is_clipped_and_later_span_is_intact(
         self,
@@ -651,7 +651,7 @@ class TestZeroDurationProcessSpans:
     def test_no_misplaced_end_events(self, zero_duration_trace_processor: TraceProcessor) -> None:
         """A zero-duration slice is a BEGIN and an END at the same ts.
         The trace processor must pair them, not orphan the END."""
-        assert _misplaced_end_events(zero_duration_trace_processor) == 0
+        assert misplaced_end_events(zero_duration_trace_processor) == 0
 
     def test_every_pid_keeps_a_slice(
         self,
