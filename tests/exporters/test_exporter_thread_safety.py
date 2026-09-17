@@ -338,7 +338,9 @@ class TestExporterThreadSafety:
         )
 
     def test_double_close_safe(self, exporter_factory: ExporterFactory, tmp_path: Path) -> None:
-        exporter, capture = exporter_factory.build(tmp_path, threshold=1)
+        """A threshold the five events stay under, so they are still in the
+        buffer for the two closes to race over."""
+        exporter, capture = exporter_factory.build(tmp_path, threshold=100)
         for ev in _make_gc_events(5, 1_500_000_000):
             exporter.add_event(proc(MAIN_PID), ev)
 
