@@ -260,6 +260,20 @@ class TestCombineFiles:
         assert records[0][TS_START] == 5_000_000
         assert records[1][TS_START] == 0
 
+    def test_jsonl_to_jsonl_normalizes_a_pid_across_the_merge(self, tmp_path: Path) -> None:
+        """One pid in two files shares one zero. Normalizing file by file would
+        hand each of them its own."""
+        late = tmp_path / "late.jsonl"
+        early = tmp_path / "early.jsonl"
+        out = tmp_path / "out.jsonl"
+        late.write_bytes(msgspec.json.encode(create_jsonl_record(pid=1, ts_start=10_000_000, ts_stop=11_000_000)))
+        early.write_bytes(msgspec.json.encode(create_jsonl_record(pid=1, ts_start=5_000_000, ts_stop=6_000_000)))
+
+        combine_files([late, early], out, normalize=True, output_format=FORMAT_JSONL)
+
+        records = [json.loads(line) for line in out.read_text(encoding=ENCODING).splitlines()]
+        assert [record[TS_START] for record in records] == [5_000_000, 0]
+
     def test_jsonl_to_jsonl_merges_same_pid(self, tmp_path: Path) -> None:
         f1 = tmp_path / "a.jsonl"
         f2 = tmp_path / "b.jsonl"
