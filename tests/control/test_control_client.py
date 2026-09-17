@@ -2,6 +2,7 @@
 
 import os
 from collections.abc import Generator
+from itertools import count
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -49,6 +50,13 @@ def disconnected_client() -> ControlClient:
 @pytest.fixture
 def mock_sleep() -> Generator[None]:
     with patch("gcmon.control.control_client.time.sleep"):
+        yield
+
+
+@pytest.fixture
+def one_attempt_clock(mock_sleep: Generator[None]) -> Generator[None]:
+    """A clock that lets one attempt in ahead of the default deadline."""
+    with patch("gcmon.control.control_client.time.monotonic", side_effect=count(0.0, 3.0)):
         yield
 
 
@@ -214,7 +222,7 @@ class TestConnectWithRetry:
 
 class TestDefaultConnect:
     def test_returns_none_on_connection_failure(
-        self, caplog: pytest.LogCaptureFixture, mock_sleep: Generator[None]
+        self, caplog: pytest.LogCaptureFixture, one_attempt_clock: Generator[None]
     ) -> None:
         assert _default_connect("/nonexistent/control/socket") is None
         assert "Failed to connect to control plane" in caplog.text
