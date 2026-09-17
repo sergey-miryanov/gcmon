@@ -72,6 +72,7 @@ from gcmon.model.trace_event import (
 from gcmon.support.vocabulary import CMD_RUN
 from tests.exporters.perfetto_helpers import (
     convert_item,
+    convert_items,
     lifetime_slices,
     parse_track_descriptor,
     pause_item,
@@ -688,13 +689,19 @@ class TestConvertInstantToPerfettoPacket:
         assert "heap_size heap_size" not in track_names
 
     def test_shared_heap_size_track_reused_across_generations(self, state: PerfettoTrackState) -> None:
-        item_g0 = pause_item()
-        item_g1 = pause_item(gen=1, ts_start=3_000, ts_stop=4_000, heap_size=2000)
-        convert_item(proc(TARGET_PID), item_g0, state, sequence_id=1)
-        uuid_after_g0 = state.get_or_create_counter_track_uuid(interpreter_track(TARGET_PID, 0), HEAP_SIZE)
-        convert_item(proc(TARGET_PID), item_g1, state, sequence_id=1)
-        uuid_after_g1 = state.get_or_create_counter_track_uuid(interpreter_track(TARGET_PID, 0), HEAP_SIZE)
-        assert uuid_after_g0 == uuid_after_g1
+        """Read off the wire: asking the state for the track twice returns one
+        uuid whatever the two conversions did."""
+        items = [
+            (proc(TARGET_PID), pause_item(heap_size=1000)),
+            (proc(TARGET_PID), pause_item(gen=1, ts_start=3_000, ts_stop=4_000, heap_size=2000)),
+        ]
+
+        descriptors, packets, _closeout = convert_items(items, state, sequence_id=1)
+
+        described = [td for td in map(parse_track_descriptor, descriptors) if td is not None]
+        [heap_size] = [td.uuid for td in described if td.name == HEAP_SIZE]
+        events = [TracePacket.FromString(raw).track_event for raw in packets]
+        assert [event.counter_value for event in events if event.track_uuid == heap_size] == [1000, 2000]
 
 
 class TestAnInstantCanCarryArgs:
