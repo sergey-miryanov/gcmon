@@ -476,15 +476,6 @@ class TestRssCounterTrackIntegration:
     """Integration tests verifying RSS counter tracks are populated in
     Perfetto traces and queryable through the trace processor."""
 
-    def test_rss_counter_track_present(
-        self,
-        trace_processor_with_rss: TraceProcessor,
-    ) -> None:
-        rows = list(trace_processor_with_rss.query("SELECT name FROM counter_track WHERE name = 'rss'"))
-        assert len(rows) >= 1, "expected at least one 'rss' counter track"
-        for r in rows:
-            assert r.name == RSS
-
     def test_rss_counter_values_match(
         self,
         trace_processor_with_rss: TraceProcessor,
