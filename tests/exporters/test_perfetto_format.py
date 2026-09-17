@@ -226,6 +226,7 @@ class TestConvertItemToPerfettoPackets:
                 td = packet.track_descriptor
                 if td.uuid == pause_uuid:
                     assert td.parent_uuid == interpreter_uuid
+                    assert td.HasField("sibling_order_rank"), "an unset rank reads as 0 too"
                     assert td.sibling_order_rank == 0
                     assert not td.HasField("child_ordering")
                     assert not td.HasField("thread")
@@ -855,6 +856,7 @@ class TestTheInterpreterGroupsAreDerived:
         group = described[_interpreter_group_name(0)]
         assert group.parent_uuid == listing.uuid
         assert group.child_ordering == 3
+        assert group.HasField("sibling_order_rank"), "an unset rank reads as 0 too"
         assert group.sibling_order_rank == 0
 
     def test_the_list_precedes_the_group_it_holds(self, state: PerfettoTrackState) -> None:
