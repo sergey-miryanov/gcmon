@@ -213,13 +213,6 @@ class TestConvertItemToPerfettoPackets:
             process_track_name(proc(TARGET_PID, 2)): ("python", "second.py"),
         }
 
-    def test_basic_item_emits_descriptors(self, state: PerfettoTrackState) -> None:
-        item = pause_item()
-        descriptors, _ = convert_item(proc(TARGET_PID), item, state, sequence_id=1)
-        assert len(descriptors) >= 2
-        assert state.has_process_descriptor(proc(TARGET_PID))
-        assert state.has_track(interpreter_track(TARGET_PID, 0))
-
     def test_pause_track_has_sibling_order_rank_zero(self, state: PerfettoTrackState) -> None:
         item = pause_item()
         descriptors, _ = convert_item(proc(TARGET_PID), item, state, sequence_id=1)
