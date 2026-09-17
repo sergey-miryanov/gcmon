@@ -547,16 +547,16 @@ class TestRssCounterTrackIntegration:
             )
             assert len(proc_rows) == 1, f"expected process row for PID {pid}"
 
-    def test_rss_counter_track_name_and_unit(
+    def test_rss_counter_track_carries_no_unit(
         self,
         trace_processor_with_rss: TraceProcessor,
     ) -> None:
-        """The RSS counter track is named ``rss``. Its unit column comes
-        back as ``None`` or ``''``: gcmon sets no explicit unit."""
-        rows = list(trace_processor_with_rss.query("SELECT name, unit FROM counter_track WHERE name = 'rss'"))
-        assert len(rows) >= 1
-        for r in rows:
-            assert r.name == RSS
+        """The unit column comes back as ``None`` or ``''``: gcmon sets no
+        explicit unit."""
+        rows = list(trace_processor_with_rss.query(f"SELECT unit FROM counter_track WHERE name = '{RSS}'"))
+
+        assert rows
+        assert {r.unit for r in rows} <= {None, ""}
 
     def test_rss_does_not_affect_gc_counters(
         self,
