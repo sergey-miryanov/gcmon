@@ -212,18 +212,15 @@ class TestBuildRows:
         assert len(rows) == 0
 
     def test_formats_values_correctly(self) -> None:
+        """Whole milliseconds in, so each percentile lands in a cell of its own."""
         s = Stats()
-        for v in [1000.0, 2000.0, 3000.0]:
+        for v in [1_000_000.0, 2_000_000.0, 3_000_000.0]:
             s.update(v)
         s.materialize()
 
         rows = _build_rows({0: s}, "Test", {}, False)
-        assert len(rows) == 1
-        row = rows[0]
-        assert row[0] == "Test(0)"
-        assert row[1] == "3"
-        assert float(row[2]) > 0
-        assert float(row[3]) > 0
+
+        assert rows == [["Test(0)", "3", "6.000", "2.000", "2.000", "2.800", "2.900", "2.980", "100.0%", "1.000"]]
 
     def test_sorted_by_generation(self) -> None:
         stats_dict: dict[int, Stats] = {}
