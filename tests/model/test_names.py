@@ -19,7 +19,11 @@ from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
+from perfetto.protos.perfetto.trace.perfetto_trace_pb2 import DebugAnnotation, TracePacket
+
 from gcmon.analysis.jsonl_io import write_jsonl
+from gcmon.exporters.perfetto_format import convert_trace_events_to_perfetto, finalize_perfetto_packets
+from gcmon.exporters.perfetto_track_state import PerfettoTrackState
 from gcmon.exporters.trace_converter import convert_item_to_trace_format, convert_loss_to_trace_format
 from gcmon.model.data import GCStatsInfo
 from gcmon.model.names import (
@@ -33,7 +37,7 @@ from gcmon.model.names import (
     SLICE_ARGS,
     gc_loss_slice_name,
 )
-from gcmon.model.trace_event import Counter, Slice
+from gcmon.model.trace_event import Counter
 from gcmon.support.vocabulary import ENCODING
 from tests.helpers import create_mock_loss_item, create_mock_stats_item, proc
 
@@ -51,6 +55,11 @@ def _keys(records: Iterable[Any]) -> set[str]:
         elif isinstance(node, list):
             stack.extend(node)
     return out
+
+
+def _annotation_names(annotation: DebugAnnotation) -> set[str]:
+    """The name *annotation* carries, and every name nested inside it."""
+    return {annotation.name}.union(*(_annotation_names(entry) for entry in annotation.dict_entries))
 
 
 class TestEveryPhaseIsShapedLikeThePhasesBesideIt:
@@ -111,10 +120,27 @@ class TestTheTableAgreesWithWhatAConversionWrites:
         written = _keys(json.loads(line) for line in path.read_text(encoding=ENCODING).splitlines())
         assert [f for f in JSONL_FIELDS if f not in written] == []
 
-    def test_a_loss_slice_carries_the_annotations_the_table_names(self) -> None:
-        events = convert_loss_to_trace_format(proc(1), create_mock_loss_item())
-        args = {key for e in events if isinstance(e, Slice) for key in e.args}
-        assert set(SLICE_ARGS) & args != set(), "no slice carried an annotation the table names"
+    def test_a_trace_carries_every_annotation_the_table_names(self) -> None:
+        """A process with a command line, cut short by the next one on its
+        pid, and one loss record: between them every annotation is due."""
+        state = PerfettoTrackState()
+        first, second = proc(1), proc(1, 2)
+        state.set_cmdline(first, ("python", "app.py"))
+        for ts in (500, 5_000):
+            state.update_process_lifetime(first, ts)
+        for ts in (2_000, 9_000):
+            state.update_process_lifetime(second, ts)
+        loss = convert_loss_to_trace_format(first, create_mock_loss_item())
+
+        _descriptors, packets = convert_trace_events_to_perfetto(loss, state, sequence_id=1)
+        packets = [*packets, *finalize_perfetto_packets(state, sequence_id=1)]
+
+        written: set[str] = set()
+        for raw in packets:
+            packet = TracePacket()
+            packet.ParseFromString(raw)
+            written.update(*(_annotation_names(a) for a in packet.track_event.debug_annotations))
+        assert set(SLICE_ARGS) - written == set()
 
 
 class TestALossSliceIsNamedForWhatItLost:
