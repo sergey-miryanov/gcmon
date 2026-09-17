@@ -868,21 +868,25 @@ class TestControlServerThreadSafety:
 
         assert len(errors) == 0
 
-    def test_concurrent_add_event(self, control_server: ControlServer) -> None:
+    def test_concurrent_add_event(self, server_not_started: ControlServer, mock_exporter: MagicMock) -> None:
+        """The registry holds pid 42, so every message reaches the exporter."""
         errors: list[Exception] = []
+        barrier = threading.Barrier(2)
 
         def add_event_loop() -> None:
             try:
+                barrier.wait(timeout=5)
                 for _ in range(20):
-                    control_server._add_event("test", 1, 0)
+                    server_not_started._add_event("test", 42, 0)
             except Exception as e:
                 errors.append(e)
 
-        t1 = threading.Thread(target=add_event_loop, daemon=True)
-        t2 = threading.Thread(target=add_event_loop, daemon=True)
-        t1.start()
-        t2.start()
-        t1.join(timeout=5)
-        t2.join(timeout=5)
+        threads = [threading.Thread(target=add_event_loop, daemon=True) for _ in range(2)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join(timeout=5)
 
-        assert len(errors) == 0
+        assert errors == []
+        assert not [t for t in threads if t.is_alive()]
+        assert len(mock_exporter.add_instant_event.call_args_list) == 40
