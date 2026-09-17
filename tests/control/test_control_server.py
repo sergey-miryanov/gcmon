@@ -5,9 +5,9 @@ import sys
 import threading
 import time
 from collections.abc import Generator
-from multiprocessing.connection import Client, Connection, Listener
+from multiprocessing.connection import Client, Connection
 from typing import Any
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -536,22 +536,15 @@ class TestControlServerAcceptLoop:
 
         assert mock_conn in server_not_started._connections
 
-    def test_accept_loop_closes_orphaned_conn_on_exception(
+    def test_a_failed_accept_keeps_the_connection_made_before_it(
         self, server_not_started: ControlServer, mock_conn: MagicMock, caplog: pytest.LogCaptureFixture
     ) -> None:
         mock_listener = MagicMock()
         mock_listener.address = "/tmp/gcmon-test"
         server_not_started._listener = mock_listener
+        accepts = [mock_conn, OSError("second accept fails")]
 
-        call_count = [0]
-
-        def _accept_side(listener: Listener) -> Mock | None:
-            call_count[0] += 1
-            if call_count[0] == 1:
-                return mock_conn
-            raise OSError("second accept fails")
-
-        with patch("gcmon.control.control_server._accept", side_effect=_accept_side):
+        with patch("gcmon.control.control_server._accept", side_effect=accepts):
             server_not_started._accept_loop()
 
         assert not mock_conn.close.called
