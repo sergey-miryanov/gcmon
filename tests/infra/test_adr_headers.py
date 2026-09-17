@@ -31,9 +31,31 @@ def modules_of(path: Path) -> list[str]:
     return [part.strip() for part in m.group(1).split(",")]
 
 
+def header_links(path: Path) -> list[str]:
+    """Every record a header field of *path* links to."""
+    text = path.read_text(encoding=ENCODING)
+    return [
+        target for field in LINK.finditer(text) for target in re.findall(r"\]\((\d{4}-[^)]+\.md)\)", field.group(2))
+    ]
+
+
 def index_modules() -> dict[str, str]:
     text = (ADR_DIR / "README.md").read_text(encoding=ENCODING)
     return {m.group(1): m.group(2).strip() for m in INDEX_ROW.finditer(text)}
+
+
+class TestThereIsSomethingToCheck:
+    """Every test below walks the records or the index, and a walk over
+    nothing passes."""
+
+    def test_the_glob_finds_the_records(self) -> None:
+        assert RECORDS
+
+    def test_the_index_has_rows(self) -> None:
+        assert index_modules()
+
+    def test_a_header_links_to_another_record(self) -> None:
+        assert [target for path in RECORDS for target in header_links(path)]
 
 
 class TestEveryRecordNamesItsModules:
@@ -71,7 +93,5 @@ class TestTheIndexAgreesWithTheHeaders:
 class TestEveryRecordLinkResolves:
     def test_header_links_point_at_a_record(self) -> None:
         for path in RECORDS:
-            text = path.read_text(encoding=ENCODING)
-            for field in LINK.finditer(text):
-                for target in re.findall(r"\]\((\d{4}-[^)]+\.md)\)", field.group(2)):
-                    assert (ADR_DIR / target).exists(), f"{path.name} -> {target}"
+            for target in header_links(path):
+                assert (ADR_DIR / target).exists(), f"{path.name} -> {target}"
