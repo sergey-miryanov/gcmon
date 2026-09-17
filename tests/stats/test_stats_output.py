@@ -578,8 +578,9 @@ class TestLossColumns:
         assert "100.0%" not in out
 
     def test_a_gap_too_small_to_show_still_says_so(self, capsys: pytest.CaptureFixture[str]) -> None:
+        """One lost past 2000 read is where both cells round to a whole."""
         stats = StreamingStats()
-        for _ in range(1_000_000):
+        for _ in range(3_000):
             stats.update(proc(TARGET_PID), _pause(1_000))
         stats.record_loss(proc(TARGET_PID), 0, 0, 1, 1_000)
 
