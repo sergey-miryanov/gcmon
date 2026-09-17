@@ -233,11 +233,8 @@ class TestPerfettoExporter:
         exporter.add_event(proc(DEFAULT_PID), mock_stats_item)
         exporter.close()
 
-        packets = _read_trace_packets(path)
-        for packet in packets:
-            ts = packet.timestamp
-            if ts:
-                assert ts >= 1_500_000
+        stamps = {packet.timestamp for packet in _read_trace_packets(path) if packet.HasField("track_event")}
+        assert stamps == {1_500_000_000, 1_505_000_000}, "every event sits on one end of the record or the other"
 
     def test_close_with_no_events(self, perfetto_exporter: ExporterFactory) -> None:
         exporter, path = perfetto_exporter()
