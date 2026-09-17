@@ -138,6 +138,11 @@ class TestStatsOutput:
         assert blank
 
 
+def _pipes(line: str) -> list[int]:
+    """Where a table line puts its column borders."""
+    return [at for at, char in enumerate(line) if char == "|"]
+
+
 class TestPrintTable:
     """Tests for _print_table function."""
 
@@ -146,14 +151,16 @@ class TestPrintTable:
         captured = capsys.readouterr()
         assert captured.out == ""
 
-    def test_column_width_calculation(self, capsys: pytest.CaptureFixture[str]) -> None:
+    def test_a_wide_cell_widens_its_column_on_every_line(self, capsys: pytest.CaptureFixture[str]) -> None:
         rows = [
             ["12345", "0", "100", "1000.000", "10.000", "20.000", "30.000", "40.000", "50.000", "1.00", "1.00"],
+            ["1", "a metric wider than its header", "1", "1", "1", "1", "1", "1", "1", "1", "1"],
         ]
+
         _print_table(rows)
-        captured = capsys.readouterr()
-        lines = captured.out.strip().splitlines()
-        assert len(lines) >= 2
+        lines = capsys.readouterr().out.strip().splitlines()
+
+        assert {tuple(_pipes(line)) for line in lines} == {tuple(_pipes(lines[0]))}
 
     def test_separator_full_format(self, capsys: pytest.CaptureFixture[str]) -> None:
         rows = [
