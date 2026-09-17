@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pytest
 
+from gcmon.stats.views import TableFormat
 from gcmon.support.vocabulary import (
     DEFAULT_JSONL_FILE,
     DEFAULT_TRACE_FILE,
@@ -260,7 +261,7 @@ class TestEnvVarEmpty:
             ("ENV_VERBOSE", "verbose", 0),
             ("ENV_FORMAT", "format", FORMAT_PERFETTO),
             ("ENV_STATS", "stats", None),
-            ("ENV_TABLE_FORMAT", "table_format", None),
+            ("ENV_TABLE_FORMAT", "table_format", TableFormat.PLAIN),
             ("ENV_CONTROL_NAME", "control_name", None),
             ("ENV_RSS", "rss", False),
             ("ENV_RSS_INTERVAL", "rss_interval", 1.0),
@@ -277,8 +278,5 @@ class TestEnvVarEmpty:
         getter = getattr(env_module, f"get_env_{getter_suffix}")
         actual_env_name = getattr(env_module, env_var)
         monkeypatch.setenv(actual_env_name, "")
-        result = getter()
-        if getter_suffix == "table_format":
-            assert result == env_module.TableFormat.PLAIN
-        else:
-            assert result == default
+
+        assert getter() == default

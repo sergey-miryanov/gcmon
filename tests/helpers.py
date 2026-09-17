@@ -53,6 +53,7 @@ from gcmon.model.trace_event import Counter, InterpreterTrack, LossTrack, Proces
 from gcmon.monitoring.events_reader import EventsReader
 from gcmon.monitoring.monitor import EventsMonitor
 from gcmon.monitoring.process_registry import ProcessRegistry
+from gcmon.stats.views import TableFormat
 from gcmon.support.vocabulary import ENCODING
 from tests.perfetto_prebuilt import trace_processor_bin
 
@@ -67,7 +68,7 @@ HAS_LIBZSTD: bool = zstd is not None
 
 _JsonValue = int | float | str
 JsonlRecord = dict[str, _JsonValue]
-DefaultsValue = Path | float | None | int | str | bool
+DefaultsValue = Path | float | None | int | str | bool | TableFormat
 
 # What one poll of one pid answers. Takes the pid, because a test driving a
 # process tree answers differently per child.

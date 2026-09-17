@@ -100,8 +100,7 @@ class TestJsonlExporter:
         for _ in range(3):
             exporter.add_event(proc(DEFAULT_PID), mock_stats_item)
         assert len(exporter._events) == 3
-        if path.exists():
-            assert len(read_jsonl(path)) == 0
+        assert not path.exists()
         exporter.close()
         assert len(read_jsonl(path)) == 3
 
@@ -173,8 +172,7 @@ class TestJsonlExporterFlushThreshold:
         exporter, path = jsonl_exporter(threshold=10)
         for _ in range(5):
             exporter.add_event(proc(DEFAULT_PID), mock_stats_item)
-        if path.exists():
-            assert len(read_jsonl(path)) == 0
+        assert not path.exists()
         for _ in range(5):
             exporter.add_event(proc(DEFAULT_PID), mock_stats_item)
         assert len(read_jsonl(path)) == 10
@@ -185,8 +183,7 @@ class TestJsonlExporterFlushThreshold:
         exporter, path = jsonl_exporter(threshold=5)
         for _ in range(4):
             exporter.add_event(proc(DEFAULT_PID), mock_stats_item)
-            if path.exists():
-                assert len(read_jsonl(path)) == 0
+            assert not path.exists()
         exporter.add_event(proc(DEFAULT_PID), mock_stats_item)
         assert len(read_jsonl(path)) == 5
 
@@ -215,8 +212,7 @@ class TestJsonlExporterFlushThreshold:
         exporter, path = jsonl_exporter(threshold=5)
         for _ in range(4):
             exporter.add_loss_event(proc(DEFAULT_PID), create_mock_loss_item())
-            if path.exists():
-                assert len(read_jsonl(path)) == 0
+            assert not path.exists()
         exporter.add_loss_event(proc(DEFAULT_PID), create_mock_loss_item())
         assert len(read_jsonl(path)) == 5
 
@@ -226,8 +222,7 @@ class TestJsonlExporterFlushThreshold:
         exporter, path = jsonl_exporter(threshold=5)
         for _ in range(4):
             exporter.add_instant_event(proc(DEFAULT_PID), create_instant_msg())
-            if path.exists():
-                assert len(read_jsonl(path)) == 0
+            assert not path.exists()
         exporter.add_instant_event(proc(DEFAULT_PID), create_instant_msg())
         assert len(read_jsonl(path)) == 5
 
