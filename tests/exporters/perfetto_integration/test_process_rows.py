@@ -501,13 +501,13 @@ class TestProcessesTrack:
             )
 
     @pytest.mark.parametrize(
-        ("pid", "first_event"),
-        [(DEFAULT_PID, _TS_START - 1_000_000), (_SECOND_PID, _TS_START - 2_000_000)],
+        ("row_name", "first_event"),
+        [(_DEFAULT_ROW_NAME, _TS_START - 1_000_000), (_SECOND_ROW_NAME, _TS_START - 2_000_000)],
     )
     def test_a_slice_begins_at_its_process_s_first_event(
         self,
         trace_processor: TraceProcessor,
-        pid: int,
+        row_name: str,
         first_event: int,
     ) -> None:
         """The instant each process opens on, which the trace writes ahead of
@@ -517,7 +517,7 @@ class TestProcessesTrack:
                 f"SELECT s.ts FROM slice s "
                 f"JOIN track t ON s.track_id = t.id "
                 f"WHERE t.name = '{_PROCESS_LIFETIME_TRACK_NAME}' "
-                f"AND s.name = '{process_track_name(proc(pid))}'"
+                f"AND s.name = '{row_name}'"
             )
         )
 
