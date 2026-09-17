@@ -500,7 +500,9 @@ class TestRunCommandModuleMode:
         result = run_module("test", "test_gc", "-v", gc_args=gc_args)
 
         with print_on_failure(result):
-            assert output_file.exists()
+            assert result.returncode == 0
+            # regrtest names each test it ran only under its own `-v`.
+            assert "test_collect (test.test_gc." in result.stdout + result.stderr
             assert_valid_perfetto_trace(output_file)
 
 
