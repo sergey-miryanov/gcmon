@@ -7,10 +7,33 @@ from unittest.mock import MagicMock
 
 import pytest
 
+from gcmon.model.data import GCStatsInfo
 from gcmon.stats.metrics import PAUSE_KEY
 from gcmon.stats.stats import HAS_DDSKETCH, Stats
 from gcmon.stats.streaming_stats import StreamingStats
 from tests.helpers import create_mock_stats_item, proc
+
+# The process whose figures these tests read.
+TARGET_PID: int = 1
+
+# A second process, so a total cannot pass by covering one.
+OTHER_PID: int = 2
+
+# A pid the statistics never took a ring for.
+UNKNOWN_PID: int = 9999
+
+PAUSE_NS: int = 1_000
+"""One pause's length. The expected totals below are multiples of it."""
+
+
+def _pause(ns: int = PAUSE_NS, iid: int = 0, heap_size: int | None = None) -> GCStatsInfo:
+    """A gen-0 pause *ns* long, starting at zero.
+
+    These tests count pauses and sum their lengths, so nothing else about
+    the record carries a claim."""
+    if heap_size is None:
+        return create_mock_stats_item(iid=iid, gen=0, ts_start=0, ts_stop=ns)
+    return create_mock_stats_item(iid=iid, gen=0, ts_start=0, ts_stop=ns, heap_size=heap_size)
 
 
 class TestStatsUpdate:
@@ -258,44 +281,44 @@ class TestExactTotals:
     def _stats(self, sampled: int = 3, lost: int = 7) -> StreamingStats:
         stats = StreamingStats()
         for _ in range(sampled):
-            stats.update(proc(1), create_mock_stats_item(gen=0, ts_start=0, ts_stop=1_000))
-        stats.record_loss(proc(1), 0, 0, lost, lost * 1_000)
+            stats.update(proc(TARGET_PID), _pause())
+        stats.record_loss(proc(TARGET_PID), 0, 0, lost, lost * 1_000)
         return stats
 
     def test_exact_is_sampled_plus_lost(self) -> None:
         stats = self._stats()
 
-        assert stats.pause_totals(proc(1), 0, 0).exact_count == 10
-        assert stats.pause_totals(proc(1), 0, 0).exact_pause_ns == 10_000
+        assert stats.pause_totals(proc(TARGET_PID), 0, 0).exact_count == 10
+        assert stats.pause_totals(proc(TARGET_PID), 0, 0).exact_pause_ns == 10_000
 
     def test_coverage_and_scale_agree_with_the_totals(self) -> None:
         stats = self._stats()
 
-        assert stats.pause_totals(proc(1), 0, 0).coverage == pytest.approx(0.3)
-        assert stats.pause_totals(proc(1), 0, 0).scale_factor == pytest.approx(10 / 3)
+        assert stats.pause_totals(proc(TARGET_PID), 0, 0).coverage == pytest.approx(0.3)
+        assert stats.pause_totals(proc(TARGET_PID), 0, 0).scale_factor == pytest.approx(10 / 3)
 
     def test_an_untouched_generation_is_neutral(self) -> None:
         """1.0 rather than a division by zero, so no call site has to guard."""
         stats = StreamingStats()
 
-        assert stats.pause_totals(proc(1), 0, 2).coverage == 1.0
-        assert stats.pause_totals(proc(1), 0, 2).scale_factor == 1.0
-        assert stats.pause_totals(proc(1), 0, 2).exact_count == 0
+        assert stats.pause_totals(proc(TARGET_PID), 0, 2).coverage == 1.0
+        assert stats.pause_totals(proc(TARGET_PID), 0, 2).scale_factor == 1.0
+        assert stats.pause_totals(proc(TARGET_PID), 0, 2).exact_count == 0
 
     def test_a_lossless_run_reports_full_coverage(self) -> None:
         stats = StreamingStats()
-        stats.update(proc(1), create_mock_stats_item(gen=0, ts_start=0, ts_stop=1_000))
+        stats.update(proc(TARGET_PID), _pause())
 
-        assert stats.pause_totals(proc(1), 0, 0).coverage == 1.0
-        assert stats.pause_totals(proc(1), 0, 0).exact_count == 1
+        assert stats.pause_totals(proc(TARGET_PID), 0, 0).coverage == 1.0
+        assert stats.pause_totals(proc(TARGET_PID), 0, 0).exact_count == 1
 
     def test_totals_span_every_pid(self) -> None:
         stats = self._stats()
-        stats.update(proc(2), create_mock_stats_item(gen=0, ts_start=0, ts_stop=1_000))
-        stats.record_loss(proc(2), 0, 0, 1, 1_000)
+        stats.update(proc(OTHER_PID), _pause())
+        stats.record_loss(proc(OTHER_PID), 0, 0, 1, 1_000)
 
         assert stats.pause_totals_by_gen()[0].exact_count == 12
-        assert stats.pause_totals(proc(2), 0, 0).exact_count == 2
+        assert stats.pause_totals(proc(OTHER_PID), 0, 0).exact_count == 2
 
     def test_loss_survives_a_pid_the_monitor_forgets(self) -> None:
         """Recorded per poll rather than flushed at the end, so a child that
@@ -304,7 +327,7 @@ class TestExactTotals:
         before = stats.pause_totals_by_gen()[0].exact_count
 
         assert before == stats.pause_totals_by_gen()[0].exact_count
-        assert stats.pause_totals(proc(1), 0, 0).lost_count == 7
+        assert stats.pause_totals(proc(TARGET_PID), 0, 0).lost_count == 7
 
 
 class TestTotalsLeaveTheAccumulatorBehind:
@@ -313,19 +336,19 @@ class TestTotalsLeaveTheAccumulatorBehind:
 
     def test_one_pid_gets_an_answer_rather_than_the_slot(self) -> None:
         stats = StreamingStats()
-        stats.record_loss(proc(1), 0, 0, 7, 7_000)
+        stats.record_loss(proc(TARGET_PID), 0, 0, 7, 7_000)
 
-        totals = stats.pause_totals(proc(1), 0, 0)
+        totals = stats.pause_totals(proc(TARGET_PID), 0, 0)
         with pytest.raises(AttributeError):
             totals.lost_count = 99  # type: ignore[misc]
 
         assert (totals.lost_count, totals.lost_pause_ns) == (7, 7_000)
-        assert stats.pause_totals(proc(1), 0, 0).lost_count == 7
+        assert stats.pause_totals(proc(TARGET_PID), 0, 0).lost_count == 7
 
     def test_every_pid_gets_one_too(self) -> None:
         stats = StreamingStats()
-        stats.record_loss(proc(1), 0, 0, 7, 7_000)
-        stats.record_loss(proc(2), 0, 0, 1, 1_000)
+        stats.record_loss(proc(TARGET_PID), 0, 0, 7, 7_000)
+        stats.record_loss(proc(OTHER_PID), 0, 0, 1, 1_000)
 
         with pytest.raises(AttributeError):
             stats.pause_totals_by_gen()[0].lost_count = 99  # type: ignore[misc]
@@ -335,24 +358,24 @@ class TestTotalsLeaveTheAccumulatorBehind:
     def test_an_untouched_key_answers_zero(self) -> None:
         stats = StreamingStats()
 
-        assert stats.pause_totals(proc(1), 0, 0).lost_count == 0
+        assert stats.pause_totals(proc(TARGET_PID), 0, 0).lost_count == 0
         assert stats.pause_totals_by_gen()[2].lost_pause_ns == 0
 
     def test_polls_still_accumulate(self) -> None:
         stats = StreamingStats()
-        stats.record_loss(proc(1), 0, 0, 3, 3_000)
-        stats.record_loss(proc(1), 0, 0, 4, 4_000)
+        stats.record_loss(proc(TARGET_PID), 0, 0, 3, 3_000)
+        stats.record_loss(proc(TARGET_PID), 0, 0, 4, 4_000)
 
-        assert stats.pause_totals(proc(1), 0, 0).lost_count == 7
-        assert stats.pause_totals(proc(1), 0, 0).lost_pause_ns == 7_000
+        assert stats.pause_totals(proc(TARGET_PID), 0, 0).lost_count == 7
+        assert stats.pause_totals(proc(TARGET_PID), 0, 0).lost_pause_ns == 7_000
 
     def test_cumulative_reads_hand_back_scratch(self) -> None:
         """`CumulativeCounters` is the accumulator a fold adds into, so this side
         cannot be frozen the way the pause side is. The fold still sums into
         a fresh one, which is what the write below lands on."""
         stats = StreamingStats()
-        stats.observe_cumulative(proc(1), 0, 0, 40, 4.0)
-        stats.observe_cumulative(proc(1), 1, 0, 2, 0.5)
+        stats.observe_cumulative(proc(TARGET_PID), 0, 0, 40, 4.0)
+        stats.observe_cumulative(proc(TARGET_PID), 1, 0, 2, 0.5)
 
         stats.cumulative_totals_by_gen()[0].add(99, 9.0)
 
@@ -369,15 +392,15 @@ class TestLowCoverage:
 
     def _sampled(self, stats: StreamingStats, count: int, iid: int = 0) -> None:
         for _ in range(count):
-            stats.update(proc(1), create_mock_stats_item(iid=iid, gen=0, ts_start=0, ts_stop=1_000))
+            stats.update(proc(TARGET_PID), _pause(iid=iid))
 
     def test_it_names_the_ring_and_its_coverage(self) -> None:
         stats = StreamingStats()
         self._sampled(stats, 3)
 
-        stats.record_loss(proc(1), 0, 0, 7, 7_000)
+        stats.record_loss(proc(TARGET_PID), 0, 0, 7, 7_000)
 
-        low = stats.low_coverage(proc(1))
+        low = stats.low_coverage(proc(TARGET_PID))
         assert low is not None
         iid, gen, coverage = low
         assert (iid, gen) == (0, 0)
@@ -389,11 +412,11 @@ class TestLowCoverage:
         stats = StreamingStats()
         self._sampled(stats, 99, iid=0)
         self._sampled(stats, 2, iid=1)
-        stats.record_loss(proc(1), 1, 0, 8, 8_000)
+        stats.record_loss(proc(TARGET_PID), 1, 0, 8, 8_000)
 
         assert stats.pause_totals_by_gen()[0].coverage > StreamingStats.COVERAGE_ADVISORY
 
-        low = stats.low_coverage(proc(1))
+        low = stats.low_coverage(proc(TARGET_PID))
         assert low is not None
         iid, gen, coverage = low
         assert (iid, gen) == (1, 0)
@@ -404,11 +427,11 @@ class TestLowCoverage:
         capture holding an interpreter at a tenth of its collections."""
         stats = StreamingStats()
         self._sampled(stats, 87, iid=0)
-        stats.record_loss(proc(1), 0, 0, 13, 13_000)
+        stats.record_loss(proc(TARGET_PID), 0, 0, 13, 13_000)
         self._sampled(stats, 1, iid=1)
-        stats.record_loss(proc(1), 1, 0, 19, 19_000)
+        stats.record_loss(proc(TARGET_PID), 1, 0, 19, 19_000)
 
-        low = stats.low_coverage(proc(1))
+        low = stats.low_coverage(proc(TARGET_PID))
         assert low is not None
         iid, gen, coverage = low
         assert (iid, gen) == (1, 0), "interpreter 0 dipped first and is the milder of the two"
@@ -417,11 +440,11 @@ class TestLowCoverage:
     def test_the_worst_ring_wins_whichever_order_the_loss_arrived_in(self) -> None:
         stats = StreamingStats()
         self._sampled(stats, 1, iid=1)
-        stats.record_loss(proc(1), 1, 0, 19, 19_000)
+        stats.record_loss(proc(TARGET_PID), 1, 0, 19, 19_000)
         self._sampled(stats, 87, iid=0)
-        stats.record_loss(proc(1), 0, 0, 13, 13_000)
+        stats.record_loss(proc(TARGET_PID), 0, 0, 13, 13_000)
 
-        low = stats.low_coverage(proc(1))
+        low = stats.low_coverage(proc(TARGET_PID))
         assert low is not None
         assert low[:2] == (1, 0)
 
@@ -429,18 +452,18 @@ class TestLowCoverage:
         stats = StreamingStats()
         self._sampled(stats, 99, iid=0)
         self._sampled(stats, 2, iid=1)
-        stats.record_loss(proc(1), 0, 0, 1, 1_000)
+        stats.record_loss(proc(TARGET_PID), 0, 0, 1, 1_000)
 
-        assert stats.low_coverage(proc(1)) is None
+        assert stats.low_coverage(proc(TARGET_PID)) is None
 
     def test_a_covered_run_answers_nothing(self) -> None:
         stats = StreamingStats()
         self._sampled(stats, 99)
 
-        stats.record_loss(proc(1), 0, 0, 1, 1_000)
+        stats.record_loss(proc(TARGET_PID), 0, 0, 1, 1_000)
 
-        assert stats.pause_totals(proc(1), 0, 0).coverage > StreamingStats.COVERAGE_ADVISORY
-        assert stats.low_coverage(proc(1)) is None
+        assert stats.pause_totals(proc(TARGET_PID), 0, 0).coverage > StreamingStats.COVERAGE_ADVISORY
+        assert stats.low_coverage(proc(TARGET_PID)) is None
 
     def test_a_run_that_lost_nothing_answers_nothing(self) -> None:
         """The shortcut the check leads with: a ring that lost nothing is
@@ -448,7 +471,7 @@ class TestLowCoverage:
         stats = StreamingStats()
         self._sampled(stats, 3)
 
-        assert stats.low_coverage(proc(1)) is None
+        assert stats.low_coverage(proc(TARGET_PID)) is None
 
     def test_a_loss_entry_with_no_count_is_skipped(self) -> None:
         """`pyperf.hook` records a ring that lost pause time but no collections.
@@ -456,36 +479,36 @@ class TestLowCoverage:
         stats = StreamingStats()
         self._sampled(stats, 3)
 
-        stats.record_loss(proc(1), 0, 0, 0, 7_000)
+        stats.record_loss(proc(TARGET_PID), 0, 0, 0, 7_000)
 
-        assert stats.low_coverage(proc(1)) is None
+        assert stats.low_coverage(proc(TARGET_PID)) is None
 
     def test_one_pids_loss_does_not_answer_for_another(self) -> None:
         stats = StreamingStats()
         self._sampled(stats, 3)
 
-        stats.record_loss(proc(2), 0, 0, 7, 7_000)
+        stats.record_loss(proc(OTHER_PID), 0, 0, 7, 7_000)
 
-        assert stats.low_coverage(proc(1)) is None
-        assert stats.low_coverage(proc(2)) == (0, 0, 0.0), "pid 2 sampled nothing of what it lost"
+        assert stats.low_coverage(proc(TARGET_PID)) is None
+        assert stats.low_coverage(proc(OTHER_PID)) == (0, 0, 0.0), "pid 2 sampled nothing of what it lost"
 
     def test_asking_twice_answers_twice(self) -> None:
         """No latch of its own: every poll asks, and a second reader must not
         be told a blind run is healthy because the first one asked first."""
         stats = StreamingStats()
         self._sampled(stats, 3)
-        stats.record_loss(proc(1), 0, 0, 7, 7_000)
+        stats.record_loss(proc(TARGET_PID), 0, 0, 7, 7_000)
 
-        first = stats.low_coverage(proc(1))
+        first = stats.low_coverage(proc(TARGET_PID))
         assert first is not None
-        assert stats.low_coverage(proc(1)) == first
+        assert stats.low_coverage(proc(TARGET_PID)) == first
 
 
 class TestCumulativeCounters:
     def test_summed_across_interpreters(self) -> None:
         stats = StreamingStats()
-        stats.observe_cumulative(proc(1), 0, 0, 500, 0.5)
-        stats.observe_cumulative(proc(1), 1, 0, 300, 0.3)
+        stats.observe_cumulative(proc(TARGET_PID), 0, 0, 500, 0.5)
+        stats.observe_cumulative(proc(TARGET_PID), 1, 0, 300, 0.3)
 
         assert stats.cumulative_totals_by_gen()[0].collections == 800
         assert stats.cumulative_totals_by_gen()[0].pause_ns == 800_000_000
@@ -494,8 +517,8 @@ class TestCumulativeCounters:
         """Cumulative in the target, so polls report a running total, not a
         delta -- adding them would count every collection many times."""
         stats = StreamingStats()
-        stats.observe_cumulative(proc(1), 0, 0, 500, 0.5)
-        stats.observe_cumulative(proc(1), 0, 0, 900, 0.9)
+        stats.observe_cumulative(proc(TARGET_PID), 0, 0, 500, 0.5)
+        stats.observe_cumulative(proc(TARGET_PID), 0, 0, 900, 0.9)
 
         assert stats.cumulative_totals_by_gen()[0].collections == 900
 
@@ -503,12 +526,12 @@ class TestCumulativeCounters:
         """The point of reporting it: what ran before gcmon attached is not
         loss, and must not touch `Cov`."""
         stats = StreamingStats()
-        stats.update(proc(1), create_mock_stats_item(gen=0, ts_start=0, ts_stop=1_000))
-        stats.observe_cumulative(proc(1), 0, 0, 5_000, 5.0)
+        stats.update(proc(TARGET_PID), _pause())
+        stats.observe_cumulative(proc(TARGET_PID), 0, 0, 5_000, 5.0)
 
         assert stats.cumulative_totals_by_gen()[0].collections == 5_000
-        assert stats.pause_totals(proc(1), 0, 0).exact_count == 1
-        assert stats.pause_totals(proc(1), 0, 0).coverage == 1.0
+        assert stats.pause_totals(proc(TARGET_PID), 0, 0).exact_count == 1
+        assert stats.pause_totals(proc(TARGET_PID), 0, 0).coverage == 1.0
 
 
 class TestTwoInterpretersOfOnePid:
@@ -523,24 +546,24 @@ class TestTwoInterpretersOfOnePid:
         the pid reads 50%."""
         stats = StreamingStats()
         for _ in range(9):
-            stats.update(proc(1), create_mock_stats_item(iid=0, gen=0, ts_start=0, ts_stop=1_000))
-        stats.record_loss(proc(1), 0, 0, 1, 1_000)
+            stats.update(proc(TARGET_PID), _pause())
+        stats.record_loss(proc(TARGET_PID), 0, 0, 1, 1_000)
 
-        stats.update(proc(1), create_mock_stats_item(iid=1, gen=0, ts_start=0, ts_stop=5_000))
-        stats.record_loss(proc(1), 1, 0, 9, 45_000)
+        stats.update(proc(TARGET_PID), _pause(5_000, iid=1))
+        stats.record_loss(proc(TARGET_PID), 1, 0, 9, 45_000)
         return stats
 
     def test_each_interpreter_reports_its_own_coverage(self) -> None:
         stats = self._stats()
 
-        assert stats.pause_totals(proc(1), 0, 0).coverage == pytest.approx(0.9)
-        assert stats.pause_totals(proc(1), 1, 0).coverage == pytest.approx(0.1)
+        assert stats.pause_totals(proc(TARGET_PID), 0, 0).coverage == pytest.approx(0.9)
+        assert stats.pause_totals(proc(TARGET_PID), 1, 0).coverage == pytest.approx(0.1)
 
     def test_the_sampled_durations_stay_apart(self) -> None:
         stats = self._stats()
 
-        assert stats.pause_totals(proc(1), 0, 0).sampled_pause_ns == 9_000
-        assert stats.pause_totals(proc(1), 1, 0).sampled_pause_ns == 5_000
+        assert stats.pause_totals(proc(TARGET_PID), 0, 0).sampled_pause_ns == 9_000
+        assert stats.pause_totals(proc(TARGET_PID), 1, 0).sampled_pause_ns == 5_000
 
     def test_the_run_still_folds_to_one_answer(self) -> None:
         """The key separates rings; a roll-up over all of them is one number,
@@ -554,7 +577,7 @@ class TestTwoInterpretersOfOnePid:
     def test_the_two_rings_are_two_entries(self) -> None:
         stats = self._stats()
 
-        assert stats.rings() == [(proc(1), 0), (proc(1), 1)]
+        assert stats.rings() == [(proc(TARGET_PID), 0), (proc(TARGET_PID), 1)]
 
 
 class TestAProcessThatExits:
@@ -564,61 +587,61 @@ class TestAProcessThatExits:
         """Ring (1, 0) with three records, its process gone."""
         stats = StreamingStats()
         for _ in range(3):
-            stats.update(proc(1), create_mock_stats_item(gen=0, ts_start=0, ts_stop=1_000))
-        stats.materialize(proc(1))
+            stats.update(proc(TARGET_PID), _pause())
+        stats.materialize(proc(TARGET_PID))
         return stats
 
     def test_the_ring_keeps_its_row(self) -> None:
         stats = self._ran_and_exited()
 
-        assert stats.rings() == [(proc(1), 0)]
+        assert stats.rings() == [(proc(TARGET_PID), 0)]
 
     def test_the_percentiles_cover_the_whole_life(self) -> None:
         stats = self._ran_and_exited()
-        ring = stats.get_ring_stats(proc(1), 0)
+        ring = stats.get_ring_stats(proc(TARGET_PID), 0)
 
         assert ring is not None
         assert ring[PAUSE_KEY][0].percentiles == {50: 1_000, 90: 1_000, 95: 1_000, 99: 1_000}
 
     def test_count_and_sum_survive(self) -> None:
-        totals = self._ran_and_exited().pause_totals(proc(1), 0, 0)
+        totals = self._ran_and_exited().pause_totals(proc(TARGET_PID), 0, 0)
 
         assert (totals.sampled_count, totals.sampled_pause_ns) == (3, 3_000)
 
     def test_a_running_ring_stays_open(self) -> None:
         """Only the pid that went is settled."""
         stats = self._ran_and_exited()
-        stats.update(proc(2), create_mock_stats_item(gen=0, ts_start=0, ts_stop=1_000))
-        stats.update(proc(2), create_mock_stats_item(gen=0, ts_start=0, ts_stop=5_000))
+        stats.update(proc(OTHER_PID), _pause())
+        stats.update(proc(OTHER_PID), _pause(5_000))
 
-        assert stats.pause_totals(proc(2), 0, 0).sampled_count == 2
+        assert stats.pause_totals(proc(OTHER_PID), 0, 0).sampled_count == 2
 
     def test_retain_settles_the_pids_it_leaves_out(self) -> None:
         stats = StreamingStats()
-        stats.update(proc(1), create_mock_stats_item(gen=0, ts_start=0, ts_stop=1_000))
-        stats.update(proc(2), create_mock_stats_item(gen=0, ts_start=0, ts_stop=1_000))
+        stats.update(proc(TARGET_PID), _pause())
+        stats.update(proc(OTHER_PID), _pause())
 
-        stats.retain({proc(2)})
+        stats.retain({proc(OTHER_PID)})
 
-        assert stats._open_processes == {proc(2)}
-        assert set(stats._running_rings) == {(proc(2), 0)}
+        assert stats._open_processes == {proc(OTHER_PID)}
+        assert set(stats._running_rings) == {(proc(OTHER_PID), 0)}
 
     def test_every_interpreter_of_the_pid_settles(self) -> None:
         stats = StreamingStats()
-        stats.update(proc(1), create_mock_stats_item(iid=0, gen=0, ts_start=0, ts_stop=1_000))
-        stats.update(proc(1), create_mock_stats_item(iid=1, gen=0, ts_start=0, ts_stop=1_000))
+        stats.update(proc(TARGET_PID), _pause())
+        stats.update(proc(TARGET_PID), _pause(iid=1))
 
-        stats.materialize(proc(1))
+        stats.materialize(proc(TARGET_PID))
 
         assert stats._running_rings == {}
-        assert stats.rings() == [(proc(1), 0), (proc(1), 1)]
+        assert stats.rings() == [(proc(TARGET_PID), 0), (proc(TARGET_PID), 1)]
 
     def test_the_exit_hands_the_slot_back(self) -> None:
         """A target that spawns and exits keeps every row it earned. The bound
         counts the interpreters running, so the dead ones cost no slot."""
         stats = StreamingStats()
         for pid in range(StreamingStats.MAX_ACTIVE_RINGS * 2):
-            stats.update(proc(pid), create_mock_stats_item(gen=0, ts_start=0, ts_stop=1_000))
+            stats.update(proc(pid), _pause())
             stats.materialize(proc(pid))
 
         assert len(stats.rings()) == StreamingStats.MAX_ACTIVE_RINGS * 2
@@ -632,11 +655,15 @@ class TestAnOpenPidHoldsARing:
 
     def test_each_path_that_opens_a_pid_opens_a_ring(self) -> None:
         stats = StreamingStats()
-        stats.update(proc(1), create_mock_stats_item(iid=0, gen=0, ts_start=0, ts_stop=1_000))
-        stats.record_loss(proc(2), 0, 0, 4, 400)
+        stats.update(proc(TARGET_PID), _pause())
+        stats.record_loss(proc(OTHER_PID), 0, 0, 4, 400)
         stats.observe_cumulative(proc(3), 0, 0, 10, 0.5)
 
-        assert stats._open_processes == {process for process, _ in stats._running_rings} == {proc(1), proc(2), proc(3)}
+        assert (
+            stats._open_processes
+            == {process for process, _ in stats._running_rings}
+            == {proc(TARGET_PID), proc(OTHER_PID), proc(3)}
+        )
 
 
 class TestAFanOutThatDeparts:
@@ -654,7 +681,7 @@ class TestAFanOutThatDeparts:
         stats = StreamingStats()
         for pid in self.PIDS:
             for iid in self.IIDS:
-                stats.update(proc(pid), create_mock_stats_item(iid=iid, gen=0, ts_start=0, ts_stop=1_000 * pid))
+                stats.update(proc(pid), _pause(PAUSE_NS * pid, iid=iid))
                 stats.record_loss(proc(pid), iid, 0, pid, 100 * pid)
                 stats.observe_cumulative(proc(pid), iid, 0, 10 * pid, 0.5)
         return stats
@@ -694,7 +721,7 @@ class TestAFanOutThatDeparts:
         stats = self._fan_out()
 
         stats.retain(self.SURVIVING)
-        stats.update(proc(3, 2), create_mock_stats_item(iid=0, gen=0, ts_start=0, ts_stop=7_000))
+        stats.update(proc(3, 2), _pause(7_000))
 
         assert stats.pause_totals(proc(3, 1), 0, 0).sampled_pause_ns == 3_000
         assert stats.pause_totals(proc(3, 2), 0, 0).sampled_pause_ns == 7_000
@@ -707,7 +734,7 @@ class TestAFanOutThatDeparts:
         stats = StreamingStats()
         for iid in self.IIDS:
             for pid in self.PIDS:
-                stats.update(proc(pid), create_mock_stats_item(iid=iid, gen=0, ts_start=0, ts_stop=1_000))
+                stats.update(proc(pid), _pause(iid=iid))
 
         stats.retain(self.SURVIVING)
 
@@ -741,7 +768,7 @@ class TestAFanOutThatDeparts:
         settled = self._state(stats)
 
         stats.materialize(proc(self.PIDS[5]))
-        stats.materialize(proc(9_999))
+        stats.materialize(proc(UNKNOWN_PID))
 
         assert self._state(stats) == settled
 
@@ -757,7 +784,7 @@ class TestAFanOutThatDeparts:
         """The bound counts rings holding buffers."""
         stats = StreamingStats()
         for pid in range(StreamingStats.MAX_ACTIVE_RINGS + 4):
-            stats.update(proc(pid), create_mock_stats_item(gen=0, ts_start=0, ts_stop=1_000))
+            stats.update(proc(pid), _pause())
         assert stats.untracked_rings() == 4
 
         stats.retain(set())
@@ -767,11 +794,11 @@ class TestAFanOutThatDeparts:
     def test_the_slots_a_departed_fan_out_frees_are_whole(self) -> None:
         stats = StreamingStats()
         for pid in range(StreamingStats.MAX_ACTIVE_RINGS + 4):
-            stats.update(proc(pid), create_mock_stats_item(gen=0, ts_start=0, ts_stop=1_000))
+            stats.update(proc(pid), _pause())
 
         stats.retain(set())
         for pid in range(9_000, 9_000 + StreamingStats.MAX_ACTIVE_RINGS):
-            stats.update(proc(pid), create_mock_stats_item(gen=0, ts_start=0, ts_stop=1_000))
+            stats.update(proc(pid), _pause())
 
         assert stats.untracked_rings() == 4
         assert stats.get_ring_stats(proc(9_000 + StreamingStats.MAX_ACTIVE_RINGS - 1), 0) is not None
@@ -784,22 +811,22 @@ class TestTheBoundOnRunningRings:
         """Every slot taken by a ring still running, then one more ring."""
         stats = StreamingStats()
         for pid in range(StreamingStats.MAX_ACTIVE_RINGS):
-            stats.update(proc(pid), create_mock_stats_item(gen=0, ts_start=0, ts_stop=1_000))
-        stats.update(proc(9_999), create_mock_stats_item(gen=0, ts_start=0, ts_stop=4_000))
+            stats.update(proc(pid), _pause())
+        stats.update(proc(UNKNOWN_PID), _pause(4_000))
         return stats
 
     def test_the_ring_gets_no_row(self) -> None:
         stats = self._full()
 
-        assert stats.get_ring_stats(proc(9_999), 0) is None
-        assert (proc(9_999), 0) not in stats.rings()
+        assert stats.get_ring_stats(proc(UNKNOWN_PID), 0) is None
+        assert (proc(UNKNOWN_PID), 0) not in stats.rings()
 
     def test_it_is_counted_as_untracked(self) -> None:
         assert self._full().untracked_rings() == 1
 
     def test_a_repeat_record_counts_the_ring_once(self) -> None:
         stats = self._full()
-        stats.update(proc(9_999), create_mock_stats_item(gen=0, ts_start=0, ts_stop=4_000))
+        stats.update(proc(UNKNOWN_PID), _pause(4_000))
 
         assert stats.untracked_rings() == 1
 
@@ -822,29 +849,29 @@ class TestTheBoundOnRunningRings:
         stats = self._full()
         stats.materialize(proc(0))
 
-        stats.update(proc(9_999), create_mock_stats_item(gen=0, ts_start=0, ts_stop=4_000))
+        stats.update(proc(UNKNOWN_PID), _pause(4_000))
 
-        assert stats.get_ring_stats(proc(9_999), 0) is None
+        assert stats.get_ring_stats(proc(UNKNOWN_PID), 0) is None
 
     def test_the_advisory_passes_over_a_ring_with_no_row(self) -> None:
         """Its sampled count reads zero, which is not what gcmon observed."""
         stats = self._full()
-        stats.record_loss(proc(9_999), 0, 0, 99, 99_000)
+        stats.record_loss(proc(UNKNOWN_PID), 0, 0, 99, 99_000)
 
-        assert stats.low_coverage(proc(9_999)) is None
+        assert stats.low_coverage(proc(UNKNOWN_PID)) is None
 
     def test_its_loss_still_reaches_the_run_totals(self) -> None:
         """The sample buffers are what the bound withholds. Counters cost four
         numbers a generation, so a declined ring keeps them and `Cov` under
         `Total` stays honest."""
         stats = self._full()
-        stats.record_loss(proc(9_999), 0, 0, 99, 99_000)
+        stats.record_loss(proc(UNKNOWN_PID), 0, 0, 99, 99_000)
 
         assert stats.pause_totals_by_gen()[0].lost_count == 99
 
     def test_its_cumulative_counters_still_reach_the_note(self) -> None:
         stats = self._full()
-        stats.observe_cumulative(proc(9_999), 0, 0, 400, 0.4)
+        stats.observe_cumulative(proc(UNKNOWN_PID), 0, 0, 400, 0.4)
 
         assert stats.cumulative_totals_by_gen()[0].collections == 400
 
@@ -854,12 +881,12 @@ class TestTheBoundOnRunningRings:
         free slot has a whole life to record, so a row covers all of it."""
         stats = self._full()
         stats.materialize(proc(0))
-        stats.materialize(proc(9_999))
+        stats.materialize(proc(UNKNOWN_PID))
 
-        stats.update(proc(9_999, 2), create_mock_stats_item(gen=0, ts_start=0, ts_stop=4_000))
+        stats.update(proc(UNKNOWN_PID, 2), _pause(4_000))
 
         assert stats.rings() == sorted(
-            [*((proc(pid), 0) for pid in range(StreamingStats.MAX_ACTIVE_RINGS)), (proc(9_999, 2), 0)]
+            [*((proc(pid), 0) for pid in range(StreamingStats.MAX_ACTIVE_RINGS)), (proc(UNKNOWN_PID, 2), 0)]
         )
         assert stats.untracked_rings() == 1
 
@@ -885,16 +912,16 @@ class TestADeathTheMonitorCalled:
     def _called_dead_but_running(self) -> StreamingStats:
         stats = StreamingStats()
         for _ in range(3):
-            stats.update(proc(1), create_mock_stats_item(gen=0, ts_start=0, ts_stop=1_000))
-        stats.record_loss(proc(1), 0, 0, 2, 2_000)
-        stats.observe_cumulative(proc(1), 0, 0, 300, 0.3)
+            stats.update(proc(TARGET_PID), _pause())
+        stats.record_loss(proc(TARGET_PID), 0, 0, 2, 2_000)
+        stats.observe_cumulative(proc(TARGET_PID), 0, 0, 300, 0.3)
 
-        stats.materialize(proc(1))
+        stats.materialize(proc(TARGET_PID))
 
         for _ in range(2):
-            stats.update(proc(1), create_mock_stats_item(gen=0, ts_start=0, ts_stop=1_000))
-        stats.record_loss(proc(1), 0, 0, 1, 1_000)
-        stats.observe_cumulative(proc(1), 0, 0, 500, 0.5)
+            stats.update(proc(TARGET_PID), _pause())
+        stats.record_loss(proc(TARGET_PID), 0, 0, 1, 1_000)
+        stats.observe_cumulative(proc(TARGET_PID), 0, 0, 500, 0.5)
         return stats
 
     def test_its_cumulative_counters_start_fresh(self) -> None:
@@ -922,33 +949,33 @@ class TestAReusedPid:
         """
         stats = StreamingStats()
         for _ in range(8):
-            stats.update(proc(1), create_mock_stats_item(gen=0, ts_start=0, ts_stop=1_000))
-        stats.record_loss(proc(1), 0, 0, 2, 2_000)
-        stats.observe_cumulative(proc(1), 0, 0, 400, 0.4)
+            stats.update(proc(TARGET_PID), _pause())
+        stats.record_loss(proc(TARGET_PID), 0, 0, 2, 2_000)
+        stats.observe_cumulative(proc(TARGET_PID), 0, 0, 400, 0.4)
 
-        stats.materialize(proc(1))
+        stats.materialize(proc(TARGET_PID))
 
         for _ in range(8):
-            stats.update(proc(1, 2), create_mock_stats_item(gen=0, ts_start=0, ts_stop=9_000))
-        stats.record_loss(proc(1, 2), 0, 0, 2, 18_000)
-        stats.observe_cumulative(proc(1, 2), 0, 0, 10, 0.01)
+            stats.update(proc(TARGET_PID, 2), _pause(9_000))
+        stats.record_loss(proc(TARGET_PID, 2), 0, 0, 2, 18_000)
+        stats.observe_cumulative(proc(TARGET_PID, 2), 0, 0, 10, 0.01)
         return stats
 
     def test_each_process_gets_a_block(self) -> None:
-        assert self._reused().rings() == [(proc(1), 0), (proc(1, 2), 0)]
+        assert self._reused().rings() == [(proc(TARGET_PID), 0), (proc(TARGET_PID, 2), 0)]
 
     def test_the_predecessor_keeps_its_own_durations(self) -> None:
-        totals = self._reused().pause_totals(proc(1, 1), 0, 0)
+        totals = self._reused().pause_totals(proc(TARGET_PID, 1), 0, 0)
 
         assert (totals.sampled_count, totals.sampled_pause_ns) == (8, 8_000)
 
     def test_the_successor_keeps_its_own(self) -> None:
-        totals = self._reused().pause_totals(proc(1, 2), 0, 0)
+        totals = self._reused().pause_totals(proc(TARGET_PID, 2), 0, 0)
 
         assert (totals.sampled_count, totals.sampled_pause_ns) == (8, 72_000)
 
     def test_the_predecessors_percentiles_stay_settled(self) -> None:
-        ring = self._reused().get_ring_stats(proc(1, 1), 0)
+        ring = self._reused().get_ring_stats(proc(TARGET_PID, 1), 0)
 
         assert ring is not None
         assert ring[PAUSE_KEY][0].percentiles == {50: 1_000, 90: 1_000, 95: 1_000, 99: 1_000}
@@ -958,8 +985,8 @@ class TestAReusedPid:
         process's gaps against the other's records."""
         stats = self._reused()
 
-        assert stats.pause_totals(proc(1, 1), 0, 0).lost_pause_ns == 2_000
-        assert stats.pause_totals(proc(1, 2), 0, 0).lost_pause_ns == 18_000
+        assert stats.pause_totals(proc(TARGET_PID, 1), 0, 0).lost_pause_ns == 2_000
+        assert stats.pause_totals(proc(TARGET_PID, 2), 0, 0).lost_pause_ns == 18_000
 
     def test_the_cumulative_fold_adds_them(self) -> None:
         """The successor's counters are smaller and used to overwrite the
@@ -990,19 +1017,19 @@ class TestASettledRingNeverReopens:
 
     def _settled_then_late(self) -> StreamingStats:
         stats = StreamingStats()
-        stats.update(proc(1), create_mock_stats_item(gen=0, ts_start=0, ts_stop=1_000, heap_size=4_000))
-        stats.materialize(proc(1))
+        stats.update(proc(TARGET_PID), _pause(heap_size=4_000))
+        stats.materialize(proc(TARGET_PID))
 
-        stats.update(proc(1), create_mock_stats_item(gen=0, ts_start=0, ts_stop=9_000, heap_size=8_000))
+        stats.update(proc(TARGET_PID), _pause(9_000, heap_size=8_000))
         return stats
 
     def test_the_ring_keeps_one_row(self) -> None:
         """Reopening it filed a second entry under a key `_settled_rings`
         already held, so the block printed twice."""
-        assert self._settled_then_late().rings() == [(proc(1), 0)]
+        assert self._settled_then_late().rings() == [(proc(TARGET_PID), 0)]
 
     def test_the_ring_keeps_its_own_figures(self) -> None:
-        assert self._settled_then_late().pause_totals(proc(1), 0, 0).sampled_pause_ns == 1_000
+        assert self._settled_then_late().pause_totals(proc(TARGET_PID), 0, 0).sampled_pause_ns == 1_000
 
     def test_the_run_totals_keep_theirs(self) -> None:
         stats = self._settled_then_late()
@@ -1015,7 +1042,7 @@ class TestASettledRingNeverReopens:
     def test_a_process_that_is_still_running_takes_the_record(self) -> None:
         """The control: only a settled process turns one away."""
         stats = StreamingStats()
-        stats.update(proc(1), create_mock_stats_item(gen=0, ts_start=0, ts_stop=1_000))
-        stats.update(proc(1), create_mock_stats_item(gen=0, ts_start=0, ts_stop=9_000))
+        stats.update(proc(TARGET_PID), _pause())
+        stats.update(proc(TARGET_PID), _pause(9_000))
 
-        assert stats.pause_totals(proc(1), 0, 0).sampled_count == 2
+        assert stats.pause_totals(proc(TARGET_PID), 0, 0).sampled_count == 2

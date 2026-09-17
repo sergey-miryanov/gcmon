@@ -305,8 +305,8 @@ class TestPerfettoExporter:
     def test_cmdline_comes_from_the_process(self, tmp_path: Path) -> None:
         exporter = PerfettoExporter(output_path=tmp_path / "test.pb")
         item = pause_item()
-        exporter.add_process_cmdline(proc(12345), ("python", "-u", "my_script.py"))
-        exporter.add_event(proc(12345), item)
+        exporter.add_process_cmdline(proc(DEFAULT_PID), ("python", "-u", "my_script.py"))
+        exporter.add_event(proc(DEFAULT_PID), item)
         exporter.close()
 
         trace_data = (tmp_path / "test.pb").read_bytes()
@@ -333,7 +333,7 @@ class TestPerfettoExporter:
     def test_a_process_with_no_cmdline_gets_no_description(self, tmp_path: Path) -> None:
         exporter = PerfettoExporter(output_path=tmp_path / "test.pb")
         item = pause_item()
-        exporter.add_event(proc(12345), item)
+        exporter.add_event(proc(DEFAULT_PID), item)
         exporter.close()
 
         trace_data = (tmp_path / "test.pb").read_bytes()

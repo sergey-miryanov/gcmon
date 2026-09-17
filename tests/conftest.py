@@ -105,7 +105,7 @@ def mock_process() -> Mock:
         Mock subprocess.Popen instance with common attributes.
     """
     process = Mock(spec=subprocess.Popen)
-    process.pid = 12345
+    process.pid = DEFAULT_PID
     process.returncode = 0
     process.communicate.return_value = (b"stdout data", b"stderr data")
     return process
@@ -118,7 +118,7 @@ def exporter() -> MockExporter:
 
 @pytest.fixture
 def process() -> ExternalProcess:
-    return ExternalProcess(pid=12345)
+    return ExternalProcess(pid=DEFAULT_PID)
 
 
 @pytest.fixture
@@ -147,7 +147,7 @@ def monitor(
 def make_monitor(
     exporter: MockExporter, stats: StreamingStats, reader: FakeEventsReader
 ) -> Callable[..., EventsMonitor]:
-    def _make(pid: int = 12345, exp: MockExporter | None = None) -> EventsMonitor:
+    def _make(pid: int = DEFAULT_PID, exp: MockExporter | None = None) -> EventsMonitor:
         proc = ExternalProcess(pid=pid)
         return EventsMonitor(proc, exp or exporter, stats, reader=reader, wait_policy_factory=no_wait_policy)
 

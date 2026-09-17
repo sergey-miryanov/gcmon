@@ -14,6 +14,7 @@ from pytest_codspeed import BenchmarkFixture
 
 from gcmon.stats.stats import Stats, get_quantile_value
 from gcmon.stats.streaming_stats import StreamingStats
+from tests.conftest import DEFAULT_PID
 from tests.helpers import proc
 
 from .conftest import make_gc_event
@@ -33,7 +34,7 @@ def test_streaming_stats_update_single_pid(benchmark: BenchmarkFixture) -> None:
     def run() -> StreamingStats:
         stats = StreamingStats()
         for event in events:
-            stats.update(proc(12345), event)
+            stats.update(proc(DEFAULT_PID), event)
         return stats
 
     result = benchmark(run)
@@ -45,7 +46,8 @@ def test_streaming_stats_update_many_pids(benchmark: BenchmarkFixture) -> None:
     # Spread events across more pids than MAX_ACTIVE_RINGS, so the run fills
     # the bound and then declines. The name stays so CodSpeed keeps one series
     # across the bound's move from processes to rings.
-    events = [(1000 + (i % 200), make_gc_event(i, pid=1000 + (i % 200))) for i in range(EVENT_COUNT)]
+    pids = [FAN_OUT_FIRST_PID + (i % 200) for i in range(EVENT_COUNT)]
+    events = [(pid, make_gc_event(i, pid=pid)) for i, pid in enumerate(pids)]
 
     def run() -> StreamingStats:
         stats = StreamingStats()

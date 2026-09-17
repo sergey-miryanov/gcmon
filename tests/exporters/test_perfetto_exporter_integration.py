@@ -9,6 +9,7 @@ from __future__ import annotations
 import re
 from collections.abc import Iterator
 from pathlib import Path
+from typing import NamedTuple
 
 import pytest
 from perfetto.trace_processor import TraceProcessor
@@ -57,6 +58,7 @@ from gcmon.model.names import (
     gc_pause_slice_name,
     phase_slice_name,
 )
+from gcmon.model.process import Process
 from tests.conftest import DEFAULT_PID
 from tests.data_helpers import create_instant_msg
 from tests.helpers import (
@@ -71,6 +73,12 @@ _PAUSE_NAME: str = gc_pause_slice_name(0)
 _INSTANT_NAME: str = "GC monitor started"
 _SECOND_PID: int = 67890
 _THIRD_PID: int = 54321
+
+# The ``Processes`` row each pid draws. The trace processor joins on
+# these by name, so a query and an assertion have to agree on them.
+_DEFAULT_ROW_NAME: str = process_track_name(proc(DEFAULT_PID))
+_SECOND_ROW_NAME: str = process_track_name(proc(_SECOND_PID))
+_THIRD_ROW_NAME: str = process_track_name(proc(_THIRD_PID))
 
 _GEN: int = 0
 _IID: int = 0
@@ -477,19 +485,34 @@ def liveness_only_trace_processor(tmp_path: Path) -> Iterator[TraceProcessor]:
 # assertion that reads one where it should read the other fails rather
 # than passing on a number they happen to share.
 _REUSED_PID: int = 24680
-_REUSE_FIRST_CMDLINE: tuple[str, ...] = ("python3", "-m", "first_target")
-_REUSE_SECOND_CMDLINE: tuple[str, ...] = ("python3", "-m", "second_target")
-_REUSE_FIRST_START: int = 100_000_000
-_REUSE_FIRST_STOP: int = 140_000_000
-_REUSE_SECOND_START: int = 300_000_000
-_REUSE_SECOND_STOP: int = 340_000_000
-_REUSE_FIRST_COLLECTED: int = 11
-_REUSE_SECOND_COLLECTED: int = 22
-_REUSE_LOSS_WINDOW_NS: int = 10_000_000
-_REUSE_LOST_PAUSE_NS: int = 3_316_458_100
+_LOSS_WINDOW_NS: int = 10_000_000
+_LOST_PAUSE_NS: int = 3_316_458_100
 
-_REUSE_FIRST_NAME: str = process_track_name(proc(_REUSED_PID))
-_REUSE_SECOND_NAME: str = process_track_name(proc(_REUSED_PID, 2))
+
+class Epoch(NamedTuple):
+    """One of the processes that held `_REUSED_PID`, and what it collected.
+
+    `pid_epoch` is the field that tells the two apart (ADR-0025), so it is
+    what the pair below is keyed on.
+    """
+
+    pid_epoch: int
+    cmdline: tuple[str, ...]
+    ts_start: int
+    ts_stop: int
+    collected: int
+
+    @property
+    def process(self) -> Process:
+        return proc(_REUSED_PID, self.pid_epoch)
+
+    @property
+    def track_name(self) -> str:
+        return process_track_name(self.process)
+
+
+_FIRST_EPOCH = Epoch(1, ("python3", "-m", "first_target"), 100_000_000, 140_000_000, 11)
+_SECOND_EPOCH = Epoch(2, ("python3", "-m", "second_target"), 300_000_000, 340_000_000, 22)
 
 
 def _write_reused_pid_trace(tmp: Path) -> Path:
@@ -497,32 +520,27 @@ def _write_reused_pid_trace(tmp: Path) -> Path:
     processes."""
     path = tmp / "reused.pb"
     exporter = PerfettoExporter(output_path=path, flush_threshold=1000)
-    first, second = proc(_REUSED_PID, 1), proc(_REUSED_PID, 2)
-    exporter.add_process_cmdline(first, _REUSE_FIRST_CMDLINE)
-    exporter.add_process_cmdline(second, _REUSE_SECOND_CMDLINE)
-    for process, ts_start, ts_stop, collected in (
-        (first, _REUSE_FIRST_START, _REUSE_FIRST_STOP, _REUSE_FIRST_COLLECTED),
-        (second, _REUSE_SECOND_START, _REUSE_SECOND_STOP, _REUSE_SECOND_COLLECTED),
-    ):
+    for epoch in (_FIRST_EPOCH, _SECOND_EPOCH):
+        exporter.add_process_cmdline(epoch.process, epoch.cmdline)
         exporter.add_event(
-            process,
+            epoch.process,
             create_mock_stats_item(
                 gen=_GEN,
                 iid=_IID,
-                ts_start=ts_start,
-                ts_stop=ts_stop,
-                collected=collected,
+                ts_start=epoch.ts_start,
+                ts_stop=epoch.ts_stop,
+                collected=epoch.collected,
             ),
         )
         exporter.add_loss_event(
-            process,
+            epoch.process,
             create_mock_loss_item(
                 iid=_IID,
                 gen=_GEN,
-                ts_start=ts_stop,
-                ts_stop=ts_stop + _REUSE_LOSS_WINDOW_NS,
-                lost_count=collected,
-                lost_pause_ns=_REUSE_LOST_PAUSE_NS,
+                ts_start=epoch.ts_stop,
+                ts_stop=epoch.ts_stop + _LOSS_WINDOW_NS,
+                lost_count=epoch.collected,
+                lost_pause_ns=_LOST_PAUSE_NS,
             ),
         )
     exporter.close()
@@ -860,7 +878,7 @@ class TestTrackDescriptors:
         rows = sorted(
             r.name for r in trace_processor.query(f"SELECT name FROM track WHERE name LIKE '{_PROCESS_ROW_PREFIX}%'")
         )
-        assert rows == sorted([process_track_name(proc(DEFAULT_PID)), process_track_name(proc(_SECOND_PID))]), (
+        assert rows == sorted([_DEFAULT_ROW_NAME, _SECOND_ROW_NAME]), (
             f"expected process tracks for both PIDs, got {rows}"
         )
 
@@ -886,8 +904,8 @@ class TestTrackDescriptors:
         )
 
         assert [(r.pname, r.tname, r.tid, r.ismain, r.untracked) for r in rows] == [
-            (process_track_name(proc(DEFAULT_PID)), "", 1, 1, 1),
-            (process_track_name(proc(_SECOND_PID)), "", 2, 1, 1),
+            (_DEFAULT_ROW_NAME, "", 1, 1, 1),
+            (_SECOND_ROW_NAME, "", 2, 1, 1),
         ], f"unexpected thread rows: {[dict(r.__dict__) for r in rows]}"
 
     def test_no_slice_is_drawn_on_a_thread_track(
@@ -968,14 +986,8 @@ class TestCmdlineEncoding:
         self,
         trace_processor_with_cmdline: TraceProcessor,
     ) -> None:
-        assert (
-            self._description(trace_processor_with_cmdline, process_track_name(proc(DEFAULT_PID)))
-            == _FAKE_CMDLINE_JOINED
-        )
-        assert (
-            self._description(trace_processor_with_cmdline, process_track_name(proc(_SECOND_PID)))
-            == _FAKE_CMDLINE_JOINED
-        )
+        assert self._description(trace_processor_with_cmdline, _DEFAULT_ROW_NAME) == _FAKE_CMDLINE_JOINED
+        assert self._description(trace_processor_with_cmdline, _SECOND_ROW_NAME) == _FAKE_CMDLINE_JOINED
 
     def test_cmdline_absent_for_pid_outside_provider(
         self,
@@ -987,8 +999,8 @@ class TestCmdlineEncoding:
         self,
         trace_processor: TraceProcessor,
     ) -> None:
-        assert self._description(trace_processor, process_track_name(proc(DEFAULT_PID))) is None
-        assert self._description(trace_processor, process_track_name(proc(_SECOND_PID))) is None
+        assert self._description(trace_processor, _DEFAULT_ROW_NAME) is None
+        assert self._description(trace_processor, _SECOND_ROW_NAME) is None
 
 
 class TestProcessRowLifetimeSlice:
@@ -1022,8 +1034,8 @@ class TestProcessRowLifetimeSlice:
         interval gcmon observed rather than the one the sweep left."""
         default_start = _TS_START - 1_000_000
         assert self._lifetimes(trace_processor) == {
-            process_track_name(proc(DEFAULT_PID)): (default_start, 10_000_000),
-            process_track_name(proc(_SECOND_PID)): (_TS_START - 2_000_000, 7_000_000),
+            _DEFAULT_ROW_NAME: (default_start, 10_000_000),
+            _SECOND_ROW_NAME: (_TS_START - 2_000_000, 7_000_000),
         }
 
     def test_clipped_process_draws_longer_on_its_own_row(
@@ -1042,11 +1054,11 @@ class TestProcessRowLifetimeSlice:
                 f"SELECT s.dur AS dur FROM slice s "
                 f"JOIN track t ON s.track_id = t.id "
                 f"WHERE t.name = '{_PROCESS_LIFETIME_TRACK_NAME}' "
-                f"AND s.name = '{process_track_name(proc(_SECOND_PID))}'"
+                f"AND s.name = '{_SECOND_ROW_NAME}'"
             )
         )
         assert [r.dur for r in shared] == [999_999], "expected the shared row to draw the clipped span"
-        assert self._lifetimes(trace_processor)[process_track_name(proc(_SECOND_PID))][1] == 7_000_000
+        assert self._lifetimes(trace_processor)[_SECOND_ROW_NAME][1] == 7_000_000
 
     def test_carries_no_real_ts_annotations(self, trace_processor: TraceProcessor) -> None:
         """``ts`` and ``dur`` *are* the observed pair here, so copying it into
@@ -1102,16 +1114,16 @@ class TestProcessRowLifetimeSlice:
         # Read each annotation out of the column its type puts it in, so a
         # `pid_epoch` written as a string reads back as a missing int.
         assert {r.name: r.string_value for r in rows if r.flat_key.endswith(CMDLINE)} == {
-            process_track_name(proc(DEFAULT_PID)): _FAKE_CMDLINE_JOINED,
-            process_track_name(proc(_SECOND_PID)): _FAKE_CMDLINE_JOINED,
+            _DEFAULT_ROW_NAME: _FAKE_CMDLINE_JOINED,
+            _SECOND_ROW_NAME: _FAKE_CMDLINE_JOINED,
         }
         assert {r.name: r.int_value for r in rows if r.flat_key.endswith(PID_EPOCH)} == {
-            process_track_name(proc(DEFAULT_PID)): 1,
-            process_track_name(proc(_SECOND_PID)): 1,
+            _DEFAULT_ROW_NAME: 1,
+            _SECOND_ROW_NAME: 1,
         }
         assert {r.name: r.int_value for r in rows if r.flat_key.endswith(".pid")} == {
-            process_track_name(proc(DEFAULT_PID)): DEFAULT_PID,
-            process_track_name(proc(_SECOND_PID)): _SECOND_PID,
+            _DEFAULT_ROW_NAME: DEFAULT_PID,
+            _SECOND_ROW_NAME: _SECOND_PID,
         }
 
     def test_carries_the_interpreter_count(
@@ -1132,8 +1144,8 @@ class TestProcessRowLifetimeSlice:
             )
         )
         assert {r.name: r.int_value for r in rows} == {
-            process_track_name(proc(DEFAULT_PID)): 3,
-            process_track_name(proc(_SECOND_PID)): 1,
+            _DEFAULT_ROW_NAME: 3,
+            _SECOND_ROW_NAME: 1,
         }
 
     def test_carries_what_gcmon_read_and_what_it_missed(
@@ -1156,12 +1168,12 @@ class TestProcessRowLifetimeSlice:
             )
         )
         counts = {(r.name, r.flat_key.rsplit(".", 1)[1]): r.int_value for r in rows}
-        assert counts[(process_track_name(proc(DEFAULT_PID)), SAMPLED_COUNT)] == 3
-        assert counts[(process_track_name(proc(_SECOND_PID)), SAMPLED_COUNT)] == 1
-        assert counts[(process_track_name(proc(DEFAULT_PID)), LOST_COUNT)] == 0
-        assert counts[(process_track_name(proc(DEFAULT_PID)), LOST_PAUSE_NS)] == 0
+        assert counts[(_DEFAULT_ROW_NAME, SAMPLED_COUNT)] == 3
+        assert counts[(_SECOND_ROW_NAME, SAMPLED_COUNT)] == 1
+        assert counts[(_DEFAULT_ROW_NAME, LOST_COUNT)] == 0
+        assert counts[(_DEFAULT_ROW_NAME, LOST_PAUSE_NS)] == 0
         text = {(r.name, r.flat_key.rsplit(".", 1)[1]): r.string_value for r in rows}
-        assert text[(process_track_name(proc(DEFAULT_PID)), LOST_PAUSE)] == "0ns"
+        assert text[(_DEFAULT_ROW_NAME, LOST_PAUSE)] == "0ns"
 
     def test_two_processes_on_one_pid_count_their_own_capture(
         self,
@@ -1182,13 +1194,13 @@ class TestProcessRowLifetimeSlice:
             )
         )
         counts = {(r.name, r.flat_key.rsplit(".", 1)[1]): r.int_value for r in rows}
-        assert counts[(_REUSE_FIRST_NAME, SAMPLED_COUNT)] == 1
-        assert counts[(_REUSE_SECOND_NAME, SAMPLED_COUNT)] == 1
-        assert counts[(_REUSE_FIRST_NAME, LOST_COUNT)] == _REUSE_FIRST_COLLECTED
-        assert counts[(_REUSE_SECOND_NAME, LOST_COUNT)] == _REUSE_SECOND_COLLECTED
-        assert counts[(_REUSE_FIRST_NAME, LOST_PAUSE_NS)] == _REUSE_LOST_PAUSE_NS
+        assert counts[(_FIRST_EPOCH.track_name, SAMPLED_COUNT)] == 1
+        assert counts[(_SECOND_EPOCH.track_name, SAMPLED_COUNT)] == 1
+        assert counts[(_FIRST_EPOCH.track_name, LOST_COUNT)] == _FIRST_EPOCH.collected
+        assert counts[(_SECOND_EPOCH.track_name, LOST_COUNT)] == _SECOND_EPOCH.collected
+        assert counts[(_FIRST_EPOCH.track_name, LOST_PAUSE_NS)] == _LOST_PAUSE_NS
         text = {(r.name, r.flat_key.rsplit(".", 1)[1]): r.string_value for r in rows}
-        assert text[(_REUSE_FIRST_NAME, LOST_PAUSE)] == duration_text(_REUSE_LOST_PAUSE_NS)
+        assert text[(_FIRST_EPOCH.track_name, LOST_PAUSE)] == duration_text(_LOST_PAUSE_NS)
 
     def test_no_cmdline_annotation_without_a_cmdline(
         self,
@@ -1217,7 +1229,7 @@ class TestProcessRowLifetimeSlice:
                 f"SELECT s.name AS name, s.depth AS depth FROM slice s "
                 f"JOIN process_track pt ON s.track_id = pt.id "
                 f"JOIN process p ON pt.upid = p.upid "
-                f"WHERE p.name = '{process_track_name(proc(DEFAULT_PID))}' "
+                f"WHERE p.name = '{_DEFAULT_ROW_NAME}' "
                 f"AND s.name IN ('{_PROCESS_ROW_SLICE_NAME}', '{_INSTANT_NAME}') "
                 f"ORDER BY s.depth"
             )
@@ -1261,8 +1273,8 @@ class TestProcessRowLifetimeSlice:
         it.
         """
         assert sorted(self._lifetimes(trace_processor_no_instant)) == [
-            process_track_name(proc(DEFAULT_PID)),
-            process_track_name(proc(_SECOND_PID)),
+            _DEFAULT_ROW_NAME,
+            _SECOND_ROW_NAME,
         ]
         descriptions = list(
             trace_processor_no_instant.query(
@@ -1273,8 +1285,8 @@ class TestProcessRowLifetimeSlice:
             )
         )
         assert {r.name: r.description for r in descriptions} == {
-            process_track_name(proc(DEFAULT_PID)): _FAKE_CMDLINE_JOINED,
-            process_track_name(proc(_SECOND_PID)): _FAKE_CMDLINE_JOINED,
+            _DEFAULT_ROW_NAME: _FAKE_CMDLINE_JOINED,
+            _SECOND_ROW_NAME: _FAKE_CMDLINE_JOINED,
         }
 
     def test_allocates_no_track(self, trace_processor: TraceProcessor) -> None:
@@ -1285,7 +1297,7 @@ class TestProcessRowLifetimeSlice:
                 f"SELECT s.name AS name, s.track_id AS track_id FROM slice s "
                 f"JOIN process_track pt ON s.track_id = pt.id "
                 f"JOIN process p ON pt.upid = p.upid "
-                f"WHERE p.name = '{process_track_name(proc(DEFAULT_PID))}' "
+                f"WHERE p.name = '{_DEFAULT_ROW_NAME}' "
                 f"AND s.name IN ('{_PROCESS_ROW_SLICE_NAME}', '{_INSTANT_NAME}')"
             )
         )
@@ -1304,8 +1316,8 @@ class TestProcessRowLifetimeSlice:
         observed for.
         """
         lifetimes = self._lifetimes(zero_duration_trace_processor)
-        assert lifetimes[process_track_name(proc(_THIRD_PID))] == (_ZERO_INSTANT_TS, 0)
-        assert lifetimes[process_track_name(proc(DEFAULT_PID))] == (
+        assert lifetimes[_THIRD_ROW_NAME] == (_ZERO_INSTANT_TS, 0)
+        assert lifetimes[_DEFAULT_ROW_NAME] == (
             _ZERO_CLIPPED_START,
             _ZERO_CLIPPED_STOP - _ZERO_CLIPPED_START,
         )
@@ -1356,16 +1368,16 @@ class TestProcessesTrack:
             )
         )
         assert [r.name for r in rows] == [
-            process_track_name(proc(DEFAULT_PID)),
-            process_track_name(proc(_SECOND_PID)),
+            _DEFAULT_ROW_NAME,
+            _SECOND_ROW_NAME,
         ], f"expected exactly one dur-bearing Process <pid> slice per pid, got {[(r.name, r.dur) for r in rows]}"
         for r in rows:
             assert r.dur > 0, f"slice {r.name!r} has dur={r.dur}, expected > 0"
         spans = {r.name: (r.ts, r.ts + r.dur) for r in rows}
         default_start = _TS_START - 1_000_000
         assert spans == {
-            process_track_name(proc(DEFAULT_PID)): (default_start, _TS_START + 9_000_000),
-            process_track_name(proc(_SECOND_PID)): (_TS_START - 2_000_000, default_start - 1),
+            _DEFAULT_ROW_NAME: (default_start, _TS_START + 9_000_000),
+            _SECOND_ROW_NAME: (_TS_START - 2_000_000, default_start - 1),
         }
 
     def test_every_slice_records_its_real_span(
@@ -1389,10 +1401,10 @@ class TestProcessesTrack:
             )
         )
         assert {(r.name, r.flat_key): r.int_value for r in rows} == {
-            (process_track_name(proc(DEFAULT_PID)), "debug.real_start_ts"): _TS_START - 1_000_000,
-            (process_track_name(proc(DEFAULT_PID)), "debug.real_end_ts"): _TS_START + 9_000_000,
-            (process_track_name(proc(_SECOND_PID)), "debug.real_start_ts"): _TS_START - 2_000_000,
-            (process_track_name(proc(_SECOND_PID)), "debug.real_end_ts"): _TS_START + 5_000_000,
+            (_DEFAULT_ROW_NAME, "debug.real_start_ts"): _TS_START - 1_000_000,
+            (_DEFAULT_ROW_NAME, "debug.real_end_ts"): _TS_START + 9_000_000,
+            (_SECOND_ROW_NAME, "debug.real_start_ts"): _TS_START - 2_000_000,
+            (_SECOND_ROW_NAME, "debug.real_end_ts"): _TS_START + 5_000_000,
         }
 
     def test_no_misplaced_end_events(
@@ -1520,9 +1532,9 @@ class TestCrossingProcessSpans:
         spans = {r.name: (r.ts, r.ts + r.dur) for r in rows}
         assert spans == {
             # Clipped to one nanosecond before the later pid begins.
-            process_track_name(proc(DEFAULT_PID)): (_CROSS_A_START, _CROSS_B_START - 1),
+            _DEFAULT_ROW_NAME: (_CROSS_A_START, _CROSS_B_START - 1),
             # Untouched: this is the span that used to be truncated.
-            process_track_name(proc(_SECOND_PID)): (_CROSS_B_START, _CROSS_B_STOP),
+            _SECOND_ROW_NAME: (_CROSS_B_START, _CROSS_B_STOP),
         }
 
     def test_every_slice_records_its_real_span(
@@ -1545,10 +1557,10 @@ class TestCrossingProcessSpans:
             )
         )
         assert {(r.name, r.flat_key): r.int_value for r in rows} == {
-            (process_track_name(proc(DEFAULT_PID)), "debug.real_start_ts"): _CROSS_A_START,
-            (process_track_name(proc(DEFAULT_PID)), "debug.real_end_ts"): _CROSS_A_STOP,
-            (process_track_name(proc(_SECOND_PID)), "debug.real_start_ts"): _CROSS_B_START,
-            (process_track_name(proc(_SECOND_PID)), "debug.real_end_ts"): _CROSS_B_STOP,
+            (_DEFAULT_ROW_NAME, "debug.real_start_ts"): _CROSS_A_START,
+            (_DEFAULT_ROW_NAME, "debug.real_end_ts"): _CROSS_A_STOP,
+            (_SECOND_ROW_NAME, "debug.real_start_ts"): _CROSS_B_START,
+            (_SECOND_ROW_NAME, "debug.real_end_ts"): _CROSS_B_STOP,
         }
 
     def test_every_slice_says_whether_the_sweep_moved_it(
@@ -1574,8 +1586,8 @@ class TestCrossingProcessSpans:
         )
         assert {r.name: r.int_value for r in rows} == {
             # Pulled back 200ms short of its last event.
-            process_track_name(proc(DEFAULT_PID)): 1,
-            process_track_name(proc(_SECOND_PID)): 0,
+            _DEFAULT_ROW_NAME: 1,
+            _SECOND_ROW_NAME: 0,
         }
         assert {r.value_type for r in rows} == {"bool"}
 
@@ -1609,9 +1621,9 @@ class TestZeroDurationProcessSpans:
             )
         )
         assert {r.name: (r.ts, r.dur) for r in rows} == {
-            process_track_name(proc(_THIRD_PID)): (_ZERO_INSTANT_TS, 0),
-            process_track_name(proc(DEFAULT_PID)): (_ZERO_CLIPPED_START, 0),
-            process_track_name(proc(_SECOND_PID)): (_ZERO_CROSSER_START, _ZERO_CROSSER_STOP - _ZERO_CROSSER_START),
+            _THIRD_ROW_NAME: (_ZERO_INSTANT_TS, 0),
+            _DEFAULT_ROW_NAME: (_ZERO_CLIPPED_START, 0),
+            _SECOND_ROW_NAME: (_ZERO_CROSSER_START, _ZERO_CROSSER_STOP - _ZERO_CROSSER_START),
         }
 
     def test_zero_duration_slices_still_record_their_real_span(
@@ -1633,12 +1645,12 @@ class TestZeroDurationProcessSpans:
             )
         )
         assert {(r.name, r.flat_key): r.int_value for r in rows} == {
-            (process_track_name(proc(DEFAULT_PID)), "debug.real_start_ts"): _ZERO_CLIPPED_START,
-            (process_track_name(proc(DEFAULT_PID)), "debug.real_end_ts"): _ZERO_CLIPPED_STOP,
-            (process_track_name(proc(_SECOND_PID)), "debug.real_start_ts"): _ZERO_CROSSER_START,
-            (process_track_name(proc(_SECOND_PID)), "debug.real_end_ts"): _ZERO_CROSSER_STOP,
-            (process_track_name(proc(_THIRD_PID)), "debug.real_start_ts"): _ZERO_INSTANT_TS,
-            (process_track_name(proc(_THIRD_PID)), "debug.real_end_ts"): _ZERO_INSTANT_TS,
+            (_DEFAULT_ROW_NAME, "debug.real_start_ts"): _ZERO_CLIPPED_START,
+            (_DEFAULT_ROW_NAME, "debug.real_end_ts"): _ZERO_CLIPPED_STOP,
+            (_SECOND_ROW_NAME, "debug.real_start_ts"): _ZERO_CROSSER_START,
+            (_SECOND_ROW_NAME, "debug.real_end_ts"): _ZERO_CROSSER_STOP,
+            (_THIRD_ROW_NAME, "debug.real_start_ts"): _ZERO_INSTANT_TS,
+            (_THIRD_ROW_NAME, "debug.real_end_ts"): _ZERO_INSTANT_TS,
         }
 
 
@@ -1664,7 +1676,7 @@ class TestMonitorReportedLiveness:
             liveness_trace_processor.query(
                 f"SELECT s.ts AS ts, s.dur AS dur FROM slice s "
                 f"JOIN track t ON s.track_id = t.id "
-                f"WHERE t.name = '{_PROCESS_LIFETIME_TRACK_NAME}' AND s.name = '{process_track_name(proc(_SECOND_PID))}'"
+                f"WHERE t.name = '{_PROCESS_LIFETIME_TRACK_NAME}' AND s.name = '{_SECOND_ROW_NAME}'"
             )
         )
         assert len(rows) == 1, f"expected exactly one slice for the liveness-only pid, got {len(rows)}"
@@ -1683,7 +1695,7 @@ class TestMonitorReportedLiveness:
                 f"SELECT a.flat_key AS flat_key, a.int_value AS int_value FROM args a "
                 f"JOIN slice s ON s.arg_set_id = a.arg_set_id "
                 f"JOIN track t ON s.track_id = t.id "
-                f"WHERE t.name = '{_PROCESS_LIFETIME_TRACK_NAME}' AND s.name = '{process_track_name(proc(DEFAULT_PID))}' "
+                f"WHERE t.name = '{_PROCESS_LIFETIME_TRACK_NAME}' AND s.name = '{_DEFAULT_ROW_NAME}' "
                 f"AND a.flat_key IN ('debug.real_start_ts', 'debug.real_end_ts')"
             )
         )
@@ -1706,7 +1718,7 @@ class TestMonitorReportedLiveness:
                 f"s.ts AS ts, s.dur AS dur FROM process p "
                 f"JOIN process_track pt ON pt.upid = p.upid "
                 f"JOIN slice s ON s.track_id = pt.id "
-                f"WHERE p.name = '{process_track_name(proc(_SECOND_PID))}'"
+                f"WHERE p.name = '{_SECOND_ROW_NAME}'"
             )
         )
         assert len(rows) == 1, f"expected one slice on the quiet process's row, got {rows}"
@@ -1719,9 +1731,7 @@ class TestMonitorReportedLiveness:
         )
 
         busy = list(
-            liveness_trace_processor.query(
-                f"SELECT p.upid AS upid FROM process p WHERE p.name = '{process_track_name(proc(DEFAULT_PID))}'"
-            )
+            liveness_trace_processor.query(f"SELECT p.upid AS upid FROM process p WHERE p.name = '{_DEFAULT_ROW_NAME}'")
         )
         assert [row.upid] != [r.upid for r in busy], "the two processes must not share a upid"
 
@@ -1740,8 +1750,8 @@ class TestMonitorReportedLiveness:
             )
         )
         assert {r.pname: r.description for r in rows} == {
-            process_track_name(proc(DEFAULT_PID)): " ".join(_LIVE_BUSY_CMDLINE),
-            process_track_name(proc(_SECOND_PID)): " ".join(_LIVE_QUIET_CMDLINE),
+            _DEFAULT_ROW_NAME: " ".join(_LIVE_BUSY_CMDLINE),
+            _SECOND_ROW_NAME: " ".join(_LIVE_QUIET_CMDLINE),
         }
 
     def test_every_polled_pid_appears_exactly_once(
@@ -1756,8 +1766,8 @@ class TestMonitorReportedLiveness:
             )
         )
         assert {r.name: r.n for r in rows} == {
-            process_track_name(proc(DEFAULT_PID)): 1,
-            process_track_name(proc(_SECOND_PID)): 1,
+            _DEFAULT_ROW_NAME: 1,
+            _SECOND_ROW_NAME: 1,
         }
 
 
@@ -1791,7 +1801,7 @@ class TestARunKilledMidFlight:
                 f"SELECT a.string_value AS description FROM args a "
                 f"JOIN process_track pt ON a.arg_set_id = pt.source_arg_set_id "
                 f"JOIN process p ON p.upid = pt.upid "
-                f"WHERE a.key = 'description' AND p.name = '{process_track_name(proc(_SECOND_PID))}'"
+                f"WHERE a.key = 'description' AND p.name = '{_SECOND_ROW_NAME}'"
             )
         )
         assert [r.description for r in rows] == [_FAKE_CMDLINE_JOINED]
@@ -1851,8 +1861,8 @@ class TestLivenessOnlyTrace:
             )
         )
         assert {r.pname: r.n for r in rows} == {
-            process_track_name(proc(DEFAULT_PID)): 1,
-            process_track_name(proc(_SECOND_PID)): 1,
+            _DEFAULT_ROW_NAME: 1,
+            _SECOND_ROW_NAME: 1,
         }
 
     def test_no_misplaced_end_events(self, liveness_only_trace_processor: TraceProcessor) -> None:
@@ -1871,8 +1881,8 @@ class TestLivenessOnlyTrace:
         )
         span = (_LIVE_TICKS[0], _LIVE_TICKS[-1] - _LIVE_TICKS[0])
         assert {r.name: (r.ts, r.dur) for r in rows} == {
-            process_track_name(proc(DEFAULT_PID)): span,
-            process_track_name(proc(_SECOND_PID)): span,
+            _DEFAULT_ROW_NAME: span,
+            _SECOND_ROW_NAME: span,
         }
 
 
@@ -1909,10 +1919,10 @@ class TestReusedPidDrawsTwoOfEveryRow:
         class red."""
         processes = self._processes(reused_pid_trace_processor)
 
-        assert sorted(processes) == [_REUSE_FIRST_NAME, _REUSE_SECOND_NAME]
+        assert sorted(processes) == [_FIRST_EPOCH.track_name, _SECOND_EPOCH.track_name]
         assert {name: start for name, (_, start) in processes.items()} == {
-            _REUSE_FIRST_NAME: _REUSE_FIRST_START,
-            _REUSE_SECOND_NAME: _REUSE_SECOND_START,
+            _FIRST_EPOCH.track_name: _FIRST_EPOCH.ts_start,
+            _SECOND_EPOCH.track_name: _SECOND_EPOCH.ts_start,
         }
 
     def test_each_process_draws_its_pauses_on_its_own_row(
@@ -1935,8 +1945,8 @@ class TestReusedPidDrawsTwoOfEveryRow:
         )
 
         assert [(r.pname, r.ts) for r in rows] == [
-            (_REUSE_FIRST_NAME, _REUSE_FIRST_START),
-            (_REUSE_SECOND_NAME, _REUSE_SECOND_START),
+            (_FIRST_EPOCH.track_name, _FIRST_EPOCH.ts_start),
+            (_SECOND_EPOCH.track_name, _SECOND_EPOCH.ts_start),
         ]
         assert len({r.ctrack_id for r in rows}) == 2, f"expected a pause row per process, got {rows}"
         assert len({r.upid for r in rows}) == 2, f"expected a process row per process, got {rows}"
@@ -1958,8 +1968,8 @@ class TestReusedPidDrawsTwoOfEveryRow:
         )
 
         assert [(r.pname, r.value) for r in rows] == [
-            (_REUSE_FIRST_NAME, float(_REUSE_FIRST_COLLECTED)),
-            (_REUSE_SECOND_NAME, float(_REUSE_SECOND_COLLECTED)),
+            (_FIRST_EPOCH.track_name, float(_FIRST_EPOCH.collected)),
+            (_SECOND_EPOCH.track_name, float(_SECOND_EPOCH.collected)),
         ]
         assert len({r.ctrack_id for r in rows}) == 2, f"expected a counter track per process, got {rows}"
 
@@ -1983,8 +1993,8 @@ class TestReusedPidDrawsTwoOfEveryRow:
         )
 
         assert [(r.pname, r.ts, r.lost) for r in rows] == [
-            (_REUSE_FIRST_NAME, _REUSE_FIRST_STOP, _REUSE_FIRST_COLLECTED),
-            (_REUSE_SECOND_NAME, _REUSE_SECOND_STOP, _REUSE_SECOND_COLLECTED),
+            (_FIRST_EPOCH.track_name, _FIRST_EPOCH.ts_stop, _FIRST_EPOCH.collected),
+            (_SECOND_EPOCH.track_name, _SECOND_EPOCH.ts_stop, _SECOND_EPOCH.collected),
         ]
         assert len({r.track_id for r in rows}) == 2, f"expected a loss row per process, got {rows}"
 
@@ -2005,8 +2015,8 @@ class TestReusedPidDrawsTwoOfEveryRow:
         )
 
         assert [(r.pname, r.ts, r.ts + r.dur) for r in rows] == [
-            (_REUSE_FIRST_NAME, _REUSE_FIRST_START, _REUSE_FIRST_STOP + _REUSE_LOSS_WINDOW_NS),
-            (_REUSE_SECOND_NAME, _REUSE_SECOND_START, _REUSE_SECOND_STOP + _REUSE_LOSS_WINDOW_NS),
+            (_FIRST_EPOCH.track_name, _FIRST_EPOCH.ts_start, _FIRST_EPOCH.ts_stop + _LOSS_WINDOW_NS),
+            (_SECOND_EPOCH.track_name, _SECOND_EPOCH.ts_start, _SECOND_EPOCH.ts_stop + _LOSS_WINDOW_NS),
         ]
 
     def test_each_process_track_carries_its_own_command_line(
@@ -2026,8 +2036,8 @@ class TestReusedPidDrawsTwoOfEveryRow:
         )
 
         assert [(r.pname, r.description) for r in rows] == [
-            (_REUSE_FIRST_NAME, " ".join(_REUSE_FIRST_CMDLINE)),
-            (_REUSE_SECOND_NAME, " ".join(_REUSE_SECOND_CMDLINE)),
+            (_FIRST_EPOCH.track_name, " ".join(_FIRST_EPOCH.cmdline)),
+            (_SECOND_EPOCH.track_name, " ".join(_SECOND_EPOCH.cmdline)),
         ]
 
     def test_a_process_track_and_its_span_name_the_same_program(
@@ -2059,8 +2069,8 @@ class TestReusedPidDrawsTwoOfEveryRow:
         }
 
         assert on_the_span == {
-            _REUSE_FIRST_NAME: " ".join(_REUSE_FIRST_CMDLINE),
-            _REUSE_SECOND_NAME: " ".join(_REUSE_SECOND_CMDLINE),
+            _FIRST_EPOCH.track_name: " ".join(_FIRST_EPOCH.cmdline),
+            _SECOND_EPOCH.track_name: " ".join(_SECOND_EPOCH.cmdline),
         }
         assert on_the_track == on_the_span
 
@@ -2358,12 +2368,12 @@ class TestProcessOrderingIntegration:
         rows = list(
             trace_processor.query(
                 f"SELECT name, pid FROM process "
-                f"WHERE name IN ('{process_track_name(proc(DEFAULT_PID))}', '{process_track_name(proc(_SECOND_PID))}') ORDER BY name",
+                f"WHERE name IN ('{_DEFAULT_ROW_NAME}', '{_SECOND_ROW_NAME}') ORDER BY name",
             )
         )
-        assert [r.name for r in rows] == sorted(
-            [process_track_name(proc(DEFAULT_PID)), process_track_name(proc(_SECOND_PID))]
-        ), f"expected one process row per process; got {[r.name for r in rows]}"
+        assert [r.name for r in rows] == sorted([_DEFAULT_ROW_NAME, _SECOND_ROW_NAME]), (
+            f"expected one process row per process; got {[r.name for r in rows]}"
+        )
         assert len({r.pid for r in rows}) == 2, f"two processes share a row pid: {[r.pid for r in rows]}"
 
     def test_process_track_rows_still_present_after_ranking(
@@ -2383,8 +2393,8 @@ class TestProcessOrderingIntegration:
         )
         assert [r.name for r in rows] == sorted(
             [
-                process_track_name(proc(DEFAULT_PID)),
-                process_track_name(proc(_SECOND_PID)),
+                _DEFAULT_ROW_NAME,
+                _SECOND_ROW_NAME,
             ]
         ), f"expected process track rows for both pids; got {[r.name for r in rows]}"
 
@@ -2413,12 +2423,12 @@ class TestProcessOrderingIntegration:
             JOIN process_track pt ON t.id = pt.id
             JOIN process p ON pt.upid = p.upid
             WHERE t.type = 'process_track_event'
-              AND p.name IN ('{process_track_name(proc(DEFAULT_PID))}', '{process_track_name(proc(_SECOND_PID))}')
+              AND p.name IN ('{_DEFAULT_ROW_NAME}', '{_SECOND_ROW_NAME}')
         """
             )
         )
         name_to_id = {r.name: r.id for r in rows}
-        first, second = process_track_name(proc(DEFAULT_PID)), process_track_name(proc(_SECOND_PID))
+        first, second = _DEFAULT_ROW_NAME, _SECOND_ROW_NAME
         assert first in name_to_id
         assert second in name_to_id
         assert name_to_id[second] < name_to_id[first], (
@@ -2443,15 +2453,15 @@ class TestProcessOrderingIntegration:
                 f"""
             SELECT name, start_ts
             FROM process
-            WHERE name IN ('{process_track_name(proc(DEFAULT_PID))}', '{process_track_name(proc(_SECOND_PID))}')
+            WHERE name IN ('{_DEFAULT_ROW_NAME}', '{_SECOND_ROW_NAME}')
             ORDER BY name
         """
             )
         )
         start_ts = {r.name: r.start_ts for r in rows}
         assert start_ts == {
-            process_track_name(proc(DEFAULT_PID)): _TS_START - 1_000_000,
-            process_track_name(proc(_SECOND_PID)): _TS_START - 2_000_000,
+            _DEFAULT_ROW_NAME: _TS_START - 1_000_000,
+            _SECOND_ROW_NAME: _TS_START - 2_000_000,
         }, f"unexpected start_ts values: {start_ts}"
 
 

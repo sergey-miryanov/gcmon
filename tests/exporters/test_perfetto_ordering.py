@@ -22,6 +22,27 @@ from tests.exporters.perfetto_helpers import (
 )
 from tests.helpers import proc, process_track
 
+# Four distinct pids. Which value each takes never matters here:
+# a row's rank comes from when its process was first seen.
+PID_A: int = 1
+PID_B: int = 2
+PID_C: int = 100
+PID_D: int = 200
+
+REUSED_PID: int = 10
+"""A pid two processes held in turn, which is what these ranks turn on."""
+
+
+def _first_epoch_instant() -> Instant:
+    """An event on the process that held `REUSED_PID` first."""
+    return Instant(process_track(REUSED_PID, 1), "first", ts=1_000)
+
+
+def _second_epoch_instant() -> Instant:
+    """An event on the process that claimed `REUSED_PID` after it, later in
+    the run so that ranking on a first observation can tell them apart."""
+    return Instant(process_track(REUSED_PID, 2), "second", ts=2_000)
+
 
 def _process_descriptor_fields_for_pid(
     descriptors: list[bytes],
@@ -64,7 +85,7 @@ class TestProcessOrderingByFirstTs:
 
     def test_root_descriptor_present_with_explicit_ordering(self, state: PerfettoTrackState) -> None:
         events: list[TraceEvent] = [
-            Instant(process_track(100), START_EVENT, ts=5_000),
+            Instant(process_track(PID_C), START_EVENT, ts=5_000),
         ]
         descriptors, _ = convert_trace_events_to_perfetto(
             events,
@@ -87,10 +108,10 @@ class TestProcessOrderingByFirstTs:
 
     def test_root_descriptor_emitted_exactly_once_across_calls(self, state: PerfettoTrackState) -> None:
         events1: list[TraceEvent] = [
-            Instant(process_track(100), "first", ts=1_000),
+            Instant(process_track(PID_C), "first", ts=1_000),
         ]
         events2: list[TraceEvent] = [
-            Instant(process_track(200), "second", ts=2_000),
+            Instant(process_track(PID_D), "second", ts=2_000),
         ]
         d1, _ = convert_trace_events_to_perfetto(events1, state, sequence_id=1)
         d2, _ = convert_trace_events_to_perfetto(events2, state, sequence_id=1)
@@ -105,8 +126,8 @@ class TestProcessOrderingByFirstTs:
     def test_process_descriptor_carries_sibling_order_rank_by_first_ts(self, state: PerfettoTrackState) -> None:
         """Pid with earlier first ts gets the smaller rank."""
         events: list[TraceEvent] = [
-            Instant(process_track(1), "ev1", ts=2_000),
-            Instant(process_track(2), "ev2", ts=1_000),
+            Instant(process_track(PID_A), "ev1", ts=2_000),
+            Instant(process_track(PID_B), "ev2", ts=1_000),
         ]
         descriptors, _ = convert_trace_events_to_perfetto(
             events,
@@ -122,8 +143,8 @@ class TestProcessOrderingByFirstTs:
         """When two pids share the same first event ts, ranks follow
         ascending pid (deterministic)."""
         events: list[TraceEvent] = [
-            Instant(process_track(2), "ev", ts=1_000),
-            Instant(process_track(1), "ev", ts=1_000),
+            Instant(process_track(PID_B), "ev", ts=1_000),
+            Instant(process_track(PID_A), "ev", ts=1_000),
         ]
         descriptors, _ = convert_trace_events_to_perfetto(
             events,
@@ -140,8 +161,8 @@ class TestProcessOrderingByFirstTs:
         ranks first: the rank comes from the earliest event, and the
         descriptors follow whichever event named a track first."""
         events: list[TraceEvent] = [
-            Instant(process_track(100), "late", ts=5_000),
-            Instant(process_track(200), "early", ts=1_000),
+            Instant(process_track(PID_C), "late", ts=5_000),
+            Instant(process_track(PID_D), "early", ts=1_000),
         ]
         descriptors, _ = convert_trace_events_to_perfetto(
             events,
@@ -160,8 +181,8 @@ class TestProcessOrderingByFirstTs:
         ``ts_start`` (the earliest emitted event for that pause)."""
         item1 = pause_item(ts_start=3_000, ts_stop=4_000)
         events: list[TraceEvent] = [
-            Instant(process_track(2), "ev", ts=2_000),
-            *convert_item_to_trace_format(proc(1), item1),
+            Instant(process_track(PID_B), "ev", ts=2_000),
+            *convert_item_to_trace_format(proc(PID_A), item1),
         ]
         descriptors, _ = convert_trace_events_to_perfetto(
             events,
@@ -194,12 +215,12 @@ class TestProcessOrderingByFirstTs:
         computing ranks in a later batch (multi-flush invariant)."""
         s = PerfettoTrackState()
         d1, _ = convert_trace_events_to_perfetto(
-            [Instant(process_track(1), "a", ts=1_000)],
+            [Instant(process_track(PID_A), "a", ts=1_000)],
             s,
             sequence_id=1,
         )
         d2, _ = convert_trace_events_to_perfetto(
-            [Instant(process_track(2), "b", ts=5_000)],
+            [Instant(process_track(PID_B), "b", ts=5_000)],
             s,
             sequence_id=1,
         )
@@ -222,8 +243,8 @@ class TestProcessOrderingByFirstTs:
         process's actual start time.
         """
         events: list[TraceEvent] = [
-            Instant(process_track(100), START_EVENT, ts=5_000),
-            Instant(process_track(200), START_EVENT, ts=1_000),
+            Instant(process_track(PID_C), START_EVENT, ts=5_000),
+            Instant(process_track(PID_D), START_EVENT, ts=1_000),
         ]
         descriptors, _ = convert_trace_events_to_perfetto(
             events,
@@ -245,8 +266,8 @@ class TestProcessOrderingByFirstTs:
         state = PerfettoTrackState()
         item = pause_item(ts_start=3_000, ts_stop=4_000)
         events: list[TraceEvent] = [
-            Instant(process_track(2), "ev", ts=2_000),
-            *convert_item_to_trace_format(proc(1), item),
+            Instant(process_track(PID_B), "ev", ts=2_000),
+            *convert_item_to_trace_format(proc(PID_A), item),
         ]
         descriptors, _ = convert_trace_events_to_perfetto(
             events,
@@ -264,12 +285,12 @@ class TestProcessOrderingByFirstTs:
         the process descriptor is emitted in a later batch."""
         s = PerfettoTrackState()
         d1, _ = convert_trace_events_to_perfetto(
-            [Instant(process_track(1), "a", ts=1_000)],
+            [Instant(process_track(PID_A), "a", ts=1_000)],
             s,
             sequence_id=1,
         )
         d2, _ = convert_trace_events_to_perfetto(
-            [Instant(process_track(2), "b", ts=5_000)],
+            [Instant(process_track(PID_B), "b", ts=5_000)],
             s,
             sequence_id=1,
         )
@@ -305,9 +326,11 @@ class TestARankIsHandedOutOnce:
         against the batch alone, both took 0 and the UI ordered them
         arbitrarily.
         """
-        first, _ = convert_trace_events_to_perfetto([Instant(process_track(100), "ev", ts=5_000)], state, sequence_id=1)
+        first, _ = convert_trace_events_to_perfetto(
+            [Instant(process_track(PID_C), "ev", ts=5_000)], state, sequence_id=1
+        )
         second, _ = convert_trace_events_to_perfetto(
-            [Instant(process_track(200), "ev", ts=2_000)], state, sequence_id=1
+            [Instant(process_track(PID_D), "ev", ts=2_000)], state, sequence_id=1
         )
 
         assert self._rank(first, 100) == 0
@@ -317,9 +340,9 @@ class TestARankIsHandedOutOnce:
         """Whatever it was observed at. gcmon cannot rank a process against
         one it has not reached yet, and a process it reaches later was, save
         for the first tick, started later."""
-        convert_trace_events_to_perfetto([Instant(process_track(100), "ev", ts=9_000)], state, sequence_id=1)
+        convert_trace_events_to_perfetto([Instant(process_track(PID_C), "ev", ts=9_000)], state, sequence_id=1)
         second, _ = convert_trace_events_to_perfetto(
-            [Instant(process_track(200), "ev", ts=1_000), Instant(process_track(300), "ev", ts=8_000)],
+            [Instant(process_track(PID_D), "ev", ts=1_000), Instant(process_track(300), "ev", ts=8_000)],
             state,
             sequence_id=1,
         )
@@ -341,9 +364,13 @@ class TestARankIsHandedOutOnce:
     def test_a_second_batch_does_not_move_a_rank_already_given(self, state: PerfettoTrackState) -> None:
         """Emission is idempotent, so a rank that moved would describe a row
         no packet ever carried."""
-        first, _ = convert_trace_events_to_perfetto([Instant(process_track(100), "ev", ts=5_000)], state, sequence_id=1)
-        convert_trace_events_to_perfetto([Instant(process_track(200), "ev", ts=1_000)], state, sequence_id=1)
-        again, _ = convert_trace_events_to_perfetto([Instant(process_track(100), "ev", ts=6_000)], state, sequence_id=1)
+        first, _ = convert_trace_events_to_perfetto(
+            [Instant(process_track(PID_C), "ev", ts=5_000)], state, sequence_id=1
+        )
+        convert_trace_events_to_perfetto([Instant(process_track(PID_D), "ev", ts=1_000)], state, sequence_id=1)
+        again, _ = convert_trace_events_to_perfetto(
+            [Instant(process_track(PID_C), "ev", ts=6_000)], state, sequence_id=1
+        )
 
         assert self._rank(first, 100) == 0
         assert _process_descriptor_fields_for_pid(again, 100) == [], "the descriptor goes out once"
@@ -378,16 +405,16 @@ class TestReusedPidRanksAndStampsPerProcess:
         appending it would put it last.
         """
         events: list[TraceEvent] = [
-            Instant(process_track(10, 1), "first", ts=1_000),
+            _first_epoch_instant(),
             Instant(process_track(20, 1), "other", ts=3_000),
-            Instant(process_track(10, 2), "second", ts=2_000),
+            _second_epoch_instant(),
         ]
 
         descriptors, _ = convert_trace_events_to_perfetto(events, state, sequence_id=1)
 
         assert {name: td.sibling_order_rank for name, td in self._by_name(descriptors).items()} == {
-            process_track_name(proc(10)): 0,
-            process_track_name(proc(10, 2)): 1,
+            process_track_name(proc(REUSED_PID)): 0,
+            process_track_name(proc(REUSED_PID, 2)): 1,
             process_track_name(proc(20)): 2,
         }
 
@@ -397,15 +424,15 @@ class TestReusedPidRanksAndStampsPerProcess:
         successor existed.
         """
         events: list[TraceEvent] = [
-            Instant(process_track(10, 1), "first", ts=1_000),
-            Instant(process_track(10, 2), "second", ts=2_000),
+            _first_epoch_instant(),
+            _second_epoch_instant(),
         ]
 
         descriptors, _ = convert_trace_events_to_perfetto(events, state, sequence_id=1)
 
         assert {name: td.process.start_timestamp_ns for name, td in self._by_name(descriptors).items()} == {
-            process_track_name(proc(10)): 1_000,
-            process_track_name(proc(10, 2)): 2_000,
+            process_track_name(proc(REUSED_PID)): 1_000,
+            process_track_name(proc(REUSED_PID, 2)): 2_000,
         }
 
     def test_each_descriptor_carries_a_pid_of_its_own(self, state: PerfettoTrackState) -> None:
@@ -413,13 +440,13 @@ class TestReusedPidRanksAndStampsPerProcess:
         fold the rows together. Each takes one off gcmon's own count instead
         (ADR-0011)."""
         events: list[TraceEvent] = [
-            Instant(process_track(10, 1), "first", ts=1_000),
-            Instant(process_track(10, 2), "second", ts=2_000),
+            _first_epoch_instant(),
+            _second_epoch_instant(),
         ]
 
         descriptors, _ = convert_trace_events_to_perfetto(events, state, sequence_id=1)
 
         pids = {name: td.process.pid for name, td in self._by_name(descriptors).items()}
-        assert sorted(pids) == [process_track_name(proc(10)), process_track_name(proc(10, 2))]
+        assert sorted(pids) == [process_track_name(proc(REUSED_PID)), process_track_name(proc(REUSED_PID, 2))]
         assert len(set(pids.values())) == 2, f"two processes share a row pid: {pids}"
         assert 10 not in pids.values(), f"a row pid is gcmon's, not the operating system's: {pids}"

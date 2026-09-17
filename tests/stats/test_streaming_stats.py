@@ -9,6 +9,7 @@ from gcmon.model.protocol import TGCStatsInfo
 from gcmon.stats.metrics import PAUSE_KEY
 from gcmon.stats.stats import get_quantile_value
 from gcmon.stats.streaming_stats import StreamingStats
+from tests.conftest import DEFAULT_PID
 from tests.helpers import proc
 
 TOLERANCE = 1e-12
@@ -70,10 +71,10 @@ class TestStreamingStatsUpdate:
         streaming_stats: StreamingStats,
         mock_stats_item: TGCStatsInfo,
     ) -> None:
-        streaming_stats.update(proc(12345), mock_stats_item)
+        streaming_stats.update(proc(DEFAULT_PID), mock_stats_item)
         assert streaming_stats.count() == 1
 
-        streaming_stats.update(proc(12345), mock_stats_item)
+        streaming_stats.update(proc(DEFAULT_PID), mock_stats_item)
         assert streaming_stats.count() == 2
 
     def test_update_records_pause_metric(
@@ -81,7 +82,7 @@ class TestStreamingStatsUpdate:
         streaming_stats: StreamingStats,
         mock_stats_item: TGCStatsInfo,
     ) -> None:
-        streaming_stats.update(proc(12345), mock_stats_item)
+        streaming_stats.update(proc(DEFAULT_PID), mock_stats_item)
         assert streaming_stats.metrics[PAUSE_KEY][0].count() == 1
 
     def test_update_records_incremental_metrics(
@@ -89,7 +90,7 @@ class TestStreamingStatsUpdate:
         streaming_stats: StreamingStats,
         incremental_gc_stats_item: GCStatsInfo,
     ) -> None:
-        streaming_stats.update(proc(12345), incremental_gc_stats_item)
+        streaming_stats.update(proc(DEFAULT_PID), incremental_gc_stats_item)
         assert streaming_stats.metrics["mark_alive"][0].count() == 1
         assert streaming_stats.metrics["fill_increment"][0].count() == 1
         assert streaming_stats.metrics["deduce_unreachable"][0].count() == 1
@@ -105,7 +106,7 @@ class TestStreamingStatsUpdate:
         gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
         item = gc_stats_item_factory(ts_start=1000, ts_stop=1000)
-        streaming_stats.update(proc(12345), item)
+        streaming_stats.update(proc(DEFAULT_PID), item)
         assert streaming_stats.metrics[PAUSE_KEY][0].count() == 0
 
     def test_update_keeps_sub_microsecond_duration(
@@ -116,7 +117,7 @@ class TestStreamingStatsUpdate:
         """Durations are stored in nanoseconds. They used to be truncated to
         microseconds on ingest, so a sub-microsecond phase counted as 0."""
         item = gc_stats_item_factory(ts_start=0, ts_stop=750)
-        streaming_stats.update(proc(12345), item)
+        streaming_stats.update(proc(DEFAULT_PID), item)
 
         assert streaming_stats.metrics[PAUSE_KEY][0].count() == 1
         assert streaming_stats.metrics[PAUSE_KEY][0].sum() == 750
@@ -128,9 +129,9 @@ class TestStreamingStatsUpdate:
     ) -> None:
         item1 = gc_stats_item_factory(heap_size=1_000_000)
         item2 = gc_stats_item_factory(heap_size=5_000_000)
-        streaming_stats.update(proc(12345), item1)
-        streaming_stats.update(proc(12345), item2)
-        assert streaming_stats._heap_size[proc(12345)] == 5_000_000
+        streaming_stats.update(proc(DEFAULT_PID), item1)
+        streaming_stats.update(proc(DEFAULT_PID), item2)
+        assert streaming_stats._heap_size[proc(DEFAULT_PID)] == 5_000_000
 
     def test_update_heap_size_is_max_per_pid(
         self,
@@ -139,9 +140,9 @@ class TestStreamingStatsUpdate:
     ) -> None:
         item_small = gc_stats_item_factory(heap_size=100)
         item_large = gc_stats_item_factory(heap_size=500)
-        streaming_stats.update(proc(12345), item_large)
-        streaming_stats.update(proc(12345), item_small)
-        assert streaming_stats._heap_size[proc(12345)] == 500
+        streaming_stats.update(proc(DEFAULT_PID), item_large)
+        streaming_stats.update(proc(DEFAULT_PID), item_small)
+        assert streaming_stats._heap_size[proc(DEFAULT_PID)] == 500
 
 
 class TestStreamingStatsRingTracking:
@@ -161,10 +162,10 @@ class TestStreamingStatsRingTracking:
         streaming_stats: StreamingStats,
         gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        streaming_stats.update(proc(12345), gc_stats_item_factory())
-        streaming_stats.materialize(proc(12345))
+        streaming_stats.update(proc(DEFAULT_PID), gc_stats_item_factory())
+        streaming_stats.materialize(proc(DEFAULT_PID))
 
-        ring_stats = streaming_stats.get_ring_stats(proc(12345), 0)
+        ring_stats = streaming_stats.get_ring_stats(proc(DEFAULT_PID), 0)
         assert ring_stats is not None
 
     def test_get_ring_stats_missing_returns_none(self, streaming_stats: StreamingStats) -> None:
@@ -175,9 +176,9 @@ class TestStreamingStatsRingTracking:
         streaming_stats: StreamingStats,
         gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        streaming_stats.update(proc(12345), gc_stats_item_factory(iid=0))
+        streaming_stats.update(proc(DEFAULT_PID), gc_stats_item_factory(iid=0))
 
-        assert streaming_stats.get_ring_stats(proc(12345), 1) is None
+        assert streaming_stats.get_ring_stats(proc(DEFAULT_PID), 1) is None
 
     def test_per_ring_pause_recorded_once(
         self,
@@ -187,9 +188,9 @@ class TestStreamingStatsRingTracking:
         """The per-ring 'pause' metric is recorded once per event, matching the
         global total. It used to be recorded twice, doubling Count/Sum/Avg in
         the per-ring rows of the --stats table."""
-        streaming_stats.update(proc(12345), gc_stats_item_factory(ts_start=1_000, ts_stop=6_000))
+        streaming_stats.update(proc(DEFAULT_PID), gc_stats_item_factory(ts_start=1_000, ts_stop=6_000))
 
-        ring_stats = streaming_stats.get_ring_stats(proc(12345), 0)
+        ring_stats = streaming_stats.get_ring_stats(proc(DEFAULT_PID), 0)
         assert ring_stats is not None
         assert ring_stats[PAUSE_KEY][0].count() == 1
         assert ring_stats[PAUSE_KEY][0].sum() == 5_000
@@ -203,9 +204,9 @@ class TestStreamingStatsRingTracking:
     ) -> None:
         """With one interpreter of one PID, every per-ring metric equals the
         global total."""
-        streaming_stats.update(proc(12345), incremental_gc_stats_item)
+        streaming_stats.update(proc(DEFAULT_PID), incremental_gc_stats_item)
 
-        ring_stats = streaming_stats.get_ring_stats(proc(12345), 0)
+        ring_stats = streaming_stats.get_ring_stats(proc(DEFAULT_PID), 0)
         assert ring_stats is not None
         for metric_key, gen_stats in streaming_stats.metrics.items():
             for gen, total in gen_stats.items():
@@ -220,11 +221,11 @@ class TestStreamingStatsRingTracking:
         """The sub-phase metrics ride the same key as `pause`, and nothing
         else reads them per ring. Two interpreters, so each ring holds one
         record and the pair adds up to the run."""
-        streaming_stats.update(proc(12345), incremental_gc_stats_item_factory(iid=0))
-        streaming_stats.update(proc(12345), incremental_gc_stats_item_factory(iid=1))
+        streaming_stats.update(proc(DEFAULT_PID), incremental_gc_stats_item_factory(iid=0))
+        streaming_stats.update(proc(DEFAULT_PID), incremental_gc_stats_item_factory(iid=1))
 
-        first = streaming_stats.get_ring_stats(proc(12345), 0)
-        second = streaming_stats.get_ring_stats(proc(12345), 1)
+        first = streaming_stats.get_ring_stats(proc(DEFAULT_PID), 0)
+        second = streaming_stats.get_ring_stats(proc(DEFAULT_PID), 1)
         assert first is not None and second is not None
         for metric_key, gen_stats in streaming_stats.metrics.items():
             for gen, total in gen_stats.items():
@@ -246,7 +247,7 @@ class TestStreamingStatsRingBound:
         """One process running many interpreters fills the bound the way many
         processes do."""
         for iid in range(StreamingStats.MAX_ACTIVE_RINGS + 1):
-            streaming_stats.update(proc(12345), gc_stats_item_factory(iid=iid))
+            streaming_stats.update(proc(DEFAULT_PID), gc_stats_item_factory(iid=iid))
 
         assert len(streaming_stats.rings()) == StreamingStats.MAX_ACTIVE_RINGS
         assert streaming_stats.untracked_rings() == 1
@@ -293,7 +294,7 @@ class TestStreamingStatsReadTime:
         streaming_stats: StreamingStats,
         gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        streaming_stats.update(proc(12345), gc_stats_item_factory(ts_start=0, ts_stop=1_000_000))
+        streaming_stats.update(proc(DEFAULT_PID), gc_stats_item_factory(ts_start=0, ts_stop=1_000_000))
         streaming_stats.record_read_time(42_000)
 
         assert streaming_stats.count() == 1

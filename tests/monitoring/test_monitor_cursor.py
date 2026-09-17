@@ -20,6 +20,16 @@ from gcmon.stats.metrics import PAUSE_KEY
 from gcmon.stats.streaming_stats import StreamingStats
 from tests.helpers import FakeEventsReader, MockExporter, create_mock_stats_item, polled, proc
 
+PAUSE_NS: int = 1_000
+"""How long a record's pause runs where the test does not say otherwise."""
+
+
+def _record(collections: int = 1, ts_start: int = 0, ts_stop: int = PAUSE_NS, iid: int = 0) -> GCStatsInfo:
+    """One gen-0 record at a given counter. `collections` is what the cursor
+    reads, so it is the field a test here usually varies."""
+    return create_mock_stats_item(gen=0, iid=iid, collections=collections, ts_start=ts_start, ts_stop=ts_stop)
+
+
 PID = 12345
 
 # (gen, collections, ts_start, ts_stop), in the slot order the extension
@@ -174,8 +184,8 @@ class TestSubsequentPoll:
     def test_duplicate_record_is_emitted_once(self, monitor: EventsMonitor, exporter: MockExporter) -> None:
         """Two slots reporting the same counter are one collection, a state
         the target holds while it copies a record forward."""
-        item = create_mock_stats_item(gen=0, collections=7, ts_start=1_000, ts_stop=2_000)
-        twin = create_mock_stats_item(gen=0, collections=7, ts_start=1_000, ts_stop=2_000)
+        item = _record(collections=7, ts_start=1_000, ts_stop=2_000)
+        twin = _record(collections=7, ts_start=1_000, ts_stop=2_000)
 
         ingest(monitor, PID, [item, twin])
 
@@ -196,8 +206,8 @@ class TestCursorScope:
     def test_interpreters_are_independent(self, monitor: EventsMonitor, exporter: MockExporter) -> None:
         """Sub-interpreters count from one, so their counters overlap and a
         shared cursor would drop whichever lagged."""
-        first = create_mock_stats_item(gen=0, iid=0, collections=90, ts_start=9_000, ts_stop=9_500)
-        second = create_mock_stats_item(gen=0, iid=1, collections=3, ts_start=3_000, ts_stop=3_500)
+        first = _record(collections=90, ts_start=9_000, ts_stop=9_500)
+        second = _record(collections=3, ts_start=3_000, ts_stop=3_500, iid=1)
 
         ingest(monitor, PID, [first, second])
 
@@ -225,10 +235,10 @@ class TestRetain:
         """Why the loop has to drop cursors for pids that leave the process
         tree. Nothing here notices the counter restarting, so a reused pid
         stays silent until it climbs past its predecessor."""
-        ingest(monitor, PID, [create_mock_stats_item(gen=0, collections=800, ts_start=8_000, ts_stop=8_500)])
+        ingest(monitor, PID, [_record(collections=800, ts_start=8_000, ts_stop=8_500)])
         exporter.events.clear()
 
-        ingest(monitor, PID, [create_mock_stats_item(gen=0, collections=2, ts_start=100, ts_stop=200)])
+        ingest(monitor, PID, [_record(collections=2, ts_start=100, ts_stop=200)])
 
         assert exporter.events == []
 
@@ -255,8 +265,8 @@ class TestSettlingAnExitedPid:
     the statistics. ADR-0016: a ring settles then and never before."""
 
     def test_retain_settles_the_pids_it_leaves_out(self, monitor: EventsMonitor, stats: StreamingStats) -> None:
-        ingest(monitor, PID, [create_mock_stats_item(gen=0, collections=1, ts_start=0, ts_stop=1_000)])
-        ingest(monitor, 999, [create_mock_stats_item(gen=0, collections=1, ts_start=0, ts_stop=1_000)])
+        ingest(monitor, PID, [_record()])
+        ingest(monitor, 999, [_record()])
 
         monitor._retain({PID}, 0)
 
@@ -265,7 +275,7 @@ class TestSettlingAnExitedPid:
     def test_the_settled_row_survives_the_pid(self, monitor: EventsMonitor, stats: StreamingStats) -> None:
         """What the run printed for a process that exited half way through it
         still has to be there at the end."""
-        ingest(monitor, PID, [create_mock_stats_item(gen=0, collections=1, ts_start=0, ts_stop=1_000)])
+        ingest(monitor, PID, [_record()])
 
         monitor._forget(PID, 0)
 
@@ -278,7 +288,7 @@ class TestSettlingAnExitedPid:
         """`forget` reads the process out of the registry before retiring it.
         Retiring first would leave nothing to settle, and the predecessor's
         percentiles would stay unfixed with its row still standing."""
-        ingest(monitor, PID, [create_mock_stats_item(gen=0, collections=1, ts_start=0, ts_stop=1_000)])
+        ingest(monitor, PID, [_record()])
 
         monitor._forget(PID, 0)
 
@@ -295,10 +305,10 @@ class TestSettlingAnExitedPid:
 
         The successor collects after the departure here, so nothing is
         re-read and the two blocks are built from disjoint records."""
-        ingest(monitor, PID, [create_mock_stats_item(gen=0, collections=1, ts_start=0, ts_stop=1_000)])
+        ingest(monitor, PID, [_record()])
         monitor._forget(PID, 5_000)
 
-        ingest(monitor, PID, [create_mock_stats_item(gen=0, collections=1, ts_start=10_000, ts_stop=19_000)])
+        ingest(monitor, PID, [_record(ts_start=10_000, ts_stop=19_000)])
 
         assert stats.rings() == [(proc(PID), 0), (proc(PID, 2), 0)]
         assert stats.pause_totals(proc(PID, 1), 0, 0).sampled_pause_ns == 1_000
@@ -323,14 +333,14 @@ class TestSettlingAnExitedPid:
 
         exporter.add_event = _watch  # type: ignore[method-assign]
 
-        ingest(monitor, PID, [create_mock_stats_item(gen=0, collections=1, ts_start=0, ts_stop=1_000)])
+        ingest(monitor, PID, [_record()])
         monitor._forget(PID, 5_000)
         ingest(
             monitor,
             PID,
             [
-                create_mock_stats_item(gen=0, collections=1, ts_start=0, ts_stop=1_000),
-                create_mock_stats_item(gen=0, collections=2, ts_start=10_000, ts_stop=19_000),
+                _record(),
+                _record(collections=2, ts_start=10_000, ts_stop=19_000),
             ],
         )
 
@@ -343,17 +353,17 @@ class TestSettlingAnExitedPid:
     ) -> None:
         """`retain` is the tick's own listing, so it decides a pid has gone
         the same way `forget` does."""
-        ingest(monitor, PID, [create_mock_stats_item(gen=0, collections=1, ts_start=0, ts_stop=1_000)])
+        ingest(monitor, PID, [_record()])
         monitor._retain({999}, 5_000)
 
-        ingest(monitor, PID, [create_mock_stats_item(gen=0, collections=1, ts_start=10_000, ts_stop=19_000)])
+        ingest(monitor, PID, [_record(ts_start=10_000, ts_stop=19_000)])
 
         assert stats.rings() == [(proc(PID), 0), (proc(PID, 2), 0)]
 
     def test_retain_settles_a_pid_once(self, monitor: EventsMonitor, stats: StreamingStats) -> None:
         """It runs every tick, and a pid that has gone stays gone. Counting
         each tick as a fresh process would leave a run of empty blocks."""
-        ingest(monitor, PID, [create_mock_stats_item(gen=0, collections=1, ts_start=0, ts_stop=1_000)])
+        ingest(monitor, PID, [_record()])
 
         for _ in range(5):
             monitor._retain({999}, 0)

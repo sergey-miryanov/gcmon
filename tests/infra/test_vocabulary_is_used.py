@@ -62,6 +62,9 @@ ALLOWED: dict[str, frozenset[str]] = {
     "tests/cli/monitor/test_env.py": frozenset({"duration", "rss"}),
     # A subprocess stream, not an output format.
     "tests/support/test_log_process_output.py": frozenset({"stdout"}),
+    # Field names in Perfetto's own protobufs, read off `DESCRIPTOR`. The
+    # spelling is the wire format's and happens to match gcmon's.
+    "tests/exporters/test_perfetto_proto.py": frozenset({"cmdline", "pid"}),
 }
 
 

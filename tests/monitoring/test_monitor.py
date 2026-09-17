@@ -16,6 +16,7 @@ from gcmon.monitoring.target_process import ExternalProcess
 from gcmon.monitoring.wait_policy import WaitPolicy, WaitPolicyFactory, no_wait_policy
 from gcmon.stats.streaming_stats import StreamingStats
 from gcmon.support.vocabulary import PROGRAM_NAME
+from tests.conftest import DEFAULT_PID
 from tests.helpers import FakeEventsReader, MockExporter, create_mock_stats_item, proc
 
 NO_RECORDS: list[TGCStatsInfo] = []
@@ -95,7 +96,7 @@ class TestEventsMonitorExtra:
     ) -> None:
         monitor._poll(12345)
 
-        mock_stats_update.assert_called_once_with(proc(12345), one_record)
+        mock_stats_update.assert_called_once_with(proc(DEFAULT_PID), one_record)
 
     def test_poll_skips_invalid_timestamp_event(
         self, monitor: EventsMonitor, exporter: MockExporter, reader: FakeEventsReader
@@ -179,7 +180,7 @@ class TestGCMonitor:
         time takes the registry's lock again."""
         mock_read.return_value = [create_mock_stats_item()]
 
-        assert monitor._poll(12345) == (PollStatus.OK, proc(12345))
+        assert monitor._poll(12345) == (PollStatus.OK, proc(DEFAULT_PID))
 
     def test_a_failed_poll_answers_with_no_process(self, monitor: EventsMonitor, mock_read: MagicMock) -> None:
         """The other half: nothing was filed, so there is nothing to name."""
@@ -554,7 +555,7 @@ class TestTheReport:
             rings={12345: [_ring(1)], 999: [_ring(1)]},
         )
 
-        assert reports[0].live == frozenset({proc(12345), proc(999)})
+        assert reports[0].live == frozenset({proc(DEFAULT_PID), proc(999)})
 
     def test_a_pid_that_could_not_be_read_is_not_live(self, exporter: MockExporter) -> None:
         """Only ``PollStatus.OK`` is evidence a process was there. A failed
@@ -565,7 +566,7 @@ class TestTheReport:
             rings={12345: [_ring(1)], 999: [TargetUnavailable("no such process")]},
         )
 
-        assert reports[0].live == frozenset({proc(12345)})
+        assert reports[0].live == frozenset({proc(DEFAULT_PID)})
 
     def test_the_live_set_is_frozen(self, exporter: MockExporter) -> None:
         """Nothing downstream mutates it -- the sampler iterates it and the
@@ -624,7 +625,7 @@ class TestTheControlPlaneVerdict:
             rings={12345: [_ring(1)]},
         )
 
-        assert reports[0].live == frozenset({proc(12345)})
+        assert reports[0].live == frozenset({proc(DEFAULT_PID)})
         assert 999 not in exporter.events_by_pid
 
 
@@ -640,7 +641,7 @@ class TestTheStopCheck:
             stop=lambda: next(answers),
         )
 
-        assert reports[0].live == frozenset({proc(12345)})
+        assert reports[0].live == frozenset({proc(DEFAULT_PID)})
         assert 999 not in exporter.events_by_pid
 
 
@@ -1123,7 +1124,7 @@ class TestAPidGcmonCannotRead:
             },
         )
 
-        assert monitor._processes.live() == frozenset({proc(12345)})
+        assert monitor._processes.live() == frozenset({proc(DEFAULT_PID)})
         # `at` is what the control plane files evidence through, and it reads
         # the retired processes too: one created per attempt leaves three
         # there, so the pid answers with a process that never existed.
@@ -1182,7 +1183,7 @@ class TestNoWaitPolicyThroughAWholeTick:
     def test_a_successful_poll_keeps_the_run_open(self, exporter: MockExporter) -> None:
         reports = _drive(_monitor(exporter), listings=[[]], rings={12345: [_ring(1)]})
 
-        assert reports[0].live == frozenset({proc(12345)})
+        assert reports[0].live == frozenset({proc(DEFAULT_PID)})
         assert reports[0].keep_running
 
     def test_a_failed_poll_ends_it(self, exporter: MockExporter) -> None:

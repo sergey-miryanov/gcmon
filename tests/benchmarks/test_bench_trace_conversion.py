@@ -15,6 +15,7 @@ from gcmon.exporters.trace_converter import (
     convert_to_trace_format,
 )
 from gcmon.model.protocol import TGCStatsInfo, TInstantMsg
+from tests.conftest import DEFAULT_PID
 from tests.helpers import proc
 
 from .conftest import make_gc_event
@@ -41,7 +42,7 @@ def test_convert_item_to_trace_format_batch(benchmark: BenchmarkFixture) -> None
     def run() -> int:
         count = 0
         for event in events:
-            count += len(convert_item_to_trace_format(proc(12345), event))
+            count += len(convert_item_to_trace_format(proc(DEFAULT_PID), event))
         return count
 
     assert benchmark(run) > ITEM_BATCH

@@ -61,6 +61,9 @@ from tests.helpers import (
     process_track,
 )
 
+# The process every capture below belongs to.
+TARGET_PID: int = 1
+
 
 def gc_slices(path: Path) -> list[tuple[str, int, int]]:
     """`(name, ts_start, ts_stop)` per `GC ` slice in a combined trace.
@@ -103,9 +106,11 @@ class TestNormalizeTraceTimestamps:
             UNCOLLECTABLE: 0,
             CANDIDATES: 5,
         }
-        e1 = Slice(interpreter_track(1, 1), name="e1", cat="c", ts_start=5_000_000, ts_stop=5_001_000, args=args)
+        e1 = Slice(
+            interpreter_track(TARGET_PID, 1), name="e1", cat="c", ts_start=5_000_000, ts_stop=5_001_000, args=args
+        )
         e2 = Counter(
-            interpreter_track(1, 1),
+            interpreter_track(TARGET_PID, 1),
             metric=COLLECTED,
             display_name="c1 collected",
             ts=3_000_000,
@@ -126,7 +131,9 @@ class TestNormalizeTraceTimestamps:
             UNCOLLECTABLE: 0,
             CANDIDATES: 5,
         }
-        e1 = Slice(interpreter_track(1, 1), name="e1", cat="c", ts_start=1_000_000, ts_stop=1_001_000, args=args)
+        e1 = Slice(
+            interpreter_track(TARGET_PID, 1), name="e1", cat="c", ts_start=1_000_000, ts_stop=1_001_000, args=args
+        )
         events: list[TraceEvent] = [e1]
         _normalize_trace_timestamps(events)
         assert e1.ts_start == 0
@@ -146,8 +153,12 @@ class TestNormalizeTraceTimestamps:
             UNCOLLECTABLE: 0,
             CANDIDATES: 5,
         }
-        e1 = Slice(interpreter_track(1, 1), name="e1", cat="c", ts_start=10_000_000, ts_stop=10_001_000, args=args)
-        e2 = Slice(interpreter_track(1, 1), name="e2", cat="c", ts_start=12_000_000, ts_stop=12_001_000, args=args)
+        e1 = Slice(
+            interpreter_track(TARGET_PID, 1), name="e1", cat="c", ts_start=10_000_000, ts_stop=10_001_000, args=args
+        )
+        e2 = Slice(
+            interpreter_track(TARGET_PID, 1), name="e2", cat="c", ts_start=12_000_000, ts_stop=12_001_000, args=args
+        )
         e3 = Slice(interpreter_track(2, 1), name="e3", cat="c", ts_start=5_000_000, ts_stop=5_001_000, args=args)
         e4 = Slice(interpreter_track(2, 1), name="e4", cat="c", ts_start=7_000_000, ts_stop=7_001_000, args=args)
         events: list[TraceEvent] = [e1, e2, e3, e4]
@@ -167,7 +178,7 @@ class TestNormalizeTraceTimestamps:
         the old origin without failing anything else.
         """
         pause = Slice(
-            interpreter_track(1, 0),
+            interpreter_track(TARGET_PID, 0),
             name=gc_pause_slice_name(0),
             cat=PAUSE.category,
             ts_start=8_000,
@@ -175,16 +186,21 @@ class TestNormalizeTraceTimestamps:
             args={},
         )
         counter = Counter(
-            interpreter_track(1, 0),
+            interpreter_track(TARGET_PID, 0),
             metric=COLLECTED,
             display_name=counter_display_name(0, COLLECTED),
             ts=8_000,
             value=1,
         )
-        rss = Counter(process_track(1), metric=RSS, display_name=RSS, ts=6_000, value=4096)
-        mark = Instant(process_track(1), name="benchmark", ts=5_000)
+        rss = Counter(process_track(TARGET_PID), metric=RSS, display_name=RSS, ts=6_000, value=4096)
+        mark = Instant(process_track(TARGET_PID), name="benchmark", ts=5_000)
         loss = Slice(
-            loss_track(1, 0), name=gc_loss_slice_name([0]), cat=GC_LOSS_CATEGORY, ts_start=5_000, ts_stop=7_000, args={}
+            loss_track(TARGET_PID, 0),
+            name=gc_loss_slice_name([0]),
+            cat=GC_LOSS_CATEGORY,
+            ts_start=5_000,
+            ts_stop=7_000,
+            args={},
         )
         events: list[TraceEvent] = [pause, counter, rss, mark, loss]
 
@@ -205,8 +221,8 @@ class TestNormalizeTraceTimestamps:
             UNCOLLECTABLE: 0,
             CANDIDATES: 5,
         }
-        e1 = Slice(interpreter_track(1, 1), name="e1", cat="c", ts_start=-100, ts_stop=900, args=args)
-        e2 = Slice(interpreter_track(1, 1), name="e2", cat="c", ts_start=-500, ts_stop=500, args=args)
+        e1 = Slice(interpreter_track(TARGET_PID, 1), name="e1", cat="c", ts_start=-100, ts_stop=900, args=args)
+        e2 = Slice(interpreter_track(TARGET_PID, 1), name="e2", cat="c", ts_start=-500, ts_stop=500, args=args)
         events: list[TraceEvent] = [e1, e2]
         _normalize_trace_timestamps(events)
         assert e1.ts_start == 400  # -100 - (-500)
