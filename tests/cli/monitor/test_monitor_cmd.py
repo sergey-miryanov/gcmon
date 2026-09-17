@@ -165,6 +165,8 @@ class TestCliOutput:
 
     def test_quiet(self, run_monitor: Any, tmp_path: Path) -> None:
         result = run_monitor(["-o", str(tmp_path / "test_trace.json"), "-d", "0.3"])
+
+        assert result.returncode == 0
         assert "Monitoring PID" not in result.stderr
 
     def test_trace_structure(self, run_monitor_self: Any, tmp_path: Path) -> None:
@@ -194,6 +196,8 @@ class TestCliStdoutFormat:
 
     def test_quiet(self, run_monitor: Any, tmp_path: Path) -> None:
         result = run_monitor(["--format", FORMAT_STDOUT, "-d", "0.5"], cwd=tmp_path)
+
+        assert result.returncode == 0
         assert "Monitoring PID" not in result.stderr
 
 
