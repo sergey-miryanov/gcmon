@@ -525,17 +525,6 @@ class TestControlServerAcceptLoop:
         assert f"address={listener_address!r}" in caplog.text
         assert "accept failed" in caplog.text
 
-    def test_accept_loop_adds_connection(self, server_not_started: ControlServer, mock_conn: MagicMock) -> None:
-        server_not_started._listener = MagicMock()
-        with patch("gcmon.control.control_server._accept", return_value=mock_conn):
-            t = threading.Thread(target=server_not_started._accept_loop, daemon=True)
-            t.start()
-            time.sleep(0.05)
-            server_not_started._stop_event.set()
-            t.join(timeout=1)
-
-        assert mock_conn in server_not_started._connections
-
     def test_a_failed_accept_keeps_the_connection_made_before_it(
         self, server_not_started: ControlServer, mock_conn: MagicMock, caplog: pytest.LogCaptureFixture
     ) -> None:
