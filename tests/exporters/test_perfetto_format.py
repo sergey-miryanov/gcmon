@@ -314,23 +314,25 @@ class TestConvertItemToPerfettoPackets:
 
     def test_basic_item_emits_counter_events(self, state: PerfettoTrackState) -> None:
         item = pause_item(uncollectable=2)
-        _, packets = convert_item(proc(TARGET_PID), item, state, sequence_id=1)
-        counter_packets: list[tuple[TracePacket, TrackEvent]] = []
-        for p in packets:
-            packet = TracePacket()
-            packet.ParseFromString(p)
-            if packet.HasField("track_event") and packet.track_event.type == TrackEvent.Type.TYPE_COUNTER:
-                counter_packets.append((packet, packet.track_event))
-        assert len(counter_packets) == 5
-        values = [track_event.counter_value for _, track_event in counter_packets]
-        assert 10 in values
-        assert 2 in values
-        assert 5 in values
-        assert 1000 in values
-        # The `duration` value is encoded as a double (DOUBLE_COUNTER_VALUE,
-        # field 44), not as a varint counter_value. Verify it is present.
-        double_values = [track_event.double_counter_value for _, track_event in counter_packets]
-        assert 0.001 in double_values
+
+        descriptors, packets = convert_item(proc(TARGET_PID), item, state, sequence_id=1)
+
+        described = [td for td in map(parse_track_descriptor, descriptors) if td is not None]
+        names = {td.uuid: td.name for td in described if td.HasField("counter")}
+        events = [TracePacket.FromString(raw).track_event for raw in packets]
+        written = {
+            names[e.track_uuid]: (field, getattr(e, field))
+            for e in events
+            if (field := e.WhichOneof("counter_value_field")) is not None
+        }
+        # `duration` alone is a double (DOUBLE_COUNTER_VALUE, field 44).
+        assert written == {
+            counter_display_name(0, COLLECTED): ("counter_value", 10),
+            counter_display_name(0, UNCOLLECTABLE): ("counter_value", 2),
+            counter_display_name(0, CANDIDATES): ("counter_value", 5),
+            counter_display_name(0, DURATION): ("double_counter_value", 0.001),
+            HEAP_SIZE: ("counter_value", 1000),
+        }
 
     def test_counter_descriptor_emitted_once(self, state: PerfettoTrackState) -> None:
         item = pause_item()
