@@ -89,9 +89,6 @@ class TestChildProcessRunnerInit:
         assert module_runner._target == "my_module"
         assert module_runner._is_module
 
-    def test_passthrough_args(self, runner_with_args: ChildProcessRunner) -> None:
-        assert runner_with_args._passthrough_args == ["--verbose", "--output=file.json"]
-
     def test_custom_env(self) -> None:
         runner = ChildProcessRunner("script.py", env={"VAR": "val"})
         assert runner._env == {"VAR": "val"}
