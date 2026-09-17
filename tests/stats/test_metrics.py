@@ -210,7 +210,7 @@ class TestFinalizeGarbageMetric:
         gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
         metric = FinalizeGarbageMetric()
-        item = gc_stats_item_factory()
+        item = gc_stats_item_factory(ts_finalize_garbage_stop=9000, finalized_garbage_count=1)
         ts1, ts2 = metric.get_values(item)
         assert ts1 == 0
         assert ts2 == 0
@@ -241,7 +241,7 @@ class TestHandleResurrectedMetric:
         gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
         metric = HandleResurrectedMetric()
-        item = gc_stats_item_factory()
+        item = gc_stats_item_factory(ts_handle_resurrected_stop=9000)
         ts1, ts2 = metric.get_values(item)
         assert ts1 == 0
         assert ts2 == 0
@@ -272,7 +272,7 @@ class TestClearWeakrefsMetric:
         gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
         metric = ClearWeakrefsMetric()
-        item = gc_stats_item_factory()
+        item = gc_stats_item_factory(ts_clear_weakrefs_stop=9000, clear_weakrefs_count=1)
         ts1, ts2 = metric.get_values(item)
         assert ts1 == 0
         assert ts2 == 0
