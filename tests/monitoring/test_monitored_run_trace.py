@@ -548,6 +548,7 @@ class TestTheChildLeavingIsVisible:
         every slot it hands back a second time is dropped."""
         drawn = self._pauses(run, CHILD_PID)
 
+        assert drawn
         assert len(drawn) == len(set(drawn)), "a re-read slot was drawn a second time"
 
     def test_the_target_never_draws_a_collection_twice(self, run: MonitoredRun) -> None:
@@ -556,6 +557,7 @@ class TestTheChildLeavingIsVisible:
         dropped by something other than the departure above."""
         drawn = self._pauses(run, TARGET_PID)
 
+        assert drawn
         assert len(drawn) == len(set(drawn))
 
 
