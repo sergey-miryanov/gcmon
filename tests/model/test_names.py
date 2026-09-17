@@ -26,8 +26,10 @@ from gcmon.model.names import (
     GC_LOSS_NAME,
     GC_PHASES,
     GEN_COUNTER_METRICS,
+    GENERATIONS,
     HEAP_SIZE,
     JSONL_FIELDS,
+    PAUSE,
     SLICE_ARGS,
     gc_loss_slice_name,
 )
@@ -125,3 +127,26 @@ class TestALossSliceIsNamedForWhatItLost:
 
     def test_an_interval_that_lost_nothing_carries_the_bare_word(self) -> None:
         assert gc_loss_slice_name([]) == GC_LOSS_NAME
+
+
+class TestAGenerationTheTableNeverHeld:
+    """Every per-generation name is rendered for `GENERATIONS` at import.
+    A collector emits nothing outside them, so what is asked here is what a
+    malformed capture meets: a name rather than a `KeyError`, and a table
+    the same size afterwards."""
+
+    def test_a_phase_renders_a_name_of_its_own_for_it(self) -> None:
+        """Handing back a held generation's name would draw the record as
+        that generation, which is worse than raising."""
+        beyond = max(GENERATIONS) + 1
+        assert PAUSE.slice_names[beyond] not in PAUSE.slice_names.values()
+        assert PAUSE.categories[beyond] not in PAUSE.categories.values()
+
+    def test_rendering_one_does_not_grow_the_table(self) -> None:
+        """A capture can name as many generations as it likes, and each one
+        kept would be a row it grew the table by."""
+        beyond = max(GENERATIONS) + 1
+        assert PAUSE.slice_names[beyond]
+        assert PAUSE.categories[beyond]
+        assert set(PAUSE.slice_names) == set(GENERATIONS)
+        assert set(PAUSE.categories) == set(GENERATIONS)

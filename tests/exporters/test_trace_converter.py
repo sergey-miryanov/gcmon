@@ -1,6 +1,9 @@
 import pytest
 
-from gcmon.exporters.trace_converter import duration_text, seen_text
+from gcmon.exporters.trace_converter import convert_item_to_trace_format, duration_text, seen_text
+from gcmon.model.names import GENERATIONS, HEAP_SIZE
+from gcmon.model.trace_event import Counter
+from tests.helpers import create_mock_stats_item, proc
 
 
 class TestDurationText:
@@ -64,3 +67,27 @@ class TestSeenText:
         percentage says how bad the blindness was, not how much there was to
         be blind about."""
         assert seen_text(2, 98).endswith("(2 of 100)")
+
+
+class TestAGenerationTheCounterTableNeverHeld:
+    """A counter's display name is rendered for `GENERATIONS` at import and
+    read off that row. No collector emits a fourth generation, so what is
+    asked here is that a capture carrying one converts anyway, with the
+    names spelled on the spot instead."""
+
+    def _counters(self, gen: int) -> dict[str, str]:
+        """``{metric: display name}`` for the counters one record draws."""
+        events = convert_item_to_trace_format(proc(1), create_mock_stats_item(gen=gen, uncollectable=2))
+        return {e.metric: e.display_name for e in events if isinstance(e, Counter)}
+
+    def test_it_draws_the_counters_a_held_generation_draws(self) -> None:
+        """A metric the fallback misses is a track the record never gets."""
+        assert self._counters(max(GENERATIONS) + 1).keys() == self._counters(max(GENERATIONS)).keys()
+
+    def test_no_track_shares_a_name_with_a_held_generation(self) -> None:
+        """Sharing a name would draw the record onto the row beside it.
+        `heap_size` is the one they do share: it gauges the interpreter
+        rather than a generation, so it carries none (ADR-0004).
+        """
+        beyond = set(self._counters(max(GENERATIONS) + 1).values())
+        assert beyond & set(self._counters(max(GENERATIONS)).values()) == {HEAP_SIZE}
