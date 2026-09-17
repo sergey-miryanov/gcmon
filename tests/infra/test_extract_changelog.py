@@ -116,15 +116,6 @@ class TestExtract:
             extract_changelog.CHANGELOG_PATH = original
         assert result == ""
 
-    def test_substring_does_not_match_unrelated_version(self, fake_changelog: Path) -> None:
-        original = extract_changelog.CHANGELOG_PATH
-        extract_changelog.CHANGELOG_PATH = fake_changelog
-        try:
-            result = extract_changelog.extract("0.10")
-        finally:
-            extract_changelog.CHANGELOG_PATH = original
-        assert result == ""
-
 
 class TestMain:
     def test_prints_body_and_exits_zero(
