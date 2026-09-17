@@ -117,6 +117,7 @@ addopts = "-m 'not stress and not benchmark and not fuzz and not architecture'"
 source = ["src/gcmon"]
 branch = true
 omit = ["*/tests/*", "*/__pycache__/*", "*/.venv/*"]
+patch = ["subprocess"]
 
 [tool.coverage.report]
 exclude_also = [
