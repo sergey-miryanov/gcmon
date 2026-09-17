@@ -312,6 +312,17 @@ class TestExactTotals:
         assert stats.pause_totals(proc(TARGET_PID), 0, 0).coverage == pytest.approx(0.3)
         assert stats.pause_totals(proc(TARGET_PID), 0, 0).scale_factor == pytest.approx(10 / 3)
 
+    def test_the_scale_follows_pause_time_and_not_the_count(self) -> None:
+        """One lost collection as long as the three read between them: a
+        quarter of the count and half of the pause."""
+        stats = StreamingStats()
+        for _ in range(3):
+            stats.update(proc(TARGET_PID), _pause())
+
+        stats.record_loss(proc(TARGET_PID), 0, 0, 1, 3 * PAUSE_NS)
+
+        assert stats.pause_totals(proc(TARGET_PID), 0, 0).scale_factor == pytest.approx(2.0)
+
     def test_an_untouched_generation_is_neutral(self) -> None:
         """1.0 rather than a division by zero, so no call site has to guard."""
         stats = StreamingStats()
