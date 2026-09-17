@@ -52,6 +52,20 @@ class TestSetupLogging:
         logger = logging.getLogger(PROGRAM_NAME)
         assert logger.level == getattr(logging, expected_level)
 
+    def test_a_second_call_relevels_the_handler_it_already_added(self, cli_module: types.ModuleType) -> None:
+        """One handler per process. A second call carrying ``-vv`` re-levels
+        the handler that is attached rather than adding one beside it, which
+        would print every record twice."""
+        import logging
+
+        cli_module._setup_logging(verbose_count=0)
+
+        cli_module._setup_logging(verbose_count=2)
+
+        handlers = logging.getLogger(PROGRAM_NAME).handlers
+        assert len(handlers) == 1
+        assert handlers[0].level == logging.DEBUG
+
 
 # =============================================================================
 # main() Tests - Command Routing
