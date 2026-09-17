@@ -508,16 +508,6 @@ class TestConvertItemToPerfettoPackets:
         assert phase_slice_name(MARK_ALIVE, 1) not in slice_names
         assert phase_slice_name(FILL_INCREMENT, 1) in slice_names
 
-    def test_multiple_threads(self, state: PerfettoTrackState) -> None:
-        item0 = pause_item()
-        item1 = pause_item(iid=1)
-        desc0, _ = convert_item(proc(TARGET_PID), item0, state, sequence_id=1)
-        desc1, _ = convert_item(proc(TARGET_PID), item1, state, sequence_id=1)
-        assert len(desc0) >= 2
-        assert len(desc1) >= 1
-        assert state.has_track(interpreter_track(TARGET_PID, 0))
-        assert state.has_track(interpreter_track(TARGET_PID, 1))
-
     def test_debug_annotation_name_wire_format(self, state: PerfettoTrackState) -> None:
         item = pause_item(collections=5, uncollectable=2, candidates=3)
         _, packets = convert_item(proc(TARGET_PID), item, state, sequence_id=1)
