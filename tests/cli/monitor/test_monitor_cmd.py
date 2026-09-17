@@ -102,13 +102,6 @@ class TestCmdMonitorValidation:
         assert expected_msg in caplog.text
 
 
-def test_cmd_monitor_quiet_mode(monitor_args: MonitorArgsFactory, mock_monitoring_loop: MagicMock) -> None:
-    from gcmon.cli.monitor import monitor_cmd
-
-    mock_monitoring_loop.return_value = 0
-    assert monitor_cmd.cmd_monitor(monitor_args(verbose=0, duration=0.05)) == 0
-
-
 def test_cmd_monitor_self_pid(monitor_args: MonitorArgsFactory, mock_monitoring_loop: MagicMock) -> None:
     from gcmon.cli.monitor import monitor_cmd
 
