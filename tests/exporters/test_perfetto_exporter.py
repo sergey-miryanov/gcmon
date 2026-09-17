@@ -244,6 +244,18 @@ class TestPerfettoExporter:
         exporter.close()
         assert not path.exists() or path.stat().st_size == 0
 
+    def test_an_event_added_after_close_is_dropped(self, perfetto_exporter: ExporterFactory) -> None:
+        """A threshold of one, so an event that got past `close` would be
+        written on the spot, after the closeout."""
+        exporter, path = perfetto_exporter(threshold=1)
+        exporter.add_event(proc(DEFAULT_PID), create_mock_stats_item())
+        exporter.close()
+        closed = path.read_bytes()
+
+        exporter.add_event(proc(DEFAULT_PID), create_mock_stats_item())
+
+        assert path.read_bytes() == closed
+
     def test_descriptors_written_before_events(self, perfetto_exporter: ExporterFactory) -> None:
         exporter, path = perfetto_exporter()
         exporter.add_event(proc(DEFAULT_PID), create_mock_stats_item())

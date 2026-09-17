@@ -48,6 +48,8 @@ class PerfettoExporter(EventsExporter):
     def _enqueue(self, events: list[TraceEvent]) -> None:
         to_write: list[TraceEvent] = []
         with self._lock:
+            if self._closed:
+                return
             self._buffer.extend(events)
             if len(self._buffer) >= self._flush_threshold:
                 to_write = self._buffer[:]
