@@ -181,10 +181,12 @@ class TestPrintTable:
             _SEP_PHASE,
             ["12345", "1", "200", "2000.000", "20.000", "30.000", "40.000", "50.000", "60.000", "1.00", "1.00"],
         ]
+
         _print_table(rows, table_format=TableFormat.PLAIN)
-        captured = capsys.readouterr()
-        lines = captured.out.strip().splitlines()
-        assert len(lines) >= 4
+        first, *rest = capsys.readouterr().out.strip().splitlines()[3].strip("|").split("|")
+
+        assert first.strip() == ""
+        assert [set(cell) for cell in rest] == [{"-"}] * 10
 
     def test_separator_blank_markdown(self, capsys: pytest.CaptureFixture[str]) -> None:
         from gcmon.stats.stats_output import _SEP_GROUP
