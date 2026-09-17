@@ -218,13 +218,13 @@ class TestCursorScope:
     ) -> None:
         ingest(monitor, PID, poll_0)
         ingest(monitor, 999, build_batch(POLL_0))
-        exporter.events.clear()
+        exporter.events_by_pid.clear()
 
         monitor._forget(PID, 0)
         ingest(monitor, PID, build_batch(POLL_0))
         ingest(monitor, 999, build_batch(POLL_0))
 
-        assert len(exporter.events) == 15
+        assert {pid: len(items) for pid, items in exporter.events_by_pid.items()} == {PID: 15}
 
     def test_forget_is_safe_for_an_unknown_pid(self, monitor: EventsMonitor) -> None:
         monitor._forget(777, 0)
