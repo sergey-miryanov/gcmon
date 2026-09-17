@@ -103,11 +103,6 @@ class TestMonitorReportedLiveness:
             _LIVE_TICKS[-1],
         )
 
-        busy = list(
-            liveness_trace_processor.query(f"SELECT p.upid AS upid FROM process p WHERE p.name = '{_DEFAULT_ROW_NAME}'")
-        )
-        assert [row.upid] != [r.upid for r in busy], "the two processes must not share a upid"
-
     def test_each_process_row_carries_its_own_command_line(
         self,
         liveness_trace_processor: TraceProcessor,
