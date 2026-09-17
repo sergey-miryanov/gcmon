@@ -34,27 +34,27 @@ gcmon = "gcmon.pyperf.hook:gcmon_hook"
 
 [tool.poetry.dependencies]
 python = ">=3.15"
-msgspec = "^0.21.1"
-ddsketch = { version = "^3.0.1", optional = true }
+msgspec = ">=0.21.1"
+ddsketch = { version = ">=3.0.1", optional = true }
 psutil = { version = ">=7.2", optional = true }
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^8.0.0"
-pytest-cov = "^6.0.0"
+pytest = ">=9,<10"
+pytest-cov = ">=7,<8"
 pyperf = "^2.10.0"
-pyrefly = "^1.1"
-mypy = "^2.1"
+pyrefly = ">=1,<2"
+mypy = ">=2,<3"
 typing-extensions = "^4.15.0"
-ruff = "^0.15.0"
+ruff = ">=0.16,<0.17"
 pre-commit = "^4.6.0"
 numpy = "^2.0"
-types-psutil = "^7.2"
+types-psutil = ">=7.2"
 twine = "^6.0"
-pytest-repeat = "^0.9.4"
-perfetto = "^0.58.2"
+pytest-repeat = ">=0.9,<1"
+perfetto = ">=0.58"
 protobuf = "^7.35"
-pytest-codspeed = "^5.0.3"
-rust-just = "^1.58"
+pytest-codspeed = ">=5,<6"
+rust-just = ">=1.58"
 
 [tool.poetry.urls]
 Homepage = "https://github.com/sergey-miryanov/gcmon"
