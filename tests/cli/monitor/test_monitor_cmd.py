@@ -41,13 +41,15 @@ def mock_monitoring_loop() -> Generator[MagicMock]:
 # =============================================================================
 
 
-def test_cmd_monitor_connect_failure(
-    caplog: pytest.LogCaptureFixture, monitor_args: MonitorArgsFactory, mock_monitoring_loop: MagicMock
+def test_cmd_monitor_returns_the_exit_code_of_the_loop(
+    monitor_args: MonitorArgsFactory, mock_monitoring_loop: MagicMock
 ) -> None:
     from gcmon.cli.monitor import monitor_cmd
 
     mock_monitoring_loop.return_value = 1
+
     result = monitor_cmd.cmd_monitor(monitor_args())
+
     assert result == 1
 
 
