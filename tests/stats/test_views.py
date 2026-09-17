@@ -16,9 +16,19 @@ class TestTheVocabularyOfTheFlag:
     def test_each_off_word_parses_to_no_table(self, word: str) -> None:
         assert StatsView.parse(word) is None
 
-    @pytest.mark.parametrize("word", ["Total", "TOTAL", " total", "total\n", " Off ", "NO"])
-    def test_case_insensitive_and_stripped(self, word: str) -> None:
-        StatsView.parse(word)  # does not raise
+    @pytest.mark.parametrize(
+        "word, view",
+        [
+            ("Total", StatsView.TOTAL),
+            ("TOTAL", StatsView.TOTAL),
+            (" total", StatsView.TOTAL),
+            ("total\n", StatsView.TOTAL),
+            (" Off ", None),
+            ("NO", None),
+        ],
+    )
+    def test_case_insensitive_and_stripped(self, word: str, view: StatsView | None) -> None:
+        assert StatsView.parse(word) is view
 
     @pytest.mark.parametrize("word", ["", "  ", "all", "brief", "1", "true", "yes", "on", "totals"])
     def test_a_word_it_does_not_know_is_refused(self, word: str) -> None:
