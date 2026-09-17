@@ -26,7 +26,11 @@ from gcmon.exporters.perfetto_process_lifetime import (
 )
 from gcmon.exporters.perfetto_proto import TrackEventType
 from gcmon.exporters.perfetto_track_state import PerfettoTrackState
-from gcmon.exporters.trace_converter import convert_item_to_trace_format, convert_loss_to_trace_format
+from gcmon.exporters.trace_converter import (
+    convert_item_to_trace_format,
+    convert_loss_to_trace_format,
+    counter_display_name,
+)
 from gcmon.model.data import GCStatsInfo, LossMsg
 from gcmon.model.names import (
     CANDIDATES,
@@ -136,6 +140,14 @@ def pause_spans(packets: list[bytes]) -> list[tuple[int, int]]:
         p for p in parsed if p.track_event.type == TrackEvent.Type.TYPE_SLICE_END and p.track_event.track_uuid in rows
     ]
     return [(begin.timestamp, end.timestamp) for begin, end in zip(begins, ends, strict=True)]
+
+
+def counters_written(descriptors: list[bytes], packets: list[bytes]) -> list[str]:
+    """The name of every counter track *packets* put a value on, sorted."""
+    described = [td for td in map(parse_track_descriptor, descriptors) if td is not None]
+    names = {td.uuid: td.name for td in described if td.HasField("counter")}
+    events = [TracePacket.FromString(raw).track_event for raw in packets]
+    return sorted({names[e.track_uuid] for e in events if e.type == TrackEvent.Type.TYPE_COUNTER})
 
 
 class TestConvertItemToPerfettoPackets:
@@ -364,33 +376,24 @@ class TestConvertItemToPerfettoPackets:
 
     def test_uncollectable_counter_omitted_when_zero(self, state: PerfettoTrackState) -> None:
         item = pause_item(collections=5, candidates=3)
-        _, packets = convert_item(proc(TARGET_PID), item, state, sequence_id=1)
-        counter_uuids: set[int] = set()
-        for p in packets:
-            packet = TracePacket()
-            packet.ParseFromString(p)
-            if not packet.HasField("track_event"):
-                continue
-            if packet.track_event.type != TrackEvent.Type.TYPE_COUNTER:
-                continue
-            counter_uuids.add(packet.track_event.track_uuid)
-        # collected, candidates, heap_size, duration; no uncollectable counter.
-        assert len(counter_uuids) == 4
+
+        descriptors, packets = convert_item(proc(TARGET_PID), item, state, sequence_id=1)
+
+        assert counters_written(descriptors, packets) == sorted(
+            [HEAP_SIZE, *(counter_display_name(0, metric) for metric in (COLLECTED, CANDIDATES, DURATION))]
+        )
 
     def test_uncollectable_counter_emitted_when_nonzero(self, state: PerfettoTrackState) -> None:
         item = pause_item(collections=5, uncollectable=2, candidates=3)
-        _, packets = convert_item(proc(TARGET_PID), item, state, sequence_id=1)
-        counter_uuids: set[int] = set()
-        for p in packets:
-            packet = TracePacket()
-            packet.ParseFromString(p)
-            if not packet.HasField("track_event"):
-                continue
-            if packet.track_event.type != TrackEvent.Type.TYPE_COUNTER:
-                continue
-            counter_uuids.add(packet.track_event.track_uuid)
-        # collected, uncollectable, candidates, heap_size, duration.
-        assert len(counter_uuids) == 5
+
+        descriptors, packets = convert_item(proc(TARGET_PID), item, state, sequence_id=1)
+
+        assert counters_written(descriptors, packets) == sorted(
+            [
+                HEAP_SIZE,
+                *(counter_display_name(0, metric) for metric in (COLLECTED, CANDIDATES, DURATION, UNCOLLECTABLE)),
+            ]
+        )
 
     def test_duration_counter_in_gc_metrics_group(self, state: PerfettoTrackState) -> None:
         item = pause_item(collections=5, uncollectable=2, candidates=3, duration=0.42)
