@@ -1,6 +1,7 @@
 import json
 import os
 import subprocess
+import time
 from collections.abc import Generator
 from pathlib import Path
 from typing import Any
@@ -143,12 +144,12 @@ class TestCliBasicRun:
         assert "Rate: 0.05" in result.stderr
 
     def test_duration_based(self, run_monitor_self: Any, tmp_path: Path) -> None:
-        import time
-
         start = time.monotonic()
+
         result = run_monitor_self(["-o", str(tmp_path / "test_trace.json"), "-d", "0.5", "-r", "0.1", "-v"])
+
         assert result.returncode == 0
-        assert time.monotonic() - start >= 0.05
+        assert time.monotonic() - start >= 0.5
         assert "Duration: 0.5s" in result.stderr
 
 
