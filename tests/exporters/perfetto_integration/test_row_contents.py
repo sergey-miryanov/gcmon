@@ -11,6 +11,7 @@ from pathlib import Path
 
 import pytest
 from perfetto.trace_processor import TraceProcessor
+from perfetto.trace_processor.api import TraceProcessorException
 
 from gcmon.exporters import PerfettoExporter
 from gcmon.exporters.perfetto_format import _COUNTER_GROUP_NAME, _interpreter_group_name
@@ -305,18 +306,20 @@ class TestCounterYAxisShareKey:
     survive the round-trip through the Perfetto trace processor into
     the ``counter_track`` SQL table.
 
-    As of Perfetto 0.56.0 (pinned in ``pyproject.toml:49``), the
-    ``counter_track`` SQL table does not expose ``y_axis_share_key`` as
-    a column. Both tests are therefore marked ``xfail`` unconditionally
-    with ``strict=False``: they will start passing automatically when
-    a future Perfetto version surfaces the column, and ``strict=False``
-    prevents an XPASS-and-fail flip from happening at that point.
+    The ``counter_track`` SQL table has no ``y_axis_share_key`` column, so
+    both tests are ``xfail`` with ``strict=False`` (ADR-0014): they start
+    passing when a trace processor surfaces the column. ``raises`` keeps the
+    expected failure to that one: a wrong value, once the column exists,
+    fails.
     """
 
-    @pytest.mark.xfail(
-        reason="counter_track.y_axis_share_key not exposed in Perfetto 0.56.0",
+    NO_COLUMN = pytest.mark.xfail(
+        raises=TraceProcessorException,
+        reason="counter_track has no y_axis_share_key column",
         strict=False,
     )
+
+    @NO_COLUMN
     def test_y_axis_share_key_shared_across_generations(
         self,
         trace_processor: TraceProcessor,
@@ -343,10 +346,7 @@ class TestCounterYAxisShareKey:
                 f"expected y_axis_share_key for metric {suffix!r} to be exactly the metric name; got {keys}"
             )
 
-    @pytest.mark.xfail(
-        reason="counter_track.y_axis_share_key not exposed in Perfetto 0.56.0",
-        strict=False,
-    )
+    @NO_COLUMN
     def test_heap_size_y_axis_share_key_is_null(
         self,
         trace_processor: TraceProcessor,
@@ -360,9 +360,8 @@ class TestCounterYAxisShareKey:
                 "SELECT name, y_axis_share_key FROM counter_track WHERE name = 'heap_size'",
             )
         )
-        assert len(rows) == 1, f"expected exactly one heap_size row, got {len(rows)}"
-        r = rows[0]
-        assert r.y_axis_share_key == "", f"heap_size should have no y_axis_share_key, got {r.y_axis_share_key!r}"
+        assert rows, "every interpreter in the trace draws a heap_size track"
+        assert {r.y_axis_share_key for r in rows} <= {"", None}
 
 
 class TestTrackDescriptors:
