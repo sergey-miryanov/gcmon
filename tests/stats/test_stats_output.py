@@ -256,14 +256,15 @@ class TestPrintStatsEdgeCases:
     def test_total_label_first_metric(
         self,
         capsys: pytest.CaptureFixture[str],
-        gc_stats_item_factory: Callable[..., GCStatsInfo],
+        incremental_gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
         stats = StreamingStats()
-        stats.update(proc(DEFAULT_PID), gc_stats_item_factory())
+        stats.update(proc(DEFAULT_PID), incremental_gc_stats_item_factory())
 
-        print_stats(stats, StatsView.FULL)
-        captured = capsys.readouterr()
-        assert TOTAL_LABEL in captured.out
+        print_stats(stats, StatsView.TOTAL)
+        _header, *block = table_rows(capsys.readouterr().out)
+
+        assert [row[0] for row in block] == [TOTAL_LABEL] + [""] * 8
 
     def test_incremental_metrics_output(
         self,
