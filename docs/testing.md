@@ -42,6 +42,24 @@ The marker is there for cost, since the trace processor starts once per trial.
 The `stress-test` and `fuzz-test` jobs are skipped on `main` and on
 `release/*`.
 
+## Shaping a test
+
+A test arranges, acts once, and asserts, in that order, with a blank line
+between the three. The phases are not named in comments.
+
+- The act is the call the test is named for. Anything called before it is
+  arrange, and a test that acts twice is two tests.
+- A check standing before the act is a precondition and reads as arrange:
+  `assert not path.exists()` ahead of a flush is one.
+- `pytest.raises` carries the act and the assertion together.
+- A test that only prints asserts nothing. Where nothing raising is the whole
+  claim, the call alone is the assertion.
+- A loop applying one rule to every item stays. A loop over inputs is a
+  `parametrize`, which reports each case instead of stopping at the first.
+- No `if` in a test body. A conditional assertion can pass without running,
+  and a branch on a parameter is two tests. The exception is
+  `sys.platform == "win32"`, which is how the type checkers narrow.
+
 ## Writing a stress test
 
 - Release the threads with `threading.Barrier`, never `time.sleep`.
