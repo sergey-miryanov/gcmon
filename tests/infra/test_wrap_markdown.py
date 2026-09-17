@@ -216,13 +216,17 @@ class TestTheToolIsStable:
         that called the result already wrapped, so idempotence over the real
         files is the property worth pinning rather than any one shape.
         """
-        unstable = []
-        for path in sorted(REPO_ROOT.glob("specs/*.md")) + sorted(REPO_ROOT.glob("docs/**/*.md")):
-            original = path.read_text(encoding=ENCODING, newline="")
-            if "\r" in original or wrap_markdown._indented_code(original):
-                continue
-            once = wrap_markdown.rewrap(original, 78)
-            if wrap_markdown.rewrap(once, 78) != once:
-                unstable.append(path.relative_to(REPO_ROOT).as_posix())
+        paths = sorted(REPO_ROOT.glob("specs/*.md")) + sorted(REPO_ROOT.glob("docs/**/*.md"))
+        pages = {
+            path.relative_to(REPO_ROOT).as_posix(): path.read_text(encoding=ENCODING, newline="") for path in paths
+        }
+        # The two kinds of file the tool itself refuses to rewrite.
+        wrappable = {
+            name: text for name, text in pages.items() if "\r" not in text and not wrap_markdown._indented_code(text)
+        }
+        assert wrappable
+        once = {name: wrap_markdown.rewrap(text, 78) for name, text in wrappable.items()}
 
-        assert not unstable
+        twice = {name: wrap_markdown.rewrap(text, 78) for name, text in once.items()}
+
+        assert [name for name in once if twice[name] != once[name]] == []
