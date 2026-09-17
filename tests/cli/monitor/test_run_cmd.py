@@ -574,27 +574,3 @@ class TestRunCommandHelp:
         assert "--format" in result.stdout
         assert "-s" in result.stdout
         assert "--script" in result.stdout
-
-    def test_mutually_exclusive_target(self) -> None:
-        """Test that script and -m are mutually exclusive.
-
-        Note: This is tested via unit test (TestCmdRunUnit.test_cmd_run_both_targets)
-        because the CLI arg splitting makes subprocess testing impossible.
-        This test verifies the help text mentions both options.
-        """
-        result = subprocess.run(
-            [
-                sys.executable,
-                "-m",
-                PROGRAM_NAME,
-                CMD_RUN,
-                "--help",
-            ],
-            capture_output=True,
-            text=True,
-            timeout=10,
-        )
-
-        assert result.returncode == 0
-        assert "--module" in result.stdout
-        assert "--script" in result.stdout
