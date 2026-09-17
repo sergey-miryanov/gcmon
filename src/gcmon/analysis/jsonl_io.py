@@ -50,7 +50,7 @@ def read_jsonl(filename: Path) -> dict[int, list[TItem]]:
     items: dict[int, list[TItem]] = {}
     first = True
     with open(filename, encoding=ENCODING) as f:
-        for line in f:
+        for number, line in enumerate(f, 1):
             line = line.strip()
             if not line:
                 continue
@@ -61,7 +61,10 @@ def read_jsonl(filename: Path) -> dict[int, list[TItem]]:
                         f"{filename} is a Chrome Trace file, which gcmon no longer reads. "
                         "The Perfetto UI still opens it."
                     )
-            pid, item = json_to_item(msgspec.json.decode(line))
+            data = msgspec.json.decode(line)
+            if not isinstance(data, dict) or PID not in data:
+                raise ValueError(f"{filename}:{number}: not a gcmon record: expected a JSON object with a {PID}")
+            pid, item = json_to_item(data)
             if pid not in items:
                 items[pid] = [item]
             else:

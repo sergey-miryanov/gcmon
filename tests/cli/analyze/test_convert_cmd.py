@@ -210,6 +210,25 @@ def test_cmd_combine_invalid_json(
     assert "Error combining files" in caplog.text
 
 
+@pytest.mark.parametrize(
+    "line",
+    [
+        pytest.param(json.dumps({TS_START: 0}), id="an object with no pid"),
+        pytest.param("5", id="not an object"),
+    ],
+)
+def test_cmd_combine_refuses_a_line_that_is_no_record(
+    caplog: pytest.LogCaptureFixture, make_raw_file: RawFileFactory, tmp_path: Path, line: str
+) -> None:
+    from gcmon.cli.analyze import convert_cmd
+
+    input_file = make_raw_file("no_record.jsonl", line)
+    args = _args([input_file], tmp_path / "output.pftrace")
+
+    assert convert_cmd.cmd_combine(args) == 1
+    assert "no_record.jsonl:1" in caplog.text
+
+
 # =============================================================================
 # Subprocess Tests - Combine Command
 # =============================================================================
