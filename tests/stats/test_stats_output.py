@@ -247,11 +247,9 @@ class TestPrintStatsEdgeCases:
             stats.update(proc(pid), gc_stats_item_factory())
 
         print_stats(stats, StatsView.FULL)
-        captured = capsys.readouterr()
-        pid_11111_pos = captured.out.find("11111:0")
-        pid_22222_pos = captured.out.find("22222:0")
-        pid_33333_pos = captured.out.find("33333:0")
-        assert pid_11111_pos < pid_22222_pos < pid_33333_pos
+        labels = [row[0] for row in table_rows(capsys.readouterr().out)[1:] if ":" in row[0]]
+
+        assert labels == ["11111:0", "22222:0", "33333:0"]
 
     def test_total_label_first_metric(
         self,
