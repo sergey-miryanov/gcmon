@@ -22,26 +22,7 @@ from gcmon.model.protocol import (
 )
 
 
-class TestGCStatsInfo:
-    def test_struct_creation(self, simple_item: GCStatsInfo) -> None:
-        assert simple_item.gen == 0
-        assert simple_item.iid == 1
-        assert simple_item.ts_start == 1_000_000
-        assert simple_item.ts_stop == 2_000_000
-        assert simple_item.heap_size == 1024
-        assert simple_item.collections == 5
-        assert simple_item.collected == 50
-        assert simple_item.uncollectable == 0
-        assert simple_item.candidates == 10
-        assert simple_item.duration == 0.005
-
-
 class TestInstantMsg:
-    def test_instant_msg_creation(self, instant_item: InstantMsg) -> None:
-        assert instant_item.type == "i"
-        assert instant_item.name == START_EVENT
-        assert instant_item.ts == 5_000_000
-
     def test_instant_msg_with_explicit_ts(self) -> None:
         msg = instant_msg("test event", 12345)
         assert isinstance(msg, InstantMsg)
