@@ -418,27 +418,6 @@ class TestTrackDescriptors:
         assert [r.cnt for r in rows] == [0], f"expected no thread-attached slices, got {[r.cnt for r in rows]}"
 
 
-class TestDiagnosticTrackSchema:
-    """Diagnostic: dump the track table to understand what columns are
-    populated. Run with ``pytest -m integration -k TestDiagnosticTrackSchema -s``
-    to see the output."""
-
-    def test_dump_track_schema(self, trace_processor: TraceProcessor) -> None:
-        rows = list(trace_processor.query("PRAGMA table_info(track)"))
-        for r in rows:
-            print(f"COLUMN name={r.name!r} type={r.type!r} notnull={r.notnull} pk={r.pk}")
-
-    def test_dump_track_table(self, trace_processor: TraceProcessor) -> None:
-        rows = list(trace_processor.query("SELECT id, name, type, parent_id FROM track ORDER BY id"))
-        for r in rows:
-            print(f"TRACK id={r.id} name={r.name!r} type={r.type!r} parent_id={r.parent_id}")
-
-    def test_dump_process_table(self, trace_processor: TraceProcessor) -> None:
-        rows = list(trace_processor.query("SELECT * FROM process"))
-        for r in rows:
-            print(f"PROCESS {dict(r.__dict__)}")
-
-
 class TestInstantEvents:
     """The instant event emitted at monitor start is visible to the trace
     processor as a dur=0 slice."""
