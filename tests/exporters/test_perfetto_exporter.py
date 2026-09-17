@@ -100,19 +100,23 @@ class TestPerfettoExporter:
         assert counters >= num_items * 4
 
     def test_flushes_at_threshold(self, mock_stats_item: GCStatsInfo, perfetto_exporter: ExporterFactory) -> None:
+        """The file is there before ``close``, so the batch went out on its own."""
         exporter, path = perfetto_exporter(threshold=10)
+
         for _ in range(10):
             exporter.add_event(proc(DEFAULT_PID), mock_stats_item)
-        assert path.exists()
-        exporter.close()
-        self._verify_event_structure(path, 10)
 
-    def test_flush_multiple_times(self, mock_stats_item: GCStatsInfo, perfetto_exporter: ExporterFactory) -> None:
+        assert path.exists()
+
+    def test_every_batch_reaches_the_trace(
+        self, mock_stats_item: GCStatsInfo, perfetto_exporter: ExporterFactory
+    ) -> None:
         exporter, path = perfetto_exporter(threshold=5)
         for _ in range(15):
             exporter.add_event(proc(DEFAULT_PID), mock_stats_item)
-        assert path.exists()
+
         exporter.close()
+
         self._verify_event_structure(path, 15)
 
     def test_close_writes_file(self, mock_stats_item: GCStatsInfo, perfetto_exporter: ExporterFactory) -> None:

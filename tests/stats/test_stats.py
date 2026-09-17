@@ -39,18 +39,28 @@ def _pause(ns: int = PAUSE_NS, iid: int = 0, heap_size: int | None = None) -> GC
 class TestStatsUpdate:
     """Tests for Stats.update method."""
 
-    def test_update_increments_count(self, stats: Stats) -> None:
+    def test_update_counts_the_value(self, stats: Stats) -> None:
         stats.update(100.0)
+
         assert stats.count() == 1
 
+    def test_a_second_update_counts_both(self, stats: Stats) -> None:
+        stats.update(100.0)
+
         stats.update(200.0)
+
         assert stats.count() == 2
 
-    def test_update_accumulates_sum(self, stats: Stats) -> None:
+    def test_update_sums_the_value(self, stats: Stats) -> None:
         stats.update(100.0)
+
         assert stats.sum() == 100.0
 
+    def test_a_second_update_adds_to_the_sum(self, stats: Stats) -> None:
+        stats.update(100.0)
+
         stats.update(250.0)
+
         assert stats.sum() == 350.0
 
     def test_update_appends_to_buffer(self, stats: Stats) -> None:

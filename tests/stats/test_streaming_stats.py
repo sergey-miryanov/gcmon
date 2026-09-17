@@ -66,15 +66,24 @@ class TestGetQuantileValue:
 class TestStreamingStatsUpdate:
     """Tests for StreamingStats.update method."""
 
-    def test_update_increments_count(
+    def test_update_counts_the_record(
         self,
         streaming_stats: StreamingStats,
         mock_stats_item: TGCStatsInfo,
     ) -> None:
         streaming_stats.update(proc(DEFAULT_PID), mock_stats_item)
+
         assert streaming_stats.count() == 1
 
+    def test_a_second_update_counts_both(
+        self,
+        streaming_stats: StreamingStats,
+        mock_stats_item: TGCStatsInfo,
+    ) -> None:
         streaming_stats.update(proc(DEFAULT_PID), mock_stats_item)
+
+        streaming_stats.update(proc(DEFAULT_PID), mock_stats_item)
+
         assert streaming_stats.count() == 2
 
     def test_update_records_pause_metric(

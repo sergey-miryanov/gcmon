@@ -240,24 +240,29 @@ class TestControlServerEnabled:
     def test_start_sets_enabled_true(self, control_server: ControlServer) -> None:
         _send_msg(control_server, MSG_STOP, 42)
         assert _wait_msg(control_server, 42, False)
-        assert control_server.is_enabled(42) is False
 
         _send_msg(control_server, MSG_START, 42)
+
         assert _wait_msg(control_server, 42, True)
         assert control_server.is_enabled(42) is True
 
-    def test_multiple_pids_independent(self, control_server: ControlServer) -> None:
+    def test_a_stop_leaves_the_other_pids_enabled(self, control_server: ControlServer) -> None:
+        _send_msg(control_server, MSG_STOP, 1)
+        _send_msg(control_server, MSG_STOP, 2)
+
+        assert _wait_msg(control_server, 1, False)
+        assert _wait_msg(control_server, 2, False)
+        assert control_server.is_enabled(3) is True
+
+    def test_a_start_leaves_the_other_pids_stopped(self, control_server: ControlServer) -> None:
         _send_msg(control_server, MSG_STOP, 1)
         _send_msg(control_server, MSG_STOP, 2)
         assert _wait_msg(control_server, 1, False)
         assert _wait_msg(control_server, 2, False)
-        assert control_server.is_enabled(1) is False
-        assert control_server.is_enabled(2) is False
-        assert control_server.is_enabled(3) is True
 
         _send_msg(control_server, MSG_START, 1)
+
         assert _wait_msg(control_server, 1, True)
-        assert control_server.is_enabled(1) is True
         assert control_server.is_enabled(2) is False
 
     def test_start_after_stop_removes_pid(self, control_server: ControlServer) -> None:

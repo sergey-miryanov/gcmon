@@ -76,14 +76,23 @@ class TestRssSampler:
         sampled = sorted(call.args for call in exporter.add_rss_sample.call_args_list)
         assert sampled == [(proc(101), 42, 2 * SEC), (proc(102), 42, 2 * SEC)]
 
-    def test_tick_respects_timer(self) -> None:
-        """Second tick within interval does nothing."""
+    def test_a_tick_inside_the_interval_does_not_sample(self) -> None:
+        exporter = MagicMock()
+        sampler = RssSampler(exporter, interval=5.0, rss_provider=lambda pid: 42)
+        sampler._last_sample_ns = 0
+
+        sampler.tick(now_ns=1 * SEC, live={proc(TARGET_PID)})
+
+        exporter.add_rss_sample.assert_not_called()
+
+    def test_the_first_tick_past_the_interval_samples(self) -> None:
         exporter = MagicMock()
         sampler = RssSampler(exporter, interval=5.0, rss_provider=lambda pid: 42)
         sampler._last_sample_ns = 0
         sampler.tick(now_ns=1 * SEC, live={proc(TARGET_PID)})
-        exporter.add_rss_sample.assert_not_called()
+
         sampler.tick(now_ns=10 * SEC, live={proc(TARGET_PID)})
+
         exporter.add_rss_sample.assert_called_once()
 
     def test_provider_returns_zero_skips_exporter(self) -> None:
