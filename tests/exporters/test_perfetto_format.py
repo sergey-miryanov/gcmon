@@ -123,6 +123,21 @@ def full_subphase_item() -> GCStatsInfo:
     )
 
 
+def pause_spans(packets: list[bytes]) -> list[tuple[int, int]]:
+    """Where each gen-0 pause in *packets* begins and ends.
+
+    An END names nothing, so it is matched to its BEGIN by the track they
+    share, which carries nothing but pauses.
+    """
+    parsed = [TracePacket.FromString(raw) for raw in packets]
+    begins = [p for p in parsed if p.track_event.name == gc_pause_slice_name(0)]
+    rows = {p.track_event.track_uuid for p in begins}
+    ends = [
+        p for p in parsed if p.track_event.type == TrackEvent.Type.TYPE_SLICE_END and p.track_event.track_uuid in rows
+    ]
+    return [(begin.timestamp, end.timestamp) for begin, end in zip(begins, ends, strict=True)]
+
+
 class TestConvertItemToPerfettoPackets:
     def test_cmdline_emitted_once_per_process(self, state: PerfettoTrackState) -> None:
         target = proc(TARGET_PID)
@@ -319,16 +334,20 @@ class TestConvertItemToPerfettoPackets:
         assert len(desc2) == 0
 
     def test_invalid_timestamps_produces_events(self, state: PerfettoTrackState) -> None:
+        """The pause goes out as the record gives it. Nothing reorders an
+        inverted one or drops it."""
         item = pause_item(ts_start=2_000, ts_stop=1_000)
-        descriptors, packets = convert_item(proc(TARGET_PID), item, state, sequence_id=1)
-        assert len(descriptors) >= 2
-        assert len(packets) >= 2
+
+        _descriptors, packets = convert_item(proc(TARGET_PID), item, state, sequence_id=1)
+
+        assert pause_spans(packets) == [(2_000, 1_000)]
 
     def test_equal_timestamps_produces_events(self, state: PerfettoTrackState) -> None:
         item = pause_item(ts_stop=1_000, duration=0.0)
-        descriptors, packets = convert_item(proc(TARGET_PID), item, state, sequence_id=1)
-        assert len(descriptors) >= 2
-        assert len(packets) >= 2
+
+        _descriptors, packets = convert_item(proc(TARGET_PID), item, state, sequence_id=1)
+
+        assert pause_spans(packets) == [(1_000, 1_000)]
 
     def test_incremental_item_emits_subphases(self, state: PerfettoTrackState) -> None:
         item = full_subphase_item()
