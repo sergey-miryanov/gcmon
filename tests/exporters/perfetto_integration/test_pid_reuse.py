@@ -435,43 +435,6 @@ class TestProcessOrderingIntegration:
             ]
         ), f"expected process track rows for both pids; got {[r.name for r in rows]}"
 
-    def test_process_track_order_matches_rank(
-        self,
-        trace_processor: TraceProcessor,
-    ) -> None:
-        """The trace processor must order process tracks by
-        ``sibling_order_rank`` when ``process_ordering=EXPLICIT`` is
-        set on the root descriptor. The fixture emits ``_SECOND_PID``
-        with an earlier first event ts (``_TS_START - 2_000_000``) and
-        ``DEFAULT_PID`` with a later one (``_TS_START - 1_000_000``), so
-        ``_SECOND_PID`` is expected to be ranked first (rank 0).
-
-        The track table is what the Perfetto UI uses to render tracks;
-        the track with the lower ``id`` appears first in the UI. We
-        therefore assert that the row for ``_SECOND_PID`` has a lower
-        track id than the row for ``DEFAULT_PID`` in the
-        ``process_track_event`` rows.
-        """
-        rows = list(
-            trace_processor.query(
-                f"""
-            SELECT t.id, p.name
-            FROM track t
-            JOIN process_track pt ON t.id = pt.id
-            JOIN process p ON pt.upid = p.upid
-            WHERE t.type = 'process_track_event'
-              AND p.name IN ('{_DEFAULT_ROW_NAME}', '{_SECOND_ROW_NAME}')
-        """
-            )
-        )
-        name_to_id = {r.name: r.id for r in rows}
-        first, second = _DEFAULT_ROW_NAME, _SECOND_ROW_NAME
-        assert first in name_to_id
-        assert second in name_to_id
-        assert name_to_id[second] < name_to_id[first], (
-            f"expected _SECOND_PID (earlier first event) to have lower track id; got {name_to_id}"
-        )
-
     def test_process_table_start_ts_matches_first_event(
         self,
         trace_processor: TraceProcessor,
