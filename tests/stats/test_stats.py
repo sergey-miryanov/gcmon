@@ -334,9 +334,10 @@ class TestExactTotals:
         """Recorded per poll rather than flushed at the end, so a child that
         exits mid-run still counts."""
         stats = self._stats()
-        before = stats.pause_totals_by_gen()[0].exact_count
 
-        assert before == stats.pause_totals_by_gen()[0].exact_count
+        stats.materialize(proc(TARGET_PID))
+
+        assert stats.pause_totals_by_gen()[0].exact_count == 10
         assert stats.pause_totals(proc(TARGET_PID), 0, 0).lost_count == 7
 
 
