@@ -8,7 +8,6 @@ monitor, and `test_monitor.py` tests them there.
 """
 
 import threading
-import time
 from itertools import count
 from typing import override
 from unittest.mock import MagicMock, Mock, patch
@@ -121,16 +120,23 @@ class TestMonitorLoopRun:
         assert stop == loop._stop_event.is_set
 
     def test_close_during_run(self, mock_monitor: MagicMock) -> None:
-        loop = MonitorLoop(mock_monitor, InfinityRunner(), rate=0.01)
+        """A rate of a minute, so a run that returns was woken out of its idle."""
+        ticked = threading.Event()
 
+        def tick(now_ns: int, stop: object) -> PollReport:
+            ticked.set()
+            return _report(12345)
+
+        mock_monitor.tick.side_effect = tick
+        loop = MonitorLoop(mock_monitor, InfinityRunner(), rate=60)
         t = threading.Thread(target=loop.run, daemon=True)
         t.start()
-        time.sleep(0.05)
-        loop.close()
-        t.join(timeout=2)
+        assert ticked.wait(timeout=2)
 
-        assert mock_monitor.tick.called
-        assert loop._stop_event.is_set()
+        loop.close()
+
+        t.join(timeout=2)
+        assert not t.is_alive()
 
     def test_stop_event_set_after_normal_exit(self, loop: MonitorLoop) -> None:
         assert not loop._stop_event.is_set()
