@@ -172,10 +172,15 @@ class TestStatsPercentile:
 
     @pytest.mark.skipif(not HAS_DDSKETCH, reason="ddsketch not installed")
     def test_percentile_from_sketch_when_buffer_full(self, stats: Stats) -> None:
-        for i in range(Stats.MAX_BUFFER_LEN + 100):
-            stats.update(float(i))
+        """The buffer holds the long tail alone, and its median is the tail's."""
+        for _ in range(3 * Stats.MAX_BUFFER_LEN):
+            stats.update(1.0)
+        for _ in range(Stats.MAX_BUFFER_LEN):
+            stats.update(1000.0)
+
         p50 = stats.percentile(50)
-        assert p50 > 0.0
+
+        assert p50 == pytest.approx(1.0, rel=0.01)
 
     def test_percentile_empty_returns_zero(self, stats: Stats) -> None:
         assert stats.percentile(50) == 0.0
