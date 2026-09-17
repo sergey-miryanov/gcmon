@@ -305,6 +305,7 @@ class TestOneSpanPerPollInterval:
         arrive reversed and had to be held back."""
         spans = observe_all(interpreter_polls(build_interleaved_run(2_000, gap_ns=gap_ns), per_tick)).spans()
 
+        assert spans
         assert all(span.ts_start < span.ts_stop for span in spans)
 
     @pytest.mark.parametrize(("gap_ns", "per_tick"), PACES)
@@ -315,6 +316,7 @@ class TestOneSpanPerPollInterval:
         generations contributed."""
         spans = observe_all(interpreter_polls(build_interleaved_run(2_000, gap_ns=gap_ns), per_tick)).spans()
 
+        assert spans
         for span in spans:
             assert sum(entry.lost_pause_ns for entry in span.gens) <= span.ts_stop - span.ts_start
 
@@ -325,6 +327,7 @@ class TestOneSpanPerPollInterval:
         gcmon has no evidence anything happened in it."""
         spans = observe_all(interpreter_polls(build_interleaved_run(2_000, gap_ns=gap_ns), per_tick)).spans()
 
+        assert spans
         assert all(sum(entry.lost_count for entry in span.gens) > 0 for span in spans)
 
     def test_a_span_carries_every_generation_that_went_blind_at_once(self) -> None:
