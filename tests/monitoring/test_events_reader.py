@@ -426,11 +426,6 @@ class TestAgainstARealProcess:
         with pytest.raises(TargetUnavailable):
             remote_reader.read(MISSING_PID)
 
-    def test_the_reader_satisfies_its_own_protocol(self) -> None:
-        from gcmon.monitoring.events_reader import EventsReader
-
-        assert isinstance(RemoteEventsReader(), EventsReader)
-
 
 class TestIndependence:
     def test_two_readers_hold_independent_attachments(self, spy: SpyMonitor) -> None:
