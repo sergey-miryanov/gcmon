@@ -637,11 +637,15 @@ class TestAProcessThatExits:
 
     def test_a_running_ring_stays_open(self) -> None:
         """Only the pid that went is settled."""
-        stats = self._ran_and_exited()
+        stats = StreamingStats()
+        stats.update(proc(TARGET_PID), _pause())
         stats.update(proc(OTHER_PID), _pause())
-        stats.update(proc(OTHER_PID), _pause(5_000))
 
-        assert stats.pause_totals(proc(OTHER_PID), 0, 0).sampled_count == 2
+        stats.materialize(proc(TARGET_PID))
+
+        running = stats.get_ring_stats(proc(OTHER_PID), 0)
+        assert running is not None
+        assert running[PAUSE_KEY][0].percentiles is None
 
     def test_retain_settles_the_pids_it_leaves_out(self) -> None:
         stats = StreamingStats()
