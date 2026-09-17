@@ -249,12 +249,10 @@ class TestWriteJsonl:
 class TestNormalizeJsonlTimestamps:
     def test_normalizes_all_timestamps(self) -> None:
         item = make_inc_item(ts_start=5000, ts_stop=6000)
-        items = {1: [item]}
-        normalize_jsonl_timestamps(items)
-        assert item.ts_start == 0
-        assert item.ts_stop == 1000
-        assert item.ts_mark_alive_start == 0
-        assert item.ts_mark_alive_stop == 100
+
+        normalize_jsonl_timestamps({1: [item]})
+
+        assert item == make_inc_item(ts_start=0, ts_stop=1000)
 
     def test_no_items_is_noop(self) -> None:
         normalize_jsonl_timestamps({})
