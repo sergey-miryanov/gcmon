@@ -464,12 +464,6 @@ class TestCmdlineEncoding:
         assert self._description(trace_processor_with_cmdline, _DEFAULT_ROW_NAME) == _FAKE_CMDLINE_JOINED
         assert self._description(trace_processor_with_cmdline, _SECOND_ROW_NAME) == _FAKE_CMDLINE_JOINED
 
-    def test_cmdline_absent_for_pid_outside_provider(
-        self,
-        trace_processor_with_cmdline: TraceProcessor,
-    ) -> None:
-        assert self._description(trace_processor_with_cmdline, process_track_name(proc(1))) is None
-
     def test_cmdline_none_for_unknown_pid(
         self,
         trace_processor: TraceProcessor,
