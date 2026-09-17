@@ -45,12 +45,16 @@ def mock_psutil() -> Generator[MagicMock]:
 class TestRssSampler:
     """RssSampler unit tests; all use injectable rss_provider, no psutil dependency."""
 
-    def test_tick_no_live_pids(self) -> None:
-        """No sampling when live_pids is empty."""
+    def test_a_round_with_nobody_live_does_not_use_up_the_interval(self) -> None:
+        """Sampling nobody draws nothing either way. What an empty round must
+        not do is push the next real one a whole interval out."""
         exporter = MagicMock()
-        sampler = RssSampler(exporter, interval=0.0, rss_provider=_noop_rss_sampler)
-        sampler.tick(now_ns=1 * SEC, live=set())
-        exporter.add_rss_sample.assert_not_called()
+        sampler = RssSampler(exporter, interval=5.0, rss_provider=lambda pid: 42)
+        sampler.tick(now_ns=5 * SEC, live=set())
+
+        sampler.tick(now_ns=6 * SEC, live={proc(TARGET_PID)})
+
+        exporter.add_rss_sample.assert_called_once_with(proc(TARGET_PID), 42, 6 * SEC)
 
     def test_tick_interval_not_elapsed(self) -> None:
         """No sampling when interval has not elapsed."""
