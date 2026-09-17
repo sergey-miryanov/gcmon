@@ -120,9 +120,8 @@ already behaves.
 
 ## 5. Seams and testing decisions
 
-- **Seam:** the trace processor, via
-  `tests/exporters/test_perfetto_exporter_integration.py`. Debug annotations
-  surface in the `args` table keyed `debug.python_version` /
+- **Seam:** the trace processor, via `tests/exporters/perfetto_integration/`.
+  Debug annotations surface in the `args` table keyed `debug.python_version` /
   `debug.gc_thresholds`, exactly as `debug.cmdline` does today, the highest
   seam available, and the only one that proves the annotation is attached to
   the right slice rather than merely present in the byte stream.
@@ -136,7 +135,7 @@ already behaves.
   never renders. Assert the negative too: `--format jsonl` and
   `--format stdout` output stays byte-identical.
 - **Prior art:** the `debug.cmdline` assertions in
-  `tests/exporters/test_perfetto_exporter_integration.py`, which are this
+  `tests/exporters/perfetto_integration/test_row_contents.py`, which are this
   feature's exact shape, one annotation earlier.
 - **Cases:**
   1. `gcmon run` produces a trace whose process slice carries

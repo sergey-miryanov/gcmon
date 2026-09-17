@@ -130,7 +130,8 @@ the empty `PerfettoTrackState` every conversion test opens on.
 
 | Directory | What it holds |
 |---|---|
-| `tests/exporters/` | the encoder, the Perfetto format, the track state, and the trace-processor suites |
+| `tests/exporters/` | the encoder, the Perfetto format and the track state |
+| `tests/exporters/perfetto_integration/` | what the real trace processor reads back out of a written trace |
 | `tests/monitoring/` | the monitor, its loop, the reader and the samplers |
 | `tests/cli/` | the parsers and each subcommand end to end |
 | `tests/model/` | the record structs, the loss arithmetic, the schedule |
@@ -143,7 +144,9 @@ the empty `PerfettoTrackState` every conversion test opens on.
 
 Two helpers are worth knowing before writing a Perfetto test.
 `tests/helpers.py` holds the reader every trace-processor test goes through,
-and `tests/exporters/test_perfetto_exporter_integration.py` holds the
-trace-processor fixture and the trace-writing helper. The oracle that compares
-a `.pftrace` against the events it was built from lives in
+and `tests/exporters/perfetto_integration/` holds the traces themselves:
+`traces.py` writes each one and the figures it is built from, `conftest.py`
+opens them, and the four `test_*.py` beside them ask the trace processor about
+the rows, what those rows carry, pid reuse and liveness. The oracle that
+compares a `.pftrace` against the events it was built from lives in
 `tests/cli/analyze/test_convert_cmd_perfetto.py`.
