@@ -325,21 +325,27 @@ class TestCliEnvVars:
         assert "Duration: 0.4" in result.stderr
 
     def test_flush_threshold(self, monkeypatch: pytest.MonkeyPatch, run_monitor: Any, tmp_path: Path) -> None:
+        """A run prints no threshold, so the variable is given the one value
+        a run refuses."""
         output_file = tmp_path / "test.jsonl"
-        monkeypatch.setenv(ENV_FLUSH_THRESHOLD, "50")
-        assert run_monitor(["--format", FORMAT_JSONL, "-o", str(output_file), "-d", "0.1", "-v"]).returncode == 0
+        monkeypatch.setenv(ENV_FLUSH_THRESHOLD, "0")
+
+        result = run_monitor(["--format", FORMAT_JSONL, "-o", str(output_file), "-d", "0.1"], timeout=30)
+
+        assert result.returncode == 1
+        assert "Flush threshold must be positive, got 0" in result.stderr
 
     def test_flush_threshold_cli_override(
         self, monkeypatch: pytest.MonkeyPatch, run_monitor: Any, tmp_path: Path
     ) -> None:
         output_file = tmp_path / "test.jsonl"
-        monkeypatch.setenv(ENV_FLUSH_THRESHOLD, "50")
-        assert (
-            run_monitor(
-                ["--format", FORMAT_JSONL, "-o", str(output_file), "--flush-threshold", "200", "-d", "0.1"]
-            ).returncode
-            == 0
+        monkeypatch.setenv(ENV_FLUSH_THRESHOLD, "0")
+
+        result = run_monitor(
+            ["--format", FORMAT_JSONL, "-o", str(output_file), "--flush-threshold", "200", "-d", "0.1"], timeout=30
         )
+
+        assert result.returncode == 0
 
     def test_env_output_default_format_jsonl(
         self, monkeypatch: pytest.MonkeyPatch, run_monitor: Any, tmp_path: Path
