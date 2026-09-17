@@ -18,7 +18,14 @@ from gcmon.cli.monitor._env import (
     ENV_VERBOSE,
 )
 from gcmon.model.names import DURATION, PID
-from gcmon.support.vocabulary import CMD_MONITOR, DEFAULT_TRACE_FILE, FORMAT_JSONL, FORMAT_PERFETTO, FORMAT_STDOUT
+from gcmon.support.vocabulary import (
+    CMD_MONITOR,
+    DEFAULT_JSONL_FILE,
+    DEFAULT_TRACE_FILE,
+    FORMAT_JSONL,
+    FORMAT_PERFETTO,
+    FORMAT_STDOUT,
+)
 from tests.cli.monitor.conftest import MonitorArgsFactory
 from tests.helpers import assert_valid_perfetto_trace
 
@@ -348,10 +355,17 @@ class TestCliEnvVars:
         assert result.returncode == 0
 
     def test_env_output_default_format_jsonl(
-        self, monkeypatch: pytest.MonkeyPatch, run_monitor: Any, tmp_path: Path
+        self, monkeypatch: pytest.MonkeyPatch, run_monitor_self: Any, tmp_path: Path
     ) -> None:
+        """Against the running gcmon, since a run that read nothing writes no
+        file to find."""
         monkeypatch.setenv(ENV_FORMAT, FORMAT_JSONL)
-        assert run_monitor(["-d", "0.1"], cwd=tmp_path).returncode == 0
+
+        result = run_monitor_self(["-d", "0.3"], cwd=tmp_path, timeout=30)
+
+        assert result.returncode == 0
+        assert (tmp_path / DEFAULT_JSONL_FILE).exists()
+        assert not (tmp_path / DEFAULT_TRACE_FILE).exists()
 
 
 class TestCliEnvHelp:
