@@ -160,9 +160,11 @@ class TestRssSampler:
     def test_enabled_flag(self) -> None:
         """Disabled sampler does nothing even with high interval."""
         exporter = MagicMock()
-        sampler = RssSampler(exporter, interval=0.0, rss_provider=_noop_rss_sampler)
+        sampler = RssSampler(exporter, interval=0.0, rss_provider=lambda pid: 42)
         sampler._enabled = False
+
         sampler.tick(now_ns=0, live={proc(TARGET_PID)})
+
         exporter.add_rss_sample.assert_not_called()
 
     def test_default_provider_uses_default_rss_sampler(self) -> None:
