@@ -174,14 +174,15 @@ class TestCliOutput:
 
 
 class TestCliStdoutFormat:
-    def test_jsonl_output(self, run_monitor: Any, tmp_path: Path) -> None:
-        result = run_monitor(["--format", FORMAT_STDOUT, "-d", "0.3"], cwd=tmp_path)
+    def test_jsonl_output(self, run_monitor_self: Any, tmp_path: Path) -> None:
+        """Against the running gcmon: pid 12345 holds no process, and a run
+        that read nothing prints nothing to parse."""
+        result = run_monitor_self(["--format", FORMAT_STDOUT, "-d", "0.3"], cwd=tmp_path)
+        records: list[dict[str, Any]] = [json.loads(line) for line in result.stdout.splitlines()]
+
         assert result.returncode == 0
-        for line in result.stdout.strip().split("\n"):
-            line = line.strip()
-            if line.startswith("{"):
-                data: dict[str, Any] = json.loads(line)
-                assert PID in data
+        assert records
+        assert [record for record in records if PID not in record] == []
 
     def test_verbose(self, run_monitor: Any, tmp_path: Path) -> None:
         result = run_monitor(["--format", FORMAT_STDOUT, "-d", "0.3", "-v"], cwd=tmp_path)
