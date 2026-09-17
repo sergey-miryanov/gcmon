@@ -493,6 +493,7 @@ class TestProcessesTrack:
             )
         )
         pat = re.compile(r"^Process \d+(#\d+)?$")
+        assert rows
         for r in rows:
             assert pat.match(r.name), (
                 f"slice name {r.name!r} on the {_PROCESS_LIFETIME_TRACK_NAME!r} track "
