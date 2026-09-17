@@ -109,13 +109,16 @@ class TestStatsOutput:
         capsys: pytest.CaptureFixture[str],
         gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        """Test plain table format uses dashes in separators."""
+        """The rule under the header is dashes in either format, so the ones
+        that count are the rules between blocks."""
         stats = StreamingStats()
         for pid in (11111, 22222):
             stats.update(proc(pid), gc_stats_item_factory())
+
         print_stats(stats, StatsView.FULL, table_format=TableFormat.PLAIN)
-        captured = capsys.readouterr()
-        assert "--------" in captured.out
+        table = [line for line in capsys.readouterr().out.splitlines() if line.startswith("|")]
+
+        assert [set(line) for line in table[2:] if "-" in line] == [{"|", "-"}, {"|", "-"}]
 
     def test_print_stats_table_format_markdown(
         self,
