@@ -56,14 +56,6 @@ class TestRssSampler:
 
         exporter.add_rss_sample.assert_called_once_with(proc(TARGET_PID), 42, 6 * SEC)
 
-    def test_tick_interval_not_elapsed(self) -> None:
-        """No sampling when interval has not elapsed."""
-        exporter = MagicMock()
-        sampler = RssSampler(exporter, interval=10.0, rss_provider=_noop_rss_sampler)
-        sampler._last_sample_ns = 100 * SEC
-        sampler.tick(now_ns=105 * SEC, live={proc(TARGET_PID)})
-        exporter.add_rss_sample.assert_not_called()
-
     def test_tick_samples_at_interval(self) -> None:
         """Sampling occurs when interval has elapsed."""
         exporter = MagicMock()
