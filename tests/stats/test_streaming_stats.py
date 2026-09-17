@@ -7,7 +7,7 @@ import pytest
 
 from gcmon.model.data import GCStatsInfo
 from gcmon.model.protocol import TGCStatsInfo
-from gcmon.stats.metrics import PAUSE_KEY
+from gcmon.stats.metrics import METRICS, PAUSE_KEY
 from gcmon.stats.stats import get_quantile_value
 from gcmon.stats.streaming_stats import StreamingStats
 from tests.conftest import DEFAULT_PID
@@ -234,13 +234,13 @@ class TestStreamingStatsRingTracking:
         first = streaming_stats.get_ring_stats(proc(DEFAULT_PID), 0)
         second = streaming_stats.get_ring_stats(proc(DEFAULT_PID), 1)
         assert first is not None and second is not None
+        counts = {key: (first[key][0].count(), second[key][0].count()) for key in METRICS}
+        assert counts == dict.fromkeys(METRICS, (1, 1))
         for metric_key, gen_stats in streaming_stats.metrics.items():
             for gen, total in gen_stats.items():
                 one, other = first[metric_key][gen], second[metric_key][gen]
                 assert one.count() + other.count() == total.count(), metric_key
                 assert one.sum() + other.sum() == total.sum(), metric_key
-                if total.count():
-                    assert one.count() == 1, f"{metric_key} folded both interpreters"
 
 
 class TestStreamingStatsRingBound:
