@@ -268,9 +268,11 @@ class TestPerfettoExporter:
         exporter.add_event(proc(200), item)
         exporter.close()
 
-        packets = _read_trace_packets(path)
-        descriptors = sum(1 for p in packets if p.HasField("track_descriptor"))
-        assert descriptors >= 4
+        described = [p.track_descriptor for p in _read_trace_packets(path) if p.HasField("track_descriptor")]
+        assert [td.name for td in described if td.HasField("process")] == [
+            process_track_name(proc(100)),
+            process_track_name(proc(200)),
+        ]
 
     def test_incremental_item_emits_subphases(self, perfetto_exporter: ExporterFactory) -> None:
         exporter, path = perfetto_exporter()
