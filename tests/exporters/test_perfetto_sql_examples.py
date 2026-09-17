@@ -115,11 +115,14 @@ def documented_trace_processor(tmp_path_factory: pytest.TempPathFactory) -> Iter
 
 
 class TestTheDocumentedQueries:
-    def test_the_page_still_holds_examples(self) -> None:
+    def test_every_fence_on_the_page_is_an_example(self) -> None:
         """The guard on the extraction. Parametrizing over an empty list
-        collects no tests and reports success, so a regex that stops matching
-        would take the whole file quiet."""
-        assert len(_examples()) >= 6
+        collects no tests and reports success, and a fence the pattern does
+        not match is an example nothing runs."""
+        fences = PAGE.read_text(encoding=ENCODING).count("```")
+
+        assert _examples()
+        assert fences == 2 * len(_examples())
 
     @pytest.mark.parametrize("sql", _examples(), ids=_label)
     def test_the_example_runs_and_finds_rows(self, sql: str, documented_trace_processor: TraceProcessor) -> None:
