@@ -166,9 +166,12 @@ class TestPrintTable:
         rows = [
             ["12345", "0", "100", "1000.000", "10.000", "20.000", "30.000", "40.000", "50.000", "1.00", "1.00"],
         ]
+
         _print_table(rows, table_format=TableFormat.PLAIN)
-        captured = capsys.readouterr()
-        assert "---" in captured.out
+        header, rule, *_ = capsys.readouterr().out.strip().splitlines()
+
+        assert set(rule) == {"|", "-"}
+        assert _pipes(rule) == _pipes(header)
 
     def test_separator_phase_format(self, capsys: pytest.CaptureFixture[str]) -> None:
         from gcmon.stats.stats_output import _SEP_PHASE
