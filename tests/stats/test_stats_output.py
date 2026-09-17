@@ -507,11 +507,10 @@ class TestLossColumns:
 
     def test_cov_and_f_are_columns(self, capsys: pytest.CaptureFixture[str]) -> None:
         print_stats(self._lossy(), StatsView.FULL)
-        out = capsys.readouterr().out
+        header, total, *_ = table_rows(capsys.readouterr().out)
 
-        assert "Cov" in out
-        assert "30.0%" in out
-        assert "3.333" in out
+        assert header[9:] == ["Cov", "F"]
+        assert total[9:] == ["30.0%", "3.333"]
 
     def test_a_lossless_run_shows_one_number_per_cell(self, capsys: pytest.CaptureFixture[str]) -> None:
         """`3/3` in every cell would say nothing was lost twice over."""
