@@ -20,6 +20,12 @@ def assert_payload(mock_conn: MagicMock, expected_msg: str, *, call_index: int =
     return payload
 
 
+def assert_stopped_then_started(mock_conn: MagicMock) -> None:
+    assert mock_conn.send.call_count == 2
+    assert mock_conn.send.call_args_list[0][0][0][MSG] == MSG_STOP
+    assert mock_conn.send.call_args_list[1][0][0][MSG] == MSG_START
+
+
 @pytest.fixture
 def mock_conn() -> MagicMock:
     return MagicMock()
@@ -68,17 +74,20 @@ class TestPublicAPI:
         mock_conn.send.assert_called_once()
         assert_payload(mock_conn, expected_msg)
 
-    @pytest.mark.parametrize("raises", [False, True])
-    def test_pause_monitoring(self, client: ControlClient, mock_conn: MagicMock, raises: bool) -> None:
-        if raises:
-            with pytest.raises(RuntimeError), client.pause_monitoring():
-                raise RuntimeError()
-        else:
-            with client.pause_monitoring():
-                pass
-        assert mock_conn.send.call_count == 2
-        assert mock_conn.send.call_args_list[0][0][0][MSG] == MSG_STOP
-        assert mock_conn.send.call_args_list[1][0][0][MSG] == MSG_START
+    def test_pause_monitoring_stops_and_starts_again(self, client: ControlClient, mock_conn: MagicMock) -> None:
+        with client.pause_monitoring():
+            pass
+
+        assert_stopped_then_started(mock_conn)
+
+    def test_pause_monitoring_starts_again_when_the_body_raises(
+        self, client: ControlClient, mock_conn: MagicMock
+    ) -> None:
+        """The exception leaves the target running, not paused for good."""
+        with pytest.raises(RuntimeError), client.pause_monitoring():
+            raise RuntimeError()
+
+        assert_stopped_then_started(mock_conn)
 
 
 class TestInstantMsg:
