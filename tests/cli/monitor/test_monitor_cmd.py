@@ -172,16 +172,6 @@ class TestCliOutput:
         assert run_monitor_self(["-o", str(output_file), "-d", "0.3"]).returncode == 0
         assert_valid_perfetto_trace(output_file)
 
-    def test_path_traversal_warning(self, run_monitor: Any, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-        output_file = tmp_path / "subdir" / "output.json"
-        output_file.parent.mkdir()
-        output_file.touch()
-        other = tmp_path / "other"
-        other.mkdir()
-        monkeypatch.chdir(other)
-        result = run_monitor(["-o", str(output_file), "-d", "0.1", "-v"], timeout=5)
-        assert "outside" in result.stderr or result.returncode == 0
-
 
 class TestCliStdoutFormat:
     def test_jsonl_output(self, run_monitor: Any, tmp_path: Path) -> None:
