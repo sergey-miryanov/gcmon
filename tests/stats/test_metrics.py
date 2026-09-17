@@ -81,7 +81,7 @@ class TestMarkAliveMetric:
         assert ts_start == 2000
         assert ts_stop == 4000
 
-    def test_get_values_asserts_non_incremental(
+    def test_get_values_returns_zero_without_mark_alive(
         self,
         gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
@@ -112,7 +112,7 @@ class TestFillIncrementMetric:
         assert ts_start == 3000
         assert ts_stop == 5000
 
-    def test_get_values_asserts_non_incremental(
+    def test_get_values_returns_zero_without_fill_increment(
         self,
         gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
@@ -143,7 +143,7 @@ class TestDeduceUnreachableMetric:
         assert ts_start == 7000
         assert ts_stop == 9000
 
-    def test_get_values_asserts_non_incremental(
+    def test_get_values_returns_zero_without_deduce_unreachable(
         self,
         gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
