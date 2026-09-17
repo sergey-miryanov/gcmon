@@ -355,20 +355,20 @@ class TestPrintStatsEdgeCases:
         assert READ_TIME_LABEL in captured.out
         assert "2.500" in captured.out
 
-    def test_markdown_format(
+    def test_a_markdown_table_keeps_the_rule_under_its_header(
         self,
         capsys: pytest.CaptureFixture[str],
         gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
+        """Every other rule goes blank. Without this one Markdown reads the
+        lines as a paragraph."""
         stats = StreamingStats()
         stats.update(proc(DEFAULT_PID), gc_stats_item_factory())
 
         print_stats(stats, StatsView.FULL, table_format=TableFormat.MARKDOWN)
-        captured = capsys.readouterr()
-        lines = captured.out.strip().splitlines()
-        assert len(lines) >= 2
-        assert lines[0].startswith("|")
-        assert lines[1].startswith("|")
+        _header, rule, *_ = capsys.readouterr().out.strip().splitlines()
+
+        assert set(rule) == {"|", "-"}
 
 
 def table_rows(out: str) -> list[list[str]]:
