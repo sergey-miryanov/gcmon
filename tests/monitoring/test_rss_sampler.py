@@ -154,8 +154,11 @@ class TestRssSampler:
             rss_provider=lambda pid: results[pid],
         )
         sampler._last_sample_ns = -1 * SEC
+
         sampler.tick(now_ns=0, live={proc(TARGET_PID), proc(2), proc(3)})
-        assert exporter.add_rss_sample.call_count == 3
+
+        sampled = sorted(call.args for call in exporter.add_rss_sample.call_args_list)
+        assert sampled == [(proc(TARGET_PID), 100, 0), (proc(2), 200, 0), (proc(3), 300, 0)]
 
     def test_enabled_flag(self) -> None:
         """Disabled sampler does nothing even with high interval."""
