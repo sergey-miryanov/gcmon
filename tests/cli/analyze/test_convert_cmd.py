@@ -495,7 +495,8 @@ class TestCliCombineHelp:
     def test_shows_normalize_option(self, run_combine: Combiner) -> None:
         result = run_combine([], extra_args=["--help"])
 
-        assert "--normalize" in result.stdout or "-n" in result.stdout
+        assert result.returncode == 0
+        assert "-n, --normalize" in result.stdout
         assert "Normalize" in result.stdout
 
     def test_shows_format_options(self, run_combine: Combiner) -> None:
