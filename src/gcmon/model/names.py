@@ -37,7 +37,6 @@ __all__ = [
     "GC_LOSS_NAME",
     "GC_PAUSE_NAME",
     "GC_PHASES",
-    "GC_PHASES",
     "GEN",
     "GENERATION",
     "GENERATIONS",
