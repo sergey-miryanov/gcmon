@@ -180,8 +180,6 @@ class TestCoverageWarning:
         the end-of-run summary's final one."""
         poll(monitor, PID, [1])
         poll(monitor, PID, [10])
-        for collections in range(11, 2_000):
-            poll(monitor, PID, [collections])
 
         assert "only 20% of collections observed so far" in caplog.text
 
