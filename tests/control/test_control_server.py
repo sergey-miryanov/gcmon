@@ -181,18 +181,15 @@ class TestControlServerStartFailure:
         server_not_started: ControlServer,
     ) -> None:
         self._stub_threads(server_not_started, fail_on=0)
-        try:
+        server_not_started.start()
+        assert server_not_started.is_running() is True
+        first_addr = server_not_started.address
+
+        with pytest.raises(RuntimeError, match="already running"):
             server_not_started.start()
-            assert server_not_started.is_running() is True
-            first_addr = server_not_started.address
 
-            with pytest.raises(RuntimeError, match="already running"):
-                server_not_started.start()
-
-            assert server_not_started.is_running() is True
-            assert server_not_started.address == first_addr
-        finally:
-            server_not_started.close()
+        assert server_not_started.is_running() is True
+        assert server_not_started.address == first_addr
 
 
 class TestControlServerStart:
@@ -206,18 +203,14 @@ class TestControlServerStart:
 
     def test_start_sets_running(self, server_not_started: ControlServer) -> None:
         server_not_started.start()
-        try:
-            assert server_not_started.is_running()
-        finally:
-            server_not_started.close()
+
+        assert server_not_started.is_running()
 
     def test_start_clears_stop_event(self, server_not_started: ControlServer) -> None:
         server_not_started._stop_event.set()
         server_not_started.start()
-        try:
-            assert not server_not_started._stop_event.is_set()
-        finally:
-            server_not_started.close()
+
+        assert not server_not_started._stop_event.is_set()
 
     def test_start_twice_raises(self, control_server: ControlServer) -> None:
         with pytest.raises(RuntimeError, match="already running"):
