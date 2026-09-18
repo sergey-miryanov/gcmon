@@ -176,7 +176,7 @@ class TestGapDetection:
         assert entry.lost_count == 0
 
 
-class TestObserveBatch:
+class TestIngestingARunAtOnce:
     """A poll hands over one ring's run at once. Whatever that saves, it has
     to leave the accumulator where folding the same records one at a time
     would have left it."""

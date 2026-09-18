@@ -515,7 +515,7 @@ class TestCliCombineHelp:
 
 
 class TestCliCombineJsonlToPerfetto:
-    def test_basic(
+    def test_an_explicit_perfetto_format_is_logged_and_written(
         self,
         make_jsonl_file: JsonlFileFactory,
         run_combine: Combiner,

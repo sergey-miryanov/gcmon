@@ -56,7 +56,7 @@ class TestRssSampler:
 
         exporter.add_rss_sample.assert_called_once_with(proc(TARGET_PID), 42, 6 * SEC)
 
-    def test_tick_samples_at_interval(self) -> None:
+    def test_a_due_tick_samples_every_live_process(self) -> None:
         """Sampling occurs when interval has elapsed."""
         exporter = MagicMock()
         calls: list[int] = []

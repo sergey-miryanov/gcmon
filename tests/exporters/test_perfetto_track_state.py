@@ -29,7 +29,7 @@ class TestPerfettoTrackState:
         assert state.has_process_descriptor(proc(TARGET_PID))
         assert not state.has_process_descriptor(proc(OTHER_PID))
 
-    def test_tid_tracking(self, state: PerfettoTrackState) -> None:
+    def test_marking_a_track_marks_that_interpreter_alone(self, state: PerfettoTrackState) -> None:
         assert not state.has_track(interpreter_track(TARGET_PID, 0))
 
         state.mark_track(interpreter_track(TARGET_PID, 0))
@@ -43,12 +43,12 @@ class TestPerfettoTrackState:
 
         assert uuid == 1
 
-    def test_thread_track_uuid(self, state: PerfettoTrackState) -> None:
+    def test_interpreter_track_uuid(self, state: PerfettoTrackState) -> None:
         uuid = state.get_track_uuid(interpreter_track(DEFAULT_PID, 0))
 
         assert uuid == 1
 
-    def test_thread_track_uuid_different_iid(self, state: PerfettoTrackState) -> None:
+    def test_interpreter_track_uuid_different_iid(self, state: PerfettoTrackState) -> None:
         uuid0 = state.get_track_uuid(interpreter_track(DEFAULT_PID, 0))
 
         uuid1 = state.get_track_uuid(interpreter_track(DEFAULT_PID, 1))
@@ -245,7 +245,7 @@ class TestProcessLifetimeState:
 
         assert state.get_process_lifetimes() == [span(TARGET_PID, 1_000, 5_000)]
 
-    def test_a_counter_widens_both_ends(self, state: PerfettoTrackState) -> None:
+    def test_a_timestamp_past_either_end_moves_that_end(self, state: PerfettoTrackState) -> None:
         """The reverse of the old rule, where a counter moved the start
         and never the end. An RSS sample at 9us is evidence the process
         was alive at 9us exactly as a GC event would be, and the caller
@@ -260,7 +260,7 @@ class TestProcessLifetimeState:
 
         assert state.get_process_lifetimes() == [span(TARGET_PID, 1_000, 9_000)]
 
-    def test_counter_only_pid_gets_a_span(self, state: PerfettoTrackState) -> None:
+    def test_a_pid_seen_twice_gets_a_start_and_a_span(self, state: PerfettoTrackState) -> None:
         """A pid seen only through counters used to get a start, and
         therefore a rank, but no span and no slice. It now gets both."""
         state.update_process_lifetime(proc(TARGET_PID), 1_000)
@@ -270,7 +270,7 @@ class TestProcessLifetimeState:
         assert state.get_process_lifetime_start_ts(proc(TARGET_PID)) == 1_000
         assert state.get_process_lifetimes() == [span(TARGET_PID, 1_000, 7_000)]
 
-    def test_a_leading_counter_seeds_the_end(self, state: PerfettoTrackState) -> None:
+    def test_a_first_timestamp_later_than_the_rest_stays_the_end(self, state: PerfettoTrackState) -> None:
         """A counter sets the end like anything else, including when it
         is the first event folded for a pid.
 
@@ -336,7 +336,7 @@ class TestProcessLifetimeState:
 class TestTwoProcessesOnOnePidGetTheirOwnRows:
     """A `Track` names the process it was drawn for, and every row the
     exporter allocates is filed under that process: a pid handed on draws two
-    process tracks, two thread tracks, two loss tracks, two counter groups and
+    process tracks, two interpreter tracks, two loss tracks, two counter groups and
     two of each counter (ADR-0011)."""
 
     FIRST = interpreter_track(TARGET_PID, 0, 1)
@@ -351,11 +351,11 @@ class TestTwoProcessesOnOnePidGetTheirOwnRows:
 
         assert not state.has_process_descriptor(proc(TARGET_PID, 2))
 
-    def test_the_thread_track_gets_a_uuid_per_process(self, state: PerfettoTrackState) -> None:
+    def test_the_interpreter_track_gets_a_uuid_per_process(self, state: PerfettoTrackState) -> None:
 
         assert state.get_track_uuid(self.SECOND) != state.get_track_uuid(self.FIRST)
 
-    def test_the_thread_descriptor_goes_out_per_process(self, state: PerfettoTrackState) -> None:
+    def test_the_interpreter_descriptor_goes_out_per_process(self, state: PerfettoTrackState) -> None:
         state.mark_track(self.FIRST)
 
         assert not state.has_track(self.SECOND)

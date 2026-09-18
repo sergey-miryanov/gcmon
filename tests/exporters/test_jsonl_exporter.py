@@ -89,7 +89,9 @@ class TestJsonlExporter:
         for event in events:
             assert event[PID] == 12345
 
-    def test_close_flushes_events(self, mock_stats_item: GCStatsInfo, jsonl_exporter: ExporterFactory) -> None:
+    def test_close_writes_a_file_that_is_not_empty(
+        self, mock_stats_item: GCStatsInfo, jsonl_exporter: ExporterFactory
+    ) -> None:
         exporter, path = jsonl_exporter(threshold=1000)
         exporter.add_event(proc(DEFAULT_PID), mock_stats_item)
 
@@ -98,7 +100,7 @@ class TestJsonlExporter:
         assert path.exists()
         assert path.read_text() != ""
 
-    def test_close_flushes_remaining_events(
+    def test_close_writes_every_event_still_buffered(
         self, mock_stats_item: GCStatsInfo, jsonl_exporter: ExporterFactory, read_jsonl: JsonlFileReader
     ) -> None:
         exporter, path = jsonl_exporter(threshold=100)
@@ -331,7 +333,7 @@ class TestJsonlExporterInstantEvents:
             ts=instant.ts,
         )
 
-    def test_add_instant_event_flushes_at_threshold(
+    def test_instant_events_past_the_threshold_stay_buffered(
         self, jsonl_exporter: ExporterFactory, read_jsonl: JsonlFileReader
     ) -> None:
         exporter, path = jsonl_exporter(threshold=3)

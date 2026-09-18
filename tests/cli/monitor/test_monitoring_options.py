@@ -514,7 +514,7 @@ class TestRateArgument:
         assert parser.parse_args(["--rate", "0.001"]).rate == 0.001
 
     @pytest.mark.parametrize("value", ["1e-3", "1E-3", "0", "-0.1", "0.0000000001", "0.0005", "inf"])
-    def test_a_value_the_loop_cannot_hold_exits(self, parser: ArgumentParser, value: str) -> None:
+    def test_a_value_that_is_not_a_rate_exits(self, parser: ArgumentParser, value: str) -> None:
         with pytest.raises(SystemExit):
             parser.parse_args(["--rate", value])
 

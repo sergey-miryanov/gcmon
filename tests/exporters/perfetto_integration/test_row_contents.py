@@ -152,7 +152,7 @@ class TestSliceArgs:
         missing = set(expected_sub_slices) - slice_names
         assert not missing, f"missing sub-slices: {missing}"
 
-    def test_deduce_unreachable_slice_args_has_candidates(
+    def test_deduce_unreachable_carries_candidates_and_the_pause_the_sizes(
         self,
         trace_processor: TraceProcessor,
     ) -> None:
@@ -502,7 +502,7 @@ class TestCmdlineEncoding:
         assert self._description(trace_processor_with_cmdline, _DEFAULT_ROW_NAME) == _FAKE_CMDLINE_JOINED
         assert self._description(trace_processor_with_cmdline, _SECOND_ROW_NAME) == _FAKE_CMDLINE_JOINED
 
-    def test_cmdline_none_for_unknown_pid(
+    def test_a_process_with_no_cmdline_gets_no_description(
         self,
         trace_processor: TraceProcessor,
     ) -> None:

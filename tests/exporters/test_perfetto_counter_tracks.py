@@ -216,7 +216,7 @@ class TestRssCounterTrack:
         ]
         assert len({td.uuid for td in rss}) == 2
 
-    def test_rss_renders_at_top_level(self, state: PerfettoTrackState) -> None:
+    def test_rss_sits_beside_the_gc_metrics_group_and_not_in_it(self, state: PerfettoTrackState) -> None:
         """RSS is a top-level counter metric, parented directly to the
         process track, NOT inside the GC Metrics group."""
         events: list[TraceEvent] = [

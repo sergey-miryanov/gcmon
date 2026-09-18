@@ -251,7 +251,7 @@ class TestTheWalksCanFail:
 
         assert [depth for _name, _s, _e, depth in row] == [0, 0]
 
-    def test_the_walks_are_reading_something(self) -> None:
+    def test_the_live_walk_is_reading_something(self) -> None:
         """Both resolvers return an empty row for a track that carries no
         slices, so an empty walk is indistinguishable from a clean one."""
         row = loss_slices(ingest(*three_generations()))[LOSS_ROW]

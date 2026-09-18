@@ -114,5 +114,5 @@ DOCUMENTED: tuple[tuple[str, Path], ...] = (
     DOCUMENTED,
     ids=[f"{name}:{page.stem}" for name, page in DOCUMENTED],
 )
-def test_the_page_names_every_name_gcmon_draws(name: str, page: Path) -> None:
+def test_the_page_names_every_name_gcmon_writes(name: str, page: Path) -> None:
     assert f"`{name}`" in page.read_text(encoding=ENCODING), f"gcmon writes {name!r} and {page.name} does not name it"

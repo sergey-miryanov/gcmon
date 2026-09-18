@@ -1276,7 +1276,7 @@ class TestCloseoutAtFinalize:
         assert len(end_packets) == 1
         assert end_packets[0].timestamp == 2_000
 
-    def test_closeout_emitted_only_at_finalize(self, state: PerfettoTrackState) -> None:
+    def test_two_batches_still_leave_the_closeout_to_finalize(self, state: PerfettoTrackState) -> None:
         """Across two ``convert_trace_events_to_perfetto`` calls for the
         same pid, the convert call never emits a slice END on the
         ``Processes`` track (the END is the caller's job, and
