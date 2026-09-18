@@ -991,6 +991,17 @@ class TestARetirementIsReported:
 
         assert [process.pid for process in exporter.retired] == [999]
 
+    def test_several_leaving_in_one_tick_are_reported_in_pid_order(self, exporter: MockExporter) -> None:
+        """Not in the order they were first polled, which is the order the
+        child listing happened to give."""
+        _drive(
+            _monitor(exporter),
+            listings=[[999, 555, 777], []],
+            rings={12345: [_ring(1), _ring(1)], 999: [_ring(1)], 555: [_ring(1)], 777: [_ring(1)]},
+        )
+
+        assert [process.pid for process in exporter.retired] == [555, 777, 999]
+
     def test_a_pid_the_policy_gave_up_on_is_reported(self, exporter: MockExporter) -> None:
         factory = Mock(side_effect=[_policy(True, True), _policy(True, False)])
         _drive(
