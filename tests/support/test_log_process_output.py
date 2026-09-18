@@ -1,5 +1,6 @@
 """Tests for log_process_output utility function."""
 
+import signal
 from collections.abc import Generator
 from unittest.mock import Mock, patch
 
@@ -60,3 +61,19 @@ class TestLogProcessOutput:
         mock_process.returncode = 1
         log_process_output(process=mock_process, stdout_data=b"\xff\xfe\x00\x01")
         mock_logger.warning.assert_called()
+
+    def test_a_signal_exit_is_not_a_warning(self, mock_logger: Mock, mock_process: Mock) -> None:
+        """Ctrl+C is how a monitored run is meant to end."""
+        mock_process.returncode = -signal.SIGINT
+
+        log_process_output(process=mock_process, stdout_data=b"interrupted")
+
+        mock_logger.warning.assert_not_called()
+        assert mock_logger.debug.call_args[0][1:] == (mock_process.pid, "terminated by signal", "interrupted")
+
+    def test_a_failure_that_printed_nothing_is_not_logged(self, mock_logger: Mock, mock_process: Mock) -> None:
+        mock_process.returncode = 1
+
+        log_process_output(process=mock_process, stdout_data=b"  \n")
+
+        mock_logger.warning.assert_not_called()
