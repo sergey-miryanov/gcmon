@@ -472,9 +472,13 @@ class StreamingStats:
         A ring the bound declined holds none and is absent;
         :meth:`untracked_rings` counts those.
         """
+        return [key for key, _ in self.ring_metrics()]
+
+    def ring_metrics(self) -> list[tuple[RingKey, TStatsData]]:
+        """The same rings in the same order, each with the metrics it holds."""
         return sorted(
-            (key for key, ring in self._keyed_rings() if ring.metrics is not None),
-            key=lambda key: (key[0].pid, key[0].pid_epoch, key[1]),
+            ((key, ring.metrics) for key, ring in self._keyed_rings() if ring.metrics is not None),
+            key=lambda entry: (entry[0][0].pid, entry[0][0].pid_epoch, entry[0][1]),
         )
 
     def untracked_rings(self) -> int:

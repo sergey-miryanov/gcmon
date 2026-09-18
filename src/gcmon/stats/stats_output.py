@@ -225,13 +225,9 @@ def print_stats(stats: StreamingStats, view: StatsView, table_format: TableForma
                 first = False
             has_rows = True
 
-    rings = stats.rings() if view is StatsView.FULL else []
-    for process, iid in rings:
+    rings = stats.ring_metrics() if view is StatsView.FULL else []
+    for (process, iid), ring_data in rings:
         all_rows.append(_SEP_GROUP)
-        ring_data = stats.get_ring_stats(process, iid)
-        if ring_data is None:
-            continue
-
         ring_totals = {gen: stats.pause_totals(process, iid, gen) for gen in stats.GENS}
         first = True
         has_rows = False

@@ -426,7 +426,8 @@ def convert_trace_events_to_perfetto(
                 )
             )
 
-        elif isinstance(event, Counter):
+        else:
+            assert isinstance(event, Counter)
             ctr_uuid, desc_bytes = _emit_counter_track_descriptor(
                 event.track,
                 event.metric,

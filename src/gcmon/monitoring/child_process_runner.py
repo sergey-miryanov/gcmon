@@ -250,7 +250,7 @@ class ProcessStdoutReader:
             return
 
         for line in iter(pipe.readline, b""):
-            if line:
-                print(line.decode(ENCODING, errors="replace"), end="", flush=True)
+            assert line, "iter() stops on the empty line"
+            print(line.decode(ENCODING, errors="replace"), end="", flush=True)
             if self._stop_event.is_set():
                 break

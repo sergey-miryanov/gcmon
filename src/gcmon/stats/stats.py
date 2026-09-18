@@ -78,8 +78,8 @@ class Stats:
             return self._percentiles.get(p, 0.0)
         if self._sketch is not None and self._count >= self.MAX_BUFFER_LEN:
             q = self._sketch.get_quantile_value(p / 100.0)
-            if q is not None:
-                return q
+            assert q is not None, "None is an empty sketch, and this one is full"
+            return q
         return get_quantile_value(sorted(self._data), p)
 
     def count(self) -> int:

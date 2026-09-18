@@ -128,14 +128,8 @@ class ControlServer:
             if conn is None:
                 break
 
-            try:
-                with self._lock:
-                    self._connections.add(conn)
-            except Exception:
-                with contextlib.suppress(Exception):
-                    conn.close()
-                logger.debug("Failed to add connection, continuing")
-                continue
+            with self._lock:
+                self._connections.add(conn)
 
         logger.debug("Stopped accept loop")
 

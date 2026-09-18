@@ -96,7 +96,8 @@ def normalize_jsonl_timestamps(items: Mapping[int, Sequence[TItem]]) -> None:
         for item in pid_items:
             if is_instant(item):
                 timestamps.append(item.ts)
-            elif is_loss(item) or is_gc_stats(item):
+            else:
+                assert is_loss(item) or is_gc_stats(item)
                 timestamps.append(item.ts_start)
         if not timestamps:
             continue
@@ -109,7 +110,8 @@ def normalize_jsonl_timestamps(items: Mapping[int, Sequence[TItem]]) -> None:
             elif is_loss(item):
                 item.ts_start -= min_ts
                 item.ts_stop -= min_ts
-            elif is_gc_stats(item):
+            else:
+                assert is_gc_stats(item)
                 item.ts_start -= min_ts
                 item.ts_stop -= min_ts
                 if has_mark_alive(item):

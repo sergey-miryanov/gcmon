@@ -92,8 +92,7 @@ class JsonlExporter(EventsExporter):
                 self._flush(events)
 
     def _flush(self, events: list[JsonlRecord]) -> None:
-        if not events:
-            return
+        assert events, "every caller checks first"
         with self._open_writer() as w:
             for event in events:
                 w.write(json.dumps(event) + "\n")
