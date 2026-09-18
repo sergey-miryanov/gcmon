@@ -805,10 +805,13 @@ class TestControlServerClose:
     def test_close_stops_accepting(self) -> None:
         server: ControlServer = self._make_server()
         server.start()
+        address = server.address
 
         server.close()
 
         assert not server.is_running()
+        with pytest.raises(OSError):
+            Client(address)
 
     def test_close_clears_enabled(self) -> None:
         server: ControlServer = self._make_server()
