@@ -117,5 +117,7 @@ def test_no_module_respells_a_word_the_vocabulary_owns(path: Path) -> None:
     watched = _watched()
     key = str(path.relative_to(ROOT)).replace("\\", "/")
     allowed = ALLOWED.get(key, frozenset())
+
     offenders = sorted(_literals(path) & watched.keys() - allowed)
+
     assert offenders == [], "\n".join(f"{key} spells {value!r}; import {watched[value]}" for value in offenders)

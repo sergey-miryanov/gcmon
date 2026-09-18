@@ -86,6 +86,7 @@ class TestTheIndexAgreesWithTheHeaders:
 
     def test_each_row_matches_its_record(self) -> None:
         rows = index_modules()
+
         for path in RECORDS:
             assert rows[path.name[:4]] == ", ".join(modules_of(path)), path.name
 

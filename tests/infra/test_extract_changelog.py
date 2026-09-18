@@ -101,6 +101,7 @@ class TestMain:
     ) -> None:
         monkeypatch.setattr("sys.argv", ["extract_changelog.py"])
         monkeypatch.delenv("GITHUB_OUTPUT", raising=False)
+
         rc = extract_changelog.main()
 
         assert rc == 0
@@ -114,6 +115,7 @@ class TestMain:
     ) -> None:
         monkeypatch.setattr("sys.argv", ["extract_changelog.py", "v0.1.0"])
         monkeypatch.delenv("GITHUB_OUTPUT", raising=False)
+
         rc = extract_changelog.main()
 
         assert rc == 0
@@ -132,6 +134,7 @@ class TestMainWritesToGitHubOutput:
         out_file.write_text("", encoding=ENCODING)
         monkeypatch.setenv("GITHUB_OUTPUT", str(out_file))
         monkeypatch.setattr("sys.argv", ["extract_changelog.py"])
+
         rc = extract_changelog.main()
 
         assert rc == 0
@@ -152,6 +155,7 @@ class TestMainWritesToGitHubOutput:
         out_file.write_text("preface=true\n", encoding=ENCODING)
         monkeypatch.setenv("GITHUB_OUTPUT", str(out_file))
         monkeypatch.setattr("sys.argv", ["extract_changelog.py"])
+
         rc = extract_changelog.main()
 
         assert rc == 0
@@ -171,6 +175,7 @@ class TestMainWritesToGitHubOutput:
         out_file.write_text("", encoding=ENCODING)
         monkeypatch.setenv("GITHUB_OUTPUT", str(out_file))
         monkeypatch.setattr("sys.argv", ["extract_changelog.py"])
+
         rc = extract_changelog.main()
 
         assert rc == 0
@@ -186,6 +191,7 @@ class TestMainWritesToGitHubOutput:
     ) -> None:
         monkeypatch.setattr("sys.argv", ["extract_changelog.py", "v9.9.9"])
         monkeypatch.delenv("GITHUB_OUTPUT", raising=False)
+
         rc = extract_changelog.main()
 
         assert rc == 1
@@ -203,5 +209,7 @@ class TestMainWritesToGitHubOutput:
         out_file.write_text("", encoding=ENCODING)
         monkeypatch.setenv("GITHUB_OUTPUT", str(out_file))
         monkeypatch.setattr("sys.argv", ["extract_changelog.py", "v9.9.9"])
+
         extract_changelog.main()
+
         assert out_file.read_text(encoding=ENCODING) == ""

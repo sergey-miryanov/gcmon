@@ -86,4 +86,5 @@ def test_every_env_constant_is_either_documented_or_named_unread() -> None:
         if name.startswith("ENV_") and name != "ENV_PREFIX" and isinstance(value, str)
     }
     covered = {name for name, _ in DOCUMENTED} | UNREAD
+
     assert defined - covered == set(), "add it to DOCUMENTED, or to UNREAD with a reason"
