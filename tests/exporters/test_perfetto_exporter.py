@@ -354,19 +354,18 @@ class TestPerfettoExporter:
         exporter = PerfettoExporter(output_path=tmp_path / "test.pb")
         item = pause_item()
         exporter.add_event(proc(DEFAULT_PID), item)
+
         exporter.close()
 
-        trace_data = (tmp_path / "test.pb").read_bytes()
-        assert len(trace_data) > 0
-
-        packets = _read_trace_packets(tmp_path / "test.pb")
-        for packet in packets:
-            if packet.HasField("track_descriptor"):
-                td = packet.track_descriptor
-                assert not td.HasField("description"), "description should be absent when the process has no cmdline"
-                if td.HasField("process"):
-                    descriptor = td.process
-                    assert len(descriptor.cmdline) == 0, "cmdline should be absent when the process has none"
+        described = [
+            packet.track_descriptor
+            for packet in _read_trace_packets(tmp_path / "test.pb")
+            if packet.HasField("track_descriptor")
+        ]
+        processes = [td.process for td in described if td.HasField("process")]
+        assert len(processes) == 1
+        assert list(processes[0].cmdline) == []
+        assert [td.name for td in described if td.HasField("description")] == []
 
     def test_slice_begin_end_matched(self, perfetto_exporter: ExporterFactory) -> None:
         exporter, path = perfetto_exporter()
