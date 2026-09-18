@@ -193,13 +193,15 @@ class TestRssCounterTrack:
             _rss_sample(),
             Counter(process_track(200), RSS, RSS, 2_000, 8192),
         ]
-        _, _ = convert_trace_events_to_perfetto(events, state, sequence_id=1)
-        for pid in (100, 200):
-            ctr_key = (process_track(pid), RSS)
-            assert state.has_counter_track(*ctr_key), f"no RSS track for pid {pid}"
-        # Each RSS counter track is parented to the respective process
-        # track, and process tracks have distinct UUIDs.
-        assert state.get_process_track_uuid(proc(TARGET_PID)) != state.get_process_track_uuid(proc(200))
+
+        descriptors, _ = convert_trace_events_to_perfetto(events, state, sequence_id=1)
+
+        rss = [td for td in map(parse_track_descriptor, descriptors) if td and td.name == RSS]
+        assert [td.parent_uuid for td in rss] == [
+            state.get_process_track_uuid(proc(TARGET_PID)),
+            state.get_process_track_uuid(proc(200)),
+        ]
+        assert len({td.uuid for td in rss}) == 2
 
     def test_rss_renders_at_top_level(self, state: PerfettoTrackState) -> None:
         """RSS is a top-level counter metric, parented directly to the
