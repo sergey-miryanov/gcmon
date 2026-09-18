@@ -1,3 +1,4 @@
+import io
 import os
 import subprocess
 import sys
@@ -300,3 +301,39 @@ class TestProcessStdoutReader:
         reader.start()
         reader.stop()
         assert not reader._thread.is_alive()
+
+    def _reader_over(self, stdout: io.BytesIO | None) -> ProcessStdoutReader:
+        process = Mock(spec=subprocess.Popen)
+        process.stdout = stdout
+        return ProcessStdoutReader(process)
+
+    def test_it_relays_every_line_until_the_pipe_closes(self, capsys: pytest.CaptureFixture[str]) -> None:
+        reader = self._reader_over(io.BytesIO(b"one\ntwo\n"))
+
+        reader._run()
+
+        assert capsys.readouterr().out == "one\ntwo\n"
+
+    def test_bytes_that_are_not_text_are_replaced(self, capsys: pytest.CaptureFixture[str]) -> None:
+        """The target writes what it likes, and the relay thread has nobody
+        to raise to."""
+        reader = self._reader_over(io.BytesIO(b"\xff\n"))
+
+        reader._run()
+
+        assert capsys.readouterr().out == "�\n"
+
+    def test_a_stop_ends_the_relay_after_the_line_in_hand(self, capsys: pytest.CaptureFixture[str]) -> None:
+        reader = self._reader_over(io.BytesIO(b"one\ntwo\n"))
+        reader._stop_event.set()
+
+        reader._run()
+
+        assert capsys.readouterr().out == "one\n"
+
+    def test_a_process_with_no_pipe_relays_nothing(self, capsys: pytest.CaptureFixture[str]) -> None:
+        reader = self._reader_over(None)
+
+        reader._run()
+
+        assert capsys.readouterr().out == ""
