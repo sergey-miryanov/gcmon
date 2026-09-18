@@ -1008,7 +1008,7 @@ class TestLossTrackDescriptor:
             state.get_or_create_interpreter_group_track_uuid(proc(TARGET_PID), 1),
         ]
 
-    def test_it_hangs_off_the_interpreter_group(self, state: PerfettoTrackState) -> None:
+    def test_it_parents_to_the_interpreter_group(self, state: PerfettoTrackState) -> None:
 
         found = self._loss_descriptors(self._convert([self._msg()], state))
 
