@@ -93,11 +93,8 @@ class TestControlServerInit:
         assert control_server.is_enabled(0) is True
 
     def test_init_with_custom_name(self) -> None:
-        server = ControlServer(MagicMock(), ProcessRegistry(), address="my-name")
-        try:
+        with ControlServer(MagicMock(), ProcessRegistry(), address="my-name") as server:
             assert "gcmon-my-name" in server.address
-        finally:
-            server.close()
 
     def test_init_listener_not_none(self, server_not_started: ControlServer) -> None:
         assert server_not_started._listener is not None
@@ -274,9 +271,8 @@ class TestControlServerExporter:
         from tests.helpers import MockExporter
 
         exporter = MockExporter()
-        server = ControlServer(exporter, monitored(42))
-        server.start()
-        try:
+        with ControlServer(exporter, monitored(42)) as server:
+            server.start()
             _send_msg(server, MSG_STOP, 42)
             assert _wait_msg(server, 42, False)
 
@@ -285,17 +281,14 @@ class TestControlServerExporter:
             assert pid == 42
             assert msg.name == STOP_EVENT
             assert msg.type == "i"
-        finally:
-            server.close()
 
     def test_instant_keeps_the_timestamp_the_client_captured(self) -> None:
         from gcmon.control.control_client import ControlClient
         from tests.helpers import MockExporter
 
         exporter = MockExporter()
-        server = ControlServer(exporter, monitored(os.getpid()))
-        server.start()
-        try:
+        with ControlServer(exporter, monitored(os.getpid())) as server:
+            server.start()
             captured = time.monotonic_ns() - 5_000_000_000
             with ControlClient(server.address) as client:
                 client.instant_msg("gcmon:bm_x:1:begin", ts=captured)
@@ -307,16 +300,13 @@ class TestControlServerExporter:
             _, msg = exporter.instant_events[0]
             assert msg.name == "gcmon:bm_x:1:begin"
             assert msg.ts == captured
-        finally:
-            server.close()
 
     def test_exporter_receives_multiple_events(self) -> None:
         from tests.helpers import MockExporter
 
         exporter = MockExporter()
-        server = ControlServer(exporter, monitored(1))
-        server.start()
-        try:
+        with ControlServer(exporter, monitored(1)) as server:
+            server.start()
             _send_msg(server, MSG_STOP, 1)
             assert _wait_msg(server, 1, False)
             _send_msg(server, MSG_START, 1)
@@ -325,8 +315,6 @@ class TestControlServerExporter:
             assert len(exporter.instant_events) == 2
             assert exporter.instant_events[0][1].name == STOP_EVENT
             assert exporter.instant_events[1][1].name == START_EVENT
-        finally:
-            server.close()
 
 
 # =============================================================================
