@@ -2,6 +2,7 @@ import importlib.metadata
 import subprocess
 import sys
 import types
+from collections.abc import Generator
 from pathlib import Path
 
 import msgspec
@@ -30,12 +31,17 @@ def cli_module() -> types.ModuleType:
 
 class TestSetupLogging:
     @pytest.fixture(autouse=True)
-    def reset_logging(self) -> None:
+    def reset_logging(self) -> Generator[None]:
+        """`_setup_logging` touches the gcmon logger alone, so that is all
+        this empties, and it hands back what it found."""
         import logging
 
-        for handler in logging.root.handlers[:]:
-            logging.root.removeHandler(handler)
-        logging.getLogger(PROGRAM_NAME).handlers.clear()
+        logger = logging.getLogger(PROGRAM_NAME)
+        handlers, level = logger.handlers[:], logger.level
+        logger.handlers.clear()
+        yield
+        logger.handlers[:] = handlers
+        logger.setLevel(level)
 
     @pytest.mark.parametrize(
         "verbose_count, expected_level",
