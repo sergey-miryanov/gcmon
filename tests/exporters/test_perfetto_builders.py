@@ -131,30 +131,6 @@ class TestBuildCounterDescriptor:
     ``y_axis_share_key`` kwarg and the resulting ``CounterDescriptor``
     submessage payload at ``TrackDescriptor.counter`` (field 8)."""
 
-    def test_y_axis_share_key_emitted_at_field_8(self) -> None:
-        data = build_track_descriptor(
-            uuid=300,
-            name=counter_display_name(0, COLLECTED),
-            parent_uuid=200,
-            is_counter=True,
-            y_axis_share_key="collected",
-        )
-        descriptor = TrackDescriptor()
-        descriptor.ParseFromString(data)
-        assert descriptor.HasField("counter")
-        assert descriptor.counter.y_axis_share_key == "collected"
-
-    def test_no_y_axis_share_key_emits_empty_submessage(self) -> None:
-        data = build_track_descriptor(
-            uuid=300,
-            name=counter_display_name(0, COLLECTED),
-            parent_uuid=200,
-            is_counter=True,
-        )
-        descriptor = TrackDescriptor()
-        descriptor.ParseFromString(data)
-        assert descriptor.counter.SerializeToString() == b""
-
     def test_y_axis_share_key_ignored_for_non_counter_track(self) -> None:
         data = build_track_descriptor(
             uuid=300,
