@@ -1194,12 +1194,7 @@ class TestCloseoutAtFinalize:
         caller's job (see ``finalize_perfetto_packets``)."""
         item = pause_item()
         gc_events = convert_item_to_trace_format(proc(TARGET_PID), item)
-        meta: list[TraceEvent] = []
-        _, packets = convert_trace_events_to_perfetto(
-            meta + gc_events,
-            state,
-            sequence_id=1,
-        )
+        _, packets = convert_trace_events_to_perfetto(gc_events, state, sequence_id=1)
         lifetime_uuid = state.get_or_create_process_lifetime_track_uuid()
         end_packets: list[TracePacket] = []
         for p in packets:

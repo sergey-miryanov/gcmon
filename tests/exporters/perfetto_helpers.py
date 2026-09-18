@@ -18,7 +18,6 @@ from gcmon.exporters.perfetto_track_state import PerfettoTrackState, ProcessSpan
 from gcmon.exporters.trace_converter import convert_item_to_trace_format
 from gcmon.model.data import GCStatsInfo
 from gcmon.model.process import Process
-from gcmon.model.trace_event import TraceEvent
 from tests.helpers import create_mock_stats_item, proc
 
 pause_item = functools.partial(
@@ -64,10 +63,8 @@ def convert_item(
     Unlike ``convert_items``, this finalizes; a test that wants to see
     what convert emitted on its own wants that one instead.
     """
-    gc_events = convert_item_to_trace_format(process, item)
-    meta: list[TraceEvent] = []
     descriptors, packets = convert_trace_events_to_perfetto(
-        meta + gc_events,
+        convert_item_to_trace_format(process, item),
         state,
         sequence_id,
     )
@@ -90,9 +87,8 @@ def convert_items(
     descriptors: list[bytes] = []
     packets: list[bytes] = []
     for process, item in items:
-        meta: list[TraceEvent] = []
         batch_desc, batch_packets = convert_trace_events_to_perfetto(
-            meta + convert_item_to_trace_format(process, item),
+            convert_item_to_trace_format(process, item),
             state,
             sequence_id,
         )
