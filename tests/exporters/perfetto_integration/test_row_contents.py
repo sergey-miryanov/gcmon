@@ -624,7 +624,8 @@ class TestTwoInterpretersHeapSizes:
     """
 
     @pytest.fixture(scope="class")
-    def two_interpreters(self, tmp_path_factory: pytest.TempPathFactory) -> Iterator[TraceProcessor]:
+    @classmethod
+    def two_interpreters(cls, tmp_path_factory: pytest.TempPathFactory) -> Iterator[TraceProcessor]:
         path = tmp_path_factory.mktemp("two_iids") / "trace.pb"
         exporter = PerfettoExporter(output_path=path, flush_threshold=1000)
         for iid, heap_size in ((0, 1_000), (1, 9_000)):

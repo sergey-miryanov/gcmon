@@ -505,12 +505,14 @@ class TestATornRead:
     SKEW_MS = 20
 
     @pytest.fixture(scope="class")
-    def torn(self) -> Replay:
-        return replay(self.INTERVAL_MS, skew_ms=self.SKEW_MS)
+    @classmethod
+    def torn(cls) -> Replay:
+        return replay(cls.INTERVAL_MS, skew_ms=cls.SKEW_MS)
 
     @pytest.fixture(scope="class")
-    def untorn(self) -> Replay:
-        return replay(self.INTERVAL_MS)
+    @classmethod
+    def untorn(cls) -> Replay:
+        return replay(cls.INTERVAL_MS)
 
     def test_the_same_run_read_whole_draws_a_span(self, untorn: Replay) -> None:
         """The control that makes this a test of the tear and not of the poll
