@@ -306,7 +306,6 @@ class TestCmdRunUnit:
 
         factory_fn = mock_loop.call_args[1]["factory"]
         runner = factory_fn("test-addr")
-
         mock_runner_cls.assert_called_once_with(
             target="timeit",
             is_module=True,
@@ -326,7 +325,6 @@ class TestCmdRunUnit:
 
         factory_fn = mock_loop.call_args[1]["factory"]
         runner = factory_fn("test-addr")
-
         mock_runner_cls.assert_called_once_with(
             target="myscript.py",
             is_module=False,

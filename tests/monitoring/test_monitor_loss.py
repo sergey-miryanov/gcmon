@@ -242,8 +242,8 @@ class TestReconstructionAgainstGroundTruth:
         clock mismatch between ``duration`` and the timestamps, and a wrong
         gap in a single check."""
         ingested = observe_all(ring_polls(build_run(400), capacity, per_tick))
-        acc = ingested[(0, 0)]
 
+        acc = ingested[(0, 0)]
         lost = sum(gap.lost_pause_ns for gap in ingested.gaps_for((0, 0)))
         assert acc.exact_pause_ns == acc.sampled_pause_ns + lost
 
@@ -258,8 +258,8 @@ class TestReconstructionAgainstGroundTruth:
 
     def test_lost_count_matches_the_gaps(self) -> None:
         ingested = observe_all(ring_polls(build_run(400), 11, 87))
-        acc = ingested[(0, 0)]
 
+        acc = ingested[(0, 0)]
         assert acc.exact_count - acc.sampled_count == sum(gap.lost_count for gap in ingested.gaps_for((0, 0)))
 
 
@@ -571,7 +571,6 @@ class TestTheRingSpanIsPartitioned:
 
         acc = captured[(0, 0)]
         gap = captured.gaps_for((0, 0))[0]
-
         assert (gap.lost_from, gap.lost_count) == (477, 76)
         assert charges(captured, (0, 0)) == Counter(range(acc.first_collections, acc.last_collections + 1))
 

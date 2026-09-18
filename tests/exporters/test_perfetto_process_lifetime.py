@@ -649,8 +649,8 @@ class TestProcessLifetimeSlices:
             state,
             sequence_id=1,
         )
-        lifetime_uuid = state.get_or_create_process_lifetime_track_uuid()
 
+        lifetime_uuid = state.get_or_create_process_lifetime_track_uuid()
         assert lifetime_slices(convert_packets, lifetime_uuid) == [], (
             "convert passes must emit no Processes-track slices"
         )
@@ -704,8 +704,8 @@ class TestProcessLifetimeSlices:
         )
 
         _, _, closeout = convert_items([(first, item1), (second, item2)], state, sequence_id=1)
-        lifetime_uuid = state.get_or_create_process_lifetime_track_uuid()
 
+        lifetime_uuid = state.get_or_create_process_lifetime_track_uuid()
         assert lifetime_slices(closeout, lifetime_uuid) == [
             (
                 1_000,
@@ -762,8 +762,8 @@ class TestProcessLifetimeSlices:
             state,
             sequence_id=1,
         )
-        lifetime_uuid = state.get_or_create_process_lifetime_track_uuid()
 
+        lifetime_uuid = state.get_or_create_process_lifetime_track_uuid()
         assert lifetime_slices(convert_packets, lifetime_uuid) == []
         # One pair only, spanning the first batch's ts_start to the
         # second batch's ts_stop.
@@ -825,8 +825,8 @@ class TestAQuietProcessGetsARow:
         """As complete as any other process's: the monitor publishes a command
         line for every process it creates, so nothing here is second class."""
         state, packets = self._quiet_only()
-        descriptors = _process_descriptors(packets)
 
+        descriptors = _process_descriptors(packets)
         assert list(descriptors) == [TARGET_ROW_NAME]
         described = descriptors[TARGET_ROW_NAME]
         assert described.process.pid == state.get_row_pid(self.QUIET)
@@ -838,8 +838,8 @@ class TestAQuietProcessGetsARow:
         """The row is worth drawing because of what is on it: one bar over the
         interval gcmon watched, and nothing under it."""
         state, packets = self._quiet_only()
-        row_uuid = state.get_process_track_uuid(self.QUIET)
 
+        row_uuid = state.get_process_track_uuid(self.QUIET)
         assert _row_slices(packets, row_uuid) == [
             (500, TrackEventType.SLICE_BEGIN, _PROCESS_ROW_SLICE_NAME),
             (5_000, TrackEventType.SLICE_END, ""),
@@ -860,8 +860,8 @@ class TestAQuietProcessGetsARow:
         all along and had no descriptor to spend it on, so the drawn rows ran
         0, 2, 3."""
         _state, descriptors, closeout = self._quiet_and_busy()
-        described = _process_descriptors([*descriptors, *closeout])
 
+        described = _process_descriptors([*descriptors, *closeout])
         assert {name: td.sibling_order_rank for name, td in described.items()} == {
             OTHER_ROW_NAME: 0,
             TARGET_ROW_NAME: 1,
@@ -925,13 +925,13 @@ class TestARetiredProcessRowGoesOutEarly:
             state.update_process_lifetime(self.LATE, ts)
 
         closeout = finalize_perfetto_packets(state, sequence_id=1)
+
         lifetime_uuid = state.get_or_create_process_lifetime_track_uuid()
         begins = [
             (ts, name, annotations)
             for ts, event_type, name, annotations in lifetime_slices(closeout, lifetime_uuid)
             if event_type == TrackEventType.SLICE_BEGIN
         ]
-
         assert [(ts, name) for ts, name, _ in begins] == [
             (500, TARGET_ROW_NAME),
             (2_000, OTHER_ROW_NAME),
@@ -1071,8 +1071,8 @@ class TestWhatCloseAlreadyKnows:
     def test_the_shared_slice_does_not_carry_interpreters(self) -> None:
         """One count per process, on the row that is the process."""
         state, closeout = self._read_from(0, 1)
-        lifetime_uuid = state.get_or_create_process_lifetime_track_uuid()
 
+        lifetime_uuid = state.get_or_create_process_lifetime_track_uuid()
         assert "interpreters" not in self._begin(closeout, lifetime_uuid)
 
 

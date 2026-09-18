@@ -983,10 +983,8 @@ class TestTheRowsInsideAnInterpreterGroupAreRanked:
         descriptors, _ = convert_trace_events_to_perfetto(self._events(), state, sequence_id=1)
 
         parsed = [td for td in (parse_track_descriptor(d) for d in descriptors) if td is not None]
-
         group_uuid = state.get_or_create_interpreter_group_track_uuid(proc(TARGET_PID), 0)
         rows = sorted((td for td in parsed if td.parent_uuid == group_uuid), key=lambda td: td.sibling_order_rank)
-
         assert [td.name for td in rows] == [_PAUSE_TRACK_NAME, _LOSS_TRACK_NAME, HEAP_SIZE, _COUNTER_GROUP_NAME]
         assert [td.sibling_order_rank for td in rows] == [0, 1, 2, 3], "ranks must be distinct for the order to hold"
 

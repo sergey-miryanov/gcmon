@@ -87,7 +87,6 @@ class TestStdoutExporter:
 
         captured = capsys.readouterr()
         lines = captured.out.strip().split("\n")
-
         # Should have 3 lines (one per event)
         assert len(lines) == 3
 
@@ -154,7 +153,6 @@ class TestStdoutExporter:
 
         captured = capsys.readouterr()
         data: dict[str, Any] = json.loads(captured.out.strip())
-
         assert data[IID] == 42
 
     def test_pid_in_output(self, mock_stats_item: TGCStatsInfo, capsys: pytest.CaptureFixture[str]) -> None:
@@ -166,7 +164,6 @@ class TestStdoutExporter:
 
         captured = capsys.readouterr()
         data: dict[str, Any] = json.loads(captured.out.strip())
-
         assert data[PID] == 99999
 
 
