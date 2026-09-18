@@ -45,7 +45,6 @@ from gcmon.cli.monitor._env import (
     ENV_VERBOSE,
 )
 from gcmon.control.control_server import CONTROL_ADDRESS_ENV
-from gcmon.model.names import NAME
 from gcmon.pyperf.hook import ENV_PYPERF_HOOK_CONTROL_TIMEOUT, ENV_PYPERF_HOOK_VERBOSE
 from gcmon.support.vocabulary import ENCODING
 
@@ -74,7 +73,7 @@ DOCUMENTED: tuple[tuple[str, Path], ...] = (
 UNREAD: frozenset[str] = frozenset({"GCMON_THREAD_ID", "GCMON_SERVER_HOST", "GCMON_SERVER_PORT"})
 
 
-@pytest.mark.parametrize((NAME, "page"), DOCUMENTED, ids=[name for name, _ in DOCUMENTED])
+@pytest.mark.parametrize(("name", "page"), DOCUMENTED, ids=[name for name, _ in DOCUMENTED])
 def test_the_page_names_every_variable_gcmon_reads(name: str, page: Path) -> None:
     assert f"`{name}`" in page.read_text(encoding=ENCODING), f"gcmon reads {name!r} and {page.name} does not name it"
 
