@@ -133,10 +133,12 @@ class TestProcessOrderingByFirstTs:
             state,
             sequence_id=1,
         )
-        ranks = {
-            pid: td.sibling_order_rank for pid in (1, 2) for td in _process_descriptor_fields_for_pid(descriptors, pid)
-        }
-        assert ranks == {1: 1, 2: 0}, f"unexpected rank assignment: {ranks}"
+        ranks = [
+            (pid, td.sibling_order_rank)
+            for pid in (1, 2)
+            for td in _process_descriptor_fields_for_pid(descriptors, pid)
+        ]
+        assert ranks == [(1, 1), (2, 0)], f"unexpected rank assignment: {ranks}"
 
     def test_sibling_order_rank_ties_broken_by_pid(self, state: PerfettoTrackState) -> None:
         """When two pids share the same first event ts, ranks follow
@@ -150,10 +152,12 @@ class TestProcessOrderingByFirstTs:
             state,
             sequence_id=1,
         )
-        ranks = {
-            pid: td.sibling_order_rank for pid in (1, 2) for td in _process_descriptor_fields_for_pid(descriptors, pid)
-        }
-        assert ranks == {1: 0, 2: 1}, f"expected pid-ascending tiebreak; got {ranks}"
+        ranks = [
+            (pid, td.sibling_order_rank)
+            for pid in (1, 2)
+            for td in _process_descriptor_fields_for_pid(descriptors, pid)
+        ]
+        assert ranks == [(1, 0), (2, 1)], f"expected pid-ascending tiebreak; got {ranks}"
 
     def test_rank_follows_the_first_event_and_not_the_descriptor_order(self, state: PerfettoTrackState) -> None:
         """The pid whose descriptor goes out first is not the pid that
@@ -168,12 +172,12 @@ class TestProcessOrderingByFirstTs:
             state,
             sequence_id=1,
         )
-        ranks = {
-            pid: td.sibling_order_rank
+        ranks = [
+            (pid, td.sibling_order_rank)
             for pid in (100, 200)
             for td in _process_descriptor_fields_for_pid(descriptors, pid)
-        }
-        assert ranks == {100: 1, 200: 0}, f"unexpected rank assignment: {ranks}"
+        ]
+        assert ranks == [(100, 1), (200, 0)], f"unexpected rank assignment: {ranks}"
 
     def test_sibling_order_rank_uses_ts_start_for_gc_stats(self, state: PerfettoTrackState) -> None:
         """For ``TGCStatsInfo`` events, the first event ts is the
@@ -188,10 +192,12 @@ class TestProcessOrderingByFirstTs:
             state,
             sequence_id=1,
         )
-        ranks = {
-            pid: td.sibling_order_rank for pid in (1, 2) for td in _process_descriptor_fields_for_pid(descriptors, pid)
-        }
-        assert ranks == {1: 1, 2: 0}, f"unexpected rank assignment: {ranks}"
+        ranks = [
+            (pid, td.sibling_order_rank)
+            for pid in (1, 2)
+            for td in _process_descriptor_fields_for_pid(descriptors, pid)
+        ]
+        assert ranks == [(1, 1), (2, 0)], f"unexpected rank assignment: {ranks}"
 
     def test_sibling_order_rank_unchanged_when_input_pid_order_swapped(self) -> None:
         """Reordering the input pids (with the same first-ts values)
@@ -205,9 +211,9 @@ class TestProcessOrderingByFirstTs:
         d1, _ = convert_trace_events_to_perfetto(_make_events([1, 2]), s1, sequence_id=1)
         s2 = PerfettoTrackState()
         d2, _ = convert_trace_events_to_perfetto(_make_events([2, 1]), s2, sequence_id=1)
-        ranks1 = {pid: td.sibling_order_rank for pid in (1, 2) for td in _process_descriptor_fields_for_pid(d1, pid)}
-        ranks2 = {pid: td.sibling_order_rank for pid in (1, 2) for td in _process_descriptor_fields_for_pid(d2, pid)}
-        assert ranks1 == ranks2 == {1: 1, 2: 0}
+        ranks1 = [(pid, td.sibling_order_rank) for pid in (1, 2) for td in _process_descriptor_fields_for_pid(d1, pid)]
+        ranks2 = [(pid, td.sibling_order_rank) for pid in (1, 2) for td in _process_descriptor_fields_for_pid(d2, pid)]
+        assert ranks1 == ranks2 == [(1, 1), (2, 0)]
 
     def test_rank_persists_across_batches(self) -> None:
         """First-ts recorded in one batch must be remembered when
@@ -227,13 +233,13 @@ class TestProcessOrderingByFirstTs:
         # for pid 1 from batch 1 is preserved (record_first_event_ts
         # only sets the first ts for a pid). Pid 1 should still get
         # rank 0 (ts=1_000) and pid 2 rank 1 (ts=5_000).
-        ranks = {
-            pid: td.sibling_order_rank
+        ranks = [
+            (pid, td.sibling_order_rank)
             for descriptors in (d1, d2)
             for pid in (1, 2)
             for td in _process_descriptor_fields_for_pid(descriptors, pid)
-        }
-        assert ranks == {1: 0, 2: 1}, f"unexpected rank assignment: {ranks}"
+        ]
+        assert ranks == [(1, 0), (2, 1)], f"unexpected rank assignment: {ranks}"
 
     def test_process_descriptor_writes_start_timestamp_ns(self, state: PerfettoTrackState) -> None:
         """Each process descriptor carries ``start_timestamp_ns``
