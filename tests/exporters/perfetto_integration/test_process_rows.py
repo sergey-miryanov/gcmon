@@ -21,12 +21,15 @@ from gcmon.exporters.perfetto_process_lifetime import (
 )
 from gcmon.exporters.trace_converter import duration_text
 from gcmon.model.names import (
+    CLIPPED,
     CMDLINE,
     LOST_COUNT,
     LOST_PAUSE,
     LOST_PAUSE_NS,
     PID,
     PID_EPOCH,
+    REAL_END_TS,
+    REAL_START_TS,
     SAMPLED_COUNT,
 )
 from tests.conftest import DEFAULT_PID
@@ -53,6 +56,7 @@ from tests.exporters.perfetto_integration.traces import (
     _ZERO_CROSSER_STOP,
     _ZERO_INSTANT_TS,
     _process_row_filter,
+    flat_key,
 )
 from tests.helpers import (
     create_mock_stats_item,
@@ -127,7 +131,7 @@ class TestProcessRowLifetimeSlice:
                 f"SELECT a.flat_key AS flat_key FROM args a "
                 f"JOIN slice s ON s.arg_set_id = a.arg_set_id "
                 f"WHERE s.name = '{_PROCESS_ROW_SLICE_NAME}' "
-                f"AND a.flat_key IN ('{_ARG_PREFIX}.real_start_ts', '{_ARG_PREFIX}.real_end_ts')"
+                f"AND a.flat_key IN ('{flat_key(REAL_START_TS)}', '{flat_key(REAL_END_TS)}')"
             )
         )
         assert rows == []
@@ -199,7 +203,7 @@ class TestProcessRowLifetimeSlice:
                 f"JOIN process_track pt ON s.track_id = pt.id "
                 f"JOIN process p ON pt.upid = p.upid "
                 f"WHERE s.name = '{_PROCESS_ROW_SLICE_NAME}' "
-                f"AND a.flat_key = '{_ARG_PREFIX}.interpreters'"
+                f"AND a.flat_key = '{flat_key('interpreters')}'"
             )
         )
         assert {r.name: r.int_value for r in rows} == {
@@ -272,7 +276,7 @@ class TestProcessRowLifetimeSlice:
                 f"SELECT a.flat_key AS flat_key FROM args a "
                 f"JOIN slice s ON s.arg_set_id = a.arg_set_id "
                 f"WHERE s.name = '{_PROCESS_ROW_SLICE_NAME}' "
-                f"AND a.flat_key = '{_ARG_PREFIX}.cmdline'"
+                f"AND a.flat_key = '{flat_key(CMDLINE)}'"
             )
         )
         assert rows == []
@@ -455,15 +459,15 @@ class TestProcessesTrack:
                 f"JOIN slice s ON s.arg_set_id = a.arg_set_id "
                 f"JOIN track t ON s.track_id = t.id "
                 f"WHERE t.name = '{_PROCESS_LIFETIME_TRACK_NAME}' "
-                f"AND a.flat_key IN ('debug.real_start_ts', 'debug.real_end_ts') "
+                f"AND a.flat_key IN ('{flat_key(REAL_START_TS)}', '{flat_key(REAL_END_TS)}') "
                 f"ORDER BY s.name, a.flat_key"
             )
         )
         assert {(r.name, r.flat_key): r.int_value for r in rows} == {
-            (_DEFAULT_ROW_NAME, "debug.real_start_ts"): _TS_START - 1_000_000,
-            (_DEFAULT_ROW_NAME, "debug.real_end_ts"): _TS_START + 9_000_000,
-            (_SECOND_ROW_NAME, "debug.real_start_ts"): _TS_START - 2_000_000,
-            (_SECOND_ROW_NAME, "debug.real_end_ts"): _TS_START + 5_000_000,
+            (_DEFAULT_ROW_NAME, flat_key(REAL_START_TS)): _TS_START - 1_000_000,
+            (_DEFAULT_ROW_NAME, flat_key(REAL_END_TS)): _TS_START + 9_000_000,
+            (_SECOND_ROW_NAME, flat_key(REAL_START_TS)): _TS_START - 2_000_000,
+            (_SECOND_ROW_NAME, flat_key(REAL_END_TS)): _TS_START + 5_000_000,
         }
 
     def test_no_misplaced_end_events(
@@ -535,7 +539,7 @@ class TestProcessesTrack:
                 trace_processor_with_cmdline.query(
                     f"SELECT a.string_value AS string_value "
                     f"FROM args a "
-                    f"WHERE a.flat_key = 'debug.cmdline' "
+                    f"WHERE a.flat_key = '{flat_key(CMDLINE)}' "
                     f"AND a.arg_set_id IN ("
                     f"  SELECT s.arg_set_id FROM slice s "
                     f"  JOIN track t ON s.track_id = t.id "
@@ -598,15 +602,15 @@ class TestCrossingProcessSpans:
                 f"JOIN slice s ON s.arg_set_id = a.arg_set_id "
                 f"JOIN track t ON s.track_id = t.id "
                 f"WHERE t.name = '{_PROCESS_LIFETIME_TRACK_NAME}' "
-                f"AND a.flat_key IN ('debug.real_start_ts', 'debug.real_end_ts') "
+                f"AND a.flat_key IN ('{flat_key(REAL_START_TS)}', '{flat_key(REAL_END_TS)}') "
                 f"ORDER BY s.name, a.flat_key"
             )
         )
         assert {(r.name, r.flat_key): r.int_value for r in rows} == {
-            (_DEFAULT_ROW_NAME, "debug.real_start_ts"): _CROSS_A_START,
-            (_DEFAULT_ROW_NAME, "debug.real_end_ts"): _CROSS_A_STOP,
-            (_SECOND_ROW_NAME, "debug.real_start_ts"): _CROSS_B_START,
-            (_SECOND_ROW_NAME, "debug.real_end_ts"): _CROSS_B_STOP,
+            (_DEFAULT_ROW_NAME, flat_key(REAL_START_TS)): _CROSS_A_START,
+            (_DEFAULT_ROW_NAME, flat_key(REAL_END_TS)): _CROSS_A_STOP,
+            (_SECOND_ROW_NAME, flat_key(REAL_START_TS)): _CROSS_B_START,
+            (_SECOND_ROW_NAME, flat_key(REAL_END_TS)): _CROSS_B_STOP,
         }
 
     def test_every_slice_says_whether_the_sweep_moved_it(
@@ -627,7 +631,7 @@ class TestCrossingProcessSpans:
                 f"JOIN slice s ON s.arg_set_id = a.arg_set_id "
                 f"JOIN track t ON s.track_id = t.id "
                 f"WHERE t.name = '{_PROCESS_LIFETIME_TRACK_NAME}' "
-                f"AND a.flat_key = '{_ARG_PREFIX}.clipped'"
+                f"AND a.flat_key = '{flat_key(CLIPPED)}'"
             )
         )
         assert {r.name: r.int_value for r in rows} == {
@@ -686,17 +690,17 @@ class TestZeroDurationProcessSpans:
                 f"JOIN slice s ON s.arg_set_id = a.arg_set_id "
                 f"JOIN track t ON s.track_id = t.id "
                 f"WHERE t.name = '{_PROCESS_LIFETIME_TRACK_NAME}' "
-                f"AND a.flat_key IN ('debug.real_start_ts', 'debug.real_end_ts') "
+                f"AND a.flat_key IN ('{flat_key(REAL_START_TS)}', '{flat_key(REAL_END_TS)}') "
                 f"ORDER BY s.name, a.flat_key"
             )
         )
         assert {(r.name, r.flat_key): r.int_value for r in rows} == {
-            (_DEFAULT_ROW_NAME, "debug.real_start_ts"): _ZERO_CLIPPED_START,
-            (_DEFAULT_ROW_NAME, "debug.real_end_ts"): _ZERO_CLIPPED_STOP,
-            (_SECOND_ROW_NAME, "debug.real_start_ts"): _ZERO_CROSSER_START,
-            (_SECOND_ROW_NAME, "debug.real_end_ts"): _ZERO_CROSSER_STOP,
-            (_THIRD_ROW_NAME, "debug.real_start_ts"): _ZERO_INSTANT_TS,
-            (_THIRD_ROW_NAME, "debug.real_end_ts"): _ZERO_INSTANT_TS,
+            (_DEFAULT_ROW_NAME, flat_key(REAL_START_TS)): _ZERO_CLIPPED_START,
+            (_DEFAULT_ROW_NAME, flat_key(REAL_END_TS)): _ZERO_CLIPPED_STOP,
+            (_SECOND_ROW_NAME, flat_key(REAL_START_TS)): _ZERO_CROSSER_START,
+            (_SECOND_ROW_NAME, flat_key(REAL_END_TS)): _ZERO_CROSSER_STOP,
+            (_THIRD_ROW_NAME, flat_key(REAL_START_TS)): _ZERO_INSTANT_TS,
+            (_THIRD_ROW_NAME, flat_key(REAL_END_TS)): _ZERO_INSTANT_TS,
         }
 
 

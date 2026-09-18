@@ -16,11 +16,13 @@ from gcmon.exporters.perfetto_process_lifetime import (
 )
 from gcmon.exporters.trace_converter import counter_display_name
 from gcmon.model.names import (
+    CMDLINE,
     COLLECTED,
     GC_LOSS_NAME,
+    LOST_COUNT,
+    PID,
 )
 from tests.exporters.perfetto_integration.traces import (
-    _ARG_PREFIX,
     _DEFAULT_ROW_NAME,
     _FIRST_EPOCH,
     _HELD_EPOCHS,
@@ -33,6 +35,7 @@ from tests.exporters.perfetto_integration.traces import (
     _TS_START,
     _held_name,
     _held_start,
+    flat_key,
 )
 from tests.helpers import proc
 
@@ -134,7 +137,7 @@ class TestReusedPidDrawsTwoOfEveryRow:
         rows = list(
             reused_pid_trace_processor.query(
                 "SELECT p.name AS pname, s.track_id AS track_id, s.ts AS ts, "
-                "EXTRACT_ARG(s.arg_set_id, 'debug.lost_count') AS lost "
+                f"EXTRACT_ARG(s.arg_set_id, '{flat_key(LOST_COUNT)}') AS lost "
                 "FROM slice s "
                 "JOIN process_track pt ON s.track_id = pt.id "
                 "JOIN process p ON pt.upid = p.upid "
@@ -215,7 +218,7 @@ class TestReusedPidDrawsTwoOfEveryRow:
                 f"JOIN slice s ON s.arg_set_id = a.arg_set_id "
                 f"JOIN track t ON s.track_id = t.id "
                 f"WHERE t.name = '{_PROCESS_LIFETIME_TRACK_NAME}' "
-                f"AND a.flat_key = '{_ARG_PREFIX}.cmdline'"
+                f"AND a.flat_key = '{flat_key(CMDLINE)}'"
             )
         }
 
@@ -335,7 +338,7 @@ class TestAPidHeldFourTimesDrawsFourRows:
         rows = list(
             pid_held_four_times_trace_processor.query(
                 "SELECT p.name AS pname, p.pid AS pid, "
-                "EXTRACT_ARG(s.arg_set_id, 'debug.pid') AS os_pid "
+                f"EXTRACT_ARG(s.arg_set_id, '{flat_key(PID)}') AS os_pid "
                 "FROM slice s "
                 "JOIN process_track pt ON s.track_id = pt.id "
                 "JOIN process p ON pt.upid = p.upid "

@@ -98,6 +98,12 @@ _EXPECTED_COUNTER_NAMES: frozenset[str] = frozenset(
 
 _ARG_PREFIX: str = "debug"
 
+
+def flat_key(arg: str) -> str:
+    """The key the `args` table files a debug annotation under."""
+    return f"{_ARG_PREFIX}.{arg}"
+
+
 _FAKE_CMDLINE: tuple[str, ...] = ("python3", "-m", "fake_target")
 
 _FAKE_CMDLINE_JOINED: str = " ".join(_FAKE_CMDLINE)

@@ -54,6 +54,7 @@ from gcmon.model.names import (
     MARK_ALIVE,
     NAME,
     PID,
+    SAMPLED_COUNT,
     TS_CLEAR_WEAKREFS_STOP,
     TS_DEDUCE_UNREACHABLE_START,
     TS_DEDUCE_UNREACHABLE_STOP,
@@ -502,7 +503,7 @@ class TestCombinedTraceIsStructurallyComplete:
                 "JOIN slice s ON s.arg_set_id = a.arg_set_id "
                 "JOIN process_track pt ON s.track_id = pt.id "
                 "JOIN process p ON p.upid = pt.upid "
-                f"WHERE s.name = '{_PROCESS_ROW_SLICE_NAME}' AND a.flat_key = 'debug.sampled_count'"
+                f"WHERE s.name = '{_PROCESS_ROW_SLICE_NAME}' AND a.flat_key = '{_ARG_PREFIX}.{SAMPLED_COUNT}'"
             )
         )
         assert {r.pname: r.sampled for r in rows} == {_NAME_A: 3, _NAME_B: 1}

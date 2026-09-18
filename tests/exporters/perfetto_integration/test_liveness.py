@@ -9,7 +9,7 @@ from gcmon.exporters.perfetto_process_lifetime import (
     _PROCESS_LIFETIME_TRACK_NAME,
     _PROCESS_ROW_SLICE_NAME,
 )
-from gcmon.model.names import GC_PAUSE_NAME
+from gcmon.model.names import GC_PAUSE_NAME, REAL_END_TS, REAL_START_TS
 from tests.conftest import DEFAULT_PID
 from tests.exporters.perfetto_integration.traces import (
     _DEFAULT_ROW_NAME,
@@ -23,6 +23,7 @@ from tests.exporters.perfetto_integration.traces import (
     _SECOND_PID,
     _SECOND_ROW_NAME,
     _process_row_filter,
+    flat_key,
 )
 from tests.helpers import misplaced_end_events
 
@@ -69,12 +70,12 @@ class TestMonitorReportedLiveness:
                 f"JOIN slice s ON s.arg_set_id = a.arg_set_id "
                 f"JOIN track t ON s.track_id = t.id "
                 f"WHERE t.name = '{_PROCESS_LIFETIME_TRACK_NAME}' AND s.name = '{_DEFAULT_ROW_NAME}' "
-                f"AND a.flat_key IN ('debug.real_start_ts', 'debug.real_end_ts')"
+                f"AND a.flat_key IN ('{flat_key(REAL_START_TS)}', '{flat_key(REAL_END_TS)}')"
             )
         )
         assert {r.flat_key: r.int_value for r in rows} == {
-            "debug.real_start_ts": _LIVE_GC_START,
-            "debug.real_end_ts": _LIVE_TICKS[-1],
+            flat_key(REAL_START_TS): _LIVE_GC_START,
+            flat_key(REAL_END_TS): _LIVE_TICKS[-1],
         }
 
     def test_the_quiet_process_gets_a_row_of_its_own(
