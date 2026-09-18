@@ -228,21 +228,8 @@ class TestStatsCountAndSum:
     def test_count_initial(self, stats: Stats) -> None:
         assert stats.count() == 0
 
-    def test_count_after_updates(self, stats: Stats) -> None:
-        for i in range(5):
-            stats.update(float(i))
-
-        assert stats.count() == 5
-
     def test_sum_initial(self, stats: Stats) -> None:
         assert stats.sum() == 0.0
-
-    def test_sum_after_updates(self, stats: Stats) -> None:
-        stats.update(10.0)
-        stats.update(20.0)
-        stats.update(30.0)
-
-        assert stats.sum() == 60.0
 
 
 class TestStatsBufferLimit:

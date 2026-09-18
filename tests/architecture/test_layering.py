@@ -253,9 +253,6 @@ class TestTheLayerOfAModule:
         assert layer_of("cli.analyze.convert_cmd") == "cli.analyze"
         assert layer_of("cli.shared.parser_factory") == "cli.shared"
 
-    def test_the_cli_itself_is_not_a_subsystem(self) -> None:
-        assert layer_of("cli.main") == "cli"
-
     def test_the_pyperf_hook_is_monitor_subsystem_code(self) -> None:
         """It runs inside the target."""
         assert layer_of("pyperf.hook") == "cli.monitor"

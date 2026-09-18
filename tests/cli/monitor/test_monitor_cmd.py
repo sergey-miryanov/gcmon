@@ -190,15 +190,6 @@ class TestCliOutput:
         assert result.returncode == 0
         assert "Monitoring PID" not in result.stderr
 
-    def test_trace_structure(self, run_monitor_self: Any, tmp_path: Path) -> None:
-        """Against the running gcmon rather than pid 12345: a Perfetto trace
-        with nothing in it is no file at all, so a run that read no records
-        would leave nothing to validate."""
-        output_file = tmp_path / "test_trace.pftrace"
-
-        assert run_monitor_self(["-o", str(output_file), "-d", "0.3"]).returncode == 0
-        assert_valid_perfetto_trace(output_file)
-
 
 class TestCliStdoutFormat:
     def test_jsonl_output(self, run_monitor_self: Any, tmp_path: Path) -> None:

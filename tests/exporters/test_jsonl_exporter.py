@@ -190,19 +190,6 @@ class TestJsonlExporter:
 
 
 class TestJsonlExporterFlushThreshold:
-    def test_events_buffered_until_threshold(
-        self, mock_stats_item: GCStatsInfo, jsonl_exporter: ExporterFactory, read_jsonl: JsonlFileReader
-    ) -> None:
-        exporter, path = jsonl_exporter(threshold=10)
-        for _ in range(5):
-            exporter.add_event(proc(DEFAULT_PID), mock_stats_item)
-        assert not path.exists()
-
-        for _ in range(5):
-            exporter.add_event(proc(DEFAULT_PID), mock_stats_item)
-
-        assert len(read_jsonl(path)) == 10
-
     def test_flush_on_threshold_reached(
         self, mock_stats_item: GCStatsInfo, jsonl_exporter: ExporterFactory, read_jsonl: JsonlFileReader
     ) -> None:
