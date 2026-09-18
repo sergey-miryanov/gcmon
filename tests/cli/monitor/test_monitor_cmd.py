@@ -90,7 +90,7 @@ class TestCmdMonitorValidation:
             ({"flush_threshold": 0}, "Flush threshold must be positive"),
         ],
     )
-    def test_invalid_params(
+    def test_a_value_out_of_range_fails_and_says_why(
         self,
         caplog: pytest.LogCaptureFixture,
         monitor_args: MonitorArgsFactory,
@@ -138,7 +138,7 @@ def test_cli_monitor_invocation(run_monitor: Any) -> None:
 
 
 class TestCliBasicRun:
-    def test_short_duration(self, run_monitor_self: Any, tmp_path: Path) -> None:
+    def test_a_short_duration_is_logged(self, run_monitor_self: Any, tmp_path: Path) -> None:
         result = run_monitor_self(["-o", str(tmp_path / "test.json"), "-d", "0.01", "-v"], timeout=15)
 
         assert result.returncode == 0
@@ -158,13 +158,13 @@ class TestCliBasicRun:
         assert (tmp_path / DEFAULT_TRACE_FILE).exists()
         assert not (tmp_path / "gcmon.json").exists()
 
-    def test_custom_rate(self, run_monitor_self: Any, tmp_path: Path) -> None:
+    def test_the_rate_flag_is_logged(self, run_monitor_self: Any, tmp_path: Path) -> None:
         result = run_monitor_self(["-o", str(tmp_path / "test_trace.json"), "-d", "0.5", "-r", "0.05", "-v"])
 
         assert result.returncode == 0
         assert "Rate: 0.05" in result.stderr
 
-    def test_duration_based(self, run_monitor_self: Any, tmp_path: Path) -> None:
+    def test_the_run_lasts_at_least_its_duration(self, run_monitor_self: Any, tmp_path: Path) -> None:
         start = time.monotonic()
 
         result = run_monitor_self(["-o", str(tmp_path / "test_trace.json"), "-d", "0.5", "-r", "0.1", "-v"])
@@ -175,7 +175,7 @@ class TestCliBasicRun:
 
 
 class TestCliOutput:
-    def test_verbose(self, run_monitor: Any, tmp_path: Path) -> None:
+    def test_verbose_names_the_pid_and_the_output_path(self, run_monitor: Any, tmp_path: Path) -> None:
         output_file = tmp_path / "test_trace.json"
 
         result = run_monitor(["-o", str(output_file), "-d", "0.3", "-v"])
@@ -184,7 +184,7 @@ class TestCliOutput:
         assert "Monitoring PID: 12345" in result.stderr
         assert str(output_file) in result.stderr
 
-    def test_quiet(self, run_monitor: Any, tmp_path: Path) -> None:
+    def test_without_verbose_the_pid_is_not_logged(self, run_monitor: Any, tmp_path: Path) -> None:
         result = run_monitor(["-o", str(tmp_path / "test_trace.json"), "-d", "0.3"])
 
         assert result.returncode == 0
@@ -192,7 +192,7 @@ class TestCliOutput:
 
 
 class TestCliStdoutFormat:
-    def test_jsonl_output(self, run_monitor_self: Any, tmp_path: Path) -> None:
+    def test_every_stdout_line_is_a_record_with_a_pid(self, run_monitor_self: Any, tmp_path: Path) -> None:
         """Against the running gcmon: pid 12345 holds no process, and a run
         that read nothing prints nothing to parse."""
         result = run_monitor_self(["--format", FORMAT_STDOUT, "-d", "0.3"], cwd=tmp_path)
@@ -203,13 +203,13 @@ class TestCliStdoutFormat:
         assert records
         assert [record for record in records if PID not in record] == []
 
-    def test_verbose(self, run_monitor: Any, tmp_path: Path) -> None:
+    def test_verbose_names_the_pid_and_the_stdout_format(self, run_monitor: Any, tmp_path: Path) -> None:
         result = run_monitor(["--format", FORMAT_STDOUT, "-d", "0.3", "-v"], cwd=tmp_path)
 
         assert "Monitoring PID: 12345" in result.stderr
         assert "Format: stdout" in result.stderr
 
-    def test_quiet(self, run_monitor: Any, tmp_path: Path) -> None:
+    def test_without_verbose_the_pid_is_not_logged(self, run_monitor: Any, tmp_path: Path) -> None:
         result = run_monitor(["--format", FORMAT_STDOUT, "-d", "0.5"], cwd=tmp_path)
 
         assert result.returncode == 0
@@ -217,7 +217,7 @@ class TestCliStdoutFormat:
 
 
 class TestCliJsonlFormat:
-    def test_basic(self, run_monitor: Any, tmp_path: Path) -> None:
+    def test_the_jsonl_format_is_logged(self, run_monitor: Any, tmp_path: Path) -> None:
         output_file = tmp_path / "test.jsonl"
 
         result = run_monitor(["--format", FORMAT_JSONL, "-o", str(output_file), "-d", "0.1", "-v"])
@@ -283,7 +283,9 @@ class TestTheDroppedFormatsAreRefusedByName:
 class TestCliEnvVars:
     """CLI integration with individual environment variables."""
 
-    def test_output(self, monkeypatch: pytest.MonkeyPatch, run_monitor_self: Any, tmp_path: Path) -> None:
+    def test_the_output_variable_names_the_file_written(
+        self, monkeypatch: pytest.MonkeyPatch, run_monitor_self: Any, tmp_path: Path
+    ) -> None:
         output_file = tmp_path / "env_test_trace.pftrace"
         monkeypatch.setenv(ENV_OUTPUT, str(output_file))
 
@@ -298,7 +300,9 @@ class TestCliEnvVars:
         assert cli_file.exists()
         assert not (tmp_path / "env_trace.pftrace").exists()
 
-    def test_rate(self, monkeypatch: pytest.MonkeyPatch, run_monitor: Any, tmp_path: Path) -> None:
+    def test_the_rate_variable_is_logged(
+        self, monkeypatch: pytest.MonkeyPatch, run_monitor: Any, tmp_path: Path
+    ) -> None:
         monkeypatch.setenv(ENV_RATE, "0.05")
 
         result = run_monitor(["-o", str(tmp_path / "test_trace.json"), "-d", "0.3", "-v"])
@@ -312,7 +316,9 @@ class TestCliEnvVars:
 
         assert "Rate: 0.2" in result.stderr
 
-    def test_duration(self, monkeypatch: pytest.MonkeyPatch, run_monitor: Any, tmp_path: Path) -> None:
+    def test_the_duration_variable_is_logged(
+        self, monkeypatch: pytest.MonkeyPatch, run_monitor: Any, tmp_path: Path
+    ) -> None:
         monkeypatch.setenv(ENV_DURATION, "0.5")
 
         result = run_monitor(["-o", str(tmp_path / "test_trace.json"), "-v"])
@@ -326,7 +332,9 @@ class TestCliEnvVars:
 
         assert "Duration: 0.3" in result.stderr
 
-    def test_format(self, monkeypatch: pytest.MonkeyPatch, run_monitor: Any, tmp_path: Path) -> None:
+    def test_the_format_variable_is_logged(
+        self, monkeypatch: pytest.MonkeyPatch, run_monitor: Any, tmp_path: Path
+    ) -> None:
         monkeypatch.setenv(ENV_FORMAT, FORMAT_STDOUT)
 
         result = run_monitor(["-d", "0.3", "-v"])
@@ -355,7 +363,9 @@ class TestCliEnvVars:
 
         assert "Monitoring PID: 12345" in result.stderr
 
-    def test_multiple_vars(self, monkeypatch: pytest.MonkeyPatch, run_monitor_self: Any, tmp_path: Path) -> None:
+    def test_several_variables_apply_together(
+        self, monkeypatch: pytest.MonkeyPatch, run_monitor_self: Any, tmp_path: Path
+    ) -> None:
         output_file = tmp_path / "multi_env_test.pftrace"
         monkeypatch.setenv(ENV_OUTPUT, str(output_file))
         monkeypatch.setenv(ENV_RATE, "0.05")
@@ -369,7 +379,9 @@ class TestCliEnvVars:
         assert "Rate: 0.05" in result.stderr
         assert "Duration: 0.4" in result.stderr
 
-    def test_flush_threshold(self, monkeypatch: pytest.MonkeyPatch, run_monitor: Any, tmp_path: Path) -> None:
+    def test_a_flush_threshold_of_zero_in_the_variable_fails_the_run(
+        self, monkeypatch: pytest.MonkeyPatch, run_monitor: Any, tmp_path: Path
+    ) -> None:
         """A run prints no threshold, so the variable is given the one value
         a run refuses."""
         output_file = tmp_path / "test.jsonl"
