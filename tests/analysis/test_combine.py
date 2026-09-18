@@ -117,7 +117,9 @@ class TestNormalizeTraceTimestamps:
             value=10,
         )
         events: list[TraceEvent] = [e1, e2]
+
         _normalize_trace_timestamps(events)
+
         assert e1.ts_start == 2_000_000  # 5_000_000 - 3_000_000
         assert e2.ts == 0  # 3_000_000 - 3_000_000
 
@@ -135,12 +137,16 @@ class TestNormalizeTraceTimestamps:
             interpreter_track(TARGET_PID, 1), name="e1", cat="c", ts_start=1_000_000, ts_stop=1_001_000, args=args
         )
         events: list[TraceEvent] = [e1]
+
         _normalize_trace_timestamps(events)
+
         assert e1.ts_start == 0
 
     def test_empty_events_is_noop(self) -> None:
         events: list[TraceEvent] = []
+
         _normalize_trace_timestamps(events)
+
         assert events == []
 
     def test_per_pid_normalization(self) -> None:
@@ -162,7 +168,9 @@ class TestNormalizeTraceTimestamps:
         e3 = Slice(interpreter_track(2, 1), name="e3", cat="c", ts_start=5_000_000, ts_stop=5_001_000, args=args)
         e4 = Slice(interpreter_track(2, 1), name="e4", cat="c", ts_start=7_000_000, ts_stop=7_001_000, args=args)
         events: list[TraceEvent] = [e1, e2, e3, e4]
+
         _normalize_trace_timestamps(events)
+
         assert e1.ts_start == 0  # pid=1: 10_000_000 - 10_000_000
         assert e2.ts_start == 2_000_000  # pid=1: 12_000_000 - 10_000_000
         assert e3.ts_start == 0  # pid=2: 5_000_000 - 5_000_000
@@ -224,7 +232,9 @@ class TestNormalizeTraceTimestamps:
         e1 = Slice(interpreter_track(TARGET_PID, 1), name="e1", cat="c", ts_start=-100, ts_stop=900, args=args)
         e2 = Slice(interpreter_track(TARGET_PID, 1), name="e2", cat="c", ts_start=-500, ts_stop=500, args=args)
         events: list[TraceEvent] = [e1, e2]
+
         _normalize_trace_timestamps(events)
+
         assert e1.ts_start == 400  # -100 - (-500)
         assert e2.ts_start == 0
 
@@ -235,7 +245,9 @@ class TestCombineFiles:
         out = tmp_path / "out.jsonl"
         r = create_jsonl_record(pid=1)
         f1.write_bytes(msgspec.json.encode(r) + b"\n")
+
         combine_files([f1], out, output_format=FORMAT_JSONL)
+
         lines = out.read_text(encoding=ENCODING).strip().split("\n")
         assert json.loads(lines[0])[PID] == 1
 
@@ -255,7 +267,9 @@ class TestCombineFiles:
             msgspec.json.encode(r2),
         ]
         f1.write_bytes(b"\n".join(lines) + b"\n")
+
         combine_files([f1], out, normalize=True, output_format=FORMAT_JSONL)
+
         records = [json.loads(line) for line in out.read_text(encoding=ENCODING).strip().split("\n") if line]
         assert records[0][TS_START] == 5_000_000
         assert records[1][TS_START] == 0
@@ -282,7 +296,9 @@ class TestCombineFiles:
             f.write_bytes(
                 msgspec.json.encode(create_jsonl_record(pid=pid)) + b"\n",
             )
+
         combine_files([f1, f2], out, output_format=FORMAT_JSONL)
+
         records = [json.loads(line) for line in out.read_text(encoding=ENCODING).strip().split("\n") if line]
         assert len(records) == 2
         assert {r[PID] for r in records} == {1, 2}
@@ -297,7 +313,9 @@ class TestCombineFiles:
             f.write_bytes(
                 b"\n".join(msgspec.json.encode(r) for r in lines) + b"\n",
             )
+
         combine_files([f1, f2], out, output_format=FORMAT_JSONL)
+
         records = [json.loads(line) for line in out.read_text(encoding=ENCODING).strip().split("\n") if line]
         assert len(records) == 2
         assert records[0][TS_START] == 1000
@@ -308,7 +326,9 @@ class TestCombineFiles:
         out = tmp_path / "out.jsonl"
         record = make_inc_jsonl_record(pid=1, ts_start=1000, ts_stop=5000)
         f1.write_bytes(msgspec.json.encode(record) + b"\n")
+
         combine_files([f1], out, output_format=FORMAT_JSONL)
+
         records = [json.loads(line) for line in out.read_text(encoding=ENCODING).strip().split("\n") if line]
         assert records[0][INCREMENT_SIZE] == 500
         assert records[0][ALIVE_SIZE] == 300

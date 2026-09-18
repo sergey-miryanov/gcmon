@@ -56,14 +56,18 @@ from tests.helpers import (
 class TestJsonToItem:
     def test_returns_pid_and_item(self) -> None:
         data = create_jsonl_record(pid=123, gen=0)
+
         pid, item = json_to_item(data)
+
         assert pid == 123
         assert is_gc_stats(item)
         assert item.gen == 0
 
     def test_returns_incremental_item(self) -> None:
         data = make_inc_jsonl_record(pid=456, gen=1, increment_size=500)
+
         pid, item = json_to_item(data)
+
         assert pid == 456
         assert has_incremental(item)
         assert item.increment_size == 500
@@ -71,7 +75,9 @@ class TestJsonToItem:
     def test_pid_as_string(self) -> None:
         record = create_jsonl_record(pid=789)
         data: JsonlRecord = {**record, PID: "789"}
+
         pid, _ = json_to_item(data)
+
         assert pid == 789
 
 
@@ -82,6 +88,7 @@ class TestReadJsonl:
         path.write_bytes(msgspec.json.encode(record) + b"\n")
 
         result = read_jsonl(path)
+
         assert 123 in result
         assert len(result[123]) == 1
         assert is_gc_stats(result[123][0])
@@ -96,31 +103,39 @@ class TestReadJsonl:
         path.write_bytes(b"\n".join(lines) + b"\n")
 
         result = read_jsonl(path)
+
         assert set(result.keys()) == {1, 2}
 
     def test_ignores_empty_lines(self, tmp_path: Path) -> None:
         path = tmp_path / "test.jsonl"
         record = create_jsonl_record()
         path.write_bytes(msgspec.json.encode(record) + b"\n\n\n")
+
         result = read_jsonl(path)
+
         assert len(result[123]) == 1
 
     def test_returns_empty_dict_for_empty_file(self, tmp_path: Path) -> None:
         path = tmp_path / "empty.jsonl"
         path.write_text("", encoding=ENCODING)
+
         result = read_jsonl(path)
+
         assert result == {}
 
     def test_reads_incremental_record(self, tmp_path: Path) -> None:
         path = tmp_path / "inc.jsonl"
         record = make_inc_jsonl_record(pid=1)
         path.write_bytes(msgspec.json.encode(record) + b"\n")
+
         result = read_jsonl(path)
+
         assert has_incremental(result[1][0])
 
     def test_raises_on_malformed_json(self, tmp_path: Path) -> None:
         path = tmp_path / "bad.jsonl"
         path.write_text("not valid json\n", encoding=ENCODING)
+
         with pytest.raises(ValueError) as refusal:
             read_jsonl(path)
 
@@ -212,6 +227,7 @@ class TestWriteJsonl:
     def test_writes_one_line_per_event(self, tmp_path: Path) -> None:
         path = tmp_path / "out.jsonl"
         item = create_mock_stats_item()
+
         write_jsonl(path, {12345: [item]})
 
         lines = path.read_text(encoding=ENCODING).strip().split("\n")
@@ -223,6 +239,7 @@ class TestWriteJsonl:
         path = tmp_path / "out.jsonl"
         item1 = create_mock_stats_item(gen=0)
         item2 = create_mock_stats_item(gen=1)
+
         write_jsonl(path, {1: [item1], 2: [item2]})
 
         lines = path.read_text(encoding=ENCODING).strip().split("\n")
@@ -233,7 +250,9 @@ class TestWriteJsonl:
     def test_writes_incremental_fields(self, tmp_path: Path) -> None:
         path = tmp_path / "out.jsonl"
         item = make_inc_item(increment_size=500, alive_size=300)
+
         write_jsonl(path, {1: [item]})
+
         lines = path.read_text(encoding=ENCODING).strip().split("\n")
         record = json.loads(lines[0])
         assert record[PID] == 1
@@ -242,7 +261,9 @@ class TestWriteJsonl:
 
     def test_empty_items_produces_empty_file(self, tmp_path: Path) -> None:
         path = tmp_path / "empty.jsonl"
+
         write_jsonl(path, {})
+
         content = path.read_text(encoding=ENCODING)
         assert content == ""
 
@@ -250,7 +271,9 @@ class TestWriteJsonl:
         path = tmp_path / "out.jsonl"
         item1 = create_mock_stats_item(gen=0)
         item2 = create_mock_stats_item(gen=1)
+
         write_jsonl(path, {1: [item1, item2]})
+
         lines = path.read_text(encoding=ENCODING).strip().split("\n")
         assert len(lines) == 2
         assert all(json.loads(line)[PID] == 1 for line in lines)
@@ -258,7 +281,9 @@ class TestWriteJsonl:
     def test_writes_instant_msg(self, tmp_path: Path) -> None:
         path = tmp_path / "out.jsonl"
         item = create_instant_msg(name="event", ts=1_000)
+
         write_jsonl(path, {1: [item]})
+
         lines = path.read_text(encoding=ENCODING).strip().split("\n")
         assert len(lines) == 1
         record = json.loads(lines[0])
@@ -280,7 +305,9 @@ class TestNormalizeJsonlTimestamps:
     def test_non_incremental_skips_sub_steps(self) -> None:
         item = create_mock_stats_item(ts_start=5000, ts_stop=6000)
         items = {1: [item]}
+
         normalize_jsonl_timestamps(items)
+
         assert item.ts_start == 0
         assert item.ts_stop == 1000
 
@@ -288,7 +315,9 @@ class TestNormalizeJsonlTimestamps:
         non_inc = create_mock_stats_item(ts_start=5000, ts_stop=6000)
         inc = make_inc_item(ts_start=7000, ts_stop=8000)
         items = {1: [non_inc, inc]}
+
         normalize_jsonl_timestamps(items)
+
         assert non_inc.ts_start == 0
         assert inc.ts_start == 2000
         assert inc.ts_mark_alive_start == 2000
@@ -297,14 +326,18 @@ class TestNormalizeJsonlTimestamps:
     def test_instant_only_normalize(self) -> None:
         item = create_instant_msg(name="event", ts=5_000)
         items = {1: [item]}
+
         normalize_jsonl_timestamps(items)
+
         assert item.ts == 0
 
     def test_multiple_pids(self) -> None:
         item1 = make_inc_item(ts_start=10000, ts_stop=11000)
         item2 = make_inc_item(ts_start=5000, ts_stop=6000)
         items = {1: [item1], 2: [item2]}
+
         normalize_jsonl_timestamps(items)
+
         assert item1.ts_start == 0  # per-PID min
         assert item2.ts_start == 0  # per-PID min
 
@@ -324,6 +357,7 @@ class TestConvertJsonlToTraceFormat:
         path.write_bytes(msgspec.json.encode(record) + b"\n")
 
         events = convert_jsonl_to_trace_format(path)
+
         assert len(events) > 0
         assert any(isinstance(e, Slice) for e in events)  # the pause
         assert any(isinstance(e, Counter) for e in events)  # counter
@@ -331,14 +365,18 @@ class TestConvertJsonlToTraceFormat:
     def test_empty_file_returns_empty_list(self, tmp_path: Path) -> None:
         path = tmp_path / "empty.jsonl"
         path.write_text("", encoding=ENCODING)
+
         events = convert_jsonl_to_trace_format(path)
+
         assert events == []
 
     def test_incremental_record_creates_sub_events(self, tmp_path: Path) -> None:
         path = tmp_path / "inc.jsonl"
         record = make_inc_jsonl_record(pid=1, ts_start=1000, ts_stop=5000)
         path.write_bytes(msgspec.json.encode(record) + b"\n")
+
         events = convert_jsonl_to_trace_format(path)
+
         spans = [e for e in events if isinstance(e, Slice)]
         assert any(MARK_ALIVE.label in e.name for e in spans)
         assert any(FILL_INCREMENT.label in e.name for e in spans)
@@ -356,7 +394,9 @@ class TestConvertJsonlToTraceFormat:
             msgspec.json.encode(create_jsonl_record(pid=2, iid=0)),
         ]
         path.write_bytes(b"\n".join(lines) + b"\n")
+
         events = convert_jsonl_to_trace_format(path)
+
         assert {e.track for e in events} == {interpreter_track(1, 0), interpreter_track(2, 0)}
 
 
