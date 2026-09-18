@@ -143,7 +143,9 @@ class TestPerfettoExporter:
         # Verify descriptors present
         assert _count_descriptors(packets) >= 2
 
-    def test_timestamp_conversion(self, mock_stats_item: GCStatsInfo, perfetto_exporter: ExporterFactory) -> None:
+    def test_a_pause_begins_at_its_records_start_in_nanoseconds(
+        self, mock_stats_item: GCStatsInfo, perfetto_exporter: ExporterFactory
+    ) -> None:
         exporter, path = perfetto_exporter()
         exporter.add_event(proc(DEFAULT_PID), mock_stats_item)
         exporter.close()
