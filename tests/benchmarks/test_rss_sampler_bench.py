@@ -44,6 +44,7 @@ def test_rss_sampler_read_latency_self(benchmark: BenchmarkFixture) -> None:
         return loop(_default_rss_sampler, pid)
 
     result = benchmark(_run, os.getpid())
+
     assert result > 0
 
 
@@ -53,6 +54,7 @@ def test_rss_sampler_read_latency_child(benchmark: BenchmarkFixture, child_pid: 
         return loop(_default_rss_sampler, pid)
 
     result = benchmark(_run, child_pid)
+
     assert result > 0
 
 
@@ -62,4 +64,5 @@ def test_rss_sampler_noop_latency(benchmark: BenchmarkFixture) -> None:
         return loop(_noop_rss_sampler, pid)
 
     result = benchmark(_run, os.getpid())
+
     assert result == 0

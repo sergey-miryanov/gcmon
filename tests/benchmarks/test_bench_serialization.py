@@ -77,6 +77,7 @@ def test_read_jsonl(benchmark: BenchmarkFixture, tmp_path: Path) -> None:
     write_jsonl(path, items)
 
     result = benchmark(read_jsonl, path)
+
     assert sum(len(v) for v in result.values()) == EVENT_COUNT
 
 
@@ -89,4 +90,5 @@ def test_convert_jsonl_to_trace_format(benchmark: BenchmarkFixture, tmp_path: Pa
     write_jsonl(path, items)
 
     result = benchmark(convert_jsonl_to_trace_format, path)
+
     assert len(result) > EVENT_COUNT

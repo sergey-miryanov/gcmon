@@ -55,6 +55,7 @@ def test_convert_to_trace_format_single_pid(benchmark: BenchmarkFixture) -> None
     }
 
     result = benchmark(convert_to_trace_format, items)
+
     assert len(result) > EVENT_COUNT
 
 
@@ -67,4 +68,5 @@ def test_convert_to_trace_format_many_pids(benchmark: BenchmarkFixture) -> None:
         items.setdefault(pid, []).append(make_gc_event(i, iid=iid, gen=i % 3))
 
     result = benchmark(convert_to_trace_format, items)
+
     assert len(result) > EVENT_COUNT

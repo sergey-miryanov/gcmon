@@ -38,6 +38,7 @@ def test_streaming_stats_update_single_pid(benchmark: BenchmarkFixture) -> None:
         return stats
 
     result = benchmark(run)
+
     assert result.count() == EVENT_COUNT
 
 
@@ -56,6 +57,7 @@ def test_streaming_stats_update_many_pids(benchmark: BenchmarkFixture) -> None:
         return stats
 
     result = benchmark(run)
+
     assert result.count() == EVENT_COUNT
 
 
@@ -80,6 +82,7 @@ def test_streaming_stats_retain_wide_fan_out(benchmark: BenchmarkFixture) -> Non
         return stats
 
     result = benchmark.pedantic(run, setup=setup)
+
     # Not timing: a run that stopped settling would otherwise read as a win.
     assert result._running_rings == {}
     assert len(result.rings()) == StreamingStats.MAX_ACTIVE_RINGS
@@ -96,6 +99,7 @@ def test_stats_update_and_percentiles(benchmark: BenchmarkFixture) -> None:
         return stats.percentile(50), stats.percentile(99)
 
     p50, p99 = benchmark(run)
+
     assert p99 >= p50
 
 
