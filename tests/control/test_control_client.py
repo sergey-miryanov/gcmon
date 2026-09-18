@@ -174,6 +174,28 @@ class TestConnectionLifecycle:
         assert result2 is mock_conn
         mock_connection_factory.assert_called_once_with("test-address")
 
+    def test_a_thread_that_lost_the_race_to_connect_takes_the_winner_s_connection(
+        self, mock_connection_factory: MagicMock
+    ) -> None:
+        """It saw no connection, waited on the lock, and got it after the
+        winner had connected. The double is that wait: entering it is when
+        the winner's connection appears."""
+        client = ControlClient("test-address", connection_factory=mock_connection_factory)
+        winner = MagicMock()
+
+        class HeldByTheWinner:
+            def __enter__(self) -> None:
+                client._conn = winner
+
+            def __exit__(self, *args: object) -> None:
+                return None
+
+        with patch.object(client, "_lock", HeldByTheWinner()):
+            conn = client._ensure_connected()
+
+        assert conn is winner
+        mock_connection_factory.assert_not_called()
+
     def test_ensure_connected_returns_none_without_address(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.delenv(CONTROL_ADDRESS_ENV, raising=False)
         client = ControlClient(connection_factory=MagicMock())
