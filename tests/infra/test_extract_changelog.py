@@ -121,6 +121,22 @@ class TestMain:
         assert rc == 0
         assert capsys.readouterr().out.strip() == "- initial release"
 
+    def test_exits_nonzero_on_missing_version(
+        self,
+        fake_changelog: Path,
+        capsys: pytest.CaptureFixture[str],
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setattr("sys.argv", ["extract_changelog.py", "v9.9.9"])
+        monkeypatch.delenv("GITHUB_OUTPUT", raising=False)
+
+        rc = extract_changelog.main()
+
+        assert rc == 1
+        captured = capsys.readouterr()
+        assert captured.out == ""
+        assert "No changelog section" in captured.err
+
 
 class TestMainWritesToGitHubOutput:
     def test_writes_heredoc_when_github_output_set(
@@ -182,22 +198,6 @@ class TestMainWritesToGitHubOutput:
         captured = capsys.readouterr()
         assert captured.out.strip() == "- new feature\n- bug fix"
         assert "body<<EOF" in out_file.read_text(encoding=ENCODING)
-
-    def test_exits_nonzero_on_missing_version(
-        self,
-        fake_changelog: Path,
-        capsys: pytest.CaptureFixture[str],
-        monkeypatch: pytest.MonkeyPatch,
-    ) -> None:
-        monkeypatch.setattr("sys.argv", ["extract_changelog.py", "v9.9.9"])
-        monkeypatch.delenv("GITHUB_OUTPUT", raising=False)
-
-        rc = extract_changelog.main()
-
-        assert rc == 1
-        captured = capsys.readouterr()
-        assert captured.out == ""
-        assert "No changelog section" in captured.err
 
     def test_does_not_write_output_file_on_missing_version(
         self,

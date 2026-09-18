@@ -46,7 +46,6 @@ from tests.analysis.conftest import make_inc_item, make_inc_jsonl_record
 from tests.data_helpers import create_instant_msg
 from tests.helpers import (
     JsonlRecord,
-    assert_valid_perfetto_trace,
     create_jsonl_record,
     create_mock_stats_item,
     interpreter_track,
@@ -165,33 +164,6 @@ class TestReadJsonl:
         assert isinstance(loss_record, LossMsg)
         assert gc_record.iid == 1
         assert loss_record.iid == 1
-
-    def test_an_old_capture_combines_into_the_same_trace_as_a_new_one(self, tmp_path: Path) -> None:
-        """The extra field survives the whole `combine` path, not just the
-        reader: a capture with `tid` and the same capture without it draw the
-        same trace.
-
-        Compared packet by packet rather than byte by byte. `combine_files`
-        builds its own encoder, whose `trusted_packet_sequence_id` is `id(self)`
-        masked, so two runs never agree on those bytes.
-        """
-        old = tmp_path / "old.jsonl"
-        new = tmp_path / "new.jsonl"
-        record = create_jsonl_record(pid=42, iid=1)
-        old.write_bytes(msgspec.json.encode({**record, "tid": 1}) + b"\n")
-        new.write_bytes(msgspec.json.encode(record) + b"\n")
-
-        combine_files([old], tmp_path / "old.pftrace", output_format=FORMAT_PERFETTO)
-        combine_files([new], tmp_path / "new.pftrace", output_format=FORMAT_PERFETTO)
-
-        def packets(path: Path) -> list[str]:
-            decoded: list[str] = []
-            for packet in assert_valid_perfetto_trace(path):
-                packet.ClearField("trusted_packet_sequence_id")
-                decoded.append(str(packet))
-            return decoded
-
-        assert packets(tmp_path / "old.pftrace") == packets(tmp_path / "new.pftrace")
 
     def test_a_file_opening_with_an_array_is_reported_as_a_chrome_trace(self, tmp_path: Path) -> None:
         """The one shape a JSONL reader can name rather than choke on: a

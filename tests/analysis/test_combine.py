@@ -348,6 +348,33 @@ class TestCombineFiles:
 
         assert ("GC monitor started", 1_400_000_000) in instant_events(out)
 
+    def test_an_old_capture_combines_into_the_same_trace_as_a_new_one(self, tmp_path: Path) -> None:
+        """The extra field survives the whole `combine` path, not just the
+        reader: a capture with `tid` and the same capture without it draw the
+        same trace.
+
+        Compared packet by packet rather than byte by byte. `combine_files`
+        builds its own encoder, whose `trusted_packet_sequence_id` is `id(self)`
+        masked, so two runs never agree on those bytes.
+        """
+        old = tmp_path / "old.jsonl"
+        new = tmp_path / "new.jsonl"
+        record = create_jsonl_record(pid=42, iid=1)
+        old.write_bytes(msgspec.json.encode({**record, "tid": 1}) + b"\n")
+        new.write_bytes(msgspec.json.encode(record) + b"\n")
+
+        combine_files([old], tmp_path / "old.pftrace", output_format=FORMAT_PERFETTO)
+        combine_files([new], tmp_path / "new.pftrace", output_format=FORMAT_PERFETTO)
+
+        def packets(path: Path) -> list[str]:
+            decoded: list[str] = []
+            for packet in assert_valid_perfetto_trace(path):
+                packet.ClearField("trusted_packet_sequence_id")
+                decoded.append(str(packet))
+            return decoded
+
+        assert packets(tmp_path / "old.pftrace") == packets(tmp_path / "new.pftrace")
+
 
 class TestJsonlLossRoundTrip:
     """`combine` reads and writes JSONL, so a loss span has to survive the
