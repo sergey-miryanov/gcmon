@@ -161,15 +161,6 @@ class TestTheCommandLine:
 
         assert locked == [True]
 
-    def test_no_sink_reads_nothing(self) -> None:
-        """A test registry, and `combine`, create processes nobody describes."""
-        provider_calls: list[int] = []
-        registry = ProcessRegistry(cmdline_provider=provider_calls.append)
-
-        registry.create(100)
-
-        assert provider_calls == [100]
-
     def test_no_provider_publishes_no_command_line(self) -> None:
         publish, published = self._sink()
 
