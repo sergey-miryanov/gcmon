@@ -210,6 +210,72 @@ class TestALinkReferenceDefinitionStaysOnItsLine:
         assert wrap_markdown.rewrap(source, 78) == "Some prose that runs straight on. [a]: https://example.com/one\n"
 
 
+LONG = "word " * 30
+"""One paragraph line well past any width a test here wraps at."""
+
+
+class TestWhatIsNotProse:
+    def test_a_fenced_block_is_copied_through(self) -> None:
+        text = f"```\n{LONG}\n```"
+
+        assert wrap_markdown.rewrap(text, 40) == text
+
+    def test_a_quote_keeps_its_marker_on_every_line(self) -> None:
+        wrapped = wrap_markdown.rewrap(f"> {LONG}".rstrip(), 40)
+
+        assert len(wrapped.split("\n")) > 1
+        assert all(line.startswith("> ") for line in wrapped.split("\n"))
+
+
+class TestAFileItWillNotTouch:
+    """`process` rewrites documentation in place, so each way out that leaves
+    the file alone is a guard worth holding."""
+
+    def _file(self, tmp_path: Path, text: str) -> Path:
+        path = tmp_path / "page.md"
+        path.write_bytes(text.encode(ENCODING))
+        return path
+
+    def test_a_long_paragraph_is_rewritten(self, tmp_path: Path) -> None:
+        path = self._file(tmp_path, LONG.rstrip() + "\n")
+
+        done = wrap_markdown.process(path, 40, check=False)
+
+        assert done
+        assert max(len(line) for line in path.read_text(encoding=ENCODING).split("\n")) <= 40
+
+    def test_check_reports_the_file_and_leaves_it(self, tmp_path: Path) -> None:
+        path = self._file(tmp_path, LONG.rstrip() + "\n")
+
+        done = wrap_markdown.process(path, 40, check=True)
+
+        assert not done
+        assert path.read_text(encoding=ENCODING) == LONG.rstrip() + "\n"
+
+    def test_a_file_already_wrapped_passes_the_check(self, tmp_path: Path) -> None:
+        path = self._file(tmp_path, "short\n")
+
+        assert wrap_markdown.process(path, 40, check=True)
+
+    def test_a_crlf_file_is_skipped(self, tmp_path: Path) -> None:
+        text = LONG.rstrip() + "\r\n"
+        path = self._file(tmp_path, text)
+
+        done = wrap_markdown.process(path, 40, check=False)
+
+        assert not done
+        assert path.read_bytes() == text.encode(ENCODING)
+
+    def test_a_file_with_indented_code_is_skipped(self, tmp_path: Path) -> None:
+        text = f"{LONG.rstrip()}\n\n    indented = code\n"
+        path = self._file(tmp_path, text)
+
+        done = wrap_markdown.process(path, 40, check=False)
+
+        assert not done
+        assert path.read_bytes() == text.encode(ENCODING)
+
+
 class TestTheToolIsStable:
     def test_a_second_pass_over_the_tree_changes_nothing(self) -> None:
         """The defect was a first pass that indented a paragraph and a second
