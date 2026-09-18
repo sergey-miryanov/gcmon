@@ -277,7 +277,7 @@ class TestControlServerEnabled:
 
 
 class TestControlServerExporter:
-    def test_exporter_receives_instant_events(self, mock_exporter: MagicMock) -> None:
+    def test_exporter_receives_instant_events(self) -> None:
         from tests.helpers import MockExporter
 
         exporter = MockExporter()
@@ -295,7 +295,7 @@ class TestControlServerExporter:
         finally:
             server.close()
 
-    def test_instant_keeps_the_timestamp_the_client_captured(self, mock_exporter: MagicMock) -> None:
+    def test_instant_keeps_the_timestamp_the_client_captured(self) -> None:
         from gcmon.control.control_client import ControlClient
         from tests.helpers import MockExporter
 
@@ -317,7 +317,7 @@ class TestControlServerExporter:
         finally:
             server.close()
 
-    def test_exporter_receives_multiple_events(self, mock_exporter: MagicMock) -> None:
+    def test_exporter_receives_multiple_events(self) -> None:
         from tests.helpers import MockExporter
 
         exporter = MockExporter()
