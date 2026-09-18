@@ -30,6 +30,7 @@ class TestDurationText:
             (90_000_000_000, "1m 30s"),
             (3_600_000_000_000, "1h"),
             (0, "0ns"),
+            (-5_000_100, "-5ms 100ns"),
         ],
     )
     def test_it_reads_as_a_duration(self, ns: int, text: str) -> None:
