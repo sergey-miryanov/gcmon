@@ -4,10 +4,11 @@ import subprocess
 import sys
 from collections.abc import Generator
 from pathlib import Path
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import ANY, MagicMock, Mock, call, patch
 
 import pytest
 
+from gcmon.control.control_server import CONTROL_ADDRESS_ENV
 from gcmon.monitoring.child_process_runner import ChildProcess, ChildProcessRunner, ProcessStdoutReader
 
 
@@ -197,6 +198,34 @@ class TestStart:
         assert isinstance(result, ChildProcess)
         assert result.pid == 99999
         mock_popen_and_reader.assert_called_once()
+
+    def test_the_relay_is_given_both_of_the_childs_streams(
+        self, runner: ChildProcessRunner, mock_popen_and_reader: Mock
+    ) -> None:
+        """One pipe, with stderr folded into it, is all the relay reads."""
+        runner.start()
+
+        assert mock_popen_and_reader.call_args == call(
+            ANY, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, creationflags=ANY, env=ANY
+        )
+
+    def test_the_child_is_told_the_control_address(
+        self, runner: ChildProcessRunner, mock_popen_and_reader: Mock
+    ) -> None:
+        with_control = ChildProcessRunner(runner._target, control_address="the-address")
+
+        with_control.start()
+
+        assert mock_popen_and_reader.call_args.kwargs["env"][CONTROL_ADDRESS_ENV] == "the-address"
+
+    def test_with_no_control_plane_the_child_is_told_nothing(
+        self, runner: ChildProcessRunner, mock_popen_and_reader: Mock, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.delenv(CONTROL_ADDRESS_ENV, raising=False)
+
+        runner.start()
+
+        assert CONTROL_ADDRESS_ENV not in mock_popen_and_reader.call_args.kwargs["env"]
 
     def test_immediate_exit_raises(
         self, runner: ChildProcessRunner, mock_popen_immediate_exit: Generator[None]
