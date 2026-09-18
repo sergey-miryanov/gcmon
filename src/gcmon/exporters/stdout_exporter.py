@@ -35,8 +35,3 @@ class StdoutExporter(JsonlExporter):
     @override
     def _open_writer(self) -> AbstractContextManager[TextIO]:
         return contextlib.nullcontext(self._output)
-
-    @override
-    def close(self) -> None:
-        super().close()
-        self._output.flush()
