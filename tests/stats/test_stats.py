@@ -823,6 +823,19 @@ class TestAFanOutThatDeparts:
 
         assert stats._admitted_rings == 0
 
+    def test_the_bound_is_explained_once(self, caplog: pytest.LogCaptureFixture) -> None:
+        """Four interpreters over the bound, one warning. A fan-out that
+        overshoots by hundreds would otherwise bury the log."""
+        stats = StreamingStats()
+
+        with caplog.at_level("WARNING", logger="gcmon.stats.streaming_stats"):
+            for pid in range(StreamingStats.MAX_ACTIVE_RINGS + 4):
+                stats.update(proc(pid), _pause())
+
+        warnings = [record.getMessage() for record in caplog.records]
+        assert len(warnings) == 1
+        assert f"PID {StreamingStats.MAX_ACTIVE_RINGS} interpreter 0" in warnings[0]
+
     def test_the_slots_a_departed_fan_out_frees_are_whole(self) -> None:
         stats = StreamingStats()
         for pid in range(StreamingStats.MAX_ACTIVE_RINGS + 4):
