@@ -165,7 +165,7 @@ def log_process_output(process: subprocess.Popen[bytes], stdout_data: bytes) -> 
     Log process output based on exit code.
 
     Signal-based exit codes (Ctrl+C, SIGINT, SIGTERM) are treated as normal
-    shutdown and logged at INFO level. Non-zero exit codes are logged at
+    shutdown and logged at DEBUG level. Non-zero exit codes are logged at
     WARNING level. Successful exits (code 0) produce no output.
     """
     # Decode output (handle None from terminate_process)
@@ -191,7 +191,7 @@ def log_process_output(process: subprocess.Popen[bytes], stdout_data: bytes) -> 
                 stdout_str,
             )
     elif _is_signal_exit_code(process.returncode):
-        # Log with info level for signal-based exit
+        # Log with debug level for signal-based exit
         exit_description = "terminated by signal"
         if stdout_str:
             _logger.debug(
