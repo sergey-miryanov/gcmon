@@ -10,7 +10,7 @@ from ..model.process import Process
 from ..model.protocol import TGCStatsInfo
 from ..support.time_units import secs_to_ns
 from .metrics import METRICS, PAUSE_KEY
-from .stats import Stats, get_quantile_value
+from .stats import Stats
 
 logger = logging.getLogger(__name__)
 
@@ -199,9 +199,6 @@ class StreamingStats:
         # arrival is what opens one and `materialize` closes it again.
         self._open_processes: set[Process] = set()
         self._bound_warned = False
-        # Process-wide, with no generation and no interpreter affinity
-        # (ADR-0004).
-        self._heap_size: dict[Process, int] = {}
         self._read_time: Stats = Stats()
 
     def update(self, process: Process, item: TGCStatsInfo) -> None:
@@ -218,9 +215,6 @@ class StreamingStats:
             _record(self.metrics, item, metric)
 
         self._open_processes.add(process)
-        # Process-wide and one integer per process, so it is kept whether or
-        # not the ring behind the record was admitted.
-        self._heap_size[process] = max(self._heap_size.get(process, 0), item.heap_size)
 
         ring = self._open_ring(process, item.iid)
         metrics = ring.metrics or self._admit(ring, (process, item.iid))
@@ -492,18 +486,3 @@ class StreamingStats:
 
     def count(self) -> int:
         return self._count
-
-    def heap_size_p99(self) -> float | None:
-        """The 99th percentile of the per-process high-water heap sizes.
-
-        ``None`` when no record carried one, so a caller leaves the metric
-        out rather than publishing a zero.
-        """
-        sizes = self._heap_size.values()
-        if not sizes:
-            return None
-        if len(sizes) == 1:
-            # Every percentile of one mark is that mark, and one monitored pid
-            # is the usual case.
-            return float(next(iter(sizes)))
-        return get_quantile_value(sorted(sizes), 99)
