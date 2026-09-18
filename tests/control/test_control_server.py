@@ -834,21 +834,24 @@ class TestPlatformUnix:
 class TestControlServerThreadSafety:
     def test_concurrent_is_enabled(self, control_server: ControlServer) -> None:
         errors: list[Exception] = []
+        barrier = threading.Barrier(10)
 
         def access_enabled() -> None:
             try:
+                barrier.wait(timeout=5)
                 for _ in range(50):
                     control_server.is_enabled(42)
             except Exception as e:
                 errors.append(e)
 
-        threads = [threading.Thread(target=access_enabled) for _ in range(10)]
+        threads = [threading.Thread(target=access_enabled, daemon=True) for _ in range(10)]
         for t in threads:
             t.start()
         for t in threads:
             t.join(timeout=5)
 
-        assert len(errors) == 0
+        assert errors == []
+        assert not [t for t in threads if t.is_alive()]
 
     def test_concurrent_add_event(self, server_not_started: ControlServer, mock_exporter: MagicMock) -> None:
         """The registry holds pid 42, so every message reaches the exporter."""
