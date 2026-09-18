@@ -221,6 +221,8 @@ class MockExporter(EventsExporter):
         self.liveness: list[tuple[Set[int], int]] = []
         # One entry per process gcmon let go of, in the order it did.
         self.retired: list[Process] = []
+        # One entry per process gcmon created, with what it was running.
+        self.launched: list[tuple[Process, tuple[str, ...] | None]] = []
         self._close_called = False
 
     @override
@@ -243,6 +245,11 @@ class MockExporter(EventsExporter):
     def add_process_liveness(self, processes: Set[Process], ts_ns: int) -> None:
         """Record one tick's liveness observation, as the pids it named."""
         self.liveness.append(({process.pid for process in processes}, ts_ns))
+
+    @override
+    def add_process_cmdline(self, process: Process, cmdline: tuple[str, ...] | None) -> None:
+        """Record the command line the monitor read as it created *process*."""
+        self.launched.append((process, cmdline))
 
     @override
     def add_process_retired(self, process: Process) -> None:

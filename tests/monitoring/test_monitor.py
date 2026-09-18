@@ -973,6 +973,22 @@ class _OrderedExporter(MockExporter):
         super().add_process_liveness(processes, ts_ns)
 
 
+class TestTheCommandLineReachesTheExporter:
+    """The monitor creates a process and hands the exporter what it is
+    running in the same call, once (ADR-0025)."""
+
+    def test_it_arrives_once_however_often_the_pid_is_polled(self, exporter: MockExporter) -> None:
+        registry = ProcessRegistry(cmdline_provider=lambda pid: ("python", "-m", f"target_{pid}"))
+
+        _drive(
+            _monitor(exporter, registry=registry),
+            listings=[[], []],
+            rings={12345: [_ring(1), _ring(1, 2)]},
+        )
+
+        assert exporter.launched == [(proc(DEFAULT_PID), ("python", "-m", "target_12345"))]
+
+
 class TestARetirementIsReported:
     """The exporter is told the moment gcmon lets go of a process, so it can
     draw that process's row without waiting for the end of the run. A run
