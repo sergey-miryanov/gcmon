@@ -21,7 +21,7 @@ from gcmon.exporters.perfetto_builders import (
 )
 from gcmon.exporters.perfetto_proto import TrackEventType
 from gcmon.exporters.trace_converter import counter_display_name
-from gcmon.model.names import CLIPPED, COLLECTED, DURATION, NAME, TYPE
+from gcmon.model.names import CLIPPED, COLLECTED, DURATION
 
 
 # The builders take a name and write it down. What the name says is the
@@ -178,7 +178,7 @@ class TestBuildCounterDescriptor:
         descriptor = TrackDescriptor()
         descriptor.ParseFromString(data)
         assert descriptor.HasField("counter")
-        assert not descriptor.counter.HasField(TYPE)
+        assert not descriptor.counter.HasField("type")
         assert len(descriptor.counter.categories) == 0
         assert not descriptor.counter.HasField("unit")
         assert not descriptor.counter.HasField("unit_multiplier")
@@ -254,7 +254,7 @@ class TestBuildTrackEvent:
         track_event.ParseFromString(data)
         assert track_event.type == TrackEvent.Type.TYPE_SLICE_END
         assert track_event.track_uuid == 100
-        assert not track_event.HasField(NAME)
+        assert not track_event.HasField("name")
 
     def test_instant(self) -> None:
         data = build_track_event(type=TrackEventType.INSTANT, track_uuid=100, name="marker")

@@ -14,7 +14,6 @@ from gcmon.exporters.perfetto_format import convert_trace_events_to_perfetto
 from gcmon.exporters.perfetto_process_lifetime import process_track_name
 from gcmon.exporters.perfetto_track_state import PerfettoTrackState
 from gcmon.exporters.trace_converter import convert_item_to_trace_format
-from gcmon.model.names import NAME
 from gcmon.model.trace_event import Instant, TraceEvent
 from tests.exporters.perfetto_helpers import (
     parse_track_descriptor,
@@ -99,7 +98,7 @@ class TestProcessOrderingByFirstTs:
         # Nothing gcmon draws is a thread track, so there is no thread
         # ordering to ask for (ADR-0027).
         assert not td.HasField("thread_ordering")
-        assert not td.HasField(NAME)
+        assert not td.HasField("name")
         assert not td.HasField("process")
         assert not td.HasField("thread")
         assert not td.HasField("counter")

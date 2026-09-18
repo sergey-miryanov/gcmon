@@ -56,7 +56,6 @@ from gcmon.model.names import (
     LOST_PAUSE,
     LOST_PAUSE_NS,
     MARK_ALIVE,
-    NAME,
     OBSERVED_COUNT,
     PID,
     PID_EPOCH,
@@ -540,7 +539,7 @@ class TestConvertItemToPerfettoPackets:
             assert not ann.HasField("name_iid"), (
                 "field 1 of DebugAnnotation is `name_iid` (uint64); the annotation name must not be written there"
             )
-            assert ann.HasField(NAME)
+            assert ann.HasField("name")
 
     def test_debug_annotations_on_pause(self, state: PerfettoTrackState) -> None:
         item = pause_item(collections=5, uncollectable=2, candidates=3)
