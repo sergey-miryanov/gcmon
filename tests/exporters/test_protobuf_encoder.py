@@ -7,7 +7,6 @@ from gcmon.exporters.protobuf_encoder import (
     encode_double_field,
     encode_field_key,
     encode_fixed64_field,
-    encode_signed_varint,
     encode_string_field,
     encode_varint,
     encode_varint_field,
@@ -45,19 +44,6 @@ class TestEncodeVarint:
         """Two's complement over 64 bits: 0xD6 is the low seven bits of -42
         with the continuation bit set."""
         assert encode_varint(-42) == b"\xd6\xff\xff\xff\xff\xff\xff\xff\xff\x01"
-
-
-class TestEncodeSignedVarint:
-    def test_zero(self) -> None:
-        assert encode_signed_varint(0) == b"\x00"
-
-    def test_positive(self) -> None:
-        assert encode_signed_varint(1) == b"\x02"
-        assert encode_signed_varint(42) == b"\x54"
-
-    def test_negative(self) -> None:
-        assert encode_signed_varint(-1) == b"\x01"
-        assert encode_signed_varint(-42) == b"\x53"
 
 
 class TestEncodeFieldKey:

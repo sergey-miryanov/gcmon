@@ -9,7 +9,6 @@ __all__ = [
     "encode_double_field",
     "encode_field_key",
     "encode_fixed64_field",
-    "encode_signed_varint",
     "encode_string_field",
     "encode_varint",
     "encode_varint_field",
@@ -33,10 +32,6 @@ def encode_varint(value: int) -> bytes:
             byte |= 0x80
         result.append(byte)
     return bytes(result)
-
-
-def encode_signed_varint(value: int) -> bytes:
-    return encode_varint((value << 1) ^ (value >> 63))
 
 
 def encode_field_key(field_number: int, wire_type: int) -> bytes:
