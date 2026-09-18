@@ -196,7 +196,13 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
             )
         )
 
-    if has_finalize_garbage(item) and item.ts_finalize_garbage_stop - item.ts_handle_weakref_callbacks_stop > 0:
+    # The three phases below start where the one before them stopped, so each
+    # needs that record's guard as well as its own.
+    if (
+        has_handle_weakrefs(item)
+        and has_finalize_garbage(item)
+        and item.ts_finalize_garbage_stop - item.ts_handle_weakref_callbacks_stop > 0
+    ):
         inc_data = {GENERATION: gen, IID: iid, FINALIZED_GARBAGE_COUNT: item.finalized_garbage_count}
         events.append(
             Slice(
@@ -209,7 +215,11 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
             )
         )
 
-    if has_handle_resurrected(item) and item.ts_handle_resurrected_stop - item.ts_finalize_garbage_stop > 0:
+    if (
+        has_finalize_garbage(item)
+        and has_handle_resurrected(item)
+        and item.ts_handle_resurrected_stop - item.ts_finalize_garbage_stop > 0
+    ):
         inc_data = {GENERATION: gen, IID: iid}
         events.append(
             Slice(
@@ -222,7 +232,11 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
             )
         )
 
-    if has_clear_weakrefs(item) and item.ts_clear_weakrefs_stop - item.ts_handle_resurrected_stop > 0:
+    if (
+        has_handle_resurrected(item)
+        and has_clear_weakrefs(item)
+        and item.ts_clear_weakrefs_stop - item.ts_handle_resurrected_stop > 0
+    ):
         inc_data = {GENERATION: gen, IID: iid, CLEAR_WEAKREFS_COUNT: item.clear_weakrefs_count}
         events.append(
             Slice(
