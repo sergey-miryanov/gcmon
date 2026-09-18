@@ -481,3 +481,37 @@ class TestRateArgument:
     def test_a_value_the_loop_cannot_hold_exits(self, parser: ArgumentParser, value: str) -> None:
         with pytest.raises(SystemExit):
             parser.parse_args(["--rate", value])
+
+
+class TestTableFormatArgument:
+    """`--table-format` on the command line: three spellings, in any case."""
+
+    @pytest.fixture
+    def parser(self) -> ArgumentParser:
+        parser = ArgumentParser()
+        add_monitoring_options(parser)
+        return parser
+
+    @pytest.mark.parametrize(
+        ("word", "table_format"),
+        [
+            ("plain", TableFormat.PLAIN),
+            ("markdown", TableFormat.MARKDOWN),
+            ("md", TableFormat.MARKDOWN),
+            ("MD", TableFormat.MARKDOWN),
+            ("Plain", TableFormat.PLAIN),
+        ],
+    )
+    def test_each_spelling_selects_its_format(
+        self, parser: ArgumentParser, word: str, table_format: TableFormat
+    ) -> None:
+        assert parser.parse_args(["--table-format", word]).table_format is table_format
+
+    def test_an_unknown_word_is_refused_by_name(
+        self, parser: ArgumentParser, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        with pytest.raises(SystemExit) as exit_info:
+            parser.parse_args(["--table-format", "html"])
+
+        assert exit_info.value.code != 0
+        assert "got 'html'" in capsys.readouterr().err
