@@ -182,11 +182,12 @@ class TestRssCounterTrack:
         events: list[TraceEvent] = [
             _rss_sample(),
         ]
+
         descriptors, _ = convert_trace_events_to_perfetto(events, state, sequence_id=1)
-        for d in descriptors:
-            td = parse_track_descriptor(d)
-            if td is not None and td.HasField("thread"):
-                pytest.fail(f"unexpected thread descriptor for RSS: uuid={td.uuid}")
+
+        parsed = [td for td in map(parse_track_descriptor, descriptors) if td]
+        assert RSS in [td.name for td in parsed]
+        assert [td.name for td in parsed if td.HasField("thread")] == []
 
     def test_multiple_pids_get_separate_rss_tracks(self, state: PerfettoTrackState) -> None:
         events: list[TraceEvent] = [
