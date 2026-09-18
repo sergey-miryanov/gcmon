@@ -17,6 +17,7 @@ from gcmon.model.names import (
     HANDLE_WEAKREFS,
     MARK_ALIVE,
     gc_pause_slice_name,
+    phase_slice_name,
 )
 from gcmon.model.run_report import RunReport
 from gcmon.stats.stats import Stats
@@ -31,7 +32,7 @@ from gcmon.stats.stats_output import (
 from gcmon.stats.streaming_stats import StreamingStats
 from gcmon.stats.views import StatsView, TableFormat
 from tests.conftest import DEFAULT_PID
-from tests.helpers import create_mock_stats_item, proc
+from tests.helpers import create_mock_incremental_item, create_mock_stats_item, proc
 
 # The process whose rows these tests render.
 TARGET_PID: int = 1
@@ -522,6 +523,22 @@ class TestLossColumns:
 
         assert "3/10" in out
         assert "3.000/10.000" in out
+
+    def test_a_sub_phase_row_marks_its_companions_as_estimates(self, capsys: pytest.CaptureFixture[str]) -> None:
+        """Only the pause has the target's own counters behind it. A sub-phase
+        is scaled, its count by the coverage and its sum by ``F``, and the
+        seven lost pauses here ran twice as long as the three that were read.
+        """
+        stats = StreamingStats()
+        for _ in range(3):
+            stats.update(proc(TARGET_PID), create_mock_incremental_item(gen=0, ts_start=0, ts_stop=PAUSE_NS))
+        stats.record_loss(proc(TARGET_PID), 0, 0, 7, 14 * PAUSE_NS)
+
+        print_stats(stats, StatsView.TOTAL)
+
+        rows = {row[1]: row for row in table_rows(capsys.readouterr().out)}
+        assert rows[phase_slice_name(MARK_ALIVE, 0)][2:4] == ["3/~10", "3.000/~17.000"]
+        assert rows[gc_pause_slice_name(0)][2:4] == ["3/10", "3.000/17.000"]
 
     def test_cov_and_f_are_columns(self, capsys: pytest.CaptureFixture[str]) -> None:
         print_stats(self._lossy(), StatsView.FULL)
