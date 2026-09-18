@@ -10,7 +10,6 @@ the ``list[TraceEvent]`` the same input produced.
 
 from __future__ import annotations
 
-import json
 import subprocess
 import sys
 from collections.abc import Iterable, Iterator, Sequence
@@ -21,6 +20,7 @@ import pytest
 from perfetto.trace_processor import TraceProcessor
 
 from gcmon.analysis.jsonl_io import read_jsonl
+from gcmon.exporters import JsonlExporter
 from gcmon.exporters.perfetto_format import _INTERPRETER_LIST_NAME, _interpreter_group_name
 from gcmon.exporters.perfetto_process_lifetime import (
     _PROCESS_LIFETIME_TRACK_NAME,
@@ -29,53 +29,32 @@ from gcmon.exporters.perfetto_process_lifetime import (
     process_track_name,
 )
 from gcmon.exporters.trace_converter import convert_to_trace_format, counter_display_name
+from gcmon.model.data import GCStatsInfo
 from gcmon.model.names import (
-    ALIVE_SIZE,
     CANDIDATES,
     CLEAR_WEAKREFS,
-    CLEAR_WEAKREFS_COUNT,
     COLLECTED,
     COLLECTIONS,
     DEDUCE_UNREACHABLE,
     DELETE_GARBAGE,
-    DELETED_GARBAGE_COUNT,
     DURATION,
     FILL_INCREMENT,
     FINALIZE_GARBAGE,
-    FINALIZED_GARBAGE_COUNT,
     GC_PAUSE_NAME,
-    GEN,
     GENERATION,
     HANDLE_RESURRECTED,
     HANDLE_WEAKREFS,
     HEAP_SIZE,
     IID,
-    INCREMENT_SIZE,
     MARK_ALIVE,
     NAME,
-    PID,
     SAMPLED_COUNT,
-    TS_CLEAR_WEAKREFS_STOP,
-    TS_DEDUCE_UNREACHABLE_START,
-    TS_DEDUCE_UNREACHABLE_STOP,
-    TS_DELETE_GARBAGE_START,
-    TS_DELETE_GARBAGE_STOP,
-    TS_FILL_INCREMENT_START,
-    TS_FILL_INCREMENT_STOP,
-    TS_FINALIZE_GARBAGE_STOP,
-    TS_HANDLE_RESURRECTED_STOP,
-    TS_HANDLE_WEAKREF_CALLBACKS_START,
-    TS_HANDLE_WEAKREF_CALLBACKS_STOP,
-    TS_MARK_ALIVE_START,
-    TS_MARK_ALIVE_STOP,
-    TS_START,
-    TS_STOP,
     UNCOLLECTABLE,
     gc_pause_slice_name,
     phase_slice_name,
 )
 from gcmon.model.trace_event import Slice, TraceEvent
-from gcmon.support.vocabulary import CMD_COMBINE, ENCODING, FORMAT_PERFETTO, PROGRAM_NAME
+from gcmon.support.vocabulary import CMD_COMBINE, FORMAT_PERFETTO, PROGRAM_NAME
 from tests.exporters.perfetto_integration.traces import _ARG_PREFIX, _on_interpreter, _process_filter
 from tests.helpers import (
     SUBPROCESS_WATCHDOG,
@@ -84,11 +63,6 @@ from tests.helpers import (
     open_trace_processor,
     proc,
 )
-
-
-def _int(v: int | None) -> int:
-    assert v is not None
-    return v
 
 
 class _NameRow(Protocol):
@@ -161,134 +135,46 @@ _EXPECTED_PAUSE_ARGS: dict[str, int] = {
 }
 
 
-# The namespace the trace processor puts a debug annotation under.
-def _multi_dimensional_records() -> list[dict[str, int | float]]:
-    """Build JSONL records exercising multiple pids, generations, iids.
+def _captures() -> dict[int, list[GCStatsInfo]]:
+    """Records by pid, over several generations and interpreters.
 
-    - pid=1001: 3 records (gen 0, 1, 2) across 3 distinct iids (0, 1, 2)
-    - pid=2002: 1 record (gen 0) with iid=10
+    - ``_PID_A``: generations 0, 1 and 2, each on its own interpreter. The
+      generation-1 record is incremental, so every sub-slice is drawn.
+    - ``_PID_B``: one generation-0 record, on a timeline of its own.
     """
-    records: list[dict[str, int | float]] = []
-    # pid=1001, iid=0, gen=0 (full collection, basic counters)
-    item_g0 = create_mock_stats_item(
-        gen=0,
-        iid=_IID_A1,
-        ts_start=_TS_START,
-        ts_stop=_TS_START + _DURATION_NS,
-    )
-    records.append(
-        {
-            PID: _PID_A,
-            "tid": _IID_A1,
-            GEN: item_g0.gen,
-            IID: item_g0.iid,
-            TS_START: item_g0.ts_start,
-            TS_STOP: item_g0.ts_stop,
-            HEAP_SIZE: item_g0.heap_size,
-            COLLECTIONS: item_g0.collections,
-            COLLECTED: item_g0.collected,
-            UNCOLLECTABLE: item_g0.uncollectable,
-            CANDIDATES: item_g0.candidates,
-            DURATION: item_g0.duration,
-        }
-    )
-    # pid=1001, iid=1, gen=1 (incremental: exercises all sub-slices;
-    # only `increment_size` is emitted as a G1 counter, the other
-    # incremental fields appear in pause/sub-step args).
-    item_g1 = create_mock_incremental_item(
-        gen=1,
-        iid=_IID_A2,
-        ts_start=_TS_START + 100_000_000,
-        ts_stop=_TS_START + 100_000_000 + _DURATION_NS,
-    )
-    records.append(
-        {
-            PID: _PID_A,
-            "tid": _IID_A2,
-            GEN: item_g1.gen,
-            IID: item_g1.iid,
-            TS_START: item_g1.ts_start,
-            TS_STOP: item_g1.ts_stop,
-            HEAP_SIZE: item_g1.heap_size,
-            COLLECTIONS: item_g1.collections,
-            COLLECTED: item_g1.collected,
-            UNCOLLECTABLE: item_g1.uncollectable,
-            CANDIDATES: item_g1.candidates,
-            DURATION: item_g1.duration,
-            # Incremental fields:
-            INCREMENT_SIZE: _int(item_g1.increment_size),
-            ALIVE_SIZE: _int(item_g1.alive_size),
-            TS_MARK_ALIVE_START: _int(item_g1.ts_mark_alive_start),
-            TS_MARK_ALIVE_STOP: _int(item_g1.ts_mark_alive_stop),
-            TS_FILL_INCREMENT_START: _int(item_g1.ts_fill_increment_start),
-            TS_FILL_INCREMENT_STOP: _int(item_g1.ts_fill_increment_stop),
-            TS_DEDUCE_UNREACHABLE_START: _int(item_g1.ts_deduce_unreachable_start),
-            TS_DEDUCE_UNREACHABLE_STOP: _int(item_g1.ts_deduce_unreachable_stop),
-            TS_HANDLE_WEAKREF_CALLBACKS_START: _int(item_g1.ts_handle_weakref_callbacks_start),
-            TS_HANDLE_WEAKREF_CALLBACKS_STOP: _int(item_g1.ts_handle_weakref_callbacks_stop),
-            TS_FINALIZE_GARBAGE_STOP: _int(item_g1.ts_finalize_garbage_stop),
-            FINALIZED_GARBAGE_COUNT: _int(item_g1.finalized_garbage_count),
-            TS_HANDLE_RESURRECTED_STOP: _int(item_g1.ts_handle_resurrected_stop),
-            TS_CLEAR_WEAKREFS_STOP: _int(item_g1.ts_clear_weakrefs_stop),
-            CLEAR_WEAKREFS_COUNT: _int(item_g1.clear_weakrefs_count),
-            TS_DELETE_GARBAGE_START: _int(item_g1.ts_delete_garbage_start),
-            TS_DELETE_GARBAGE_STOP: _int(item_g1.ts_delete_garbage_stop),
-            DELETED_GARBAGE_COUNT: _int(item_g1.deleted_garbage_count),
-        }
-    )
-    # pid=1001, iid=2, gen=2 (full collection, basic counters)
-    item_g2 = create_mock_stats_item(
-        gen=2,
-        iid=_IID_A3,
-        ts_start=_TS_START + 200_000_000,
-        ts_stop=_TS_START + 200_000_000 + _DURATION_NS,
-    )
-    records.append(
-        {
-            PID: _PID_A,
-            "tid": _IID_A3,
-            GEN: item_g2.gen,
-            IID: item_g2.iid,
-            TS_START: item_g2.ts_start,
-            TS_STOP: item_g2.ts_stop,
-            HEAP_SIZE: item_g2.heap_size,
-            COLLECTIONS: item_g2.collections,
-            COLLECTED: item_g2.collected,
-            UNCOLLECTABLE: item_g2.uncollectable,
-            CANDIDATES: item_g2.candidates,
-            DURATION: item_g2.duration,
-        }
-    )
-    # pid=2002, iid=10, gen=0 (second process, separate timeline)
-    item_b = create_mock_stats_item(
-        gen=0,
-        iid=_IID_B1,
-        ts_start=_TS_START + 300_000_000,
-        ts_stop=_TS_START + 300_000_000 + _DURATION_NS,
-    )
-    records.append(
-        {
-            PID: _PID_B,
-            "tid": _IID_B1,
-            GEN: item_b.gen,
-            IID: item_b.iid,
-            TS_START: item_b.ts_start,
-            TS_STOP: item_b.ts_stop,
-            HEAP_SIZE: item_b.heap_size,
-            COLLECTIONS: item_b.collections,
-            COLLECTED: item_b.collected,
-            UNCOLLECTABLE: item_b.uncollectable,
-            CANDIDATES: item_b.candidates,
-            DURATION: item_b.duration,
-        }
-    )
-    return records
+    return {
+        _PID_A: [
+            create_mock_stats_item(gen=0, iid=_IID_A1, ts_start=_TS_START, ts_stop=_TS_START + _DURATION_NS),
+            create_mock_incremental_item(
+                gen=1,
+                iid=_IID_A2,
+                ts_start=_TS_START + 100_000_000,
+                ts_stop=_TS_START + 100_000_000 + _DURATION_NS,
+            ),
+            create_mock_stats_item(
+                gen=2,
+                iid=_IID_A3,
+                ts_start=_TS_START + 200_000_000,
+                ts_stop=_TS_START + 200_000_000 + _DURATION_NS,
+            ),
+        ],
+        _PID_B: [
+            create_mock_stats_item(
+                gen=0,
+                iid=_IID_B1,
+                ts_start=_TS_START + 300_000_000,
+                ts_stop=_TS_START + 300_000_000 + _DURATION_NS,
+            ),
+        ],
+    }
 
 
-def _write_jsonl(records: list[dict[str, int | float]], path: Path) -> None:
-    with open(path, "w", encoding=ENCODING) as f:
-        for r in records:
-            f.write(json.dumps(r) + "\n")
+def _write_jsonl(pid: int, records: list[GCStatsInfo], path: Path) -> None:
+    """Through the exporter, so the file holds what a monitored run writes."""
+    exporter = JsonlExporter(output_path=path)
+    for record in records:
+        exporter.add_event(proc(pid), record)
+    exporter.close()
 
 
 def _run_combine(
@@ -309,12 +195,11 @@ def _run_combine(
 @pytest.fixture
 def multi_pid_jsonl(tmp_path: Path) -> list[Path]:
     """Two JSONL files exercising multiple pids, generations, and iids."""
-    records = _multi_dimensional_records()
+    captures = _captures()
     f1 = tmp_path / "trace_a.jsonl"
     f2 = tmp_path / "trace_b.jsonl"
-    # Split across 2 files (file 1: pid=1001 records; file 2: pid=2002 record)
-    _write_jsonl([r for r in records if r[PID] == _PID_A], f1)
-    _write_jsonl([r for r in records if r[PID] == _PID_B], f2)
+    _write_jsonl(_PID_A, captures[_PID_A], f1)
+    _write_jsonl(_PID_B, captures[_PID_B], f2)
     return [f1, f2]
 
 
