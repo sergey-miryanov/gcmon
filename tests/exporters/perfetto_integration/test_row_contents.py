@@ -14,8 +14,14 @@ from perfetto.trace_processor import TraceProcessor
 from perfetto.trace_processor.api import TraceProcessorException
 
 from gcmon.exporters import PerfettoExporter
-from gcmon.exporters.perfetto_format import _COUNTER_GROUP_NAME, _interpreter_group_name
+from gcmon.exporters.perfetto_format import (
+    _COUNTER_GROUP_NAME,
+    _INTERPRETER_LIST_NAME,
+    _INTERPRETER_ROW_ORDER,
+    _interpreter_group_name,
+)
 from gcmon.exporters.perfetto_process_lifetime import (
+    _PROCESS_LIFETIME_TRACK_NAME,
     _PROCESS_ROW_PREFIX,
     process_track_name,
 )
@@ -362,6 +368,50 @@ class TestCounterYAxisShareKey:
         )
         assert rows, "every interpreter in the trace draws a heap_size track"
         assert {r.y_axis_share_key for r in rows} <= {"", None}
+
+
+def rows_drawn_under(tp: TraceProcessor, *path: str) -> list[str]:
+    """The rows under the row *path* names, top to bottom. No path is the top
+    level.
+
+    `order_id` is the key the Perfetto UI sorts a TrackEvent row's children
+    on, and the trace processor computes it: by `sibling_order_rank` under a
+    parent whose `child_ordering` is explicit, by name under one with none.
+    """
+    list(tp.query("INCLUDE PERFETTO MODULE viz.summary.track_event"))
+    rows = list(
+        tp.query("SELECT min_track_id AS id, parent_id, name, order_id FROM _track_event_tracks_ordered_groups")
+    )
+    parent: int | None = None
+    for name in path:
+        [parent] = [r.id for r in rows if r.parent_id == parent and r.name == name]
+    return [r.name for r in sorted((r for r in rows if r.parent_id == parent), key=lambda r: r.order_id)]
+
+
+class TestTheOrderRowsAreDrawnIn:
+    """Read off the trace processor, which is where the UI gets it. Neither
+    order below is the alphabetical one, so a rank that stopped reaching the
+    wire would show as rows sorted by name."""
+
+    def test_an_interpreter_s_rows_follow_their_ranks(self, every_row_trace_processor: TraceProcessor) -> None:
+        drawn = rows_drawn_under(every_row_trace_processor, _INTERPRETER_LIST_NAME, _interpreter_group_name(0))
+
+        assert drawn == list(_INTERPRETER_ROW_ORDER)
+
+    def test_the_counters_in_a_group_follow_their_ranks(self, every_row_trace_processor: TraceProcessor) -> None:
+        drawn = rows_drawn_under(
+            every_row_trace_processor, _INTERPRETER_LIST_NAME, _interpreter_group_name(0), _COUNTER_GROUP_NAME
+        )
+
+        assert drawn == [counter_display_name(0, metric) for metric in (COLLECTED, UNCOLLECTABLE, CANDIDATES, DURATION)]
+
+    def test_the_top_level_rows_come_out_by_name(self, every_row_trace_processor: TraceProcessor) -> None:
+        """No rank reaches these: a process track is OS-scoped and the trace
+        processor discards one there (ADR-0003). The name is all that places
+        the interpreter list under the process row (ADR-0027)."""
+        drawn = rows_drawn_under(every_row_trace_processor)
+
+        assert drawn == [_DEFAULT_ROW_NAME, _PROCESS_LIFETIME_TRACK_NAME, _INTERPRETER_LIST_NAME, RSS]
 
 
 class TestTrackDescriptors:

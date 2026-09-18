@@ -521,6 +521,24 @@ _RSS_TS_2: int = 1_500_000_000
 _RSS_TS_3: int = 2_500_000_000
 
 
+def _write_every_row_trace(tmp: Path) -> Path:
+    """One interpreter drawing every row it can: a pause with each counter
+    set, a loss span after it, and the process's `rss` beside them."""
+    path = tmp / "trace_every_row.pb"
+    exporter = PerfettoExporter(output_path=path, flush_threshold=1000)
+    pause = create_mock_incremental_item(gen=_GEN, iid=_IID, uncollectable=_UNCOLLECTABLE)
+    exporter.add_event(proc(DEFAULT_PID), pause)
+    exporter.add_loss_event(
+        proc(DEFAULT_PID),
+        create_mock_loss_item(
+            iid=_IID, gen=_GEN, ts_start=pause.ts_stop + 5_000_000, ts_stop=pause.ts_stop + 15_000_000
+        ),
+    )
+    exporter.add_rss_sample(proc(DEFAULT_PID), _RSS_VAL_1, pause.ts_start)
+    exporter.close()
+    return path
+
+
 def _write_trace_with_rss(tmp: Path) -> Path:
     path = tmp / "trace_with_rss.pb"
     exporter: PerfettoExporter = PerfettoExporter(output_path=path, flush_threshold=1000)

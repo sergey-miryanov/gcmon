@@ -16,6 +16,7 @@ from perfetto.trace_processor import TraceProcessor
 from tests.exporters.perfetto_integration.traces import (
     _FAKE_CMDLINE,
     _write_crossing_trace,
+    _write_every_row_trace,
     _write_killed_run_trace,
     _write_liveness_only_trace,
     _write_liveness_trace,
@@ -28,6 +29,12 @@ from tests.exporters.perfetto_integration.traces import (
     _write_zero_duration_trace,
 )
 from tests.helpers import open_trace_processor
+
+
+@pytest.fixture
+def every_row_trace_processor(tmp_path: Path) -> Iterator[TraceProcessor]:
+    with open_trace_processor(_write_every_row_trace(tmp_path)) as tp:
+        yield tp
 
 
 @pytest.fixture
