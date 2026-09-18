@@ -101,7 +101,7 @@ class TestCounterTrackYAxisShareKey:
         """Two pids each emit a ``G0 collected`` counter. Both must
         carry ``y_axis_share_key = "collected"``; the parent-scoping
         is what the docs require for safe sharing, and is implicit in
-        the existing per-``(pid, tid)`` ``GC Metrics`` group.
+        the existing per-``(pid, iid)`` ``GC Metrics`` group.
         """
         events: list[TraceEvent] = [
             gen_counter(interpreter_track(TARGET_PID, 0), 0, COLLECTED, 1_000, 10),
@@ -176,9 +176,9 @@ class TestRssCounterTrack:
                 return
         pytest.fail("RSS counter track descriptor not found")
 
-    def test_no_thread_descriptor_for_rss_tid(self, state: PerfettoTrackState) -> None:
-        """No ``ThreadDescriptor`` track should be emitted for
-        ``tid=-1``; RSS is process-level."""
+    def test_the_rss_track_gets_no_thread_descriptor(self, state: PerfettoTrackState) -> None:
+        """RSS is process-level, so no ``ThreadDescriptor`` track is emitted
+        for it."""
         events: list[TraceEvent] = [
             _rss_sample(),
         ]
@@ -205,9 +205,9 @@ class TestRssCounterTrack:
         """RSS is a top-level counter metric, parented directly to the
         process track, NOT inside the GC Metrics group."""
         events: list[TraceEvent] = [
-            # RSS sample (tid=-1, process-level)
+            # RSS sample (process-level)
             _rss_sample(),
-            # GC counter (tid=0, thread-level, inside GC Metrics group)
+            # GC counter (per interpreter, inside the GC Metrics group)
             gen_counter(interpreter_track(TARGET_PID, 0), 0, COLLECTED, 1_000, 42),
             gen_counter(interpreter_track(TARGET_PID, 0), 0, CANDIDATES, 1_000, 10),
             gen_counter(interpreter_track(TARGET_PID, 0), 0, DURATION, 1_000, 0.005),
