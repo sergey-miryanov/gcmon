@@ -68,6 +68,7 @@ class TestStatsUpdate:
 
     def test_update_appends_to_buffer(self, stats: Stats) -> None:
         stats.update(42.0)
+
         assert len(stats.buffer) == 1
         assert 42.0 in stats.buffer
 
@@ -78,11 +79,14 @@ class TestStatsUpdate:
         stats._sketch = mock_sketch
 
         stats.update(150.0)
+
         mock_sketch.add.assert_called_once_with(150.0)
 
     def test_update_without_sketch(self, stats_without_ddsketch: Stats) -> None:
         assert not stats_without_ddsketch.has_sketch
+
         stats_without_ddsketch.update(150.0)
+
         assert stats_without_ddsketch.count() == 1
         assert stats_without_ddsketch.sum() == 150.0
 
@@ -92,6 +96,7 @@ class TestStatsMaterialize:
 
     def test_materialize_computes_percentiles(self, stats_with_data: Stats) -> None:
         stats_with_data.materialize()
+
         p = stats_with_data.percentiles
         assert p is not None
         assert 50 in p
@@ -101,13 +106,16 @@ class TestStatsMaterialize:
 
     def test_materialize_percentile_values_correct(self, stats_with_data: Stats) -> None:
         stats_with_data.materialize()
+
         p = stats_with_data.percentiles
         assert p is not None
         assert p[50] == 300.0
 
     def test_materialize_clears_buffer(self, stats_with_data: Stats) -> None:
         assert len(stats_with_data.buffer) == 5
+
         stats_with_data.materialize()
+
         assert len(stats_with_data.buffer) == 0
 
     @pytest.mark.skipif(not HAS_DDSKETCH, reason="ddsketch not installed")
@@ -115,7 +123,9 @@ class TestStatsMaterialize:
         for i in range(10):
             stats.update(float(i))
         assert stats.has_sketch
+
         stats.materialize()
+
         assert not stats.has_sketch
 
     def test_update_after_materialize_raises(self, stats_with_data: Stats) -> None:
@@ -131,12 +141,16 @@ class TestStatsMaterialize:
         stats_with_data.materialize()
         assert stats_with_data.percentiles is not None
         first_percentiles = stats_with_data.percentiles.copy()
+
         stats_with_data.materialize()
+
         assert stats_with_data.percentiles == first_percentiles
 
     def test_materialize_empty_stats(self, stats: Stats) -> None:
         assert stats.count() == 0
+
         stats.materialize()
+
         assert stats.percentiles is None
 
 
@@ -148,12 +162,14 @@ class TestStatsAverage:
 
     def test_average_single_value(self, stats: Stats) -> None:
         stats.update(42.0)
+
         assert stats.average() == 42.0
 
     def test_average_multiple_values(self, stats: Stats) -> None:
         stats.update(100.0)
         stats.update(200.0)
         stats.update(300.0)
+
         assert stats.average() == 200.0
 
 
@@ -162,16 +178,20 @@ class TestStatsPercentile:
 
     def test_percentile_from_materialized(self, stats_with_data: Stats) -> None:
         stats_with_data.materialize()
+
         assert stats_with_data.percentile(50) == 300.0
 
     def test_percentile_unknown_returns_zero_after_materialize(self, stats_with_data: Stats) -> None:
         stats_with_data.materialize()
+
         assert stats_with_data.percentile(25) == 0.0
 
     def test_percentile_from_buffer(self, stats: Stats) -> None:
         for v in [10.0, 20.0, 30.0, 40.0, 50.0]:
             stats.update(v)
+
         p50 = stats.percentile(50)
+
         assert abs(p50 - 30.0) < 1e-10
 
     @pytest.mark.skipif(not HAS_DDSKETCH, reason="ddsketch not installed")
@@ -191,12 +211,14 @@ class TestStatsPercentile:
 
     def test_percentile_single_value_buffer(self, stats: Stats) -> None:
         stats.update(42.0)
+
         assert stats.percentile(50) == 42.0
         assert stats.percentile(0) == 42.0
         assert stats.percentile(100) == 42.0
 
     def test_percentile_unknown_returns_zero_for_arbitrary_value(self, stats_with_data: Stats) -> None:
         stats_with_data.materialize()
+
         assert stats_with_data.percentile(33) == 0.0
 
 
@@ -209,6 +231,7 @@ class TestStatsCountAndSum:
     def test_count_after_updates(self, stats: Stats) -> None:
         for i in range(5):
             stats.update(float(i))
+
         assert stats.count() == 5
 
     def test_sum_initial(self, stats: Stats) -> None:
@@ -218,6 +241,7 @@ class TestStatsCountAndSum:
         stats.update(10.0)
         stats.update(20.0)
         stats.update(30.0)
+
         assert stats.sum() == 60.0
 
 
@@ -227,29 +251,36 @@ class TestStatsBufferLimit:
     def test_buffer_respects_maxlen(self, stats: Stats) -> None:
         for i in range(Stats.MAX_BUFFER_LEN + 1000):
             stats.update(float(i))
+
         assert len(stats.buffer) == Stats.MAX_BUFFER_LEN
 
     def test_buffer_count_not_affected_by_limit(self, stats: Stats) -> None:
         total_updates = Stats.MAX_BUFFER_LEN + 500
+
         for _ in range(total_updates):
             stats.update(1.0)
+
         assert stats.count() == total_updates
 
     def test_buffer_sum_not_affected_by_limit(self, stats: Stats) -> None:
         total_updates = Stats.MAX_BUFFER_LEN + 500
+
         for _ in range(total_updates):
             stats.update(2.0)
+
         assert stats.sum() == float(total_updates) * 2.0
 
 
 class TestStatsNonNumbers:
     def test_update_nan(self, stats: Stats) -> None:
         stats.update(float("nan"))
+
         assert stats.count() == 1
         assert math.isnan(stats.sum())
 
     def test_update_inf_without_ddsketch(self, stats_without_ddsketch: Stats) -> None:
         stats_without_ddsketch.update(float("inf"))
+
         assert stats_without_ddsketch.count() == 1
         assert stats_without_ddsketch.sum() == float("inf")
         assert stats_without_ddsketch.average() == float("inf")
@@ -264,10 +295,12 @@ class TestStatsPercentileValidation:
 
     def test_zero_is_valid(self, stats_with_data: Stats) -> None:
         result = stats_with_data.percentile(0)
+
         assert result == 100.0
 
     def test_hundred_is_valid(self, stats_with_data: Stats) -> None:
         result = stats_with_data.percentile(100)
+
         assert result == 500.0
 
     def test_above_hundred_raises_value_error(self, stats_with_data: Stats) -> None:
@@ -280,11 +313,13 @@ class TestStatsPercentileValidation:
 
     def test_negative_raises_on_materialized_stats(self, stats_with_data: Stats) -> None:
         stats_with_data.materialize()
+
         with pytest.raises(ValueError, match=r"percentile must be in \[0, 100\]"):
             stats_with_data.percentile(-50)
 
     def test_above_hundred_raises_on_materialized_stats(self, stats_with_data: Stats) -> None:
         stats_with_data.materialize()
+
         with pytest.raises(ValueError, match=r"percentile must be in \[0, 100\]"):
             stats_with_data.percentile(150)
 
@@ -448,6 +483,7 @@ class TestLowCoverage:
         assert stats.pause_totals_by_gen()[0].coverage > StreamingStats.COVERAGE_ADVISORY
 
         low = stats.low_coverage(proc(TARGET_PID))
+
         assert low is not None
         iid, gen, coverage = low
         assert (iid, gen) == (1, 0)
@@ -463,6 +499,7 @@ class TestLowCoverage:
         stats.record_loss(proc(TARGET_PID), 1, 0, 19, 19_000)
 
         low = stats.low_coverage(proc(TARGET_PID))
+
         assert low is not None
         iid, gen, coverage = low
         assert (iid, gen) == (1, 0), "interpreter 0 dipped first and is the milder of the two"
@@ -476,6 +513,7 @@ class TestLowCoverage:
         stats.record_loss(proc(TARGET_PID), 0, 0, 13, 13_000)
 
         low = stats.low_coverage(proc(TARGET_PID))
+
         assert low is not None
         assert low[:2] == (1, 0)
 
@@ -531,6 +569,7 @@ class TestLowCoverage:
         stats.record_loss(proc(TARGET_PID), 0, 0, 7, 7_000)
 
         first = stats.low_coverage(proc(TARGET_PID))
+
         assert first is not None
         assert stats.low_coverage(proc(TARGET_PID)) == first
 
@@ -549,6 +588,7 @@ class TestCumulativeCounters:
         delta -- adding them would count every collection many times."""
         stats = StreamingStats()
         stats.observe_cumulative(proc(TARGET_PID), 0, 0, 500, 0.5)
+
         stats.observe_cumulative(proc(TARGET_PID), 0, 0, 900, 0.9)
 
         assert stats.cumulative_totals_by_gen()[0].collections == 900
@@ -558,6 +598,7 @@ class TestCumulativeCounters:
         loss, and must not touch `Cov`."""
         stats = StreamingStats()
         stats.update(proc(TARGET_PID), _pause())
+
         stats.observe_cumulative(proc(TARGET_PID), 0, 0, 5_000, 5.0)
 
         assert stats.cumulative_totals_by_gen()[0].collections == 5_000
@@ -600,6 +641,7 @@ class TestTwoInterpretersOfOnePid:
         """The key separates rings; a roll-up over all of them is one number,
         and `Total` prints it."""
         stats = self._stats()
+
         totals = stats.pause_totals_by_gen()[0]
 
         assert (totals.sampled_count, totals.lost_count) == (10, 10)
@@ -629,6 +671,7 @@ class TestAProcessThatExits:
 
     def test_the_percentiles_cover_the_whole_life(self) -> None:
         stats = self._ran_and_exited()
+
         ring = stats.get_ring_stats(proc(TARGET_PID), 0)
 
         assert ring is not None
@@ -675,6 +718,7 @@ class TestAProcessThatExits:
         """A target that spawns and exits keeps every row it earned. The bound
         counts the interpreters running, so the dead ones cost no slot."""
         stats = StreamingStats()
+
         for pid in range(StreamingStats.MAX_ACTIVE_RINGS * 2):
             stats.update(proc(pid), _pause())
             stats.materialize(proc(pid))
@@ -690,6 +734,7 @@ class TestAnOpenPidHoldsARing:
 
     def test_each_path_that_opens_a_pid_opens_a_ring(self) -> None:
         stats = StreamingStats()
+
         stats.update(proc(TARGET_PID), _pause())
         stats.record_loss(proc(OTHER_PID), 0, 0, 4, 400)
         stats.observe_cumulative(proc(3), 0, 0, 10, 0.5)
@@ -874,6 +919,7 @@ class TestTheBoundOnRunningRings:
 
     def test_a_repeat_record_counts_the_ring_once(self) -> None:
         stats = self._full()
+
         stats.update(proc(UNKNOWN_PID), _pause(4_000))
 
         assert stats.untracked_rings() == 1
@@ -913,12 +959,14 @@ class TestTheBoundOnRunningRings:
         numbers a generation, so a declined ring keeps them and `Cov` under
         `Total` stays honest."""
         stats = self._full()
+
         stats.record_loss(proc(UNKNOWN_PID), 0, 0, 99, 99_000)
 
         assert stats.pause_totals_by_gen()[0].lost_count == 99
 
     def test_its_cumulative_counters_still_reach_the_note(self) -> None:
         stats = self._full()
+
         stats.observe_cumulative(proc(UNKNOWN_PID), 0, 0, 400, 0.4)
 
         assert stats.cumulative_totals_by_gen()[0].collections == 400
@@ -942,6 +990,7 @@ class TestTheBoundOnRunningRings:
         """`record_loss` opens an entry for its counters, which is not a row.
         Printing one would give an empty block a heading."""
         stats = StreamingStats()
+
         stats.record_loss(proc(7), 0, 0, 5, 5_000)
 
         assert stats.rings() == []
@@ -1091,6 +1140,7 @@ class TestASettledRingNeverReopens:
         """The control: only a settled process turns one away."""
         stats = StreamingStats()
         stats.update(proc(TARGET_PID), _pause())
+
         stats.update(proc(TARGET_PID), _pause(9_000))
 
         assert stats.pause_totals(proc(TARGET_PID), 0, 0).sampled_count == 2

@@ -67,7 +67,9 @@ class TestStatsOutput:
     def test_print_stats_empty(self, capsys: pytest.CaptureFixture[str]) -> None:
         """Test print_stats with no data."""
         stats = StreamingStats()
+
         print_stats(stats, StatsView.FULL)
+
         captured = capsys.readouterr()
         assert "No GC statistics collected." in captured.out
 
@@ -82,6 +84,7 @@ class TestStatsOutput:
         stats.update(proc(DEFAULT_PID), item)
 
         print_stats(stats, StatsView.FULL)
+
         captured = capsys.readouterr()
         assert gc_pause_slice_name(0) in captured.out
         assert "Metric" in captured.out
@@ -143,7 +146,9 @@ class TestStatsOutput:
         stats = StreamingStats()
         for pid in (11111, 22222):
             stats.update(proc(pid), gc_stats_item_factory())
+
         print_stats(stats, StatsView.FULL, table_format=TableFormat.MARKDOWN)
+
         captured = capsys.readouterr()
         lines = captured.out.splitlines()
         blank = any(
@@ -162,6 +167,7 @@ class TestPrintTable:
 
     def test_empty_rows_returns_early(self, capsys: pytest.CaptureFixture[str]) -> None:
         _print_table([])
+
         captured = capsys.readouterr()
         assert captured.out == ""
 
@@ -210,7 +216,9 @@ class TestPrintTable:
             _SEP_GROUP,
             ["22222", "0", "200", "2000.000", "20.000", "30.000", "40.000", "50.000", "60.000", "1.00", "1.00"],
         ]
+
         _print_table(rows, table_format=TableFormat.MARKDOWN)
+
         captured = capsys.readouterr()
         lines = captured.out.strip().splitlines()
         blank_separator_found = any(line.startswith("|") and all(c in ("|", " ") for c in line) for line in lines[2:])
@@ -222,7 +230,9 @@ class TestBuildRows:
 
     def test_skips_zero_count_stats(self) -> None:
         stats = {0: Stats()}
+
         rows = _build_rows(stats, "Test", {}, False)
+
         assert len(rows) == 0
 
     def test_formats_values_correctly(self) -> None:
@@ -244,6 +254,7 @@ class TestBuildRows:
             stats_dict[gen] = s
 
         rows = _build_rows(stats_dict, "Test", {}, False)
+
         generations = [int(r[0].split("(")[1].rstrip(")")) for r in rows]
         assert generations == [0, 1, 2]
 
@@ -293,6 +304,7 @@ class TestPrintStatsEdgeCases:
         stats.update(proc(DEFAULT_PID), item)
 
         print_stats(stats, StatsView.FULL)
+
         captured = capsys.readouterr()
         assert MARK_ALIVE.label in captured.out
         assert FILL_INCREMENT.label in captured.out
@@ -313,6 +325,7 @@ class TestPrintStatsEdgeCases:
         stats.update(proc(DEFAULT_PID), gc_stats_item_factory(ts_start=0, ts_stop=3_000_000))
 
         print_stats(stats, StatsView.FULL)
+
         captured = capsys.readouterr()
         pause_line = next(line for line in captured.out.splitlines() if gc_pause_slice_name(0) in line)
         cells = [c.strip() for c in pause_line.strip().strip("|").split("|")]
@@ -331,6 +344,7 @@ class TestPrintStatsEdgeCases:
         stats.update(proc(DEFAULT_PID), gc_stats_item_factory())
 
         print_stats(stats, StatsView.FULL)
+
         captured = capsys.readouterr()
         assert READ_TIME_LABEL not in captured.out
 
@@ -345,6 +359,7 @@ class TestPrintStatsEdgeCases:
         stats.record_read_time(3_000_000)
 
         print_stats(stats, StatsView.FULL)
+
         captured = capsys.readouterr()
         read_time_line = next(line for line in captured.out.splitlines() if READ_TIME_LABEL in line)
         cells = [c.strip() for c in read_time_line.strip().strip("|").split("|")]
@@ -360,6 +375,7 @@ class TestPrintStatsEdgeCases:
         stats.record_read_time(2_500_000)
 
         print_stats(stats, StatsView.FULL)
+
         captured = capsys.readouterr()
         assert "No GC statistics collected." not in captured.out
         assert READ_TIME_LABEL in captured.out
@@ -850,6 +866,7 @@ class TestTheTwoViews:
         header. The test below covers a wider label.
         """
         stats = self._two_interpreters()
+
         total = self._out(capsys, stats, StatsView.TOTAL).splitlines()
         full = self._out(capsys, stats, StatsView.FULL).splitlines()
         head = total[: next(i for i, line in enumerate(total) if READ_TIME_LABEL in line)]
@@ -863,6 +880,7 @@ class TestTheTwoViews:
         stats = StreamingStats()
         for _ in range(3):
             stats.update(proc(123456), _pause())
+
         total = table_rows(self._out(capsys, stats, StatsView.TOTAL))
         full = table_rows(self._out(capsys, stats, StatsView.FULL))
 
@@ -872,6 +890,7 @@ class TestTheTwoViews:
     def test_the_views_of_a_single_ring_run_differ_by_one_block(self, capsys: pytest.CaptureFixture[str]) -> None:
         """What `full` adds here is a copy of the roll-up above it."""
         stats = _one_interpreter()
+
         total = table_rows(self._out(capsys, stats, StatsView.TOTAL))
         full = table_rows(self._out(capsys, stats, StatsView.FULL))
         added = full[len(total) :]
@@ -892,6 +911,7 @@ class TestTheTwoViews:
         """
         stats = self._crowded()
         bodies = {}
+
         for view in (StatsView.TOTAL, StatsView.FULL):
             notes = _notes(self._out(capsys, stats, view))
 

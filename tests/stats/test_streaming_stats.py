@@ -90,6 +90,7 @@ class TestStreamingStatsUpdate:
         mock_stats_item: TGCStatsInfo,
     ) -> None:
         streaming_stats.update(proc(DEFAULT_PID), mock_stats_item)
+
         assert streaming_stats.metrics[PAUSE_KEY][0].count() == 1
 
     def test_update_records_incremental_metrics(
@@ -98,6 +99,7 @@ class TestStreamingStatsUpdate:
         incremental_gc_stats_item: GCStatsInfo,
     ) -> None:
         streaming_stats.update(proc(DEFAULT_PID), incremental_gc_stats_item)
+
         assert streaming_stats.metrics["mark_alive"][0].count() == 1
         assert streaming_stats.metrics["fill_increment"][0].count() == 1
         assert streaming_stats.metrics["deduce_unreachable"][0].count() == 1
@@ -113,7 +115,9 @@ class TestStreamingStatsUpdate:
         gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
         item = gc_stats_item_factory(ts_start=1000, ts_stop=1000)
+
         streaming_stats.update(proc(DEFAULT_PID), item)
+
         assert streaming_stats.metrics[PAUSE_KEY][0].count() == 0
 
     def test_update_keeps_sub_microsecond_duration(
@@ -124,6 +128,7 @@ class TestStreamingStatsUpdate:
         """Durations are stored in nanoseconds. They used to be truncated to
         microseconds on ingest, so a sub-microsecond phase counted as 0."""
         item = gc_stats_item_factory(ts_start=0, ts_stop=750)
+
         streaming_stats.update(proc(DEFAULT_PID), item)
 
         assert streaming_stats.metrics[PAUSE_KEY][0].count() == 1
@@ -137,7 +142,9 @@ class TestStreamingStatsUpdate:
         item1 = gc_stats_item_factory(heap_size=1_000_000)
         item2 = gc_stats_item_factory(heap_size=5_000_000)
         streaming_stats.update(proc(DEFAULT_PID), item1)
+
         streaming_stats.update(proc(DEFAULT_PID), item2)
+
         assert streaming_stats._heap_size[proc(DEFAULT_PID)] == 5_000_000
 
     def test_update_heap_size_is_max_per_pid(
@@ -148,7 +155,9 @@ class TestStreamingStatsUpdate:
         item_small = gc_stats_item_factory(heap_size=100)
         item_large = gc_stats_item_factory(heap_size=500)
         streaming_stats.update(proc(DEFAULT_PID), item_large)
+
         streaming_stats.update(proc(DEFAULT_PID), item_small)
+
         assert streaming_stats._heap_size[proc(DEFAULT_PID)] == 500
 
 
@@ -157,10 +166,12 @@ class TestStreamingStatsRingTracking:
 
     def test_rings_returns_all_tracked_rings(self, streaming_stats_with_pids: StreamingStats) -> None:
         rings = streaming_stats_with_pids.rings()
+
         assert rings == [(proc(11111), 0), (proc(22222), 0), (proc(33333), 0)]
 
     def test_get_ring_stats_returns_active(self, streaming_stats_with_pids: StreamingStats) -> None:
         ring_stats = streaming_stats_with_pids.get_ring_stats(proc(11111), 0)
+
         assert ring_stats is not None
         assert PAUSE_KEY in ring_stats
 
@@ -173,6 +184,7 @@ class TestStreamingStatsRingTracking:
         streaming_stats.materialize(proc(DEFAULT_PID))
 
         ring_stats = streaming_stats.get_ring_stats(proc(DEFAULT_PID), 0)
+
         assert ring_stats is not None
 
     def test_get_ring_stats_missing_returns_none(self, streaming_stats: StreamingStats) -> None:

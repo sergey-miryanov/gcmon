@@ -37,6 +37,7 @@ class TestPauseMetric:
 
     def test_name(self) -> None:
         metric = PauseMetric()
+
         assert metric.name == GC_PAUSE_NAME
 
     def test_get_values(
@@ -45,7 +46,9 @@ class TestPauseMetric:
     ) -> None:
         metric = PauseMetric()
         item = gc_stats_item_factory(ts_start=1000, ts_stop=5000)
+
         ts_start, ts_stop = metric.get_values(item)
+
         assert ts_start == 1000
         assert ts_stop == 5000
 
@@ -57,7 +60,9 @@ class TestPauseMetric:
         them and `PauseMetric` has no missing-field case its siblings have."""
         metric = PauseMetric()
         item = gc_stats_item_factory(ts_start=0, ts_stop=0)
+
         ts_start, ts_stop = metric.get_values(item)
+
         assert ts_start == 0
         assert ts_stop == 0
 
@@ -75,6 +80,7 @@ class TestMarkAliveMetric:
 
     def test_name(self) -> None:
         metric = MarkAliveMetric()
+
         assert metric.name == MARK_ALIVE.label
 
     def test_get_values(
@@ -86,7 +92,9 @@ class TestMarkAliveMetric:
             ts_mark_alive_start=2000,
             ts_mark_alive_stop=4000,
         )
+
         ts_start, ts_stop = metric.get_values(item)
+
         assert ts_start == 2000
         assert ts_stop == 4000
 
@@ -96,7 +104,9 @@ class TestMarkAliveMetric:
     ) -> None:
         metric = MarkAliveMetric()
         item = gc_stats_item_factory()
+
         ts1, ts2 = metric.get_values(item)
+
         assert ts1 == 0
         assert ts2 == 0
 
@@ -106,6 +116,7 @@ class TestFillIncrementMetric:
 
     def test_name(self) -> None:
         metric = FillIncrementMetric()
+
         assert metric.name == FILL_INCREMENT.label
 
     def test_get_values(
@@ -117,7 +128,9 @@ class TestFillIncrementMetric:
             ts_fill_increment_start=3000,
             ts_fill_increment_stop=5000,
         )
+
         ts_start, ts_stop = metric.get_values(item)
+
         assert ts_start == 3000
         assert ts_stop == 5000
 
@@ -127,7 +140,9 @@ class TestFillIncrementMetric:
     ) -> None:
         metric = FillIncrementMetric()
         item = gc_stats_item_factory()
+
         ts1, ts2 = metric.get_values(item)
+
         assert ts1 == 0
         assert ts2 == 0
 
@@ -137,6 +152,7 @@ class TestDeduceUnreachableMetric:
 
     def test_name(self) -> None:
         metric = DeduceUnreachableMetric()
+
         assert metric.name == DEDUCE_UNREACHABLE.label
 
     def test_get_values(
@@ -148,7 +164,9 @@ class TestDeduceUnreachableMetric:
             ts_deduce_unreachable_start=7000,
             ts_deduce_unreachable_stop=9000,
         )
+
         ts_start, ts_stop = metric.get_values(item)
+
         assert ts_start == 7000
         assert ts_stop == 9000
 
@@ -158,7 +176,9 @@ class TestDeduceUnreachableMetric:
     ) -> None:
         metric = DeduceUnreachableMetric()
         item = gc_stats_item_factory()
+
         ts1, ts2 = metric.get_values(item)
+
         assert ts1 == 0
         assert ts2 == 0
 
@@ -168,6 +188,7 @@ class TestHandleWeakrefsMetric:
 
     def test_name(self) -> None:
         metric = HandleWeakrefsMetric()
+
         assert metric.name == HANDLE_WEAKREFS.label
 
     def test_get_values(
@@ -179,7 +200,9 @@ class TestHandleWeakrefsMetric:
             ts_handle_weakref_callbacks_start=7000,
             ts_handle_weakref_callbacks_stop=9000,
         )
+
         ts_start, ts_stop = metric.get_values(item)
+
         assert ts_start == 7000
         assert ts_stop == 9000
 
@@ -189,7 +212,9 @@ class TestHandleWeakrefsMetric:
     ) -> None:
         metric = HandleWeakrefsMetric()
         item = gc_stats_item_factory()
+
         ts1, ts2 = metric.get_values(item)
+
         assert ts1 == 0
         assert ts2 == 0
 
@@ -199,6 +224,7 @@ class TestFinalizeGarbageMetric:
 
     def test_name(self) -> None:
         metric = FinalizeGarbageMetric()
+
         assert metric.name == FINALIZE_GARBAGE.label
 
     def test_get_values(
@@ -210,7 +236,9 @@ class TestFinalizeGarbageMetric:
             ts_handle_weakref_callbacks_stop=8000,
             ts_finalize_garbage_stop=9000,
         )
+
         ts_start, ts_stop = metric.get_values(item)
+
         assert ts_start == 8000
         assert ts_stop == 9000
 
@@ -220,7 +248,9 @@ class TestFinalizeGarbageMetric:
     ) -> None:
         metric = FinalizeGarbageMetric()
         item = gc_stats_item_factory(ts_finalize_garbage_stop=9000, finalized_garbage_count=1)
+
         ts1, ts2 = metric.get_values(item)
+
         assert ts1 == 0
         assert ts2 == 0
 
@@ -230,6 +260,7 @@ class TestHandleResurrectedMetric:
 
     def test_name(self) -> None:
         metric = HandleResurrectedMetric()
+
         assert metric.name == HANDLE_RESURRECTED.label
 
     def test_get_values(
@@ -241,7 +272,9 @@ class TestHandleResurrectedMetric:
             ts_finalize_garbage_stop=8000,
             ts_handle_resurrected_stop=9000,
         )
+
         ts_start, ts_stop = metric.get_values(item)
+
         assert ts_start == 8000
         assert ts_stop == 9000
 
@@ -251,7 +284,9 @@ class TestHandleResurrectedMetric:
     ) -> None:
         metric = HandleResurrectedMetric()
         item = gc_stats_item_factory(ts_handle_resurrected_stop=9000)
+
         ts1, ts2 = metric.get_values(item)
+
         assert ts1 == 0
         assert ts2 == 0
 
@@ -261,6 +296,7 @@ class TestClearWeakrefsMetric:
 
     def test_name(self) -> None:
         metric = ClearWeakrefsMetric()
+
         assert metric.name == CLEAR_WEAKREFS.label
 
     def test_get_values(
@@ -272,7 +308,9 @@ class TestClearWeakrefsMetric:
             ts_handle_resurrected_stop=8000,
             ts_clear_weakrefs_stop=9000,
         )
+
         ts_start, ts_stop = metric.get_values(item)
+
         assert ts_start == 8000
         assert ts_stop == 9000
 
@@ -282,7 +320,9 @@ class TestClearWeakrefsMetric:
     ) -> None:
         metric = ClearWeakrefsMetric()
         item = gc_stats_item_factory(ts_clear_weakrefs_stop=9000, clear_weakrefs_count=1)
+
         ts1, ts2 = metric.get_values(item)
+
         assert ts1 == 0
         assert ts2 == 0
 
@@ -292,6 +332,7 @@ class TestDeleteGarbageMetric:
 
     def test_name(self) -> None:
         metric = DeleteGarbageMetric()
+
         assert metric.name == DELETE_GARBAGE.label
 
     def test_get_values(
@@ -303,7 +344,9 @@ class TestDeleteGarbageMetric:
             ts_delete_garbage_start=7000,
             ts_delete_garbage_stop=9000,
         )
+
         ts_start, ts_stop = metric.get_values(item)
+
         assert ts_start == 7000
         assert ts_stop == 9000
 
@@ -313,7 +356,9 @@ class TestDeleteGarbageMetric:
     ) -> None:
         metric = DeleteGarbageMetric()
         item = gc_stats_item_factory()
+
         ts1, ts2 = metric.get_values(item)
+
         assert ts1 == 0
         assert ts2 == 0
 
@@ -333,6 +378,7 @@ class TestMetricDictionaries:
             "clear_weakrefs",
             "delete_garbage",
         }
+
         assert set(METRICS) == expected_keys
 
     def test_metrics_instances(self) -> None:
