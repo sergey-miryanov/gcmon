@@ -365,8 +365,8 @@ class TestExporterThreadSafety:
     def test_concurrent_add_event_same_pid(self, exporter_factory: ExporterFactory, tmp_path: Path) -> None:
         """Both threads write to the same new PID concurrently.
 
-        JSONL and stdout have no per-pid descriptor, so the event count
-        is the whole assertion for them.
+        The event count is the whole assertion. How many descriptors the
+        pid gets is `TestMetaDedupRaceClosed`'s.
         """
         exporter, capture = exporter_factory.build(tmp_path, threshold=10)
         events_a = _make_gc_events(N_GC, 1_500_000_000)
@@ -390,9 +390,6 @@ class TestExporterThreadSafety:
             f"(plus the pid's two span begins for Perfetto), "
             f"got {capture.count_completes()}"
         )
-        if isinstance(capture, PerfettoFileCapture):
-            proc_descs = capture.count_process_descriptors()
-            assert proc_descs == 1, f"[perfetto] expected exactly 1 process descriptor, got {proc_descs}"
 
     def test_concurrent_add_event_and_add_instant_event_same_new_pid(
         self, exporter_factory: ExporterFactory, tmp_path: Path
