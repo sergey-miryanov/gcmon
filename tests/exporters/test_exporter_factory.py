@@ -8,7 +8,10 @@ from gcmon.exporters.exporter_factory import EventsExporterFactory
 from gcmon.exporters.jsonl_exporter import JsonlExporter
 from gcmon.exporters.perfetto_exporter import PerfettoExporter
 from gcmon.exporters.stdout_exporter import StdoutExporter
+from gcmon.model.data import GCStatsInfo
 from gcmon.support.vocabulary import FORMAT_JSONL, FORMAT_PERFETTO, FORMAT_STDOUT
+from tests.conftest import DEFAULT_PID
+from tests.helpers import proc
 
 
 class TestEventsExporterFactory:
@@ -32,10 +35,26 @@ class TestEventsExporterFactory:
         with pytest.raises(ValueError, match="Unknown output format: unknown"):
             factory()
 
-    def test_factory_forwards_parameters(self, tmp_path: Path) -> None:
-        path = tmp_path / "out.jsonl"
-        factory = EventsExporterFactory(FORMAT_JSONL, path, 50)
-        exporter = factory()
-        assert isinstance(exporter, JsonlExporter)
-        assert exporter._flush_threshold == 50
-        assert exporter._output_path == path
+    @pytest.mark.parametrize("output_format", [FORMAT_JSONL, FORMAT_PERFETTO])
+    def test_the_exporter_writes_where_and_when_the_factory_was_told(
+        self, tmp_path: Path, mock_stats_item: GCStatsInfo, output_format: str
+    ) -> None:
+        """Two events against a threshold of two: the file is there before
+        any close, and it is the file the factory was given."""
+        path = tmp_path / "out"
+        exporter = EventsExporterFactory(output_format, path, 2)()
+
+        exporter.add_event(proc(DEFAULT_PID), mock_stats_item)
+        exporter.add_event(proc(DEFAULT_PID), mock_stats_item)
+
+        assert path.exists()
+
+    def test_the_stdout_exporter_prints_when_the_factory_was_told(
+        self, tmp_path: Path, mock_stats_item: GCStatsInfo, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        exporter = EventsExporterFactory(FORMAT_STDOUT, tmp_path / "unused", 2)()
+
+        exporter.add_event(proc(DEFAULT_PID), mock_stats_item)
+        exporter.add_event(proc(DEFAULT_PID), mock_stats_item)
+
+        assert len(capsys.readouterr().out.splitlines()) == 2
