@@ -77,3 +77,11 @@ class TestLogProcessOutput:
         log_process_output(process=mock_process, stdout_data=b"  \n")
 
         mock_logger.warning.assert_not_called()
+
+    def test_a_signal_exit_that_printed_nothing_is_not_logged(self, mock_logger: Mock, mock_process: Mock) -> None:
+        mock_process.returncode = -signal.SIGINT
+
+        log_process_output(process=mock_process, stdout_data=b"")
+
+        mock_logger.debug.assert_not_called()
+        mock_logger.warning.assert_not_called()
