@@ -14,7 +14,12 @@
 ### Bugfixes
 
 - A per-generation counter names the interpreter that owns it. A process running several interpreters draws a `GC Metrics` row each, where the copies used to merge into one row per process holding every interpreter's counters, identically named and unattributable
-- `gcmon combine` names the file and line of a JSONL line that is not a record, where it printed a traceback
+- `gcmon combine` names the file and line of a JSONL line it cannot read, where it printed a traceback or an error with no location
+- `gcmon combine` converts a hand-edited record that holds a sub-step's stop time and not its start, drawing the pause alone, where it printed a traceback
+
+### Internal
+
+- Stability, correctness and performance improvements
 
 ## Version 0.7.0 (2026-09-09)
 
