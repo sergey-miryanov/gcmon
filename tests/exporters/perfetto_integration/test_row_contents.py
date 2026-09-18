@@ -11,7 +11,6 @@ from pathlib import Path
 
 import pytest
 from perfetto.trace_processor import TraceProcessor
-from perfetto.trace_processor.api import TraceProcessorException
 
 from gcmon.exporters import PerfettoExporter
 from gcmon.exporters.perfetto_format import (
@@ -303,71 +302,43 @@ class TestCounterTracks:
 
 
 class TestCounterYAxisShareKey:
-    """SQL-level tests for the new ``y_axis_share_key`` field on
-    ``CounterDescriptor``.
+    """``y_axis_share_key`` as the trace processor hands it to the UI.
 
-    The wire-level tests in ``TestCounterTrackYAxisShareKey``
-    (``test_perfetto_counter_tracks.py``) are the source of truth for the
-    values. This class is a forward-looking check that the values also
-    survive the round-trip through the Perfetto trace processor into
-    the ``counter_track`` SQL table.
-
-    The ``counter_track`` SQL table has no ``y_axis_share_key`` column, so
-    both tests are ``xfail`` with ``strict=False`` (ADR-0014): they start
-    passing when a trace processor surfaces the column. ``raises`` keeps the
-    expected failure to that one: a wrong value, once the column exists,
-    fails.
+    ``counter_track`` has no such column. The stdlib table the UI builds its
+    TrackEvent rows from does, so that is where these read it. The wire-level
+    tests in ``TestCounterTrackYAxisShareKey``
+    (``test_perfetto_counter_tracks.py``) hold the bytes.
     """
 
-    NO_COLUMN = pytest.mark.xfail(
-        raises=TraceProcessorException,
-        reason="counter_track has no y_axis_share_key column",
-        strict=False,
-    )
+    def _share_keys(self, tp: TraceProcessor) -> dict[str, set[str | None]]:
+        """Every key a counter track of each name carries. One name covers a
+        track per interpreter, hence a set."""
+        list(tp.query("INCLUDE PERFETTO MODULE viz.summary.track_event"))
+        keys: dict[str, set[str | None]] = {}
+        for r in tp.query("SELECT name, y_axis_share_key FROM _track_event_tracks_ordered_groups WHERE is_counter = 1"):
+            keys.setdefault(r.name, set()).add(r.y_axis_share_key)
+        return keys
 
-    @NO_COLUMN
     def test_y_axis_share_key_shared_across_generations(
         self,
         trace_processor: TraceProcessor,
     ) -> None:
-        """``G0 collected`` / ``G1 collected`` / ``G2 collected`` all
-        carry the same ``y_axis_share_key`` value, and that value
-        matches the metric suffix verbatim. Same for ``candidates`` and
-        ``duration``. Verified via ``counter_track.y_axis_share_key``.
-        """
-        rows = list(
-            trace_processor.query(
-                "SELECT name, y_axis_share_key FROM counter_track "
-                "WHERE name LIKE 'G_ %' AND name != 'heap_size' "
-                "ORDER BY name",
-            )
-        )
-        assert rows, "expected at least one G{N} <metric> track"
-        by_suffix: dict[str, set[str]] = {}
-        for r in rows:
-            suffix = r.name.split(" ", 1)[1]
-            by_suffix.setdefault(suffix, set()).add(r.y_axis_share_key)
-        for suffix, keys in by_suffix.items():
-            assert keys == {suffix}, (
-                f"expected y_axis_share_key for metric {suffix!r} to be exactly the metric name; got {keys}"
-            )
+        """``G0 collected`` and ``G1 collected`` share one axis, keyed by the
+        metric alone, and so does every other per-generation counter."""
+        keys = self._share_keys(trace_processor)
 
-    @NO_COLUMN
+        assert {name: keys[name] for name in keys if name != HEAP_SIZE} == {
+            counter_display_name(gen, metric): {metric}
+            for gen in (0, 1)
+            for metric in (COLLECTED, UNCOLLECTABLE, CANDIDATES, DURATION)
+        }
+
     def test_heap_size_y_axis_share_key_is_null(
         self,
         trace_processor: TraceProcessor,
     ) -> None:
-        """The top-level ``heap_size`` track has no ``y_axis_share_key``:
-        the SQL value is NULL or empty string, depending on how the
-        trace processor surfaces an absent optional string field.
-        """
-        rows = list(
-            trace_processor.query(
-                "SELECT name, y_axis_share_key FROM counter_track WHERE name = 'heap_size'",
-            )
-        )
-        assert rows, "every interpreter in the trace draws a heap_size track"
-        assert {r.y_axis_share_key for r in rows} <= {"", None}
+        """A heap is sized in objects and shares an axis with nothing."""
+        assert self._share_keys(trace_processor)[HEAP_SIZE] == {None}
 
 
 def rows_drawn_under(tp: TraceProcessor, *path: str) -> list[str]:
