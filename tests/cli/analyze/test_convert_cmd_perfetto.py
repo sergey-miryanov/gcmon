@@ -76,6 +76,7 @@ from gcmon.model.names import (
 )
 from gcmon.model.trace_event import Slice, TraceEvent
 from gcmon.support.vocabulary import CMD_COMBINE, ENCODING, FORMAT_PERFETTO, PROGRAM_NAME
+from tests.exporters.perfetto_integration.traces import _ARG_PREFIX, _on_interpreter, _process_filter
 from tests.helpers import (
     SUBPROCESS_WATCHDOG,
     create_mock_incremental_item,
@@ -159,10 +160,8 @@ _EXPECTED_PAUSE_ARGS: dict[str, int] = {
     CANDIDATES: 40,
 }
 
+
 # The namespace the trace processor puts a debug annotation under.
-_ARG_PREFIX: str = "debug"
-
-
 def _multi_dimensional_records() -> list[dict[str, int | float]]:
     """Build JSONL records exercising multiple pids, generations, iids.
 
@@ -332,30 +331,6 @@ def loaded_trace_processor(
     )
     with open_trace_processor(out) as tp:
         yield tp
-
-
-def _process_filter(pid: int) -> str:
-    """SQL fragment scoping a query to the one process on *pid*.
-
-    One join through ``process_track`` reaches every row gcmon writes for a
-    process, the ones inside its interpreter list included (ADR-0027).
-
-    On the name, not on ``process.pid``: that column holds the pid gcmon
-    writes for the row (ADR-0011).
-    """
-    return (
-        "JOIN process_track pt ON s.track_id = pt.id JOIN process p ON pt.upid = p.upid "
-        f"WHERE p.name = '{process_track_name(proc(pid))}'"
-    )
-
-
-def _on_interpreter(iid: int) -> str:
-    """SQL fragment narrowing a :func:`_process_filter` query to one
-    interpreter. The group its row parents to is what names it
-    (ADR-0027)."""
-    return (
-        f"AND EXISTS (SELECT 1 FROM track ig WHERE ig.id = pt.parent_id AND ig.name = '{_interpreter_group_name(iid)}')"
-    )
 
 
 def _row_set(rows: Iterable[_NameRow]) -> set[str]:
