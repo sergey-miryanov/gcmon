@@ -65,9 +65,9 @@ class TestCounterTrackYAxisShareKey:
             state,
             sequence_id=1,
         )
-        for gen in ("G0", "G1", "G2"):
+        for gen in (0, 1, 2):
             for metric in (COLLECTED, CANDIDATES, DURATION):
-                track_name = f"{gen} {metric}"
+                track_name = counter_display_name(gen, metric)
                 assert _counter_track_y_axis_share_key(descriptors, track_name) == metric, (
                     f"{track_name} should share Y-axis under {metric!r}"
                 )
