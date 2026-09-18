@@ -9,7 +9,6 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from gcmon.model.names import NAME
 from gcmon.support.process_terminator import _is_signal_exit_code, terminate_process
 
 
@@ -20,45 +19,36 @@ def patched_logger(mock_logger: Mock) -> Generator[Mock]:
 
 
 @pytest.fixture
-def unix_terminator(mock_process: Mock, patched_logger: Mock) -> Generator[Mock]:
+def running_process(mock_process: Mock, patched_logger: Mock) -> Mock:
     mock_process.returncode = None
     mock_process.poll.side_effect = lambda: mock_process.returncode
-    with patch.object(os, NAME, "posix"):
-        yield mock_process
+    return mock_process
 
 
 @pytest.fixture
-def nt_terminator(mock_process: Mock, patched_logger: Mock) -> Generator[Mock]:
-    mock_process.returncode = None
-    mock_process.poll.side_effect = lambda: mock_process.returncode
-    with patch.object(os, NAME, "nt"):
-        yield mock_process
-
-
-@pytest.fixture
-def unix_signal_and_kill(unix_terminator: Mock) -> Generator[tuple[Mock, Mock, Mock]]:
+def unix_signal_and_kill(running_process: Mock) -> Generator[tuple[Mock, Mock, Mock]]:
     with (
-        patch.object(unix_terminator, "send_signal") as mock_send_signal,
-        patch.object(unix_terminator, "kill") as mock_kill,
+        patch.object(running_process, "send_signal") as mock_send_signal,
+        patch.object(running_process, "kill") as mock_kill,
     ):
-        yield unix_terminator, mock_send_signal, mock_kill
+        yield running_process, mock_send_signal, mock_kill
 
 
 @pytest.fixture
-def nt_signal_and_kill(nt_terminator: Mock) -> Generator[tuple[Mock, Mock, Mock]]:
+def nt_signal_and_kill(running_process: Mock) -> Generator[tuple[Mock, Mock, Mock]]:
     with (
-        patch.object(nt_terminator, "send_signal") as mock_send_signal,
-        patch.object(nt_terminator, "kill") as mock_kill,
+        patch.object(running_process, "send_signal") as mock_send_signal,
+        patch.object(running_process, "kill") as mock_kill,
     ):
-        yield nt_terminator, mock_send_signal, mock_kill
+        yield running_process, mock_send_signal, mock_kill
 
 
 @pytest.mark.skipif(os.name == "nt", reason="Unix-specific tests")
 class TestTerminateProcessUnix:
     """Unix-specific terminate_process tests."""
 
-    def test_graceful_exit(self, unix_terminator: Mock) -> None:
-        mock_process = unix_terminator
+    def test_graceful_exit(self, running_process: Mock) -> None:
+        mock_process = running_process
         mock_process.poll.side_effect = [None, 0]
 
         with patch.object(mock_process, "send_signal") as mock_send_signal:
@@ -72,8 +62,8 @@ class TestTerminateProcessUnix:
             mock_process.communicate.assert_called_once_with(timeout=5.0)
             assert result == (b"stdout data", b"stderr data")
 
-    def test_timeout_then_sigterm(self, unix_terminator: Mock) -> None:
-        mock_process = unix_terminator
+    def test_timeout_then_sigterm(self, running_process: Mock) -> None:
+        mock_process = running_process
         mock_process.poll.side_effect = [None, None, 0]
 
         def _communicate_side_effect(timeout: float | None = None) -> tuple[bytes, bytes]:
@@ -115,8 +105,8 @@ class TestTerminateProcessUnix:
         mock_kill.assert_called_once()
         assert result == (b"stdout after sigkill", b"stderr after sigkill")
 
-    def test_zombie(self, unix_terminator: Mock) -> None:
-        mock_process = unix_terminator
+    def test_zombie(self, running_process: Mock) -> None:
+        mock_process = running_process
         mock_process.poll.side_effect = [None, None, None, None]
         mock_process.communicate.side_effect = [
             subprocess.TimeoutExpired(cmd="test", timeout=5.0),
@@ -141,9 +131,9 @@ class TestTerminateProcessUnix:
 class TestTerminateProcessWindows:
     """Windows-specific terminate_process tests."""
 
-    def test_graceful_exit(self, nt_terminator: Mock) -> None:
+    def test_graceful_exit(self, running_process: Mock) -> None:
         if sys.platform == "win32":  # fix mypy errors
-            mock_process = nt_terminator
+            mock_process = running_process
             mock_process.poll.side_effect = [None, 0]
 
             with patch.object(mock_process, "send_signal") as mock_send_signal:
@@ -178,8 +168,8 @@ class TestTerminateProcessWindows:
             mock_kill.assert_called_once()
             assert result == (b"stdout after kill", b"stderr after kill")
 
-    def test_zombie(self, nt_terminator: Mock) -> None:
-        mock_process = nt_terminator
+    def test_zombie(self, running_process: Mock) -> None:
+        mock_process = running_process
         mock_process.poll.side_effect = [None, None, None, None]
         mock_process.communicate.side_effect = [
             subprocess.TimeoutExpired(cmd="test", timeout=5.0),
