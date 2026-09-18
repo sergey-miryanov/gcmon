@@ -1,6 +1,6 @@
 """Tests for `run_monitoring_loop`."""
 
-from unittest.mock import ANY, MagicMock
+from unittest.mock import ANY, MagicMock, patch
 
 import pytest
 
@@ -298,6 +298,25 @@ class TestRunMonitoringLoop:
             rate=0.1,
             rss_sampler=None,
         )
+
+    def test_asking_for_rss_gives_the_loop_a_sampler(
+        self,
+        mock_factory: MagicMock,
+        mock_wait_policy_factory: MagicMock,
+        monitoring_options: MagicMock,
+        mock_loop_runner_deps: dict[str, MagicMock],
+    ) -> None:
+        """On the run's own exporter, at the interval asked for."""
+        from gcmon.cli.monitor.loop_runner import run_monitoring_loop
+
+        with patch("gcmon.cli.monitor.loop_runner.RssSampler") as sampler_cls:
+            run_monitoring_loop(
+                mock_factory, mock_wait_policy_factory, monitoring_options(rss_enabled=True, rss_interval=2.5)
+            )
+
+        exporter = mock_loop_runner_deps["EventsExporterFactory"].return_value.return_value
+        sampler_cls.assert_called_once_with(exporter, interval=2.5)
+        assert mock_loop_runner_deps["MonitorLoop"].call_args.kwargs["rss_sampler"] is sampler_cls.return_value
 
     def test_monitor_constructed_from_process_exporter_and_stats(
         self,
