@@ -292,6 +292,23 @@ class TestAnUnfinishedRegion:
 
         assert _sides(sink.wait_for(2)) == [Side.BEGIN, Side.END]
 
+    def test_an_exit_with_no_enter_closes_no_region(self, sink: Sink) -> None:
+        """The first mark to land opens the region that did run. One
+        connection carries the marks in order, so a region made of the stray
+        exit would land ahead of it, stamped outside the block."""
+        hook = gcmon_hook()
+        hook.__exit__(None, None, None)
+        opened = time.monotonic_ns()
+        with hook:
+            pass
+        closed = time.monotonic_ns()
+
+        hook.teardown({NAME: "bm_base64"})
+
+        first = sink.wait_for(2)[0]
+        assert (first.mark.phase_region, first.mark.side) == (1, Side.BEGIN)
+        assert opened <= first.ts <= closed
+
 
 class TestTheHookDoesNothingElse:
     def test_the_hook_spawns_no_process(self, sink: Sink, monkeypatch: pytest.MonkeyPatch) -> None:
