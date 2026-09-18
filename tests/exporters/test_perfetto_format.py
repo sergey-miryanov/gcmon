@@ -819,27 +819,23 @@ class TestATrackIsDescribedOffTheEventsOnIt:
             names.index(TARGET_ROW_NAME) < names.index(_interpreter_group_name(0)) < names.index(_PAUSE_TRACK_NAME)
         ), f"each parent must precede its child; got {names}"
 
-    def test_an_rss_only_pid_gets_a_process_row_and_no_thread_row(self, state: PerfettoTrackState) -> None:
+    def test_an_rss_only_pid_gets_a_process_row_and_its_counter_alone(self, state: PerfettoTrackState) -> None:
         descriptors, _ = convert_trace_events_to_perfetto(
             [Counter(process_track(TARGET_PID), RSS, RSS, 1_000, 4096)],
             state,
             sequence_id=1,
         )
 
-        assert TARGET_ROW_NAME in self._named(descriptors)
-        parsed = [parse_track_descriptor(d) for d in descriptors]
-        assert not any(td.HasField("thread") for td in parsed if td is not None)
+        assert self._named(descriptors) == [TARGET_ROW_NAME, RSS]
 
-    def test_a_mark_only_pid_gets_a_process_row_and_no_thread_row(self, state: PerfettoTrackState) -> None:
+    def test_a_mark_only_pid_gets_a_process_row_alone(self, state: PerfettoTrackState) -> None:
         descriptors, _ = convert_trace_events_to_perfetto(
             [Instant(process_track(TARGET_PID), "mark", ts=1_000)],
             state,
             sequence_id=1,
         )
 
-        assert TARGET_ROW_NAME in self._named(descriptors)
-        parsed = [parse_track_descriptor(d) for d in descriptors]
-        assert not any(td.HasField("thread") for td in parsed if td is not None)
+        assert self._named(descriptors) == [TARGET_ROW_NAME]
 
     def test_every_track_is_described_exactly_once_across_batches(self, state: PerfettoTrackState) -> None:
         first, _ = convert_trace_events_to_perfetto(self._pid_events(100), state, sequence_id=1)
