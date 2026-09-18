@@ -288,6 +288,14 @@ class TestNormalizeJsonlTimestamps:
         assert item1.ts_start == 0  # per-PID min
         assert item2.ts_start == 0  # per-PID min
 
+    def test_a_pid_with_no_items_does_not_stop_the_others(self) -> None:
+        """An empty list has no earliest timestamp to subtract."""
+        item = create_mock_stats_item(ts_start=5000, ts_stop=6000)
+
+        normalize_jsonl_timestamps({1: [], 2: [item]})
+
+        assert (item.ts_start, item.ts_stop) == (0, 1000)
+
 
 class TestConvertJsonlToTraceFormat:
     def test_converts_jsonl_to_trace_events(self, tmp_path: Path) -> None:
