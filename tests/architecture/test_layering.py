@@ -217,6 +217,7 @@ class TestThePackageAsItStandsToday:
     def test_the_walk_finds_the_imports_that_are_there(self) -> None:
         """A walk that found nothing would also report no violations."""
         graph = import_graph(SRC)
+
         assert len(graph) > 50
         assert any(edge.module == "monitoring.monitor" and edge.imported.startswith("model.data") for edge in graph)
 
@@ -278,6 +279,7 @@ class TestAnImportThatCrossesTheWrongWay:
 
     def test_the_record_model_may_not_import_the_cli(self) -> None:
         graph = [Import("model.data", "cli", 3)]
+
         assert violations(graph, layer_of, ALLOWED) == ["model.data:3 imports cli: model may not import cli"]
 
     def test_the_exporters_and_stats_are_siblings_in_both_directions(self) -> None:
