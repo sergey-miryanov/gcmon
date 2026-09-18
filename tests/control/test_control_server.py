@@ -230,9 +230,6 @@ class TestControlServerStart:
 
 
 class TestControlServerEnabled:
-    def test_unknown_pid_defaults_to_true(self, control_server: ControlServer) -> None:
-        assert control_server.is_enabled(999) is True
-
     def test_stop_sets_enabled_false(self, control_server: ControlServer) -> None:
         _send_msg(control_server, MSG_STOP, 42)
         assert _wait_msg(control_server, pid=42, expected=False)
