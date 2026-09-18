@@ -252,7 +252,9 @@ class TestCounterTracks:
             )
         }
         for gen in (0, 1):
-            assert f"G{gen} duration" in names, f"G{gen} duration counter should be present; got {names}"
+            assert counter_display_name(gen, DURATION) in names, (
+                f"no duration counter for generation {gen}; got {names}"
+            )
         assert DURATION not in names, f"shared 'duration' counter should NOT be present; got {names}"
 
     def test_duration_counter_value_is_double(
@@ -511,7 +513,7 @@ class TestRssCounterTrackIntegration:
                 trace_processor_with_rss.query(
                     f"SELECT c.value, c.ts FROM counter c "
                     f"JOIN counter_track ct ON c.track_id = ct.id "
-                    f"WHERE ct.name = 'rss' AND c.ts = {expected_ts}"
+                    f"WHERE ct.name = '{RSS}' AND c.ts = {expected_ts}"
                 )
             )
             matching = [r for r in rows if abs(r.value - expected_val) < 1]
@@ -540,7 +542,7 @@ class TestRssCounterTrackIntegration:
         distinct RSS counter track ids and total counter values."""
         # Two distinct RSS counter tracks (one per PID).
         rss_track_ids = list(
-            trace_processor_with_rss.query("SELECT DISTINCT id FROM counter_track WHERE name = 'rss' ORDER BY id")
+            trace_processor_with_rss.query(f"SELECT DISTINCT id FROM counter_track WHERE name = '{RSS}' ORDER BY id")
         )
         assert len(rss_track_ids) == 2, (
             f"expected 2 distinct RSS counter track ids (one per PID), got {len(rss_track_ids)}"
@@ -552,7 +554,7 @@ class TestRssCounterTrackIntegration:
             trace_processor_with_rss.query(
                 "SELECT COUNT(*) AS cnt FROM counter c "
                 "JOIN counter_track ct ON c.track_id = ct.id "
-                "WHERE ct.name = 'rss'"
+                f"WHERE ct.name = '{RSS}'"
             )
         )
         assert total_values[0].cnt == 3, (
@@ -643,7 +645,7 @@ class TestTwoInterpretersHeapSizes:
             two_interpreters.query(
                 "SELECT ig.name AS iname, ct.id AS id FROM counter_track ct "
                 "JOIN track ig ON ct.parent_id = ig.id "
-                "WHERE ct.name = 'heap_size' ORDER BY ig.name"
+                f"WHERE ct.name = '{HEAP_SIZE}' ORDER BY ig.name"
             )
         )
         assert [r.iname for r in rows] == [_interpreter_group_name(0), _interpreter_group_name(1)]
@@ -662,14 +664,15 @@ class TestTwoInterpretersHeapSizes:
                 "SELECT c.value AS value FROM counter c "
                 "JOIN counter_track ct ON c.track_id = ct.id "
                 "JOIN track ig ON ct.parent_id = ig.id "
-                "WHERE ct.name = 'heap_size' AND ig.name = 'Interpreter 1'"
+                f"WHERE ct.name = '{HEAP_SIZE}' AND ig.name = '{_interpreter_group_name(1)}'"
             )
         )
         assert [r.value for r in rows] == [9_000]
 
     def test_each_row_parents_to_its_own_interpreter_group(self, two_interpreters: TraceProcessor) -> None:
         parents = [
-            r.parent_id for r in two_interpreters.query("SELECT parent_id FROM counter_track WHERE name = 'heap_size'")
+            r.parent_id
+            for r in two_interpreters.query(f"SELECT parent_id FROM counter_track WHERE name = '{HEAP_SIZE}'")
         ]
         assert len(parents) == 2
         assert len(set(parents)) == 2, f"both heap rows share a parent: {parents}"
