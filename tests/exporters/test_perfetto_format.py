@@ -283,14 +283,6 @@ class TestConvertItemToPerfettoPackets:
         assert len(packets) >= 2
         lifetime_uuid = state.get_or_create_process_lifetime_track_uuid()
 
-        def _packet_name(p: bytes) -> str | None:
-            packet = TracePacket()
-            packet.ParseFromString(p)
-            if not packet.HasField("track_event"):
-                return None
-            name = packet.track_event.name
-            return name or None
-
         begin_packet = None
         for p in packets:
             packet = TracePacket()
