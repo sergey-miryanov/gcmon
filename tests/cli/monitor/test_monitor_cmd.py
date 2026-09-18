@@ -113,6 +113,16 @@ def test_cmd_monitor_self_pid(monitor_args: MonitorArgsFactory, mock_monitoring_
     assert process.pid == os.getpid()
 
 
+def test_cmd_monitor_names_the_control_plane_as_asked(
+    monitor_args: MonitorArgsFactory, mock_monitoring_loop: MagicMock
+) -> None:
+    from gcmon.cli.monitor import monitor_cmd
+
+    monitor_cmd.cmd_monitor(monitor_args(control_name="bench-7"))
+
+    assert mock_monitoring_loop.call_args.kwargs["address"] == "bench-7"
+
+
 # =============================================================================
 # Subprocess Tests - Basic Execution
 # =============================================================================

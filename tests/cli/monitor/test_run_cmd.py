@@ -335,6 +335,16 @@ class TestCmdRunUnit:
         )
         assert runner is mock_runner
 
+    def test_cmd_run_names_the_control_plane_as_asked(
+        self, mock_monitoring_loop_and_runner: tuple[MagicMock, MagicMock, MagicMock]
+    ) -> None:
+        mock_loop, _, _ = mock_monitoring_loop_and_runner
+        from gcmon.cli.monitor import run_cmd
+
+        run_cmd.cmd_run(self._make_run_args(module_name="timeit", control_name="bench-7"))
+
+        assert mock_loop.call_args.kwargs["address"] == "bench-7"
+
     def test_cmd_run_subprocess_returncode(self) -> None:
         """Test non-zero subprocess returncode is propagated from run_monitoring_loop."""
         from gcmon.cli.monitor import run_cmd
