@@ -40,7 +40,7 @@ from tests.helpers import (
     true_pause_ns,
     varied_pause,
 )
-from tests.monitoring.test_monitor_cursor import POLL_0, POLL_1, build_batch
+from tests.monitoring.captured_polls import POLL_0, POLL_1, build_batch
 
 PID = 12345
 
