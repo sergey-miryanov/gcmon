@@ -58,7 +58,7 @@ class ControlClient:
         if self._conn is not None:
             return self._conn
         with self._lock:
-            if self._conn is None:
+            if self._conn is None:  # pragma: no branch - false for a thread that lost the race to connect
                 address = self._control_address or os.environ.get(CONTROL_ADDRESS_ENV)
                 if address:
                     self._conn = self._connect(address)
@@ -77,7 +77,7 @@ class ControlClient:
             return
 
         with self._lock:
-            if self._conn is not conn:
+            if self._conn is not conn:  # pragma: no cover - a close() between the connect and this lock
                 return
             try:
                 conn.send(to_send)

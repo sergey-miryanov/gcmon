@@ -142,7 +142,7 @@ class ControlServer:
             if conns:
                 ready = self._safe_wait(conns)
                 for conn in ready:
-                    if self._stop_event.is_set():
+                    if self._stop_event.is_set():  # pragma: no cover - a close() while messages are ready
                         break
 
                     msg = self._recv(conn, to_remove)
