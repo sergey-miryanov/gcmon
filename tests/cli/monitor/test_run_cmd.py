@@ -78,8 +78,8 @@ sys.stdout.flush()
 
 def _print_output(tool: str, pid: int, result: subprocess.CompletedProcess[str] | subprocess.TimeoutExpired) -> None:
     print(f"--- {tool} PID {pid} ---")
-    out = getattr(result, FORMAT_STDOUT, None) or getattr(result, "output", "")
-    err = getattr(result, "stderr", None) or ""
+    out = result.stdout or ""
+    err = result.stderr or ""
     if out:
         print("STDOUT")
         print(out)
