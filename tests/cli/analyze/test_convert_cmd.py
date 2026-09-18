@@ -235,7 +235,7 @@ def test_cmd_combine_refuses_a_line_that_is_no_record(
 
 
 class TestCliCombine:
-    def test_basic(
+    def test_one_capture_becomes_a_trace_with_a_track_and_an_event(
         self,
         make_jsonl_file: JsonlFileFactory,
         run_combine: Combiner,
@@ -249,7 +249,7 @@ class TestCliCombine:
         assert_valid_perfetto_format(combine_output)
         assert_perfetto_has_track_descriptor_and_event(combine_output)
 
-    def test_verbose_output(
+    def test_verbose_names_the_format_and_says_it_finished(
         self,
         make_jsonl_file: JsonlFileFactory,
         run_combine: Combiner,
@@ -263,13 +263,13 @@ class TestCliCombine:
         assert "Output format: perfetto" in result.stderr
         assert "Combine complete" in result.stderr
 
-    def test_missing_file(self, run_combine: Combiner, combine_output: Path) -> None:
+    def test_a_missing_input_fails_with_a_message(self, run_combine: Combiner, combine_output: Path) -> None:
         result = run_combine([Path("nonexistent.jsonl")], output=combine_output)
 
         assert result.returncode != 0
         assert "Error combining files" in result.stderr
 
-    def test_invalid_json(
+    def test_a_line_that_is_not_json_fails_and_says_so(
         self,
         make_raw_file: RawFileFactory,
         run_combine: Combiner,
@@ -283,7 +283,7 @@ class TestCliCombine:
         assert "Error combining files" in result.stderr
         assert "json" in result.stderr.lower()
 
-    def test_multiple_files(
+    def test_two_captures_put_both_pids_in_the_trace(
         self,
         make_jsonl_file: JsonlFileFactory,
         run_combine: Combiner,
@@ -349,7 +349,7 @@ class TestCliCombineNormalize:
         assert result.returncode == 0, result.stderr
         assert pause_timestamps(combine_output) == [5_000_000, 10_000_000]
 
-    def test_short_option(
+    def test_the_short_flag_zeroes_the_first_pause(
         self,
         make_jsonl_file: JsonlFileFactory,
         run_combine: Combiner,
@@ -383,7 +383,9 @@ class TestCliCombineNormalize:
 
 
 class TestCliCombineJsonlToJsonl:
-    def test_basic(self, make_jsonl_file: JsonlFileFactory, run_combine: Combiner, tmp_path: Path) -> None:
+    def test_one_capture_is_written_back_as_jsonl(
+        self, make_jsonl_file: JsonlFileFactory, run_combine: Combiner, tmp_path: Path
+    ) -> None:
         f1 = make_jsonl_file("data1.jsonl", [create_jsonl_record()])
         output = tmp_path / "combined.jsonl"
 
@@ -394,7 +396,9 @@ class TestCliCombineJsonlToJsonl:
         assert records[0][PID] == 123
         assert records[0][TS_START] == 1_000_000
 
-    def test_multiple_files(self, make_jsonl_file: JsonlFileFactory, run_combine: Combiner, tmp_path: Path) -> None:
+    def test_two_captures_keep_their_order_and_their_pids(
+        self, make_jsonl_file: JsonlFileFactory, run_combine: Combiner, tmp_path: Path
+    ) -> None:
         f1 = make_jsonl_file("data1.jsonl", [create_jsonl_record(pid=123, gen=0)])
         f2 = make_jsonl_file("data2.jsonl", [create_jsonl_record(pid=456, gen=1)])
         output = tmp_path / "combined.jsonl"
@@ -407,7 +411,9 @@ class TestCliCombineJsonlToJsonl:
         assert records[0][PID] == 123
         assert records[1][PID] == 456
 
-    def test_normalize(self, make_jsonl_file: JsonlFileFactory, run_combine: Combiner, tmp_path: Path) -> None:
+    def test_normalize_zeroes_a_pid_across_the_whole_merge(
+        self, make_jsonl_file: JsonlFileFactory, run_combine: Combiner, tmp_path: Path
+    ) -> None:
         """The JSONL path zeroes each pid across the whole merge, where the
         Perfetto path zeroes each input file. ADR-0021 records why."""
         f1 = make_jsonl_file(
@@ -530,7 +536,7 @@ class TestCliCombineJsonlToPerfetto:
         assert_valid_perfetto_format(combine_output)
         assert_perfetto_has_track_descriptor_and_event(combine_output)
 
-    def test_normalize(
+    def test_normalize_is_logged_and_the_trace_starts_at_zero(
         self,
         make_jsonl_file: JsonlFileFactory,
         run_combine: Combiner,
