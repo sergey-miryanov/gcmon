@@ -121,6 +121,7 @@ class TestAccumulateAndLand:
 
         time.sleep(0.05)
         sent_no_earlier_than = time.monotonic_ns()
+
         hook.teardown({NAME: "bm_base64"})
 
         begin, end = sink.wait_for(2)
@@ -131,6 +132,7 @@ class TestAccumulateAndLand:
         hook = gcmon_hook()
         with hook:
             pass
+
         hook.teardown({NAME: "bm_base64"})
 
         assert {m.pid for m in sink.wait_for(2)} == {os.getpid()}
@@ -139,6 +141,7 @@ class TestAccumulateAndLand:
         hook = gcmon_hook()
         with hook:
             pass
+
         hook.teardown({NAME: "bm:odd name"})
 
         assert {m.mark.bench for m in sink.wait_for(2)} == {"bm_odd_name"}
@@ -245,7 +248,9 @@ class TestTheMarksInATrace:
             hook = gcmon_hook()
             with hook:
                 pass
+
             hook.teardown({NAME: "bm_base64"})
+
             deadline = time.monotonic() + 5
             while exporter.instants < 2 and time.monotonic() < deadline:
                 time.sleep(0.01)
@@ -344,6 +349,7 @@ class TestTheHookDoesNothingElse:
             pass
 
         metadata: dict[str, object] = {NAME: "bm_base64", "loops": 4}
+
         hook.teardown(metadata)
 
         assert metadata == {NAME: "bm_base64", "loops": 4}
