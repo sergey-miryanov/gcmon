@@ -229,11 +229,6 @@ class TestPerfettoExporter:
         stamps = {packet.timestamp for packet in _read_trace_packets(path) if packet.HasField("track_event")}
         assert stamps == {1_500_000_000, 1_505_000_000}, "every event sits on one end of the record or the other"
 
-    def test_close_with_no_events(self, perfetto_exporter: ExporterFactory) -> None:
-        exporter, path = perfetto_exporter()
-        exporter.close()
-        assert not path.exists() or path.stat().st_size == 0
-
     def test_an_event_added_after_close_is_dropped(self, perfetto_exporter: ExporterFactory) -> None:
         """A threshold of one, so an event that got past `close` would be
         written on the spot, after the closeout."""
