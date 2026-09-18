@@ -82,11 +82,13 @@ class TestASliceExpandsIntoAPair:
 
     def test_a_slice_produces_a_begin_then_an_end(self, expansion: Converted) -> None:
         _, packets = expansion
+
         events = [p.track_event for p in _slice_packets(packets)]
         assert [e.type for e in events] == [TrackEventType.SLICE_BEGIN, TrackEventType.SLICE_END]
 
     def test_the_begin_carries_the_name_the_category_and_the_args(self) -> None:
         _, packets = _convert([_pause_slice(args={GENERATION: 0})])
+
         begin = _slice_packets(packets)[0]
         assert begin.timestamp == 1_000
         assert begin.track_event.name == gc_pause_slice_name(0)
@@ -97,6 +99,7 @@ class TestASliceExpandsIntoAPair:
         """A `Slice` states both its ends; the second packet is where the
         second one is written."""
         _, packets = expansion
+
         end = _slice_packets(packets)[1]
         assert end.timestamp == 1_500
         assert not end.track_event.name
@@ -113,12 +116,14 @@ class TestASliceExpandsIntoAPair:
         """A span whose ends are equal. BEGIN first, so it reads as
         ``dur = 0`` rather than ``-1`` (ADR-0011)."""
         _, packets = _convert([_pause_slice(ts_stop=1_000)])
+
         events = _slice_packets(packets)
         assert [e.track_event.type for e in events] == [TrackEventType.SLICE_BEGIN, TrackEventType.SLICE_END]
         assert [e.timestamp for e in events] == [1_000, 1_000]
 
     def test_a_slice_describes_its_process_and_its_row(self, expansion: Converted) -> None:
         descriptors, _ = expansion
+
         named = [td.name for td in (parse_track_descriptor(d) for d in descriptors) if td is not None and td.name]
         assert ROW_PROCESS_NAME in named
         assert _PAUSE_TRACK_NAME in named
@@ -128,6 +133,7 @@ class TestASliceExpandsIntoAPair:
         is kept rendered by the ``Lifetime`` slice ``finalize_perfetto_packets``
         draws at close, which is not an instant and not emitted here."""
         _, packets = expansion
+
         instants = [p.track_event.name for p in _track_events(packets) if p.track_event.type == TrackEventType.INSTANT]
         assert instants == []
 
@@ -179,6 +185,7 @@ class TestTheTraceProcessorBuildsTheNesting:
             tmp_path,
             "nested",
         )
+
         assert row == [("outer", 1_000, 1_000, 0), ("inner", 1_200, 300, 1)]
 
     def test_two_slices_that_touch_read_back_as_siblings(self, tmp_path: Path) -> None:
@@ -196,6 +203,7 @@ class TestTheTraceProcessorBuildsTheNesting:
             tmp_path,
             "touching",
         )
+
         assert row == [("first", 1_000, 500, 0), ("second", 1_500, 500, 0)]
 
     def test_a_child_ending_where_its_parent_ends_keeps_both_durations(self, tmp_path: Path) -> None:
@@ -213,6 +221,7 @@ class TestTheTraceProcessorBuildsTheNesting:
             tmp_path,
             "co_terminating",
         )
+
         assert row == [("outer", 1_000, 1_000, 0), ("inner", 1_800, 200, 1)]
 
     def test_a_child_starting_where_its_parent_starts_reads_back_nested(self, tmp_path: Path) -> None:
@@ -225,6 +234,7 @@ class TestTheTraceProcessorBuildsTheNesting:
             tmp_path,
             "co_starting",
         )
+
         assert row == [("outer", 1_000, 1_000, 0), ("inner", 1_000, 300, 1)]
 
     def test_a_whole_record_shape_reads_back_intact(self, tmp_path: Path) -> None:
@@ -240,6 +250,7 @@ class TestTheTraceProcessorBuildsTheNesting:
             tmp_path,
             "record",
         )
+
         assert row == [
             (gc_pause_slice_name(2), 1_000, 900, 0),
             (phase_slice_name(MARK_ALIVE, 2), 1_000, 200, 1),

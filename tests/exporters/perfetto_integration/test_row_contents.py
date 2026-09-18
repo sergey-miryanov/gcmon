@@ -91,6 +91,7 @@ class TestSliceArgs:
                 f"SELECT s.name FROM slice s {_process_filter(DEFAULT_PID)} AND s.name = '{_PAUSE_NAME}'"
             )
         )
+
         assert len(rows) == 2, f"expected two '{_PAUSE_NAME}' slices, got {rows}"
 
     def test_pause_slice_has_all_expected_args(
@@ -98,6 +99,7 @@ class TestSliceArgs:
         trace_processor: TraceProcessor,
     ) -> None:
         prefix = _ARG_PREFIX
+
         rows = {
             r.flat_key: r.int_value
             for r in trace_processor.query(
@@ -110,6 +112,7 @@ class TestSliceArgs:
                 f")"
             )
         }
+
         for key, expected in _EXPECTED_PAUSE_ARGS.items():
             qualified = f"{prefix}.{key}"
             assert qualified in rows, f"missing arg {qualified}; got {sorted(rows)}"
@@ -124,6 +127,7 @@ class TestSliceArgs:
                 f"SELECT s.name FROM slice s {_process_filter(DEFAULT_PID)} AND s.name = '{gc_pause_slice_name(1)}'"
             )
         )
+
         assert len(rows) == 1, f"expected exactly one '{gc_pause_slice_name(1)}' slice, got {rows}"
 
     def test_full_fields_pause_encodes_all_optional_fields(
@@ -140,9 +144,11 @@ class TestSliceArgs:
             phase_slice_name(CLEAR_WEAKREFS, 1),
             phase_slice_name(DELETE_GARBAGE, 1),
         ]
+
         slice_names = {
             r.name for r in trace_processor.query(f"SELECT DISTINCT s.name FROM slice s {_process_filter(DEFAULT_PID)}")
         }
+
         missing = set(expected_sub_slices) - slice_names
         assert not missing, f"missing sub-slices: {missing}"
 
@@ -204,6 +210,7 @@ class TestCounterTracks:
         trace_processor: TraceProcessor,
     ) -> None:
         rows = {r.name for r in trace_processor.query("SELECT name FROM counter_track")}
+
         # One `heap_size` row per interpreter, each naming its own. The two
         # are siblings under the process track, so unqualified they would
         # read as one row drawn twice.
@@ -223,6 +230,7 @@ class TestCounterTracks:
             output_path=path,
             flush_threshold=1000,
         )
+
         exporter.add_event(
             proc(DEFAULT_PID),
             create_mock_stats_item(
@@ -233,6 +241,7 @@ class TestCounterTracks:
             ),
         )
         exporter.close()
+
         with open_trace_processor(path) as tp:
             names = {r.name for r in tp.query("SELECT name FROM counter_track")}
             assert counter_display_name(0, UNCOLLECTABLE) not in {n.strip() for n in names}, (
@@ -251,6 +260,7 @@ class TestCounterTracks:
                 "SELECT name FROM counter_track",
             )
         }
+
         for gen in (0, 1):
             assert counter_display_name(gen, DURATION) in names, (
                 f"no duration counter for generation {gen}; got {names}"
@@ -270,6 +280,7 @@ class TestCounterTracks:
                 f"SELECT id, name FROM counter_track WHERE name = '{counter_display_name(0, DURATION)}'",
             )
         )
+
         assert rows, "no G0 duration counter track found"
         for r in rows:
             values = list(
@@ -291,6 +302,7 @@ class TestCounterTracks:
                 "SELECT id, parent_id, name FROM track WHERE name LIKE 'G_ duration'",
             )
         )
+
         assert rows, "no G{gen} duration tracks found"
         for r in rows:
             assert r.parent_id, f"{r.name} track has no parent"
@@ -397,6 +409,7 @@ class TestTrackDescriptors:
         rows = sorted(
             r.name for r in trace_processor.query(f"SELECT name FROM track WHERE name LIKE '{_PROCESS_ROW_PREFIX}%'")
         )
+
         assert rows == sorted([_DEFAULT_ROW_NAME, _SECOND_ROW_NAME]), (
             f"expected process tracks for both PIDs, got {rows}"
         )
@@ -437,6 +450,7 @@ class TestTrackDescriptors:
         rows = list(
             trace_processor.query("SELECT COUNT(*) AS cnt FROM slice s JOIN thread_track tt ON s.track_id = tt.id")
         )
+
         assert [r.cnt for r in rows] == [0], f"expected no thread-attached slices, got {[r.cnt for r in rows]}"
 
 
@@ -453,6 +467,7 @@ class TestInstantEvents:
                 f"SELECT s.name FROM slice s {_process_filter_instant(DEFAULT_PID)} AND s.name = '{_INSTANT_NAME}'"
             )
         )
+
         assert len(rows) == 1, f"expected exactly one '{_INSTANT_NAME}' dur=0 slice for DEFAULT_PID, got {rows}"
 
 
@@ -532,6 +547,7 @@ class TestRssCounterTrackIntegration:
         gc_metrics_rows = list(
             trace_processor_with_rss.query(f"SELECT name FROM track WHERE name = '{_COUNTER_GROUP_NAME}'")
         )
+
         assert not gc_metrics_rows, f"GC Metrics track should NOT appear in an RSS-only trace; got {gc_metrics_rows}"
 
     def test_rss_counter_tracks_per_pid(
@@ -589,6 +605,7 @@ class TestRssCounterTrackIntegration:
         tracks: writing both GC events and RSS samples preserves GC tracks."""
         path = tmp_path / "trace_combined.pb"
         exporter = PerfettoExporter(output_path=path, flush_threshold=1000)
+
         exporter.add_event(
             proc(DEFAULT_PID),
             create_mock_stats_item(
@@ -648,12 +665,14 @@ class TestTwoInterpretersHeapSizes:
                 f"WHERE ct.name = '{HEAP_SIZE}' ORDER BY ig.name"
             )
         )
+
         assert [r.iname for r in rows] == [_interpreter_group_name(0), _interpreter_group_name(1)]
         assert len({r.id for r in rows}) == 2, f"the two rows merged: {[dict(r.__dict__) for r in rows]}"
 
     def test_a_query_matching_the_bare_name_finds_it(self, two_interpreters: TraceProcessor) -> None:
         """What ADR-0024's qualifier broke and ADR-0027 gives back."""
         names = {r.name.strip() for r in two_interpreters.query("SELECT name FROM counter_track")}
+
         assert HEAP_SIZE in names
 
     def test_a_query_can_select_one_heap(self, two_interpreters: TraceProcessor) -> None:
@@ -667,6 +686,7 @@ class TestTwoInterpretersHeapSizes:
                 f"WHERE ct.name = '{HEAP_SIZE}' AND ig.name = '{_interpreter_group_name(1)}'"
             )
         )
+
         assert [r.value for r in rows] == [9_000]
 
     def test_each_row_parents_to_its_own_interpreter_group(self, two_interpreters: TraceProcessor) -> None:
@@ -674,16 +694,19 @@ class TestTwoInterpretersHeapSizes:
             r.parent_id
             for r in two_interpreters.query(f"SELECT parent_id FROM counter_track WHERE name = '{HEAP_SIZE}'")
         ]
+
         assert len(parents) == 2
         assert len(set(parents)) == 2, f"both heap rows share a parent: {parents}"
 
     def test_rss_stays_bare(self, two_interpreters: TraceProcessor) -> None:
         """Its owner is the process, and a process holds one."""
         names = {r.name.strip() for r in two_interpreters.query("SELECT name FROM counter_track")}
+
         assert RSS in names
 
     def test_every_other_counter_name_is_what_it_was(self, two_interpreters: TraceProcessor) -> None:
         names = {r.name.strip() for r in two_interpreters.query("SELECT name FROM counter_track")}
+
         assert {
             counter_display_name(0, COLLECTED),
             counter_display_name(0, CANDIDATES),

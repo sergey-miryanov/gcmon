@@ -389,6 +389,7 @@ class TestProcessOrderingIntegration:
                 "SELECT id FROM track WHERE type IS NULL",
             )
         )
+
         assert rows == [], (
             f"root track descriptor should not create a track row with unknown type; got ids {[r.id for r in rows]}"
         )
@@ -411,6 +412,7 @@ class TestProcessOrderingIntegration:
                 f"WHERE name IN ('{_DEFAULT_ROW_NAME}', '{_SECOND_ROW_NAME}') ORDER BY name",
             )
         )
+
         assert [r.name for r in rows] == sorted([_DEFAULT_ROW_NAME, _SECOND_ROW_NAME]), (
             f"expected one process row per process; got {[r.name for r in rows]}"
         )
@@ -431,6 +433,7 @@ class TestProcessOrderingIntegration:
                 f"SELECT name FROM track WHERE name LIKE '{_PROCESS_ROW_PREFIX}%' ORDER BY name",
             )
         )
+
         assert [r.name for r in rows] == sorted(
             [
                 _DEFAULT_ROW_NAME,
@@ -461,6 +464,7 @@ class TestProcessOrderingIntegration:
         """
             )
         )
+
         start_ts = {r.name: r.start_ts for r in rows}
         assert start_ts == {
             _DEFAULT_ROW_NAME: _TS_START - 1_000_000,

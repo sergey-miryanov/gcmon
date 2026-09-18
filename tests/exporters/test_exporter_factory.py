@@ -17,21 +17,28 @@ from tests.helpers import proc
 class TestEventsExporterFactory:
     def test_stdout_format(self, tmp_path: Path) -> None:
         factory = EventsExporterFactory(FORMAT_STDOUT, tmp_path / "out", 100)
+
         exporter = factory()
+
         assert isinstance(exporter, StdoutExporter)
 
     def test_jsonl_format(self, tmp_path: Path) -> None:
         factory = EventsExporterFactory(FORMAT_JSONL, tmp_path / "out.jsonl", 100)
+
         exporter = factory()
+
         assert isinstance(exporter, JsonlExporter)
 
     def test_perfetto_format(self, tmp_path: Path) -> None:
         factory = EventsExporterFactory(FORMAT_PERFETTO, tmp_path / "out.pb", 100)
+
         exporter = factory()
+
         assert isinstance(exporter, PerfettoExporter)
 
     def test_unknown_format_raises_value_error(self, tmp_path: Path) -> None:
         factory = EventsExporterFactory("unknown", tmp_path / "out", 100)
+
         with pytest.raises(ValueError, match="Unknown output format: unknown"):
             factory()
 

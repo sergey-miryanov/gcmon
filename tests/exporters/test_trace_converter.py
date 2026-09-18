@@ -109,6 +109,7 @@ class TestAGenerationTheCounterTableNeverHeld:
         rather than a generation, so it carries none (ADR-0004).
         """
         beyond = set(self._counters(max(GENERATIONS) + 1).values())
+
         assert beyond & set(self._counters(max(GENERATIONS)).values()) == {HEAP_SIZE}
 
 
@@ -168,4 +169,5 @@ class TestAnItemOfNoKnownKind:
         """The refusal above only says something about a fourth kind if the
         three real ones reach their branches, so all three go in together."""
         capture: list[TItem] = [create_mock_stats_item(), create_mock_loss_item(), create_instant_msg()]
+
         assert {type(e) for e in convert_to_trace_format({1: capture})} == {Slice, Counter, Instant}

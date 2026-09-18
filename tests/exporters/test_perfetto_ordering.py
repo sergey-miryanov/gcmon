@@ -86,11 +86,13 @@ class TestProcessOrderingByFirstTs:
         events: list[TraceEvent] = [
             Instant(process_track(PID_C), START_EVENT, ts=5_000),
         ]
+
         descriptors, _ = convert_trace_events_to_perfetto(
             events,
             state,
             sequence_id=1,
         )
+
         roots = _root_descriptor_fields(descriptors)
         assert len(roots) == 1
         td = roots[0]
@@ -112,13 +114,16 @@ class TestProcessOrderingByFirstTs:
         events2: list[TraceEvent] = [
             Instant(process_track(PID_D), "second", ts=2_000),
         ]
+
         d1, _ = convert_trace_events_to_perfetto(events1, state, sequence_id=1)
         d2, _ = convert_trace_events_to_perfetto(events2, state, sequence_id=1)
+
         total_roots = len(_root_descriptor_fields(d1)) + len(_root_descriptor_fields(d2))
         assert total_roots == 1, f"expected one root descriptor total, got {total_roots}"
 
     def test_root_descriptor_not_emitted_for_empty_input(self, state: PerfettoTrackState) -> None:
         descriptors, packets = convert_trace_events_to_perfetto([], state, sequence_id=1)
+
         assert descriptors == []
         assert packets == []
 
@@ -128,11 +133,13 @@ class TestProcessOrderingByFirstTs:
             Instant(process_track(PID_A), "ev1", ts=2_000),
             Instant(process_track(PID_B), "ev2", ts=1_000),
         ]
+
         descriptors, _ = convert_trace_events_to_perfetto(
             events,
             state,
             sequence_id=1,
         )
+
         ranks = [
             (pid, td.sibling_order_rank)
             for pid in (1, 2)
@@ -147,11 +154,13 @@ class TestProcessOrderingByFirstTs:
             Instant(process_track(PID_B), "ev", ts=1_000),
             Instant(process_track(PID_A), "ev", ts=1_000),
         ]
+
         descriptors, _ = convert_trace_events_to_perfetto(
             events,
             state,
             sequence_id=1,
         )
+
         ranks = [
             (pid, td.sibling_order_rank)
             for pid in (1, 2)
@@ -167,11 +176,13 @@ class TestProcessOrderingByFirstTs:
             Instant(process_track(PID_C), "late", ts=5_000),
             Instant(process_track(PID_D), "early", ts=1_000),
         ]
+
         descriptors, _ = convert_trace_events_to_perfetto(
             events,
             state,
             sequence_id=1,
         )
+
         ranks = [
             (pid, td.sibling_order_rank)
             for pid in (100, 200)
@@ -187,11 +198,13 @@ class TestProcessOrderingByFirstTs:
             Instant(process_track(PID_B), "ev", ts=2_000),
             *convert_item_to_trace_format(proc(PID_A), item1),
         ]
+
         descriptors, _ = convert_trace_events_to_perfetto(
             events,
             state,
             sequence_id=1,
         )
+
         ranks = [
             (pid, td.sibling_order_rank)
             for pid in (1, 2)
@@ -211,6 +224,7 @@ class TestProcessOrderingByFirstTs:
         d1, _ = convert_trace_events_to_perfetto(_make_events([1, 2]), s1, sequence_id=1)
         s2 = PerfettoTrackState()
         d2, _ = convert_trace_events_to_perfetto(_make_events([2, 1]), s2, sequence_id=1)
+
         ranks1 = [(pid, td.sibling_order_rank) for pid in (1, 2) for td in _process_descriptor_fields_for_pid(d1, pid)]
         ranks2 = [(pid, td.sibling_order_rank) for pid in (1, 2) for td in _process_descriptor_fields_for_pid(d2, pid)]
         assert ranks1 == ranks2 == [(1, 1), (2, 0)]
@@ -219,6 +233,7 @@ class TestProcessOrderingByFirstTs:
         """First-ts recorded in one batch must be remembered when
         computing ranks in a later batch (multi-flush invariant)."""
         s = PerfettoTrackState()
+
         d1, _ = convert_trace_events_to_perfetto(
             [Instant(process_track(PID_A), "a", ts=1_000)],
             s,
@@ -229,6 +244,7 @@ class TestProcessOrderingByFirstTs:
             s,
             sequence_id=1,
         )
+
         # The pre-scan also re-records for batch 2, but the first-ts
         # for pid 1 from batch 1 is preserved (record_first_event_ts
         # only sets the first ts for a pid). Pid 1 should still get
@@ -251,11 +267,13 @@ class TestProcessOrderingByFirstTs:
             Instant(process_track(PID_C), START_EVENT, ts=5_000),
             Instant(process_track(PID_D), START_EVENT, ts=1_000),
         ]
+
         descriptors, _ = convert_trace_events_to_perfetto(
             events,
             state,
             sequence_id=1,
         )
+
         start_ts: dict[int, int] = {}
         for pid in (100, 200):
             tds = _process_descriptor_fields_for_pid(descriptors, pid)
@@ -274,11 +292,13 @@ class TestProcessOrderingByFirstTs:
             Instant(process_track(PID_B), "ev", ts=2_000),
             *convert_item_to_trace_format(proc(PID_A), item),
         ]
+
         descriptors, _ = convert_trace_events_to_perfetto(
             events,
             state,
             sequence_id=1,
         )
+
         start_ts: dict[int, int] = {}
         for pid in (1, 2):
             tds = _process_descriptor_fields_for_pid(descriptors, pid)
@@ -289,6 +309,7 @@ class TestProcessOrderingByFirstTs:
         """First-ts recorded in one batch must be remembered when
         the process descriptor is emitted in a later batch."""
         s = PerfettoTrackState()
+
         d1, _ = convert_trace_events_to_perfetto(
             [Instant(process_track(PID_A), "a", ts=1_000)],
             s,
@@ -299,6 +320,7 @@ class TestProcessOrderingByFirstTs:
             s,
             sequence_id=1,
         )
+
         # Pid 1 was seen in batch 1; pid 2 in batch 2.
         tds_1 = _process_descriptor_fields_for_pid(d1, 1)
         assert len(tds_1) == 1
@@ -346,6 +368,7 @@ class TestARankIsHandedOutOnce:
         one it has not reached yet, and a process it reaches later was, save
         for the first tick, started later."""
         convert_trace_events_to_perfetto([Instant(process_track(PID_C), "ev", ts=9_000)], state, sequence_id=1)
+
         second, _ = convert_trace_events_to_perfetto(
             [Instant(process_track(PID_D), "ev", ts=1_000), Instant(process_track(300), "ev", ts=8_000)],
             state,

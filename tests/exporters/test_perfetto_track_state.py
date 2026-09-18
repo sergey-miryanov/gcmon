@@ -23,35 +23,45 @@ class TestPerfettoTrackState:
 
     def test_pid_tracking(self, state: PerfettoTrackState) -> None:
         assert not state.has_process_descriptor(proc(TARGET_PID))
+
         state.mark_process_descriptor(proc(TARGET_PID))
+
         assert state.has_process_descriptor(proc(TARGET_PID))
         assert not state.has_process_descriptor(proc(OTHER_PID))
 
     def test_tid_tracking(self, state: PerfettoTrackState) -> None:
         assert not state.has_track(interpreter_track(TARGET_PID, 0))
+
         state.mark_track(interpreter_track(TARGET_PID, 0))
+
         assert state.has_track(interpreter_track(TARGET_PID, 0))
         assert not state.has_track(interpreter_track(TARGET_PID, 1))
         assert not state.has_track(interpreter_track(OTHER_PID, 0))
 
     def test_process_track_uuid(self, state: PerfettoTrackState) -> None:
         uuid = state.get_process_track_uuid(proc(DEFAULT_PID))
+
         assert uuid == 1
 
     def test_thread_track_uuid(self, state: PerfettoTrackState) -> None:
         uuid = state.get_track_uuid(interpreter_track(DEFAULT_PID, 0))
+
         assert uuid == 1
 
     def test_thread_track_uuid_different_iid(self, state: PerfettoTrackState) -> None:
         uuid0 = state.get_track_uuid(interpreter_track(DEFAULT_PID, 0))
+
         uuid1 = state.get_track_uuid(interpreter_track(DEFAULT_PID, 1))
+
         assert uuid0 != uuid1
 
     def test_counter_track_uuid_sequential(self, state: PerfettoTrackState) -> None:
         uuid0 = state.get_or_create_counter_track_uuid(
             interpreter_track(TARGET_PID, 0), counter_display_name(0, COLLECTED)
         )
+
         uuid1 = state.get_or_create_counter_track_uuid(interpreter_track(TARGET_PID, 0), HEAP_SIZE)
+
         assert uuid0 == 1
         assert uuid1 == 2
 
@@ -59,14 +69,18 @@ class TestPerfettoTrackState:
         uuid1 = state.get_or_create_counter_track_uuid(
             interpreter_track(TARGET_PID, 0), counter_display_name(0, COLLECTED)
         )
+
         uuid2 = state.get_or_create_counter_track_uuid(
             interpreter_track(TARGET_PID, 0), counter_display_name(0, COLLECTED)
         )
+
         assert uuid1 == uuid2
 
     def test_has_counter_track(self, state: PerfettoTrackState) -> None:
         assert not state.has_counter_track(interpreter_track(TARGET_PID, 0), counter_display_name(0, COLLECTED))
+
         state.get_or_create_counter_track_uuid(interpreter_track(TARGET_PID, 0), counter_display_name(0, COLLECTED))
+
         assert state.has_counter_track(interpreter_track(TARGET_PID, 0), counter_display_name(0, COLLECTED))
         assert not state.has_counter_track(interpreter_track(TARGET_PID, 0), counter_display_name(1, COLLECTED))
 
@@ -81,24 +95,31 @@ class TestRankAllocation:
     def test_a_process_with_no_span_is_left_unranked(self, state: PerfettoTrackState) -> None:
         """gcmon has not observed it, so there is nothing to sort it by."""
         state.rank_processes([proc(TARGET_PID)])
+
         assert state.get_process_track_rank(proc(TARGET_PID)) is None
 
     def test_a_group_is_sorted_by_first_observation(self, state: PerfettoTrackState) -> None:
         state.update_process_lifetime(proc(TARGET_PID), 5_000)
         state.update_process_lifetime(proc(OTHER_PID), 1_000)
+
         state.rank_processes([proc(TARGET_PID), proc(OTHER_PID)])
+
         assert self._ranked(state, proc(OTHER_PID), proc(TARGET_PID)) == [0, 1]
 
     def test_the_group_order_does_not_reach_the_ranks(self, state: PerfettoTrackState) -> None:
         state.update_process_lifetime(proc(TARGET_PID), 5_000)
         state.update_process_lifetime(proc(OTHER_PID), 1_000)
+
         state.rank_processes([proc(OTHER_PID), proc(TARGET_PID)])
+
         assert self._ranked(state, proc(OTHER_PID), proc(TARGET_PID)) == [0, 1]
 
     def test_an_equal_start_is_broken_by_process(self, state: PerfettoTrackState) -> None:
         for pid in (200, 100):
             state.update_process_lifetime(proc(pid), 1_000)
+
         state.rank_processes([proc(OTHER_PID), proc(TARGET_PID)])
+
         assert self._ranked(state, proc(TARGET_PID), proc(OTHER_PID)) == [0, 1]
 
     def test_a_later_group_takes_the_ranks_after_it(self, state: PerfettoTrackState) -> None:
@@ -107,27 +128,35 @@ class TestRankAllocation:
         state.update_process_lifetime(proc(TARGET_PID), 5_000)
         state.rank_processes([proc(TARGET_PID)])
         state.update_process_lifetime(proc(OTHER_PID), 1_000)
+
         state.rank_processes([proc(OTHER_PID)])
+
         assert self._ranked(state, proc(TARGET_PID), proc(OTHER_PID)) == [0, 1]
 
     def test_ranking_twice_leaves_the_first_answer(self, state: PerfettoTrackState) -> None:
         state.update_process_lifetime(proc(TARGET_PID), 5_000)
         state.rank_processes([proc(TARGET_PID)])
         state.update_process_lifetime(proc(OTHER_PID), 1_000)
+
         state.rank_processes([proc(OTHER_PID), proc(TARGET_PID)])
+
         assert self._ranked(state, proc(TARGET_PID), proc(OTHER_PID)) == [0, 1]
 
     def test_a_repeated_process_in_one_group_spends_one_rank(self, state: PerfettoTrackState) -> None:
         """The convert pass names a process once per event on it."""
         state.update_process_lifetime(proc(TARGET_PID), 5_000)
         state.update_process_lifetime(proc(OTHER_PID), 9_000)
+
         state.rank_processes([proc(TARGET_PID), proc(TARGET_PID), proc(OTHER_PID)])
+
         assert self._ranked(state, proc(TARGET_PID), proc(OTHER_PID)) == [0, 1]
 
     def test_an_unobservable_process_spends_no_rank(self, state: PerfettoTrackState) -> None:
         """It stays unranked, and the one beside it still takes 0."""
         state.update_process_lifetime(proc(OTHER_PID), 9_000)
+
         state.rank_processes([proc(TARGET_PID), proc(OTHER_PID)])
+
         assert self._ranked(state, proc(TARGET_PID), proc(OTHER_PID)) == [None, 0]
 
 
@@ -144,24 +173,30 @@ class TestInterpreterCount:
     def test_each_interpreter_counts_once(self, state: PerfettoTrackState) -> None:
         state.mark_track(interpreter_track(TARGET_PID, 0))
         state.mark_track(interpreter_track(TARGET_PID, 1))
+
         assert state.get_interpreter_count(proc(TARGET_PID)) == 2
 
     def test_marking_one_twice_counts_once(self, state: PerfettoTrackState) -> None:
         state.mark_track(interpreter_track(TARGET_PID, 0))
+
         state.mark_track(interpreter_track(TARGET_PID, 0))
+
         assert state.get_interpreter_count(proc(TARGET_PID)) == 1
 
     def test_a_loss_row_does_not_widen_the_count(self, state: PerfettoTrackState) -> None:
         """A loss row names an interpreter but is not one, and gcmon builds
         its groups from records it already read."""
         state.mark_track(interpreter_track(TARGET_PID, 0))
+
         state.mark_track(loss_track(TARGET_PID, 0))
+
         assert state.get_interpreter_count(proc(TARGET_PID)) == 1
 
     def test_another_process_is_counted_apart(self, state: PerfettoTrackState) -> None:
         state.mark_track(interpreter_track(TARGET_PID, 0))
         state.mark_track(interpreter_track(OTHER_PID, 0))
         state.mark_track(interpreter_track(OTHER_PID, 1))
+
         assert state.get_interpreter_count(proc(TARGET_PID)) == 1
         assert state.get_interpreter_count(proc(OTHER_PID)) == 2
 
@@ -169,6 +204,7 @@ class TestInterpreterCount:
         state.mark_track(interpreter_track(TARGET_PID, 0))
         state.mark_track(interpreter_track(TARGET_PID, 0, pid_epoch=2))
         state.mark_track(interpreter_track(TARGET_PID, 1, pid_epoch=2))
+
         assert state.get_interpreter_count(proc(TARGET_PID)) == 1
         assert state.get_interpreter_count(proc(TARGET_PID, 2)) == 2
 
@@ -178,19 +214,25 @@ class TestProcessLifetimeState:
 
     def test_track_uuid_lazy_and_idempotent(self, state: PerfettoTrackState) -> None:
         assert not state.has_process_lifetime_track()
+
         uuid1 = state.get_or_create_process_lifetime_track_uuid()
         assert state.has_process_lifetime_track()
+
         uuid2 = state.get_or_create_process_lifetime_track_uuid()
         assert uuid1 == uuid2
 
     def test_track_uuid_distinct_from_process_uuid(self, state: PerfettoTrackState) -> None:
         proc_uuid = state.get_process_track_uuid(proc(TARGET_PID))
+
         lifetime_uuid = state.get_or_create_process_lifetime_track_uuid()
+
         assert lifetime_uuid != proc_uuid
 
     def test_first_update_seeds_both_ends(self, state: PerfettoTrackState) -> None:
         assert not state.has_process_lifetime(proc(TARGET_PID))
+
         state.update_process_lifetime(proc(TARGET_PID), 1_000)
+
         assert state.has_process_lifetime(proc(TARGET_PID))
         assert state.get_process_lifetimes() == [span(TARGET_PID, 1_000, 1_000)]
         assert not state.has_process_lifetime(proc(OTHER_PID))
@@ -200,6 +242,7 @@ class TestProcessLifetimeState:
         state.update_process_lifetime(proc(TARGET_PID), 5_000)
         state.update_process_lifetime(proc(TARGET_PID), 1_000)
         state.update_process_lifetime(proc(TARGET_PID), 3_000)  # inside; no effect
+
         assert state.get_process_lifetimes() == [span(TARGET_PID, 1_000, 5_000)]
 
     def test_a_counter_widens_both_ends(self, state: PerfettoTrackState) -> None:
@@ -209,10 +252,12 @@ class TestProcessLifetimeState:
         no longer says which kind it is holding."""
         state.update_process_lifetime(proc(TARGET_PID), 2_000)
         state.update_process_lifetime(proc(TARGET_PID), 4_000)
+
         # A counter before the span's start pulls the start back...
         state.update_process_lifetime(proc(TARGET_PID), 1_000)
         # ...and one after its end pushes the end out.
         state.update_process_lifetime(proc(TARGET_PID), 9_000)
+
         assert state.get_process_lifetimes() == [span(TARGET_PID, 1_000, 9_000)]
 
     def test_counter_only_pid_gets_a_span(self, state: PerfettoTrackState) -> None:
@@ -220,6 +265,7 @@ class TestProcessLifetimeState:
         therefore a rank, but no span and no slice. It now gets both."""
         state.update_process_lifetime(proc(TARGET_PID), 1_000)
         state.update_process_lifetime(proc(TARGET_PID), 7_000)
+
         assert state.has_process_lifetime(proc(TARGET_PID))
         assert state.get_process_lifetime_start_ts(proc(TARGET_PID)) == 1_000
         assert state.get_process_lifetimes() == [span(TARGET_PID, 1_000, 7_000)]
@@ -236,6 +282,7 @@ class TestProcessLifetimeState:
         state.update_process_lifetime(proc(TARGET_PID), 1_000)
         state.update_process_lifetime(proc(TARGET_PID), 500)
         state.update_process_lifetime(proc(TARGET_PID), 600)
+
         assert state.get_process_lifetimes() == [span(TARGET_PID, 500, 1_000)]
 
     def test_both_ends_always_carry_the_same_pids(self, state: PerfettoTrackState) -> None:
@@ -245,6 +292,7 @@ class TestProcessLifetimeState:
         the end one."""
         for pid, ts in ((100, 1_000), (200, 2_000), (100, 3_000)):
             state.update_process_lifetime(proc(pid), ts)
+
         assert state._process_lifetime_start.keys() == state._process_lifetime_end.keys()
         assert sorted(state.get_process_lifetimes()) == [span(TARGET_PID, 1_000, 3_000), span(OTHER_PID, 2_000, 2_000)]
 
@@ -260,6 +308,7 @@ class TestProcessLifetimeState:
         ):
             state.update_process_lifetime(one.process, one.start_ts)
             state.update_process_lifetime(one.process, one.end_ts)
+
         assert sorted(state.get_process_lifetimes()) == [
             span(TARGET_PID, 1_000, 9_000),
             span(OTHER_PID, 2_000, 3_000),
@@ -270,6 +319,7 @@ class TestProcessLifetimeState:
         """Reading spans has no side effect: the once-per-trace contract
         is ``finalize_perfetto_packets``' flag, not a drain here."""
         state.update_process_lifetime(proc(TARGET_PID), 1_000)
+
         assert state.get_process_lifetimes() == [span(TARGET_PID, 1_000, 1_000)]
         assert state.get_process_lifetimes() == [span(TARGET_PID, 1_000, 1_000)]
         assert state.has_process_lifetime(proc(TARGET_PID))
@@ -277,7 +327,9 @@ class TestProcessLifetimeState:
 
     def test_process_lifetime_emitted_flag(self, state: PerfettoTrackState) -> None:
         assert not state.has_process_lifetime_emitted()
+
         state.mark_process_lifetime_emitted()
+
         assert state.has_process_lifetime_emitted()
 
 
@@ -345,11 +397,13 @@ class TestCaptureTotals:
     def test_each_record_counts_one(self, state: PerfettoTrackState) -> None:
         for _ in range(3):
             state.record_sampled(proc(TARGET_PID))
+
         assert state.get_sampled_count(proc(TARGET_PID)) == 3
 
     def test_loss_intervals_add_up(self, state: PerfettoTrackState) -> None:
         state.record_loss(proc(TARGET_PID), lost_count=4, lost_pause_ns=1_000)
         state.record_loss(proc(TARGET_PID), lost_count=6, lost_pause_ns=2_500)
+
         assert state.get_lost_count(proc(TARGET_PID)) == 10
         assert state.get_lost_pause_ns(proc(TARGET_PID)) == 3_500
 
@@ -360,13 +414,16 @@ class TestCaptureTotals:
         accumulator to arithmetic rather than to that guarantee.
         """
         state.record_loss(proc(TARGET_PID), lost_count=4, lost_pause_ns=1_000)
+
         state.record_loss(proc(TARGET_PID), lost_count=0, lost_pause_ns=0)
+
         assert state.get_lost_count(proc(TARGET_PID)) == 4
         assert state.get_lost_pause_ns(proc(TARGET_PID)) == 1_000
 
     def test_records_and_losses_are_counted_apart(self, state: PerfettoTrackState) -> None:
         state.record_sampled(proc(TARGET_PID))
         state.record_loss(proc(TARGET_PID), lost_count=7, lost_pause_ns=99)
+
         assert state.get_sampled_count(proc(TARGET_PID)) == 1
         assert state.get_lost_count(proc(TARGET_PID)) == 7
 
@@ -375,6 +432,7 @@ class TestCaptureTotals:
         state.record_sampled(proc(OTHER_PID))
         state.record_sampled(proc(OTHER_PID))
         state.record_loss(proc(OTHER_PID), lost_count=3, lost_pause_ns=50)
+
         assert state.get_sampled_count(proc(TARGET_PID)) == 1
         assert state.get_lost_count(proc(TARGET_PID)) == 0
         assert state.get_sampled_count(proc(OTHER_PID)) == 2
@@ -384,6 +442,7 @@ class TestCaptureTotals:
         """A reused pid draws two rows, and each bar counts its own life."""
         state.record_sampled(proc(TARGET_PID, 1))
         state.record_loss(proc(TARGET_PID, 2), lost_count=5, lost_pause_ns=10)
+
         assert state.get_sampled_count(proc(TARGET_PID, 1)) == 1
         assert state.get_lost_count(proc(TARGET_PID, 1)) == 0
         assert state.get_sampled_count(proc(TARGET_PID, 2)) == 0
@@ -410,6 +469,7 @@ class TestRowPids:
         the case that used to break it, and two pids is the case that must
         keep working."""
         pids = [state.get_row_pid(proc(pid, epoch)) for pid in (100, 200, 300) for epoch in (1, 2, 3)]
+
         assert len(set(pids)) == len(pids), pids
 
     def test_the_count_leaves_the_idle_process_alone(self) -> None:

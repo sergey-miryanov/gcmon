@@ -60,11 +60,13 @@ class TestCounterTrackYAxisShareKey:
             gen_counter(interpreter_track(TARGET_PID, 0), 2, CANDIDATES, 1_002, 30),
             gen_counter(interpreter_track(TARGET_PID, 0), 2, DURATION, 1_002, 0.003),
         ]
+
         descriptors, _ = convert_trace_events_to_perfetto(
             events,
             state,
             sequence_id=1,
         )
+
         for gen in (0, 1, 2):
             for metric in (COLLECTED, CANDIDATES, DURATION):
                 track_name = counter_display_name(gen, metric)
@@ -76,11 +78,13 @@ class TestCounterTrackYAxisShareKey:
         events: list[TraceEvent] = [
             Counter(interpreter_track(TARGET_PID, 0), HEAP_SIZE, HEAP_SIZE, 1_000, 4096),
         ]
+
         descriptors, _ = convert_trace_events_to_perfetto(
             events,
             state,
             sequence_id=1,
         )
+
         assert _counter_track_y_axis_share_key(descriptors, HEAP_SIZE) is None
 
     def test_uncollectable_share_key_emitted_when_nonzero(self, state: PerfettoTrackState) -> None:
@@ -90,11 +94,13 @@ class TestCounterTrackYAxisShareKey:
             gen_counter(interpreter_track(TARGET_PID, 0), 0, CANDIDATES, 1_000, 1),
             gen_counter(interpreter_track(TARGET_PID, 0), 0, DURATION, 1_000, 1),
         ]
+
         descriptors, _ = convert_trace_events_to_perfetto(
             events,
             state,
             sequence_id=1,
         )
+
         assert _counter_track_y_axis_share_key(descriptors, counter_display_name(0, UNCOLLECTABLE)) == UNCOLLECTABLE
 
     def test_different_pids_have_independent_share_groups(self, state: PerfettoTrackState) -> None:
@@ -109,11 +115,13 @@ class TestCounterTrackYAxisShareKey:
             gen_counter(interpreter_track(200, 0), 0, COLLECTED, 1_001, 20),
             gen_counter(interpreter_track(200, 0), 0, CANDIDATES, 1_001, 6),
         ]
+
         descriptors, _ = convert_trace_events_to_perfetto(
             events,
             state,
             sequence_id=1,
         )
+
         parent_uuids: set[int] = set()
         for d in descriptors:
             td = parse_track_descriptor(d)
@@ -139,7 +147,9 @@ class TestRssCounterTrack:
         events: list[TraceEvent] = [
             _rss_sample(),
         ]
+
         descriptors, _ = convert_trace_events_to_perfetto(events, state, sequence_id=1)
+
         proc_uuid = state.get_process_track_uuid(proc(TARGET_PID))
         ctr_key = (process_track(TARGET_PID), RSS)
         assert state.has_counter_track(*ctr_key)
@@ -166,7 +176,9 @@ class TestRssCounterTrack:
         events: list[TraceEvent] = [
             Counter(process_track(TARGET_PID), RSS, RSS, 1_000, 8192),
         ]
+
         descriptors, _ = convert_trace_events_to_perfetto(events, state, sequence_id=1)
+
         ctr_key = (process_track(TARGET_PID), RSS)
         ctr_uuid = state.get_or_create_counter_track_uuid(*ctr_key)
         for d in descriptors:
@@ -215,7 +227,9 @@ class TestRssCounterTrack:
             gen_counter(interpreter_track(TARGET_PID, 0), 0, CANDIDATES, 1_000, 10),
             gen_counter(interpreter_track(TARGET_PID, 0), 0, DURATION, 1_000, 0.005),
         ]
+
         descriptors, _ = convert_trace_events_to_perfetto(events, state, sequence_id=1)
+
         proc_uuid = state.get_process_track_uuid(proc(TARGET_PID))
         rss_key = (process_track(TARGET_PID), RSS)
         rss_uuid = state.get_or_create_counter_track_uuid(*rss_key)

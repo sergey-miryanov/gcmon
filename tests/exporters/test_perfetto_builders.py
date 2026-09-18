@@ -30,6 +30,7 @@ from gcmon.model.names import CLIPPED, COLLECTED, DURATION
 class TestBuildTrackDescriptor:
     def test_process_descriptor(self) -> None:
         data = build_track_descriptor(uuid=100, name="Process 100", pid=100)
+
         descriptor = TrackDescriptor()
         descriptor.ParseFromString(data)
         assert descriptor.uuid == 100
@@ -49,6 +50,7 @@ class TestBuildTrackDescriptor:
             cmdline=["python", "-u", "script.py", "--arg1"],
             description="python -u script.py --arg1",
         )
+
         descriptor = TrackDescriptor()
         descriptor.ParseFromString(data)
         assert descriptor.description == "python -u script.py --arg1"
@@ -63,6 +65,7 @@ class TestBuildTrackDescriptor:
 
     def test_process_descriptor_no_cmdline_when_none(self) -> None:
         data = build_track_descriptor(uuid=100, name="Process 100", pid=100)
+
         descriptor = TrackDescriptor()
         descriptor.ParseFromString(data)
         assert not descriptor.HasField("description")
@@ -71,6 +74,7 @@ class TestBuildTrackDescriptor:
 
     def test_process_descriptor_no_cmdline_when_empty(self) -> None:
         data = build_track_descriptor(uuid=100, name="Process 100", pid=100, cmdline=[])
+
         descriptor = TrackDescriptor()
         descriptor.ParseFromString(data)
         assert not descriptor.HasField("description")
@@ -81,6 +85,7 @@ class TestBuildTrackDescriptor:
         data = build_track_descriptor(
             uuid=300, name=counter_display_name(0, COLLECTED), parent_uuid=200, is_counter=True
         )
+
         descriptor = TrackDescriptor()
         descriptor.ParseFromString(data)
         assert descriptor.uuid == 300
@@ -96,6 +101,7 @@ class TestBuildTrackDescriptor:
             is_counter=True,
             y_axis_share_key="collected",
         )
+
         descriptor = TrackDescriptor()
         descriptor.ParseFromString(data)
         assert descriptor.uuid == 300
@@ -111,6 +117,7 @@ class TestBuildTrackDescriptor:
             pid=100,
             start_timestamp_ns=1_700_000_000_123_456_789,
         )
+
         descriptor = TrackDescriptor()
         descriptor.ParseFromString(data)
         assert descriptor.HasField("process")
@@ -120,6 +127,7 @@ class TestBuildTrackDescriptor:
         """No start_timestamp_ns is written when the kwarg is omitted
         (default ``None``). The field must be absent from the bytes."""
         data = build_track_descriptor(uuid=100, name="Process 100", pid=100)
+
         descriptor = TrackDescriptor()
         descriptor.ParseFromString(data)
         assert descriptor.HasField("process")
@@ -139,6 +147,7 @@ class TestBuildCounterDescriptor:
             is_counter=False,
             y_axis_share_key="ignored",
         )
+
         descriptor = TrackDescriptor()
         descriptor.ParseFromString(data)
         assert not descriptor.HasField("counter")
@@ -151,6 +160,7 @@ class TestBuildCounterDescriptor:
             is_counter=True,
             y_axis_share_key="duration",
         )
+
         descriptor = TrackDescriptor()
         descriptor.ParseFromString(data)
         assert descriptor.HasField("counter")
@@ -170,6 +180,7 @@ class TestBuildCounterDescriptor:
             is_counter=True,
             y_axis_share_key="",
         )
+
         descriptor = TrackDescriptor()
         descriptor.ParseFromString(data)
         assert descriptor.counter.SerializeToString() == b""
@@ -178,12 +189,14 @@ class TestBuildCounterDescriptor:
 class TestBuildTracePacket:
     def test_empty_packet(self) -> None:
         data = build_trace_packet(1)
+
         packet = TracePacket()
         packet.ParseFromString(data)
         assert packet.trusted_packet_sequence_id == 1
 
     def test_with_timestamp(self) -> None:
         data = build_trace_packet(1, timestamp=1_500_000_000)
+
         packet = TracePacket()
         packet.ParseFromString(data)
         assert packet.trusted_packet_sequence_id == 1
@@ -191,7 +204,9 @@ class TestBuildTracePacket:
 
     def test_with_track_event(self) -> None:
         event = b"\x08\x01"
+
         data = build_trace_packet(1, track_event=event)
+
         packet = TracePacket()
         packet.ParseFromString(data)
         assert packet.trusted_packet_sequence_id == 1
@@ -199,7 +214,9 @@ class TestBuildTracePacket:
 
     def test_with_track_descriptor(self) -> None:
         desc = b"\x0a\x05hello"
+
         data = build_trace_packet(1, track_descriptor=desc)
+
         packet = TracePacket()
         packet.ParseFromString(data)
         assert packet.trusted_packet_sequence_id == 1
@@ -207,7 +224,9 @@ class TestBuildTracePacket:
 
     def test_with_all_fields(self) -> None:
         event = b"\x08\x01"
+
         data = build_trace_packet(42, timestamp=1000, track_event=event)
+
         packet = TracePacket()
         packet.ParseFromString(data)
         assert packet.trusted_packet_sequence_id == 42
@@ -218,6 +237,7 @@ class TestBuildTracePacket:
 class TestBuildTrackEvent:
     def test_slice_begin(self) -> None:
         data = build_track_event(type=TrackEventType.SLICE_BEGIN, track_uuid=100, name="test")
+
         track_event = TrackEvent()
         track_event.ParseFromString(data)
         assert track_event.type == TrackEvent.Type.TYPE_SLICE_BEGIN
@@ -226,6 +246,7 @@ class TestBuildTrackEvent:
 
     def test_slice_end(self) -> None:
         data = build_track_event(type=TrackEventType.SLICE_END, track_uuid=100)
+
         track_event = TrackEvent()
         track_event.ParseFromString(data)
         assert track_event.type == TrackEvent.Type.TYPE_SLICE_END
@@ -234,6 +255,7 @@ class TestBuildTrackEvent:
 
     def test_instant(self) -> None:
         data = build_track_event(type=TrackEventType.INSTANT, track_uuid=100, name="marker")
+
         track_event = TrackEvent()
         track_event.ParseFromString(data)
         assert track_event.type == TrackEvent.Type.TYPE_INSTANT
@@ -242,6 +264,7 @@ class TestBuildTrackEvent:
 
     def test_counter(self) -> None:
         data = build_track_event(type=TrackEventType.COUNTER, track_uuid=100, counter_value=42)
+
         track_event = TrackEvent()
         track_event.ParseFromString(data)
         assert track_event.type == TrackEvent.Type.TYPE_COUNTER
@@ -255,6 +278,7 @@ class TestBuildTrackEvent:
             name="test",
             categories=["cat1", "cat2"],
         )
+
         track_event = TrackEvent()
         track_event.ParseFromString(data)
         assert len(track_event.categories) == 2
@@ -264,12 +288,14 @@ class TestBuildTrackEvent:
     def test_with_debug_annotations(self) -> None:
         ann1 = b"\x52\x03key\x20\x2a"
         ann2 = b"\x52\x05other\x20\x64"
+
         data = build_track_event(
             type=TrackEventType.SLICE_BEGIN,
             track_uuid=100,
             name="test",
             debug_annotations=[ann1, ann2],
         )
+
         track_event = TrackEvent()
         track_event.ParseFromString(data)
         assert len(track_event.debug_annotations) == 2
@@ -282,11 +308,14 @@ class TestBuildTrackEvent:
 class TestBuildTrace:
     def test_empty_trace(self) -> None:
         data = build_trace([])
+
         assert data == b""
 
     def test_single_packet(self) -> None:
         packet = b"\x40\x01"
+
         data = build_trace([packet])
+
         trace = Trace()
         trace.ParseFromString(data)
         assert len(trace.packet) == 1
@@ -295,7 +324,9 @@ class TestBuildTrace:
     def test_multiple_packets(self) -> None:
         p1 = b"\x40\x01"
         p2 = b"\x40\x02"
+
         data = build_trace([p1, p2])
+
         trace = Trace()
         trace.ParseFromString(data)
         assert len(trace.packet) == 2
@@ -314,11 +345,13 @@ class TestBuildDebugAnnotationBool:
 
     def test_true(self) -> None:
         annotation = self._parse(True)
+
         assert annotation.name == CLIPPED
         assert annotation.bool_value is True
 
     def test_false_is_written_rather_than_omitted(self) -> None:
         """A consumer reads the value, never the presence of the field."""
         annotation = self._parse(False)
+
         assert annotation.WhichOneof("value") == "bool_value"
         assert annotation.bool_value is False

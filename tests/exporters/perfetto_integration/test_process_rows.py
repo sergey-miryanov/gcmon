@@ -96,6 +96,7 @@ class TestProcessRowLifetimeSlice:
         """One pair per process, on the process's own track, drawing the
         interval gcmon observed rather than the one the sweep left."""
         default_start = _TS_START - 1_000_000
+
         assert self._lifetimes(trace_processor) == {
             _DEFAULT_ROW_NAME: (default_start, 10_000_000),
             _SECOND_ROW_NAME: (_TS_START - 2_000_000, 7_000_000),
@@ -120,6 +121,7 @@ class TestProcessRowLifetimeSlice:
                 f"AND s.name = '{_SECOND_ROW_NAME}'"
             )
         )
+
         assert [r.dur for r in shared] == [999_999], "expected the shared row to draw the clipped span"
         assert self._lifetimes(trace_processor)[_SECOND_ROW_NAME][1] == 7_000_000
 
@@ -134,6 +136,7 @@ class TestProcessRowLifetimeSlice:
                 f"AND a.flat_key IN ('{flat_key(REAL_START_TS)}', '{flat_key(REAL_END_TS)}')"
             )
         )
+
         assert rows == []
 
     def test_carries_cmdline_pid_and_epoch(
@@ -160,6 +163,7 @@ class TestProcessRowLifetimeSlice:
                 f"ORDER BY p.name, a.flat_key"
             )
         )
+
         assert {(r.name, r.flat_key) for r in rows} == {
             (process_track_name(proc(pid)), f"{_ARG_PREFIX}.{key}")
             for pid in (DEFAULT_PID, _SECOND_PID)
@@ -206,6 +210,7 @@ class TestProcessRowLifetimeSlice:
                 f"AND a.flat_key = '{flat_key('interpreters')}'"
             )
         )
+
         assert {r.name: r.int_value for r in rows} == {
             _DEFAULT_ROW_NAME: 3,
             _SECOND_ROW_NAME: 1,
@@ -230,6 +235,7 @@ class TestProcessRowLifetimeSlice:
                 f"AND a.flat_key LIKE '{_ARG_PREFIX}.%'"
             )
         )
+
         counts = {(r.name, r.flat_key.rsplit(".", 1)[1]): r.int_value for r in rows}
         assert counts[(_DEFAULT_ROW_NAME, SAMPLED_COUNT)] == 3
         assert counts[(_SECOND_ROW_NAME, SAMPLED_COUNT)] == 1
@@ -256,6 +262,7 @@ class TestProcessRowLifetimeSlice:
                 f"AND a.flat_key LIKE '{_ARG_PREFIX}.%'"
             )
         )
+
         counts = {(r.name, r.flat_key.rsplit(".", 1)[1]): r.int_value for r in rows}
         assert counts[(_FIRST_EPOCH.track_name, SAMPLED_COUNT)] == 1
         assert counts[(_SECOND_EPOCH.track_name, SAMPLED_COUNT)] == 1
@@ -279,6 +286,7 @@ class TestProcessRowLifetimeSlice:
                 f"AND a.flat_key = '{flat_key(CMDLINE)}'"
             )
         )
+
         assert rows == []
 
     def test_a_mark_nests_inside_the_bar(
@@ -297,6 +305,7 @@ class TestProcessRowLifetimeSlice:
                 f"ORDER BY s.depth"
             )
         )
+
         assert [(r.name, r.depth) for r in rows] == [
             (_PROCESS_ROW_SLICE_NAME, 0),
             (_INSTANT_NAME, 1),
@@ -320,6 +329,7 @@ class TestProcessRowLifetimeSlice:
                 f"{_process_row_filter(DEFAULT_PID)} ORDER BY s.ts, s.depth"
             )
         )
+
         assert [(r.name, r.depth) for r in rows] == [
             (_INSTANT_NAME, 0),
             (_PROCESS_ROW_SLICE_NAME, 0),
@@ -339,6 +349,7 @@ class TestProcessRowLifetimeSlice:
             _DEFAULT_ROW_NAME,
             _SECOND_ROW_NAME,
         ]
+
         descriptions = list(
             trace_processor_no_instant.query(
                 "SELECT p.name AS name, a.string_value AS description FROM args a "
@@ -364,6 +375,7 @@ class TestProcessRowLifetimeSlice:
                 f"AND s.name IN ('{_PROCESS_ROW_SLICE_NAME}', '{_INSTANT_NAME}')"
             )
         )
+
         assert len({r.track_id for r in rows}) == 1
         assert sorted(r.name for r in rows) == [_INSTANT_NAME, _PROCESS_ROW_SLICE_NAME]
 
@@ -379,6 +391,7 @@ class TestProcessRowLifetimeSlice:
         observed for.
         """
         lifetimes = self._lifetimes(zero_duration_trace_processor)
+
         assert lifetimes[_THIRD_ROW_NAME] == (_ZERO_INSTANT_TS, 0)
         assert lifetimes[_DEFAULT_ROW_NAME] == (
             _ZERO_CLIPPED_START,
@@ -399,6 +412,7 @@ class TestProcessesTrack:
     ) -> None:
         """The ``Processes`` track is present exactly once."""
         rows = list(trace_processor.query(f"SELECT name FROM track WHERE name = '{_PROCESS_LIFETIME_TRACK_NAME}'"))
+
         assert len(rows) == 1, (
             f"expected exactly one {_PROCESS_LIFETIME_TRACK_NAME!r} track, got {[r.name for r in rows]}"
         )
@@ -430,6 +444,7 @@ class TestProcessesTrack:
                 f"ORDER BY s.name"
             )
         )
+
         assert [r.name for r in rows] == [
             _DEFAULT_ROW_NAME,
             _SECOND_ROW_NAME,
@@ -463,6 +478,7 @@ class TestProcessesTrack:
                 f"ORDER BY s.name, a.flat_key"
             )
         )
+
         assert {(r.name, r.flat_key): r.int_value for r in rows} == {
             (_DEFAULT_ROW_NAME, flat_key(REAL_START_TS)): _TS_START - 1_000_000,
             (_DEFAULT_ROW_NAME, flat_key(REAL_END_TS)): _TS_START + 9_000_000,
@@ -496,6 +512,7 @@ class TestProcessesTrack:
                 f"WHERE t.name = '{_PROCESS_LIFETIME_TRACK_NAME}'"
             )
         )
+
         pat = re.compile(r"^Process \d+(#\d+)?$")
         assert rows
         for r in rows:
@@ -579,6 +596,7 @@ class TestCrossingProcessSpans:
                 f"ORDER BY s.ts"
             )
         )
+
         spans = {r.name: (r.ts, r.ts + r.dur) for r in rows}
         assert spans == {
             # Clipped to one nanosecond before the later pid begins.
@@ -606,6 +624,7 @@ class TestCrossingProcessSpans:
                 f"ORDER BY s.name, a.flat_key"
             )
         )
+
         assert {(r.name, r.flat_key): r.int_value for r in rows} == {
             (_DEFAULT_ROW_NAME, flat_key(REAL_START_TS)): _CROSS_A_START,
             (_DEFAULT_ROW_NAME, flat_key(REAL_END_TS)): _CROSS_A_STOP,
@@ -634,6 +653,7 @@ class TestCrossingProcessSpans:
                 f"AND a.flat_key = '{flat_key(CLIPPED)}'"
             )
         )
+
         assert {r.name: r.int_value for r in rows} == {
             # Pulled back 200ms short of its last event.
             _DEFAULT_ROW_NAME: 1,
@@ -670,6 +690,7 @@ class TestZeroDurationProcessSpans:
                 f"ORDER BY s.ts"
             )
         )
+
         assert {r.name: (r.ts, r.dur) for r in rows} == {
             _THIRD_ROW_NAME: (_ZERO_INSTANT_TS, 0),
             _DEFAULT_ROW_NAME: (_ZERO_CLIPPED_START, 0),
@@ -694,6 +715,7 @@ class TestZeroDurationProcessSpans:
                 f"ORDER BY s.name, a.flat_key"
             )
         )
+
         assert {(r.name, r.flat_key): r.int_value for r in rows} == {
             (_DEFAULT_ROW_NAME, flat_key(REAL_START_TS)): _ZERO_CLIPPED_START,
             (_DEFAULT_ROW_NAME, flat_key(REAL_END_TS)): _ZERO_CLIPPED_STOP,
@@ -723,6 +745,7 @@ class TestMultiFlushProcessesTrack:
         # items plus the leading instant event.
         path = tmp_path / "trace.pftrace"
         exporter = PerfettoExporter(output_path=path, flush_threshold=5)
+
         try:
             exporter.add_instant_event(
                 proc(pid),

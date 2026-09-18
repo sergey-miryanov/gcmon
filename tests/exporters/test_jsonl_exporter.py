@@ -29,6 +29,7 @@ from tests.helpers import assert_is_instant_msg, create_mock_loss_item, create_m
 class TestJsonlExporter:
     def test_init_default_parameters(self, jsonl_exporter: ExporterFactory) -> None:
         exporter, path = jsonl_exporter()
+
         assert isinstance(exporter, JsonlExporter)
         assert exporter._flush_threshold == 100
         assert exporter._events == []
@@ -36,6 +37,7 @@ class TestJsonlExporter:
 
     def test_init_custom_parameters(self, jsonl_exporter: ExporterFactory) -> None:
         exporter, path = jsonl_exporter(threshold=50)
+
         assert isinstance(exporter, JsonlExporter)
         assert exporter._flush_threshold == 50
         assert exporter._events == []
@@ -54,6 +56,7 @@ class TestJsonlExporter:
             heap_size=1024,
             duration=0.001,
         )
+
         exporter.add_event(proc(DEFAULT_PID), stats_item)
         exporter.close()
 
@@ -75,6 +78,7 @@ class TestJsonlExporter:
         self, mock_stats_item: GCStatsInfo, jsonl_exporter: ExporterFactory, read_jsonl: JsonlFileReader
     ) -> None:
         exporter, path = jsonl_exporter(threshold=1000)
+
         exporter.add_event(proc(DEFAULT_PID), mock_stats_item)
         exporter.add_event(proc(DEFAULT_PID), mock_stats_item)
         exporter.add_event(proc(DEFAULT_PID), mock_stats_item)
@@ -88,7 +92,9 @@ class TestJsonlExporter:
     def test_close_flushes_events(self, mock_stats_item: GCStatsInfo, jsonl_exporter: ExporterFactory) -> None:
         exporter, path = jsonl_exporter(threshold=1000)
         exporter.add_event(proc(DEFAULT_PID), mock_stats_item)
+
         exporter.close()
+
         assert path.exists()
         assert path.read_text() != ""
 
@@ -101,13 +107,17 @@ class TestJsonlExporter:
             exporter.add_event(proc(DEFAULT_PID), mock_stats_item)
         assert len(exporter._events) == 3
         assert not path.exists()
+
         exporter.close()
+
         assert len(read_jsonl(path)) == 3
 
     def test_add_event_output_to_file(self, mock_stats_item: GCStatsInfo, jsonl_exporter: ExporterFactory) -> None:
         exporter, path = jsonl_exporter(threshold=1)
+
         exporter.add_event(proc(DEFAULT_PID), mock_stats_item)
         exporter.close()
+
         assert path.exists()
         assert path.read_text() != ""
 
@@ -115,9 +125,11 @@ class TestJsonlExporter:
         self, mock_stats_item: GCStatsInfo, jsonl_exporter: ExporterFactory, read_jsonl: JsonlFileReader
     ) -> None:
         exporter, path = jsonl_exporter(threshold=1000)
+
         exporter.add_event(proc(DEFAULT_PID), mock_stats_item)
         exporter.add_event(proc(DEFAULT_PID), mock_stats_item)
         exporter.close()
+
         events = read_jsonl(path)
         assert len(events) == 2
         for event in events:
@@ -126,8 +138,10 @@ class TestJsonlExporter:
     def test_interpreter_id_in_output(self, jsonl_exporter: ExporterFactory, read_jsonl: JsonlFileReader) -> None:
         exporter, path = jsonl_exporter(threshold=1)
         stats_item = create_mock_stats_item(iid=5678)
+
         exporter.add_event(proc(DEFAULT_PID), stats_item)
         exporter.close()
+
         event = read_jsonl(path)[0]
         assert event[IID] == 5678
 
@@ -135,8 +149,10 @@ class TestJsonlExporter:
         self, mock_stats_item: GCStatsInfo, jsonl_exporter: ExporterFactory, read_jsonl: JsonlFileReader
     ) -> None:
         exporter, path = jsonl_exporter(threshold=1)
+
         exporter.add_event(proc(99999), mock_stats_item)
         exporter.close()
+
         event = read_jsonl(path)[0]
         assert event[PID] == 99999
 
@@ -146,7 +162,9 @@ class TestJsonlExporter:
         exporter, path = jsonl_exporter(threshold=1)
         exporter.add_event(proc(DEFAULT_PID), mock_stats_item)
         exporter.close()
+
         exporter.close()
+
         assert len(read_jsonl(path)) == 1
 
     def test_add_event_after_close(
@@ -155,13 +173,17 @@ class TestJsonlExporter:
         exporter, path = jsonl_exporter(threshold=1000)
         exporter.add_event(proc(DEFAULT_PID), mock_stats_item)
         exporter.close()
+
         exporter.add_event(proc(DEFAULT_PID), mock_stats_item)
         exporter.close()
+
         assert len(read_jsonl(path)) == 2
 
     def test_close_with_no_events_does_not_create_file(self, jsonl_exporter: ExporterFactory) -> None:
         exporter, path = jsonl_exporter()
+
         exporter.close()
+
         assert not path.exists()
 
 
@@ -173,8 +195,10 @@ class TestJsonlExporterFlushThreshold:
         for _ in range(5):
             exporter.add_event(proc(DEFAULT_PID), mock_stats_item)
         assert not path.exists()
+
         for _ in range(5):
             exporter.add_event(proc(DEFAULT_PID), mock_stats_item)
+
         assert len(read_jsonl(path)) == 10
 
     def test_flush_on_threshold_reached(
@@ -184,7 +208,9 @@ class TestJsonlExporterFlushThreshold:
         for _ in range(4):
             exporter.add_event(proc(DEFAULT_PID), mock_stats_item)
             assert not path.exists()
+
         exporter.add_event(proc(DEFAULT_PID), mock_stats_item)
+
         assert len(read_jsonl(path)) == 5
 
     def test_each_full_batch_is_written(
@@ -234,7 +260,9 @@ class TestJsonlExporterFlushThreshold:
         for _ in range(4):
             exporter.add_loss_event(proc(DEFAULT_PID), create_mock_loss_item())
             assert not path.exists()
+
         exporter.add_loss_event(proc(DEFAULT_PID), create_mock_loss_item())
+
         assert len(read_jsonl(path)) == 5
 
     def test_flush_on_threshold_reached_for_instant_events(
@@ -244,7 +272,9 @@ class TestJsonlExporterFlushThreshold:
         for _ in range(4):
             exporter.add_instant_event(proc(DEFAULT_PID), create_instant_msg())
             assert not path.exists()
+
         exporter.add_instant_event(proc(DEFAULT_PID), create_instant_msg())
+
         assert len(read_jsonl(path)) == 5
 
 
@@ -254,6 +284,7 @@ class TestJsonlExporterInstantEvents:
     ) -> None:
         exporter, path = jsonl_exporter(threshold=1)
         instant = create_instant_msg(name=START_EVENT, ts=1_500_000_000)
+
         exporter.add_instant_event(proc(DEFAULT_PID), instant)
         exporter.close()
 
@@ -269,6 +300,7 @@ class TestJsonlExporterInstantEvents:
 
     def test_add_instant_event_multiple(self, jsonl_exporter: ExporterFactory, read_jsonl: JsonlFileReader) -> None:
         exporter, path = jsonl_exporter(threshold=1000)
+
         for name in (START_EVENT, STOP_EVENT):
             exporter.add_instant_event(proc(DEFAULT_PID), create_instant_msg(name=name, ts=1000))
         exporter.close()
@@ -283,6 +315,7 @@ class TestJsonlExporterInstantEvents:
     ) -> None:
         instant = create_instant_msg(name=STOP_EVENT, ts=2_000)
         exporter, path = jsonl_exporter(threshold=1_000)
+
         exporter.add_event(proc(DEFAULT_PID), mock_stats_item)
         exporter.add_instant_event(proc(DEFAULT_PID), instant)
         exporter.close()

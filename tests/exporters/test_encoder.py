@@ -20,8 +20,10 @@ class TestProtobufEventEncoder:
         enc = ProtobufEventEncoder()
         path = tmp_path / "out.perfetto"
         enc.open(path)
+
         enc.write_events([])
         enc.close()
+
         assert not path.exists()
 
     def test_liveness_alone_still_produces_a_trace(self, tmp_path: Path) -> None:
@@ -33,7 +35,9 @@ class TestProtobufEventEncoder:
         enc.open(path)
         enc.record_process_liveness({proc(1234)}, 1_400_000_000)
         assert enc._has_written is False
+
         enc.close()
+
         assert path.exists() and path.stat().st_size > 0
 
     def test_closing_one_that_never_opened_writes_nowhere(
@@ -55,6 +59,7 @@ class TestProtobufEventEncoder:
         without raising -- hence a guard, not just a docstring."""
         enc = ProtobufEventEncoder()
         enc.open(tmp_path / "first.perfetto")
+
         with pytest.raises(AssertionError, match="one encoder writes one trace"):
             enc.open(tmp_path / "second.perfetto")
 
@@ -68,7 +73,9 @@ class TestProtobufEventEncoder:
             "gcmon.exporters.encoder.convert_trace_events_to_perfetto",
             Mock(return_value=([], [])),
         )
+
         enc.write_events([Instant(process_track(1234), "ev", ts=1_000)])
         enc.close()
+
         assert not path.exists()
         assert enc._has_written is False

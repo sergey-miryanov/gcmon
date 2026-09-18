@@ -53,6 +53,7 @@ class TestMonitorReportedLiveness:
                 f"WHERE t.name = '{_PROCESS_LIFETIME_TRACK_NAME}' AND s.name = '{_SECOND_ROW_NAME}'"
             )
         )
+
         assert len(rows) == 1, f"expected exactly one slice for the liveness-only pid, got {len(rows)}"
         assert (rows[0].ts, rows[0].ts + rows[0].dur) == (_LIVE_TICKS[0], _LIVE_TICKS[-1])
 
@@ -73,6 +74,7 @@ class TestMonitorReportedLiveness:
                 f"AND a.flat_key IN ('{flat_key(REAL_START_TS)}', '{flat_key(REAL_END_TS)}')"
             )
         )
+
         assert {r.flat_key: r.int_value for r in rows} == {
             flat_key(REAL_START_TS): _LIVE_GC_START,
             flat_key(REAL_END_TS): _LIVE_TICKS[-1],
@@ -95,6 +97,7 @@ class TestMonitorReportedLiveness:
                 f"WHERE p.name = '{_SECOND_ROW_NAME}'"
             )
         )
+
         assert len(rows) == 1, f"expected one slice on the quiet process's row, got {rows}"
         row = rows[0]
         assert row.start_ts == _LIVE_TICKS[0]
@@ -118,6 +121,7 @@ class TestMonitorReportedLiveness:
                 "WHERE a.key = 'description' ORDER BY p.name"
             )
         )
+
         assert {r.pname: r.description for r in rows} == {
             _DEFAULT_ROW_NAME: " ".join(_LIVE_BUSY_CMDLINE),
             _SECOND_ROW_NAME: " ".join(_LIVE_QUIET_CMDLINE),
@@ -134,6 +138,7 @@ class TestMonitorReportedLiveness:
                 f"WHERE t.name = '{_PROCESS_LIFETIME_TRACK_NAME}' GROUP BY s.name"
             )
         )
+
         assert {r.name: r.n for r in rows} == {
             _DEFAULT_ROW_NAME: 1,
             _SECOND_ROW_NAME: 1,
@@ -157,6 +162,7 @@ class TestARunKilledMidFlight:
                 f"SELECT s.name AS sname, s.ts AS ts, s.dur AS dur FROM slice s {_process_row_filter(_SECOND_PID)}"
             )
         )
+
         assert [(r.sname, r.ts, r.ts + r.dur) for r in rows] == [(_PROCESS_ROW_SLICE_NAME, _KILL_GC_START, _KILL_TICK)]
 
     def test_the_retired_process_keeps_its_description(
@@ -173,6 +179,7 @@ class TestARunKilledMidFlight:
                 f"WHERE a.key = 'description' AND p.name = '{_SECOND_ROW_NAME}'"
             )
         )
+
         assert [r.description for r in rows] == [_FAKE_CMDLINE_JOINED]
 
     def test_the_still_running_process_draws_nothing_on_its_row(
@@ -184,6 +191,7 @@ class TestARunKilledMidFlight:
         rows = list(
             killed_run_trace_processor.query(f"SELECT s.name AS sname FROM slice s {_process_row_filter(DEFAULT_PID)}")
         )
+
         assert rows == []
 
     def test_no_processes_track(self, killed_run_trace_processor: TraceProcessor) -> None:
@@ -192,6 +200,7 @@ class TestARunKilledMidFlight:
         rows = list(
             killed_run_trace_processor.query(f"SELECT name FROM track WHERE name = '{_PROCESS_LIFETIME_TRACK_NAME}'")
         )
+
         assert rows == []
 
     def test_the_pauses_are_still_there(
@@ -207,6 +216,7 @@ class TestARunKilledMidFlight:
                 f"WHERE pt.name = '{_PAUSE_TRACK_NAME}' AND s.name LIKE '{GC_PAUSE_NAME}%'"
             )
         )
+
         assert len(rows) == 3
 
 
@@ -229,6 +239,7 @@ class TestLivenessOnlyTrace:
                 "JOIN slice s ON s.track_id = pt.id GROUP BY p.name ORDER BY p.name"
             )
         )
+
         assert {r.pname: r.n for r in rows} == {
             _DEFAULT_ROW_NAME: 1,
             _SECOND_ROW_NAME: 1,
@@ -248,6 +259,7 @@ class TestLivenessOnlyTrace:
                 f"WHERE t.name = '{_PROCESS_LIFETIME_TRACK_NAME}' ORDER BY s.name"
             )
         )
+
         span = (_LIVE_TICKS[0], _LIVE_TICKS[-1] - _LIVE_TICKS[0])
         assert {r.name: (r.ts, r.dur) for r in rows} == {
             _DEFAULT_ROW_NAME: span,

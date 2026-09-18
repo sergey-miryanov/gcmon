@@ -33,11 +33,13 @@ class TestPerfettoProtoConstants:
     def test_trace_field(self) -> None:
         desc = Trace.DESCRIPTOR
         assert desc is not None
+
         assert desc.fields_by_name["packet"].number == TraceField.PACKET
 
     def test_trace_packet_field(self) -> None:
         desc = TracePacket.DESCRIPTOR
         assert desc is not None
+
         assert desc.fields_by_name["timestamp"].number == TracePacketField.TIMESTAMP
         assert desc.fields_by_name["trusted_packet_sequence_id"].number == TracePacketField.SEQUENCE_ID
         assert desc.fields_by_name["track_event"].number == TracePacketField.TRACK_EVENT
@@ -49,6 +51,7 @@ class TestPerfettoProtoConstants:
         desc = TrackDescriptor.DESCRIPTOR
         assert desc is not None
         f = desc.fields_by_name
+
         assert f["uuid"].number == TrackDescriptorField.UUID
         assert f["name"].number == TrackDescriptorField.NAME
         assert f["process"].number == TrackDescriptorField.PROCESS
@@ -63,6 +66,7 @@ class TestPerfettoProtoConstants:
         desc = ProcessDescriptor.DESCRIPTOR
         assert desc is not None
         f = desc.fields_by_name
+
         assert f["pid"].number == ProcessDescriptorField.PID
         assert f["cmdline"].number == ProcessDescriptorField.CMDLINE
         assert f["process_name"].number == ProcessDescriptorField.PROCESS_NAME
@@ -72,6 +76,7 @@ class TestPerfettoProtoConstants:
         desc = CounterDescriptor.DESCRIPTOR
         assert desc is not None
         f = desc.fields_by_name
+
         assert f["type"].number == CounterDescriptorField.TYPE
         assert f["categories"].number == CounterDescriptorField.CATEGORIES
         assert f["unit"].number == CounterDescriptorField.UNIT
@@ -84,6 +89,7 @@ class TestPerfettoProtoConstants:
         desc = TrackEvent.DESCRIPTOR
         assert desc is not None
         f = desc.fields_by_name
+
         assert f["type"].number == TrackEventField.TYPE
         assert f["track_uuid"].number == TrackEventField.TRACK_UUID
         assert f["debug_annotations"].number == TrackEventField.DEBUG_ANNOTATIONS
@@ -98,6 +104,7 @@ class TestPerfettoProtoConstants:
         desc = DebugAnnotation.DESCRIPTOR
         assert desc is not None
         f = desc.fields_by_name
+
         assert f["name"].number == DebugAnnotationField.NAME
         assert f["bool_value"].number == DebugAnnotationField.BOOL_VALUE
         assert f["int_value"].number == DebugAnnotationField.INT_VALUE
@@ -111,6 +118,7 @@ class TestPerfettoProtoConstants:
         desc = DebugAnnotation.DESCRIPTOR
         assert desc is not None
         f = desc.fields_by_name
+
         assert f["string_value"].containing_oneof is not None
         assert f["dict_entries"].containing_oneof is None
 
@@ -122,6 +130,7 @@ class TestPerfettoProtoConstants:
 
     def test_child_tracks_ordering(self) -> None:
         v = TrackDescriptor.ChildTracksOrdering
+
         assert int(v.UNKNOWN) == ChildTracksOrdering.UNKNOWN
         assert int(v.LEXICOGRAPHIC) == ChildTracksOrdering.LEXICOGRAPHIC
         assert int(v.CHRONOLOGICAL) == ChildTracksOrdering.CHRONOLOGICAL
@@ -129,5 +138,6 @@ class TestPerfettoProtoConstants:
 
     def test_process_ordering(self) -> None:
         v = TrackDescriptor.ProcessOrdering
+
         assert int(v.PROCESS_ORDERING_UNSPECIFIED) == ProcessOrdering.UNSPECIFIED
         assert int(v.PROCESS_ORDERING_EXPLICIT) == ProcessOrdering.EXPLICIT

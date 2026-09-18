@@ -45,19 +45,25 @@ class TestTheBufferHoldsNothingButEvents:
 
     def test_an_rss_sample_buffers_one_event(self, tmp_path: Path) -> None:
         exporter = self._make_exporter(tmp_path)
+
         exporter.add_rss_sample(proc(TARGET_PID), 4096, 1_000_000)
+
         assert len(exporter._buffer) == 1
 
     def test_a_second_rss_sample_buffers_a_second_event(self, tmp_path: Path) -> None:
         exporter = self._make_exporter(tmp_path)
         exporter.add_rss_sample(proc(TARGET_PID), 4096, 1_000_000)
+
         exporter.add_rss_sample(proc(TARGET_PID), 8192, 2_000_000)
+
         assert len(exporter._buffer) == 2
 
     def test_a_gc_record_buffers_the_events_the_converter_made(self, tmp_path: Path) -> None:
         exporter = self._make_exporter(tmp_path)
         item = pause_item()
+
         exporter.add_event(proc(TARGET_PID), item)
+
         assert exporter._buffer == convert_item_to_trace_format(proc(TARGET_PID), item)
         assert {e.track for e in exporter._buffer} == {interpreter_track(TARGET_PID, 0)}
 
@@ -65,7 +71,9 @@ class TestTheBufferHoldsNothingButEvents:
 class TestAddRssSample:
     def test_emits_counter_event_with_correct_shape(self, tmp_path: Path) -> None:
         exporter = PerfettoExporter(tmp_path / "test.pb", flush_threshold=1000)
+
         exporter.add_rss_sample(proc(TARGET_PID), 4096, 1_000_000)
+
         counters = [e for e in exporter._buffer if isinstance(e, Counter)]
         assert len(counters) == 1
         c = counters[0]
@@ -77,8 +85,10 @@ class TestAddRssSample:
 
     def test_two_pids_sample_onto_two_process_rows(self, tmp_path: Path) -> None:
         exporter = PerfettoExporter(tmp_path / "test.pb", flush_threshold=1000)
+
         exporter.add_rss_sample(proc(TARGET_PID), 4096, 1_000_000)
         exporter.add_rss_sample(proc(200), 8192, 2_000_000)
+
         assert {e.track for e in exporter._buffer} == {process_track(TARGET_PID), process_track(200)}
 
 

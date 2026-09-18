@@ -92,7 +92,9 @@ def test_paired_emission_reads_back_exactly(seed: int, tmp_path: Path) -> None:
     ``misplaced_end_event``, whatever laminar shape went in."""
     rng = random.Random(seed)
     clipped = _clip_spans_to_laminar(_random_spans(rng))
+
     misplaced, slices = _slices_as_read_back(_packets_in_order(clipped, "paired", rng), tmp_path, f"paired{seed}")
+
     assert misplaced == 0
     assert slices == _expected(clipped)
 
@@ -112,6 +114,7 @@ def test_orders_adr_0011_rejects_really_do_break(order: str, tmp_path: Path) -> 
         misplaced, slices = _slices_as_read_back(_packets_in_order(clipped, order, rng), tmp_path, f"{order}{seed}")
         if misplaced != 0 or slices != _expected(clipped):
             broken += 1
+
     assert broken > 0, (
         f"{order} produced a correct trace on all {TRIALS} trials. This is a claim about the "
         "trace processor, not about gcmon: a newer one tolerating this order would fail here "
@@ -141,7 +144,9 @@ def test_co_terminating_spans_nest_rather_than_clip() -> None:
     itself so a change there cannot quietly turn them into tests of some
     other shape."""
     spans = _co_terminating(8)
+
     clipped = _clip_spans_to_laminar(spans)
+
     assert [ProcessSpan(one.process, one.start_ts, one.end_ts) for one in clipped] == spans
 
 
@@ -154,11 +159,13 @@ def test_nesting_pairs_up_to_the_trace_processor_limit(tmp_path: Path) -> None:
     data rather than an ugly picture.
     """
     clipped = _clip_spans_to_laminar(_co_terminating(_PAIRABLE_NESTING_DEPTH))
+
     misplaced, slices = _slices_as_read_back(
         _packets_in_order(clipped, "paired", random.Random(0)),
         tmp_path,
         "deep_nesting_ok",
     )
+
     assert misplaced == 0
     assert slices == _expected(clipped)
 
@@ -175,11 +182,13 @@ def test_nesting_past_the_limit_loses_slices_silently(tmp_path: Path) -> None:
     """
     depth = _PAIRABLE_NESTING_DEPTH + 8
     clipped = _clip_spans_to_laminar(_co_terminating(depth))
+
     misplaced, slices = _slices_as_read_back(
         _packets_in_order(clipped, "paired", random.Random(0)),
         tmp_path,
         "deep_nesting_over",
     )
+
     expected = _expected(clipped)
     dropped = expected.keys() - slices.keys()
     assert misplaced == 0, "the loss is silent: the parser reports nothing"
@@ -216,6 +225,7 @@ def test_a_named_end_matches_by_name_not_by_stack_position(tmp_path: Path, state
         event(20, TrackEventType.SLICE_END, "Process A"),
         event(30, TrackEventType.SLICE_END, "Process B"),
     ]
+
     misplaced, slices = _slices_as_read_back(packets, tmp_path, "named_end")
 
     assert slices["Process A"] == (0, 20), "the END named 'Process A' closed 'Process A', not the top of the stack"

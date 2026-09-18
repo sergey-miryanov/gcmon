@@ -31,6 +31,7 @@ class TestAddProcessLivenessIsPerfettoOnly:
     def test_jsonl_output_is_unchanged(self, tmp_path: Path) -> None:
         quiet = tmp_path / "quiet.jsonl"
         loud = tmp_path / "loud.jsonl"
+
         assert self._write(quiet, JsonlExporter(quiet, flush_threshold=1000), with_liveness=False) == self._write(
             loud, JsonlExporter(loud, flush_threshold=1000), with_liveness=True
         )
@@ -45,4 +46,5 @@ class TestAddProcessLivenessIsPerfettoOnly:
         exporter.add_event(proc(100), create_mock_stats_item())
         exporter.add_process_liveness({proc(100), proc(200)}, 1_400_000_000)
         exporter.close()
+
         assert capsys.readouterr().out == without

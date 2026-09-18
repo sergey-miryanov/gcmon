@@ -453,6 +453,7 @@ class TestPerfettoExporterCmdlinePath:
         """
         path = tmp_path / "trace.pb"
         exporter = PerfettoExporter(output_path=path, flush_threshold=1)
+
         exporter.add_event(proc(MAIN_PID), create_mock_stats_item())
         exporter.close()
 
