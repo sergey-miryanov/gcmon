@@ -905,13 +905,12 @@ class TestTheInterpreterGroupsAreDerived:
             names.index(TARGET_ROW_NAME) < names.index(_INTERPRETER_LIST_NAME) < names.index(_interpreter_group_name(0))
         ), f"each parent must precede its child; got {names}"
 
-    def test_the_list_sorts_below_the_process_row(self, state: PerfettoTrackState) -> None:
+    def test_the_list_s_name_sorts_after_the_process_row_s(self, state: PerfettoTrackState) -> None:
         """A rename has to keep the list under the row it belongs to.
 
-        `dev.perfetto.TraceProcessorTrack` ranks a process's rows by kind and
-        breaks the tie on the lower-cased name, reading no
-        `sibling_order_rank`. Both of these are slice-shaped, so the name is
-        the whole of it (ADR-0027).
+        No rank reaches a process's top-level rows, since the process track
+        is OS-scoped (ADR-0003), and the trace processor orders them by name,
+        capitals first. The name is the whole of it (ADR-0027).
         """
         descriptors, _ = convert_trace_events_to_perfetto(self._events(100), state, sequence_id=1)
 
@@ -919,7 +918,7 @@ class TestTheInterpreterGroupsAreDerived:
         process_uuid = state.get_process_track_uuid(proc(TARGET_PID))
         process_name = next(td.name for td in parsed if td.uuid == process_uuid)
         listing_name = next(td.name for td in parsed if td.parent_uuid == process_uuid)
-        assert process_name.lower() < listing_name.lower(), f"{listing_name!r} draws above {process_name!r} in the UI"
+        assert process_name < listing_name, f"{listing_name!r} draws above {process_name!r} in the UI"
 
     def test_a_second_interpreter_shares_the_list_and_gets_its_own_group(self, state: PerfettoTrackState) -> None:
         convert_trace_events_to_perfetto(self._events(100, iid=0), state, sequence_id=1)
