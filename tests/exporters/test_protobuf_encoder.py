@@ -40,8 +40,9 @@ class TestEncodeVarint:
         assert result == b"\xff\xff\xff\xff\xff\xff\xff\xff\xff\x01"
 
     def test_negative_value_int32(self) -> None:
-        result = encode_varint(-42)
-        assert len(result) == 10
+        """Two's complement over 64 bits: 0xD6 is the low seven bits of -42
+        with the continuation bit set."""
+        assert encode_varint(-42) == b"\xd6\xff\xff\xff\xff\xff\xff\xff\xff\x01"
 
 
 class TestEncodeSignedVarint:
@@ -80,9 +81,7 @@ class TestEncodeVarintField:
         assert encode_varint_field(1, 150) == b"\x08\x96\x01"
 
     def test_field_8_timestamp(self) -> None:
-        result = encode_varint_field(8, 1000000)
-        assert result[0:1] == b"\x40"
-        assert len(result) > 1
+        assert encode_varint_field(8, 1_000_000) == b"\x40\xc0\x84\x3d"
 
 
 class TestEncodeFixed64Field:
