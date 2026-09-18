@@ -16,8 +16,6 @@ The `perfetto` package is a dev-group dependency, so a developer running
 `pytest` has it, and the tests import it at module level. The first run
 downloads the trace-processor binary and later runs read the cache.
 
-Coverage has a floor of 80%, set by `fail_under` in `pyproject.toml`.
-
 ## The deselected suites
 
 `addopts` in `pyproject.toml` carries
