@@ -417,7 +417,7 @@ class TestProcessLifetimeLaminarClipping:
         _assert_laminar(intervals)
 
     def test_no_spans_emits_nothing(self) -> None:
-        assert _finalize_spans([]) == ({}, {})
+        assert finalize_perfetto_packets(PerfettoTrackState(), sequence_id=1) == []
 
     def test_undescribed_pid_without_a_cmdline_still_gets_a_slice(self, state: PerfettoTrackState) -> None:
         """A span is drawn for a pid that never reached ``mark_process_descriptor``
