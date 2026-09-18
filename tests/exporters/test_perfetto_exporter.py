@@ -88,16 +88,15 @@ class TestPerfettoExporter:
         assert exporter._output_path == path
 
     def _verify_event_structure(self, path: Path, num_items: int) -> None:
+        """Every record is a pause and five counters. The process adds two
+        slices of its own: its row and its bar on `Processes`."""
         packets = _read_trace_packets(path)
-        assert len(packets) > 0
 
         slice_begins = _count_event_type(packets, TrackEventType.SLICE_BEGIN)
         slice_ends = _count_event_type(packets, TrackEventType.SLICE_END)
         counters = _count_event_type(packets, TrackEventType.COUNTER)
 
-        assert slice_begins >= num_items
-        assert slice_ends >= num_items
-        assert counters >= num_items * 4
+        assert (slice_begins, slice_ends, counters) == (num_items + 2, num_items + 2, num_items * 5)
 
     def test_flushes_at_threshold(self, mock_stats_item: GCStatsInfo, perfetto_exporter: ExporterFactory) -> None:
         """The file is there before ``close``, so the batch went out on its own."""
