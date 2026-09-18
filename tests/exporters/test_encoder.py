@@ -36,6 +36,19 @@ class TestProtobufEventEncoder:
         enc.close()
         assert path.exists() and path.stat().st_size > 0
 
+    def test_closing_one_that_never_opened_writes_nowhere(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """With liveness recorded there is a track to emit and no path to
+        emit it to, which is a quiet return and not the writer's assertion."""
+        monkeypatch.chdir(tmp_path)
+        enc = ProtobufEventEncoder()
+        enc.record_process_liveness({proc(1234)}, 1_400_000_000)
+
+        enc.close()
+
+        assert list(tmp_path.iterdir()) == []
+
     def test_reopening_is_refused(self, tmp_path: Path) -> None:
         """One encoder writes one trace. A reused one would drop the
         second trace's descriptors and its whole ``Processes`` track
