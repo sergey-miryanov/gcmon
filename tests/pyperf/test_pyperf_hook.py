@@ -21,7 +21,7 @@ from gcmon.exporters.perfetto_process_lifetime import process_track_name
 from gcmon.model.marks import Mark, Side, parse_mark
 from gcmon.model.names import NAME
 from gcmon.model.process import Process
-from gcmon.model.protocol import TInstantMsg
+from gcmon.model.protocol import TGCStatsInfo, TInstantMsg
 from gcmon.monitoring.events_reader import RemoteEventsReader, TargetUnavailable
 from gcmon.pyperf.hook import (
     ENV_PYPERF_HOOK_CONTROL_TIMEOUT,
@@ -369,6 +369,22 @@ def _collecting_target(timeout: float = 20.0) -> Generator[tuple[RemoteEventsRea
         proc.wait()
 
 
+def _read_a_record_stamped_after(
+    reader: RemoteEventsReader, pid: int, instant: int, timeout: float = 5.0
+) -> Sequence[TGCStatsInfo]:
+    """Poll until the target has finished a collection later than *instant*.
+
+    Past the deadline it returns what it read, and the caller's assertion
+    says what is wrong with it.
+    """
+    deadline = time.monotonic() + timeout
+    while True:
+        records = reader.read(pid)
+        if any(record.ts_stop > instant for record in records) or time.monotonic() >= deadline:
+            return records
+        time.sleep(0.01)
+
+
 class TestTheClockBehindTheMarks:
     """A mark and a GC record have to land on one timeline.
 
@@ -380,8 +396,7 @@ class TestTheClockBehindTheMarks:
     def test_a_record_carries_the_clock_a_mark_is_stamped_from(self) -> None:
         with _collecting_target() as (reader, pid):
             before = time.monotonic_ns()
-            time.sleep(0.25)
-            records = reader.read(pid)
+            records = _read_a_record_stamped_after(reader, pid, before)
             after = time.monotonic_ns()
 
         newest = max(record.ts_stop for record in records)
