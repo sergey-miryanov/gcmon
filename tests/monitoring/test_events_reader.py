@@ -335,11 +335,10 @@ class Target:
         return self._proc.pid
 
     def kill(self) -> None:
-        self._proc.kill()
-        self._proc.wait()
         # The pid stays pinned while anything holds a handle to it, so a reader
         # under test still resolves it; what changes is that the reads fail.
-        time.sleep(0.2)
+        self._proc.kill()
+        self._proc.wait()
 
 
 @contextmanager
