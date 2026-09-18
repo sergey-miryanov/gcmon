@@ -106,19 +106,19 @@ class TestTheSizesAPauseCarries:
     starts above the youngest, whatever the record itself holds."""
 
     @pytest.mark.parametrize(
-        ("gen", "sizes"),
+        ("gen_number", "sizes"),
         [
             (0, {INCREMENT_SIZE}),
             (1, {INCREMENT_SIZE, ALIVE_SIZE}),
             (2, {ALIVE_SIZE}),
         ],
     )
-    def test_a_generation_gets_only_the_sizes_it_has(self, gen: int, sizes: set[str]) -> None:
-        record = create_mock_incremental_item(gen=gen)
+    def test_a_generation_gets_only_the_sizes_it_has(self, gen_number: int, sizes: set[str]) -> None:
+        record = create_mock_incremental_item(gen=gen_number)
 
         events = convert_item_to_trace_format(proc(1), record)
 
-        pause = next(e for e in events if isinstance(e, Slice) and e.name == gc_pause_slice_name(gen))
+        pause = next(e for e in events if isinstance(e, Slice) and e.name == gc_pause_slice_name(gen_number))
         assert pause.args.keys() & {INCREMENT_SIZE, ALIVE_SIZE} == sizes
 
 
