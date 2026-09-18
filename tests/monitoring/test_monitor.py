@@ -147,7 +147,7 @@ class TestEventsMonitorExtra:
         assert [e.ts_start for e in exporter.events] == [5_000]
 
 
-class TestGCMonitor:
+class TestEventsMonitor:
     def test_init(self, monitor: EventsMonitor) -> None:
         assert monitor.is_enabled
         assert monitor.pid == 12345
@@ -320,7 +320,7 @@ class TestGCMonitor:
         assert reader.attached == set()
 
 
-class TestGCMonitorReadTime:
+class TestEventsMonitorReadTime:
     """Tests for read time tracking around the reader."""
 
     def test_poll_records_read_time(
