@@ -65,6 +65,8 @@ ALLOWED: dict[str, frozenset[str]] = {
     # Field names in Perfetto's own protobufs, read off `DESCRIPTOR`. The
     # spelling is the wire format's and happens to match gcmon's.
     "tests/exporters/test_perfetto_proto.py": frozenset({"cmdline", "pid"}),
+    # A parameter of `MonitorLoop.__init__`, not the subcommand.
+    "tests/monitoring/test_monitor_loop.py": frozenset({"monitor"}),
 }
 
 
