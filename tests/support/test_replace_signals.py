@@ -39,6 +39,7 @@ class TestReplaceSignals:
 
         with replace_signals(handler):
             pass
+
         assert signal.getsignal(signal.SIGINT) is original_int
         assert signal.getsignal(signal.SIGTERM) is original_term
 
@@ -50,6 +51,7 @@ class TestReplaceSignals:
 
         with pytest.raises(RuntimeError), replace_signals(handler):
             raise RuntimeError("boom")
+
         assert signal.getsignal(signal.SIGINT) is original_int
         assert signal.getsignal(signal.SIGTERM) is original_term
 
@@ -62,6 +64,7 @@ class TestReplaceSignals:
         with replace_signals(handler):
             signal.raise_signal(signal.SIGINT)
             signal.raise_signal(signal.SIGTERM)
+
         assert signal.SIGINT in received
         assert signal.SIGTERM in received
 
