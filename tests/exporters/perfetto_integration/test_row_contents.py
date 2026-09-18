@@ -707,8 +707,11 @@ class TestTwoInterpretersHeapSizes:
     def test_every_other_counter_name_is_what_it_was(self, two_interpreters: TraceProcessor) -> None:
         names = {r.name.strip() for r in two_interpreters.query("SELECT name FROM counter_track")}
 
-        assert {
+        assert names == {
             counter_display_name(0, COLLECTED),
+            counter_display_name(0, UNCOLLECTABLE),
             counter_display_name(0, CANDIDATES),
             counter_display_name(0, DURATION),
-        } <= names
+            HEAP_SIZE,
+            RSS,
+        }
