@@ -305,7 +305,7 @@ class TestProcessOrderingByFirstTs:
             start_ts[pid] = tds[0].process.start_timestamp_ns
         assert start_ts == {1: 3_000, 2: 2_000}
 
-    def test_start_timestamp_ns_persists_across_batches(self) -> None:
+    def test_each_batch_stamps_its_own_process_with_its_first_ts(self) -> None:
         """First-ts recorded in one batch must be remembered when
         the process descriptor is emitted in a later batch."""
         s = PerfettoTrackState()

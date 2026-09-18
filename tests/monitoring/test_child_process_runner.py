@@ -198,7 +198,7 @@ class TestProperties:
 
         assert runner.is_running is True
 
-    def test_returncode_after_terminate(self, runner: ChildProcessRunner, mock_popen: Mock) -> None:
+    def test_returncode_is_what_poll_answers(self, runner: ChildProcessRunner, mock_popen: Mock) -> None:
         mock_popen.poll.return_value = 0
         runner._process = mock_popen
 

@@ -274,7 +274,7 @@ class TestNormalizeJsonlTimestamps:
     def test_no_items_is_noop(self) -> None:
         normalize_jsonl_timestamps({})
 
-    def test_non_incremental_skips_sub_steps(self) -> None:
+    def test_a_record_with_no_sub_steps_still_normalizes(self) -> None:
         item = create_mock_stats_item(ts_start=5000, ts_stop=6000)
         items = {1: [item]}
 

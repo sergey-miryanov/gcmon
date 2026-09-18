@@ -190,7 +190,7 @@ class TestIngestingARunAtOnce:
 
         assert batched == fold_singly(events)
 
-    def test_a_poll_returning_nothing_new_folds_nothing(self, accumulator: RingAccumulator) -> None:
+    def test_a_poll_returning_nothing_new_leaves_nothing_to_fold(self, accumulator: RingAccumulator) -> None:
         """`ingest` takes a non-empty run, and `unseen` is what keeps
         that true. A generation whose ring returned only records gcmon already
         has contributed neither loss nor coverage."""

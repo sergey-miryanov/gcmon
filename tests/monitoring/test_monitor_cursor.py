@@ -207,7 +207,7 @@ class TestRetain:
         ingest(monitor, 999, build_batch(POLL_0))
         assert len(exporter.events) == 15, "the dropped pid started over"
 
-    def test_retain_keeps_a_pid_with_no_cursors_yet(self, monitor: EventsMonitor) -> None:
+    def test_retain_is_safe_for_a_pid_with_no_cursors_yet(self, monitor: EventsMonitor) -> None:
         monitor._retain({PID, 999}, 0)
 
 

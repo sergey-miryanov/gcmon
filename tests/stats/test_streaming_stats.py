@@ -147,7 +147,7 @@ class TestStreamingStatsUpdate:
 
         assert streaming_stats._heap_size[proc(DEFAULT_PID)] == 5_000_000
 
-    def test_update_heap_size_is_max_per_pid(
+    def test_update_keeps_the_largest_heap_size(
         self,
         streaming_stats: StreamingStats,
         gc_stats_item_factory: Callable[..., GCStatsInfo],

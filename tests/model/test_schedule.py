@@ -60,7 +60,7 @@ class TestTheIdleToTheNextPosition:
         duty cycle against a target that is already struggling."""
         assert idle_to_next_position(99_999_500, 0, 100_000_000) == MIN_IDLE_NS
 
-    def test_a_long_stall_costs_one_division(self) -> None:
+    def test_a_long_stall_idles_the_minimum(self) -> None:
         """A tick that stalled for a minute at a 1 ms rate ran through sixty
         thousand positions. Stepping to them would cost sixty thousand
         iterations inside the poll interval."""

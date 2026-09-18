@@ -72,7 +72,7 @@ class TestOutputPathValidation:
 
         assert result is not None
 
-    def test_dot_path_resolves_to_cwd(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    def test_a_dot_path_passes(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
         monkeypatch.chdir(tmp_path)
         args = _make_args(output=Path("."))
 

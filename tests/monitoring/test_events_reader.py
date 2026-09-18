@@ -274,7 +274,9 @@ class TestPruning:
 
         assert attached_pids(spy) == [7, 8, 9, 8]
 
-    def test_retain_keeps_a_pid_it_has_never_seen(self, remote_reader: RemoteEventsReader, spy: SpyMonitor) -> None:
+    def test_retain_with_a_pid_it_has_never_seen_keeps_the_others_attached(
+        self, remote_reader: RemoteEventsReader, spy: SpyMonitor
+    ) -> None:
         remote_reader.read(7)
 
         remote_reader.retain({7, 8})

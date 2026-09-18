@@ -20,7 +20,7 @@ class TestAPidHandedOn:
 
         assert registry.create(100).pid_epoch == 2
 
-    def test_the_epoch_advances_only_on_a_departure(self) -> None:
+    def test_a_pid_still_running_resolves_to_the_same_process(self) -> None:
         """A tick that finds the same pid running finds the same process."""
         registry = ProcessRegistry()
         first = registry.create(100)

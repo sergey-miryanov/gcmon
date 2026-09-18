@@ -130,7 +130,7 @@ class TestSliceArgs:
 
         assert len(rows) == 1, f"expected exactly one '{gc_pause_slice_name(1)}' slice, got {rows}"
 
-    def test_full_fields_pause_encodes_all_optional_fields(
+    def test_a_full_record_draws_every_sub_step_slice(
         self,
         trace_processor: TraceProcessor,
     ) -> None:

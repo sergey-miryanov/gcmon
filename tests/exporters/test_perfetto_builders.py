@@ -222,7 +222,7 @@ class TestBuildTracePacket:
         assert packet.trusted_packet_sequence_id == 1
         assert packet.track_descriptor.SerializeToString() == desc
 
-    def test_with_all_fields(self) -> None:
+    def test_with_a_timestamp_and_a_track_event(self) -> None:
         event = b"\x08\x01"
 
         data = build_trace_packet(42, timestamp=1000, track_event=event)
