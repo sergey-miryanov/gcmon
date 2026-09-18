@@ -121,8 +121,10 @@ class TestReadJsonl:
     def test_raises_on_malformed_json(self, tmp_path: Path) -> None:
         path = tmp_path / "bad.jsonl"
         path.write_text("not valid json\n", encoding=ENCODING)
-        with pytest.raises(msgspec.DecodeError):
+        with pytest.raises(ValueError) as refusal:
             read_jsonl(path)
+
+        assert isinstance(refusal.value.__cause__, msgspec.DecodeError)
 
     def test_a_capture_carrying_the_old_tid_field_still_reads(self, tmp_path: Path) -> None:
         """Captures written before `tid` left carry it on every GC and loss
@@ -186,6 +188,24 @@ class TestReadJsonl:
 
         with pytest.raises(ValueError, match="Chrome Trace"):
             read_jsonl(path)
+
+    @pytest.mark.parametrize(
+        "line",
+        [
+            pytest.param(msgspec.json.encode({PID: 42})[:-1], id="cut short"),
+            pytest.param(msgspec.json.encode({PID: 42, "bogus": 2}), id="no record's fields"),
+            pytest.param(msgspec.json.encode({**create_jsonl_record(), PID: "x"}), id="a pid that is no number"),
+        ],
+    )
+    def test_a_line_that_does_not_decode_is_named_by_file_and_number(self, tmp_path: Path, line: bytes) -> None:
+        path = tmp_path / "capture.jsonl"
+        good = msgspec.json.encode(create_jsonl_record(pid=42, iid=1))
+        path.write_bytes(good + b"\n" + good + b"\n" + line + b"\n")
+
+        with pytest.raises(ValueError) as refusal:
+            read_jsonl(path)
+
+        assert str(refusal.value).startswith(f"{path}:3: ")
 
 
 class TestWriteJsonl:
@@ -385,19 +405,23 @@ class TestAnOldFormatLossRecord:
         assert GEN in str(excinfo.value)
 
     def test_reading_the_file_raises(self, tmp_path: Path) -> None:
-        with pytest.raises(msgspec.ValidationError):
+        with pytest.raises(ValueError) as refusal:
             read_jsonl(self._write(tmp_path))
+
+        assert isinstance(refusal.value.__cause__, msgspec.ValidationError)
 
     def test_combine_refuses_the_capture(self, tmp_path: Path) -> None:
         """The path an operator actually takes. Nothing here catches the error,
         so `combine` stops rather than writing a trace with a phantom pause on
         it."""
-        with pytest.raises(msgspec.ValidationError):
+        with pytest.raises(ValueError) as refusal:
             combine_files(
                 [self._write(tmp_path)],
                 tmp_path / "out.pftrace",
                 output_format=FORMAT_PERFETTO,
             )
+
+        assert isinstance(refusal.value.__cause__, msgspec.ValidationError)
 
     def test_a_per_generation_record_is_refused_the_same_way(self) -> None:
         """The shape between the two: one record per generation, its counts at

@@ -61,10 +61,14 @@ def read_jsonl(filename: Path) -> dict[int, list[TItem]]:
                         f"{filename} is a Chrome Trace file, which gcmon no longer reads. "
                         "The Perfetto UI still opens it."
                     )
-            data = msgspec.json.decode(line)
-            if not isinstance(data, dict) or PID not in data:
-                raise ValueError(f"{filename}:{number}: not a gcmon record: expected a JSON object with a {PID}")
-            pid, item = json_to_item(data)
+            try:
+                data = msgspec.json.decode(line)
+                if not isinstance(data, dict) or PID not in data:
+                    raise ValueError(f"not a gcmon record: expected a JSON object with a {PID}")
+                pid, item = json_to_item(data)
+            except ValueError as e:
+                # Every msgspec error is a ValueError, and none of them says where.
+                raise ValueError(f"{filename}:{number}: {e}") from e
             if pid not in items:
                 items[pid] = [item]
             else:
