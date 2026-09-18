@@ -56,6 +56,7 @@ class TestRunMonitoringLoop:
         mock_loop_runner_deps["RunnerFactory"].side_effect = RuntimeError("test error")
 
         result = run_monitoring_loop(mock_factory, mock_wait_policy_factory, monitoring_options())
+
         assert result == 1
         assert "Failed to run GC monitor" in caplog.text
 
@@ -72,6 +73,7 @@ class TestRunMonitoringLoop:
         mock_loop_runner_deps["MonitorLoop"].return_value.run.side_effect = RuntimeError("runtime error")
 
         result = run_monitoring_loop(mock_factory, mock_wait_policy_factory, monitoring_options())
+
         assert result == 1
         assert "Failed to run GC monitor" in caplog.text
 
@@ -88,6 +90,7 @@ class TestRunMonitoringLoop:
         runner.returncode = 42
 
         result = run_monitoring_loop(mock_factory, mock_wait_policy_factory, monitoring_options())
+
         assert result == 42
 
     def test_stdout_format_no_trace_path(
@@ -163,6 +166,7 @@ class TestRunMonitoringLoop:
         mock_loop_runner_deps["StreamingStats"].return_value.count.return_value = 0
 
         options = monitoring_options(stats_view=StatsView.TOTAL)
+
         result = run_monitoring_loop(mock_factory, mock_wait_policy_factory, options)
 
         assert result == 0

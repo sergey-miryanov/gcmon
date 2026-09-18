@@ -73,7 +73,9 @@ class TestCmdMonitorFormat:
 
         args = monitor_args(format=fmt, output=Path("test.jsonl"), duration=0.05, **extra_kwargs)
         mock_monitoring_loop.return_value = 0
+
         result = monitor_cmd.cmd_monitor(args)
+
         assert result == 0
         assert f"Format: {fmt}" in caplog.text
 
@@ -98,6 +100,7 @@ class TestCmdMonitorValidation:
         from gcmon.cli.monitor import monitor_cmd
 
         result = monitor_cmd.cmd_monitor(monitor_args(**override))
+
         assert result == 1
         assert expected_msg in caplog.text
 
@@ -106,7 +109,9 @@ def test_cmd_monitor_self_pid(monitor_args: MonitorArgsFactory, mock_monitoring_
     from gcmon.cli.monitor import monitor_cmd
 
     mock_monitoring_loop.return_value = 0
+
     result = monitor_cmd.cmd_monitor(monitor_args(pid=-1, duration=0.05))
+
     assert result == 0
     factory_fn = mock_monitoring_loop.call_args[1]["factory"]
     process = factory_fn("dummy-address")
@@ -135,12 +140,15 @@ def test_cli_monitor_invocation(run_monitor: Any) -> None:
 class TestCliBasicRun:
     def test_short_duration(self, run_monitor_self: Any, tmp_path: Path) -> None:
         result = run_monitor_self(["-o", str(tmp_path / "test.json"), "-d", "0.01", "-v"], timeout=15)
+
         assert result.returncode == 0
         assert "Duration: 0.01s" in result.stderr
 
     def test_creates_valid_trace(self, run_monitor_self: Any, tmp_path: Path) -> None:
         output_file = tmp_path / "test_trace.pftrace"
+
         result = run_monitor_self(["-o", str(output_file), "-d", "0.5", "-r", "0.1"])
+
         assert result.returncode == 0
         assert output_file.exists()
         assert len(assert_valid_perfetto_trace(output_file)) >= 1
@@ -152,6 +160,7 @@ class TestCliBasicRun:
 
     def test_custom_rate(self, run_monitor_self: Any, tmp_path: Path) -> None:
         result = run_monitor_self(["-o", str(tmp_path / "test_trace.json"), "-d", "0.5", "-r", "0.05", "-v"])
+
         assert result.returncode == 0
         assert "Rate: 0.05" in result.stderr
 
@@ -168,7 +177,9 @@ class TestCliBasicRun:
 class TestCliOutput:
     def test_verbose(self, run_monitor: Any, tmp_path: Path) -> None:
         output_file = tmp_path / "test_trace.json"
+
         result = run_monitor(["-o", str(output_file), "-d", "0.3", "-v"])
+
         assert result.returncode == 0
         assert "Monitoring PID: 12345" in result.stderr
         assert str(output_file) in result.stderr
@@ -184,6 +195,7 @@ class TestCliOutput:
         with nothing in it is no file at all, so a run that read no records
         would leave nothing to validate."""
         output_file = tmp_path / "test_trace.pftrace"
+
         assert run_monitor_self(["-o", str(output_file), "-d", "0.3"]).returncode == 0
         assert_valid_perfetto_trace(output_file)
 
@@ -193,6 +205,7 @@ class TestCliStdoutFormat:
         """Against the running gcmon: pid 12345 holds no process, and a run
         that read nothing prints nothing to parse."""
         result = run_monitor_self(["--format", FORMAT_STDOUT, "-d", "0.3"], cwd=tmp_path)
+
         records: list[dict[str, Any]] = [json.loads(line) for line in result.stdout.splitlines()]
 
         assert result.returncode == 0
@@ -201,6 +214,7 @@ class TestCliStdoutFormat:
 
     def test_verbose(self, run_monitor: Any, tmp_path: Path) -> None:
         result = run_monitor(["--format", FORMAT_STDOUT, "-d", "0.3", "-v"], cwd=tmp_path)
+
         assert "Monitoring PID: 12345" in result.stderr
         assert "Format: stdout" in result.stderr
 
@@ -214,14 +228,18 @@ class TestCliStdoutFormat:
 class TestCliJsonlFormat:
     def test_basic(self, run_monitor: Any, tmp_path: Path) -> None:
         output_file = tmp_path / "test.jsonl"
+
         result = run_monitor(["--format", FORMAT_JSONL, "-o", str(output_file), "-d", "0.1", "-v"])
+
         assert "Format: jsonl" in result.stderr
 
     def test_cli_overrides_env(self, run_monitor_self: Any, tmp_path: Path) -> None:
         output_file = tmp_path / "test.pftrace"
         env = os.environ.copy()
         env[ENV_FORMAT] = FORMAT_JSONL
+
         run_monitor_self(["--format", FORMAT_PERFETTO, "-o", str(output_file), "-d", "0.3"], env=env)
+
         assert output_file.exists()
         assert_valid_perfetto_trace(output_file)
 
@@ -277,55 +295,73 @@ class TestCliEnvVars:
     def test_output(self, monkeypatch: pytest.MonkeyPatch, run_monitor_self: Any, tmp_path: Path) -> None:
         output_file = tmp_path / "env_test_trace.pftrace"
         monkeypatch.setenv(ENV_OUTPUT, str(output_file))
+
         assert run_monitor_self(["-d", "0.3"]).returncode == 0
         assert output_file.exists()
 
     def test_output_cli_override(self, monkeypatch: pytest.MonkeyPatch, run_monitor_self: Any, tmp_path: Path) -> None:
         monkeypatch.setenv(ENV_OUTPUT, str(tmp_path / "env_trace.pftrace"))
         cli_file = tmp_path / "cli_trace.pftrace"
+
         assert run_monitor_self(["-o", str(cli_file), "-d", "0.3"]).returncode == 0
         assert cli_file.exists()
         assert not (tmp_path / "env_trace.pftrace").exists()
 
     def test_rate(self, monkeypatch: pytest.MonkeyPatch, run_monitor: Any, tmp_path: Path) -> None:
         monkeypatch.setenv(ENV_RATE, "0.05")
+
         result = run_monitor(["-o", str(tmp_path / "test_trace.json"), "-d", "0.3", "-v"])
+
         assert "Rate: 0.05" in result.stderr
 
     def test_rate_cli_override(self, monkeypatch: pytest.MonkeyPatch, run_monitor: Any, tmp_path: Path) -> None:
         monkeypatch.setenv(ENV_RATE, "0.05")
+
         result = run_monitor(["-o", str(tmp_path / "test_trace.json"), "-r", "0.2", "-d", "0.3", "-v"])
+
         assert "Rate: 0.2" in result.stderr
 
     def test_duration(self, monkeypatch: pytest.MonkeyPatch, run_monitor: Any, tmp_path: Path) -> None:
         monkeypatch.setenv(ENV_DURATION, "0.5")
+
         result = run_monitor(["-o", str(tmp_path / "test_trace.json"), "-v"])
+
         assert "Duration: 0.5" in result.stderr
 
     def test_duration_cli_override(self, monkeypatch: pytest.MonkeyPatch, run_monitor: Any, tmp_path: Path) -> None:
         monkeypatch.setenv(ENV_DURATION, "0.5")
+
         result = run_monitor(["-o", str(tmp_path / "test_trace.json"), "-d", "0.3", "-v"])
+
         assert "Duration: 0.3" in result.stderr
 
     def test_format(self, monkeypatch: pytest.MonkeyPatch, run_monitor: Any, tmp_path: Path) -> None:
         monkeypatch.setenv(ENV_FORMAT, FORMAT_STDOUT)
+
         result = run_monitor(["-d", "0.3", "-v"])
+
         assert "Format: stdout" in result.stderr
 
     def test_format_cli_override(self, monkeypatch: pytest.MonkeyPatch, run_monitor: Any, tmp_path: Path) -> None:
         monkeypatch.setenv(ENV_FORMAT, FORMAT_STDOUT)
+
         result = run_monitor(["--format", FORMAT_PERFETTO, "-d", "0.3", "-v"])
+
         assert "Format: perfetto" in result.stderr
 
     @pytest.mark.parametrize("value", ["1", "true", "yes", "on"])
     def test_verbose_truthy_values(self, monkeypatch: pytest.MonkeyPatch, run_monitor: Any, value: str) -> None:
         monkeypatch.setenv(ENV_VERBOSE, value)
+
         result = run_monitor(["-d", "0.3"])
+
         assert "Monitoring PID: 12345" in result.stderr
 
     def test_verbose_cli_override(self, monkeypatch: pytest.MonkeyPatch, run_monitor: Any) -> None:
         monkeypatch.setenv(ENV_VERBOSE, "0")
+
         result = run_monitor(["-d", "0.3", "-v"])
+
         assert "Monitoring PID: 12345" in result.stderr
 
     def test_multiple_vars(self, monkeypatch: pytest.MonkeyPatch, run_monitor_self: Any, tmp_path: Path) -> None:
@@ -335,7 +371,9 @@ class TestCliEnvVars:
         monkeypatch.setenv(ENV_DURATION, "0.4")
         monkeypatch.setenv(ENV_VERBOSE, "1")
         monkeypatch.setenv(ENV_FORMAT, FORMAT_PERFETTO)
+
         result = run_monitor_self([])
+
         assert output_file.exists()
         assert "Rate: 0.05" in result.stderr
         assert "Duration: 0.4" in result.stderr
@@ -386,5 +424,6 @@ class TestCliEnvHelp:
             check=True,
             timeout=SUBPROCESS_WATCHDOG,
         )
+
         for var in (ENV_OUTPUT, ENV_RATE, ENV_DURATION, ENV_VERBOSE, ENV_FORMAT):
             assert var in result.stdout

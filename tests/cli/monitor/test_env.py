@@ -42,6 +42,7 @@ class TestEnvVarDefaults:
         getter = getattr(env_module, f"get_env_{getter_suffix}")
         actual_env_name = getattr(env_module, env_var)
         monkeypatch.delenv(actual_env_name, raising=False)
+
         assert getter() == default
 
 
@@ -74,6 +75,7 @@ class TestEnvVarCustom:
         getter = getattr(env_module, f"get_env_{getter_suffix}")
         actual_env_name = getattr(env_module, env_var)
         monkeypatch.setenv(actual_env_name, custom_val)
+
         assert getter() == expected
 
 
@@ -101,6 +103,7 @@ class TestEnvVarInvalidValues:
         getter = getattr(env_module, f"get_env_{getter_suffix}")
         actual_env_name = getattr(env_module, env_var)
         monkeypatch.setenv(actual_env_name, "not-a-number")
+
         assert getter() == default
 
 
@@ -114,10 +117,12 @@ class TestEnvRate:
 
     def test_a_plain_decimal_is_taken(self, monkeypatch: pytest.MonkeyPatch, env_module: types.ModuleType) -> None:
         monkeypatch.setenv(env_module.ENV_RATE, "0.05")
+
         assert env_module.get_env_rate() == 0.05
 
     def test_the_minimum_itself_is_taken(self, monkeypatch: pytest.MonkeyPatch, env_module: types.ModuleType) -> None:
         monkeypatch.setenv(env_module.ENV_RATE, "0.001")
+
         assert env_module.get_env_rate() == 0.001
 
     @pytest.mark.parametrize(
@@ -129,6 +134,7 @@ class TestEnvRate:
         """`1e-3` is a rate anywhere else. Here the spelling goes, because
         `1e-12` reads the same and is not one."""
         monkeypatch.setenv(env_module.ENV_RATE, value)
+
         assert env_module.get_env_rate() is None
 
 
@@ -137,15 +143,18 @@ class TestEnvVerbose:
 
     def test_default(self, monkeypatch: pytest.MonkeyPatch, env_module: types.ModuleType) -> None:
         monkeypatch.delenv(env_module.ENV_VERBOSE, raising=False)
+
         assert env_module.get_env_verbose() == 0
 
     def test_numeric(self, monkeypatch: pytest.MonkeyPatch, env_module: types.ModuleType) -> None:
         monkeypatch.setenv(env_module.ENV_VERBOSE, "2")
+
         assert env_module.get_env_verbose() == 2
 
     @pytest.mark.parametrize("value", ["true", "yes", "on", "1"])
     def test_truthy_values(self, monkeypatch: pytest.MonkeyPatch, env_module: types.ModuleType, value: str) -> None:
         monkeypatch.setenv(env_module.ENV_VERBOSE, value)
+
         assert env_module.get_env_verbose() == 1
 
     @pytest.mark.parametrize("value", ["loud", "false", "off", "2x"])
@@ -176,6 +185,7 @@ class TestEnvFormat:
 
     def test_default(self, monkeypatch: pytest.MonkeyPatch, env_module: types.ModuleType) -> None:
         monkeypatch.delenv(env_module.ENV_FORMAT, raising=False)
+
         assert env_module.get_env_format() == FORMAT_PERFETTO
 
     @pytest.mark.parametrize("value, expected", [(FORMAT_STDOUT, FORMAT_STDOUT), (FORMAT_JSONL, FORMAT_JSONL)])
@@ -183,6 +193,7 @@ class TestEnvFormat:
         self, monkeypatch: pytest.MonkeyPatch, env_module: types.ModuleType, value: str, expected: str
     ) -> None:
         monkeypatch.setenv(env_module.ENV_FORMAT, value)
+
         assert env_module.get_env_format() == expected
 
     def test_an_unknown_word_is_handed_on_as_written(
@@ -192,6 +203,7 @@ class TestEnvFormat:
         logging is configured, so the operator is told rather than handed a
         format they did not ask for."""
         monkeypatch.setenv(env_module.ENV_FORMAT, "chrome")
+
         assert env_module.get_env_format() == "chrome"
 
 
@@ -201,6 +213,7 @@ class TestEnvOutputSpecialCases:
     def test_default_format_jsonl(self, monkeypatch: pytest.MonkeyPatch, env_module: types.ModuleType) -> None:
         monkeypatch.setenv(env_module.ENV_FORMAT, FORMAT_JSONL)
         monkeypatch.delenv(env_module.ENV_OUTPUT, raising=False)
+
         assert env_module.get_env_output() == Path(DEFAULT_JSONL_FILE)
 
     @pytest.mark.parametrize("value", [" jsonl ", "JSONL", "\tjsonl\n"])
@@ -224,6 +237,7 @@ class TestEnvStats:
 
     def test_default(self, monkeypatch: pytest.MonkeyPatch, env_module: types.ModuleType) -> None:
         monkeypatch.delenv(env_module.ENV_STATS, raising=False)
+
         assert env_module.get_env_stats() is None
 
     @pytest.mark.parametrize("value", ["total", "full"])
@@ -231,6 +245,7 @@ class TestEnvStats:
         self, monkeypatch: pytest.MonkeyPatch, env_module: types.ModuleType, value: str
     ) -> None:
         monkeypatch.setenv(env_module.ENV_STATS, value)
+
         assert env_module.get_env_stats() == value
 
     @pytest.mark.parametrize("value", ["1", "true", "nope"])
@@ -239,6 +254,7 @@ class TestEnvStats:
     ) -> None:
         """Swallowing it here would leave the run to discover it at the end."""
         monkeypatch.setenv(env_module.ENV_STATS, value)
+
         assert env_module.get_env_stats() == value
 
     @pytest.mark.parametrize("value", ["", " ", "\t\n"])
@@ -247,6 +263,7 @@ class TestEnvStats:
     ) -> None:
         """The one unusable value that does not stop the run."""
         monkeypatch.setenv(env_module.ENV_STATS, value)
+
         assert env_module.get_env_stats() is None
 
 
@@ -255,15 +272,18 @@ class TestEnvTableFormat:
 
     def test_default(self, monkeypatch: pytest.MonkeyPatch, env_module: types.ModuleType) -> None:
         monkeypatch.delenv(env_module.ENV_TABLE_FORMAT, raising=False)
+
         assert env_module.get_env_table_format() == env_module.TableFormat.PLAIN
 
     @pytest.mark.parametrize("value", ["md", "markdown", "MD", "Markdown"])
     def test_markdown_values(self, monkeypatch: pytest.MonkeyPatch, env_module: types.ModuleType, value: str) -> None:
         monkeypatch.setenv(env_module.ENV_TABLE_FORMAT, value)
+
         assert env_module.get_env_table_format() == env_module.TableFormat.MARKDOWN
 
     def test_invalid_value_returns_default(self, monkeypatch: pytest.MonkeyPatch, env_module: types.ModuleType) -> None:
         monkeypatch.setenv(env_module.ENV_TABLE_FORMAT, "html")
+
         assert env_module.get_env_table_format() == env_module.TableFormat.PLAIN
 
 

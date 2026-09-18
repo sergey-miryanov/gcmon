@@ -56,6 +56,7 @@ class TestSetupLogging:
         import logging
 
         cli_module._setup_logging(verbose_count=verbose_count)
+
         logger = logging.getLogger(PROGRAM_NAME)
         assert logger.level == getattr(logging, expected_level)
 
@@ -225,7 +226,9 @@ class TestCliHelp:
     )
     def test_help_subcommand(self, gcmon_cli: list[str], subcommand: str, expected_texts: list[str]) -> None:
         cmd = gcmon_cli + ([subcommand] if subcommand else []) + ["--help"]
+
         result = subprocess.run(cmd, capture_output=True, text=True, check=True, timeout=SUBPROCESS_WATCHDOG)
+
         for text in expected_texts:
             assert text in result.stdout
 
@@ -233,12 +236,14 @@ class TestCliHelp:
         result = subprocess.run(
             [*gcmon_cli, "--help"], capture_output=True, text=True, check=True, timeout=SUBPROCESS_WATCHDOG
         )
+
         assert "--output" not in result.stdout
 
 
 class TestCliVersion:
     def test_version_flag(self, gcmon_cli: list[str]) -> None:
         result = subprocess.run([*gcmon_cli, "--version"], capture_output=True, text=True, timeout=SUBPROCESS_WATCHDOG)
+
         assert result.returncode == 0
         assert result.stdout.strip() == importlib.metadata.version(PROGRAM_NAME)
 
@@ -248,6 +253,7 @@ class TestCliVersion:
         result = subprocess.run(
             [*gcmon_cli, "--version"], capture_output=True, text=True, check=True, timeout=SUBPROCESS_WATCHDOG
         )
+
         assert gcmon.__version__ == result.stdout.strip()
 
     def test_importing_gcmon_does_not_resolve_the_version(self) -> None:
@@ -255,9 +261,11 @@ class TestCliVersion:
         # needs it. A fresh interpreter, so an earlier test cannot mask a regression by having
         # touched the attribute first.
         code = "import gcmon; print('__version__' in vars(gcmon))"
+
         result = subprocess.run(
             [sys.executable, "-c", code], capture_output=True, text=True, check=True, timeout=SUBPROCESS_WATCHDOG
         )
+
         assert result.stdout.strip() == "False"
 
     def test_no_fallback_under_a_normal_install(self) -> None:
@@ -274,6 +282,7 @@ class TestCliVersion:
             raise importlib.metadata.PackageNotFoundError(distribution_name)
 
         monkeypatch.setattr(importlib.metadata, "version", not_installed)
+
         assert gcmon.__version__ == "0.0.0+unknown"
 
     def test_any_other_missing_name_is_still_an_attribute_error(self) -> None:
@@ -288,6 +297,7 @@ class TestCliVersion:
 class TestCliMonitor:
     def test_missing_pid(self, gcmon_cli: list[str]) -> None:
         result = subprocess.run([*gcmon_cli, CMD_MONITOR], capture_output=True, text=True, timeout=SUBPROCESS_WATCHDOG)
+
         assert result.returncode != 0
         assert "the following arguments are required: pid" in result.stderr
 
@@ -298,4 +308,5 @@ class TestCliMonitor:
             text=True,
             timeout=5,
         )
+
         assert result.returncode == 0

@@ -294,6 +294,7 @@ class TestCombinedTraceIsStructurallyComplete:
                 "SELECT name FROM counter_track",
             )
         }
+
         expected = _G0_COUNTERS | _G1_COUNTERS | _G2_COUNTERS | _HEAP_COUNTERS | _DURATION_COUNTERS
         assert names == expected, (
             f"counter track names mismatch; missing: {expected - names}; unexpected: {names - expected}"
@@ -308,6 +309,7 @@ class TestCombinedTraceIsStructurallyComplete:
                 "SELECT name FROM counter_track WHERE name LIKE '%increment_size%'",
             )
         )
+
         assert rows == [], f"`increment_size` should not be a counter track; got: {[r.name for r in rows]}"
 
     def test_process_tracks_present(
@@ -320,6 +322,7 @@ class TestCombinedTraceIsStructurallyComplete:
                 f"SELECT name FROM track WHERE name LIKE '{_PROCESS_ROW_PREFIX}%'",
             )
         )
+
         assert rows == sorted([_NAME_A, _NAME_B]), f"expected process tracks for both PIDs, got {rows}"
 
     def test_the_close_time_sweep_leaves_a_combined_process_alone(
@@ -366,6 +369,7 @@ class TestCombinedTraceIsStructurallyComplete:
                 f"WHERE s.name = '{_PROCESS_ROW_SLICE_NAME}' AND a.flat_key = '{_ARG_PREFIX}.{SAMPLED_COUNT}'"
             )
         )
+
         assert {r.pname: r.sampled for r in rows} == {_NAME_A: 3, _NAME_B: 1}
 
     def test_interpreter_groups_present(
@@ -381,6 +385,7 @@ class TestCombinedTraceIsStructurallyComplete:
                 f"WHERE lt.name = '{_INTERPRETER_LIST_NAME}' AND p.name = '{_NAME_A}'",
             )
         )
+
         for iid in (_IID_A1, _IID_A2, _IID_A3):
             assert _interpreter_group_name(iid) in rows, (
                 f"missing '{_interpreter_group_name(iid)}' under pid={_PID_A}; got {rows}"
@@ -398,6 +403,7 @@ class TestCombinedTraceIsStructurallyComplete:
             )
         )
         assert len(rows) == 3, f"expected 3 pause slices for pid={_PID_A}, got {rows}"
+
         rows_b = list(
             loaded_trace_processor.query(
                 f"SELECT s.name FROM slice s {_process_filter(_PID_B)} AND s.name LIKE '{GC_PAUSE_NAME}(%)'",
@@ -425,6 +431,7 @@ class TestCombineJsonlToPerfettoIntegration:
                 ")"
             )
         }
+
         for key, expected in _EXPECTED_PAUSE_ARGS.items():
             qualified = f"{_ARG_PREFIX}.{key}"
             assert qualified in rows, f"missing arg {qualified}; got {sorted(rows)}"
@@ -444,12 +451,14 @@ class TestCombineJsonlToPerfettoIntegration:
             phase_slice_name(CLEAR_WEAKREFS, 1),
             phase_slice_name(DELETE_GARBAGE, 1),
         ]
+
         slice_names = {
             r.name
             for r in loaded_trace_processor.query(
                 f"SELECT DISTINCT s.name FROM slice s {_process_filter(_PID_A)}",
             )
         }
+
         missing = set(expected_sub_slices) - slice_names
         assert not missing, f"missing sub-slices for gen=1: {missing}"
 
@@ -463,12 +472,14 @@ class TestCombineNormalizePerfettoIntegration:
         multi_pid_jsonl: list[Path],
     ) -> None:
         out = tmp_path / "combined_normalized.pftrace"
+
         result = _run_combine(
             multi_pid_jsonl,
             out,
             output_format=FORMAT_PERFETTO,
             extra_args=["--normalize"],
         )
+
         assert result.returncode == 0, result.stderr
         with open_trace_processor(out) as tp:
             # One pid per file, so each minimum is a file's own zero. Without
@@ -498,7 +509,9 @@ class TestTheTraceMatchesTheEventsItWasBuiltFrom:
         multi_pid_jsonl: list[Path],
     ) -> None:
         out = tmp_path / "combined.pftrace"
+
         result = _run_combine(multi_pid_jsonl, out, output_format=FORMAT_PERFETTO)
+
         assert result.returncode == 0, result.stderr
 
         events: list[TraceEvent] = []
