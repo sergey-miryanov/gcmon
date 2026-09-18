@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import importlib.util
 import math
+import sys
 from unittest.mock import MagicMock
 
 import pytest
 
 from gcmon.model.data import GCStatsInfo
+from gcmon.stats import stats as stats_module
 from gcmon.stats.metrics import PAUSE_KEY
 from gcmon.stats.stats import HAS_DDSKETCH, Stats
 from gcmon.stats.streaming_stats import StreamingStats
@@ -1116,3 +1119,21 @@ class TestTheHeapSizePercentile:
         stats.update(proc(OTHER_PID), _pause(heap_size=1_000))
 
         assert stats.heap_size_p99() == pytest.approx(1_990)
+
+
+class TestAnInstallWithoutTheSketch:
+    """`ddsketch` comes with the `stats` extra, and gcmon runs without it."""
+
+    def test_the_module_imports_and_says_so(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """A second copy under its own name, so the module every other test
+        holds keeps its classes. `None` in `sys.modules` is how Python spells
+        a module that cannot be imported."""
+        monkeypatch.setitem(sys.modules, "ddsketch", None)
+        spec = importlib.util.spec_from_file_location("stats_without_the_sketch", stats_module.__file__)
+        assert spec is not None and spec.loader is not None
+        copy = importlib.util.module_from_spec(spec)
+
+        spec.loader.exec_module(copy)
+
+        assert copy.HAS_DDSKETCH is False
+        assert not copy.Stats().has_sketch
