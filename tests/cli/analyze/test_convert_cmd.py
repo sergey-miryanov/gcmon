@@ -16,7 +16,7 @@ from perfetto.protos.perfetto.trace.perfetto_trace_pb2 import TracePacket, Track
 
 from gcmon.model.names import GC_PAUSE_NAME, PID, TS_START
 from gcmon.support.vocabulary import CMD_COMBINE, ENCODING, FORMAT_JSONL, FORMAT_PERFETTO, PROGRAM_NAME
-from tests.helpers import JsonlRecord, create_jsonl_record, perfetto_packets
+from tests.helpers import SUBPROCESS_WATCHDOG, JsonlRecord, create_jsonl_record, perfetto_packets
 
 
 class Combiner(Protocol):
@@ -78,7 +78,7 @@ def run_combine() -> Combiner:
             cmd += ["-o", str(output)]
         if extra_args:
             cmd.extend(extra_args)
-        return subprocess.run(cmd, capture_output=True, text=True)
+        return subprocess.run(cmd, capture_output=True, text=True, timeout=SUBPROCESS_WATCHDOG)
 
     return _run
 

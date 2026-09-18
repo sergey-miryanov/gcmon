@@ -490,6 +490,10 @@ def assert_valid_jsonl_format(file_path: Path) -> list[JsonlRecord]:
     return data
 
 
+# A gcmon launched by a test ends in a second or two. The bound is a watchdog:
+# a run that ignores its duration fails the test where it would hang the suite.
+SUBPROCESS_WATCHDOG: float = 60.0
+
 # Loading a trace pays for a process launch and a parse, so a test that
 # queries one waits on the slowest leg, not the median.
 _TRACE_PROCESSOR_TIMEOUT: int = 300

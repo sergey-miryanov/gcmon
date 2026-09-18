@@ -75,7 +75,13 @@ from gcmon.model.names import (
 )
 from gcmon.model.trace_event import Slice, TraceEvent
 from gcmon.support.vocabulary import CMD_COMBINE, ENCODING, FORMAT_PERFETTO, PROGRAM_NAME
-from tests.helpers import create_mock_incremental_item, create_mock_stats_item, open_trace_processor, proc
+from tests.helpers import (
+    SUBPROCESS_WATCHDOG,
+    create_mock_incremental_item,
+    create_mock_stats_item,
+    open_trace_processor,
+    proc,
+)
 
 
 def _int(v: int | None) -> int:
@@ -297,7 +303,7 @@ def _run_combine(
     cmd += ["-o", str(output), "--output-format", output_format]
     if extra_args:
         cmd.extend(extra_args)
-    return subprocess.run(cmd, capture_output=True, text=True)
+    return subprocess.run(cmd, capture_output=True, text=True, timeout=SUBPROCESS_WATCHDOG)
 
 
 @pytest.fixture

@@ -18,7 +18,7 @@ from gcmon.model.names import DURATION, PID, RSS
 from gcmon.stats.streaming_stats import PauseTotals
 from gcmon.stats.views import TableFormat
 from gcmon.support.vocabulary import CMD_MONITOR, FORMAT_PERFETTO, PROGRAM_NAME
-from tests.helpers import DefaultsValue
+from tests.helpers import SUBPROCESS_WATCHDOG, DefaultsValue
 
 
 class MonitorArgsFactory:
@@ -71,7 +71,7 @@ def run_monitor(gcmon_cmd: list[str]) -> Callable[..., subprocess.CompletedProce
     def _run(
         extra_args: list[str] | None = None,
         *,
-        timeout: float | None = None,
+        timeout: float = SUBPROCESS_WATCHDOG,
         cwd: str | Path | None = None,
         env: Mapping[str, str] | None = None,
     ) -> subprocess.CompletedProcess[str]:
@@ -92,7 +92,7 @@ def run_monitor_self(gcmon_cmd: list[str]) -> Callable[..., subprocess.Completed
     def _run(
         extra_args: list[str] | None = None,
         *,
-        timeout: float | None = None,
+        timeout: float = SUBPROCESS_WATCHDOG,
         cwd: str | Path | None = None,
         env: Mapping[str, str] | None = None,
     ) -> subprocess.CompletedProcess[str]:
