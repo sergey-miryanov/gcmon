@@ -6,7 +6,6 @@ from gcmon.exporters.protobuf_encoder import (
     encode_bytes_field,
     encode_double_field,
     encode_field_key,
-    encode_fixed64_field,
     encode_string_field,
     encode_varint,
     encode_varint_field,
@@ -71,20 +70,6 @@ class TestEncodeVarintField:
 
     def test_field_8_timestamp(self) -> None:
         assert encode_varint_field(8, 1_000_000) == b"\x40\xc0\x84\x3d"
-
-
-class TestEncodeFixed64Field:
-    def test_field_1_value(self) -> None:
-        result = encode_fixed64_field(1, 0x123456789ABCDEF0)
-
-        assert result[0:1] == b"\x09"
-        assert result[1:] == struct.pack("<Q", 0x123456789ABCDEF0)
-
-    def test_field_5_value(self) -> None:
-        result = encode_fixed64_field(5, 42)
-
-        assert result[0:1] == b"\x29"
-        assert result[1:] == struct.pack("<Q", 42)
 
 
 class TestEncodeStringField:

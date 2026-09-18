@@ -8,7 +8,6 @@ __all__ = [
     "encode_bytes_field",
     "encode_double_field",
     "encode_field_key",
-    "encode_fixed64_field",
     "encode_string_field",
     "encode_varint",
     "encode_varint_field",
@@ -40,10 +39,6 @@ def encode_field_key(field_number: int, wire_type: int) -> bytes:
 
 def encode_varint_field(field_number: int, value: int) -> bytes:
     return encode_field_key(field_number, WIRE_TYPE_VARINT) + encode_varint(value)
-
-
-def encode_fixed64_field(field_number: int, value: int) -> bytes:
-    return encode_field_key(field_number, WIRE_TYPE_FIXED64) + struct.pack("<Q", value)
 
 
 def encode_string_field(field_number: int, value: str) -> bytes:
