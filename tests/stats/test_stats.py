@@ -1091,3 +1091,28 @@ class TestASettledRingNeverReopens:
         stats.update(proc(TARGET_PID), _pause(9_000))
 
         assert stats.pause_totals(proc(TARGET_PID), 0, 0).sampled_count == 2
+
+
+class TestTheHeapSizePercentile:
+    """`heap_size_p99` ranks one high-water mark per process."""
+
+    def test_a_run_with_no_record_has_none(self) -> None:
+        """`None` and not zero, so a caller leaves the metric out."""
+        assert StreamingStats().heap_size_p99() is None
+
+    def test_one_process_gives_its_high_water_mark(self) -> None:
+        stats = StreamingStats()
+        stats.update(proc(TARGET_PID), _pause(heap_size=3_000))
+        stats.update(proc(TARGET_PID), _pause(heap_size=9_000))
+        stats.update(proc(TARGET_PID), _pause(heap_size=5_000))
+
+        assert stats.heap_size_p99() == 9_000
+
+    def test_two_processes_are_ranked_whatever_order_they_came_in(self) -> None:
+        """The larger mark arrives first. The 99th percentile of two values
+        sits 99% of the way from the smaller to the larger."""
+        stats = StreamingStats()
+        stats.update(proc(TARGET_PID), _pause(heap_size=2_000))
+        stats.update(proc(OTHER_PID), _pause(heap_size=1_000))
+
+        assert stats.heap_size_p99() == pytest.approx(1_990)
