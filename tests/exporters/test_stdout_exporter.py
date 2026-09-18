@@ -93,8 +93,10 @@ class TestStdoutExporter:
             data: dict[str, Any] = json.loads(line)
             assert data[GEN] == i
 
-    def test_close_with_flush(self, mock_stats_item: TGCStatsInfo, capsys: pytest.CaptureFixture[str]) -> None:
-        """Test close() flushes stdout."""
+    def test_close_writes_what_was_buffered(
+        self, mock_stats_item: TGCStatsInfo, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """A threshold the one event stays under, so only `close` writes it."""
         exporter = StdoutExporter(flush_threshold=1000)
         exporter.add_event(proc(DEFAULT_PID), mock_stats_item)
         exporter.close()
