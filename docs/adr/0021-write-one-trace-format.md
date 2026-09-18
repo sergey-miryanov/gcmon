@@ -100,26 +100,20 @@ new output format is a second `EventEncoder` implementation.
 - **A trace with nothing in it is no file at all.** The Chrome encoder wrote
   `[]` for a run that read no records; the Perfetto encoder writes nothing.
   Monitoring a pid that never collects now leaves no output file.
-- **`combine` has two rough edges, and they sit on the default path now.**
+- **`combine` has a rough edge, and it sits on the default path now.**
   Per-file normalization draws two captures of one pid from zero, and their
-  slices overlap on that pid's track. The encoder resolves a command line
-  against whatever holds the pid on this machine now, which for a reissued pid
-  is an unrelated process. Both predate this record and both were reachable
-  through `--output-format perfetto` before. `combine` takes the default
-  cmdline provider, on the grounds that historical pids have no cmdline to
-  find; a reissued pid falsifies that, and the fix is one argument at the call
-  site.
-- `TraceEvent` kept its Chrome-derived shape through this change. It is
-  ADR-0007's format-independent intermediate and the Perfetto converter's
-  input, and reshaping it around Perfetto's own vocabulary was a separate
-  change to the converter, the track state and the loss-slice builder, made
-  four days later by
-  [ADR-0024](0024-an-event-names-the-track-it-is-drawn-on.md).
-- Two tests run on the trace processor now. The whole-run characterization
-  pinned Chrome bytes, because Chrome resolved no cmdline and dropped liveness
-  on a base-class no-op; the loss-row round trip read the combined output as
-  JSON and resolved BEGIN/END as a stack. Both read the trace through a
-  decoder gcmon did not write, and both cost a trace-processor load per test.
+  slices overlap on that pid's track. It predates this record and was
+  reachable through `--output-format perfetto` before. A combined trace
+  carries no command line, since offline conversion creates no process to read
+  one from ([ADR-0010](0010-process-identity-cmdline-and-start-marker.md)).
+- This record leaves `TraceEvent` alone. Reshaping ADR-0007's intermediate
+  around Perfetto's own vocabulary is a separate change to the converter, the
+  track state and the loss-slice builder, and
+  [ADR-0024](0024-an-event-names-the-track-it-is-drawn-on.md) makes it.
+- The whole-run characterization
+  ([ADR-0017](0017-monitor-owns-the-pid-lifecycle.md)) and the loss-row round
+  trip read the trace through a decoder gcmon did not write, and each costs a
+  trace-processor load per test.
 
 ## Alternatives considered
 

@@ -7,10 +7,11 @@
 
 ## Context
 
-`TGCStatsInfo` records timestamps in nanoseconds, reading them from
-`time.time_ns()`, which is Python's canonical clock unit. The `TraceEvent`
-model stored microseconds, so the converter divided each timestamp field down
-on the way in.
+`TGCStatsInfo` records timestamps in nanoseconds, on the clock
+`time.monotonic_ns()` reads
+([ADR-0023](0023-the-pyperf-hook-annotates-and-does-not-drive.md)). The
+`TraceEvent` model stored microseconds, so the converter divided each
+timestamp field down on the way in.
 
 That was fine while Chrome was the only backend: the Chrome Trace Event format
 is specified in microseconds, so the model matched the output.
@@ -28,15 +29,14 @@ answer. The question is where the conversion belongs.
 
 ## Decision
 
-`TraceEvent.ts` is nanoseconds, and so are the two ends a `Slice` carries. The
-converter no longer divides; `TGCStatsInfo` values flow through unchanged.
+`TraceEvent.ts` is nanoseconds, and so are the two ends a `Slice` carries.
+`TGCStatsInfo` values flow through the converter unchanged.
 
-**Conversion happens at the encoder, once, per format:**
-
-- `JsonEventEncoder` divided by 1000 when serializing. The Chrome Trace Event
-  format is a public spec with microsecond timestamps. It went with the format
-  ([ADR-0021](0021-write-one-trace-format.md)), and the conversion with it.
-- `ProtobufEventEncoder` writes `event.ts` directly. No conversion.
+**Conversion happens at the encoder, once, per format.**
+`ProtobufEventEncoder` writes `event.ts` directly, since
+`TracePacket.timestamp` is nanoseconds. An encoder for a format in another
+unit converts as it serializes, which the Chrome encoder did until the format
+went ([ADR-0021](0021-write-one-trace-format.md)).
 
 The in-memory model uses the source's unit, and each encoder owns the unit its
 own wire format demands. If you are asking which unit a timestamp is in:
@@ -44,18 +44,12 @@ nanoseconds, unless you are looking at bytes on disk.
 
 ## Consequences
 
-- Perfetto traces have correct timelines. The `chrome_dur // 1000` workaround
-  in the equivalence test is gone; the comparison is direct, so the test
-  guards the units instead of documenting a bug.
+- Perfetto traces have correct timelines.
 - **There is no migration path for existing `.pftrace` files.** Traces
   captured before this change are 1000× compressed and cannot be corrected
   after the fact, because the original precision is not recoverable from the
   file. Re-capture.
-- Chrome output lost sub-microsecond precision to the integer division. The
-  format's microsecond resolution was the source of that, not this change, and
-  it is the last thing in gcmon that rounded a timestamp at all.
-- Nothing converts a timestamp any more. Every encoder gcmon has writes
-  nanoseconds.
+- Nothing in gcmon converts a timestamp: the one encoder writes nanoseconds.
 
 ## Alternatives considered
 

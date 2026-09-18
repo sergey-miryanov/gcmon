@@ -84,8 +84,9 @@ line, and that is the only way to have none.
   them.
 - `psutil` stays an optional dependency (the `cmdline` extra). gcmon works
   without it, minus the cmdline.
-- **A `combine` run writes no command line.** Offline conversion creates no
-  process, so nothing is read.
+- **A `combine` run writes no command line.** Offline conversion
+  ([ADR-0021](0021-write-one-trace-format.md)) creates no process, so nothing
+  is read.
 - `description` joins the arguments with spaces and no shell quoting,
   favouring readability over round-trippability. The structured form is in
   `ProcessDescriptor.cmdline`.
@@ -100,12 +101,11 @@ line, and that is the only way to have none.
   surface `cmdline` would find it empty.
 - **Collect the cmdline in the exporter**, on the grounds that it is trace
   metadata only the Perfetto format needs, so the JSONL and stdout paths carry
-  no `psutil` cost. The original decision, and **reversed**: the exporter
-  learns of a process on the first flush that mentions it, which is the wrong
-  moment on both counts above; offline it asked the local machine about a
-  historical pid, which answers about an unrelated process once the pid has
-  been reissued; and the saving was one `psutil` call per process on a path
-  that already reads every process once a tick. The Perfetto-only part that
-  survives is the emission, not the collection.
+  no `psutil` cost. Rejected: the exporter learns of a process on the first
+  flush that mentions it, which is the wrong moment on both counts above;
+  offline it asks the local machine about a historical pid, which answers
+  about an unrelated process once the pid has been reissued; and the saving is
+  one `psutil` call per process on a path that already reads every process
+  once a tick. The Perfetto-only part is the emission, not the collection.
 - **Make `psutil` a hard dependency.** Rejected: gcmon is installed next to
   the process it monitors, and graceful degradation costs one `try`/`except`.

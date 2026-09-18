@@ -10,32 +10,39 @@
 
 ## Context
 
-`TraceEvent` came from the Chrome Trace Event format, and kept its vocabulary
-after [ADR-0021](0021-write-one-trace-format.md) removed the format that
-needed it: a `ph` discriminator, and a `(pid, tid)` pair in which a row
-belonging to no interpreter took a tid no interpreter would claim. The encoder
-is the only consumer left.
+`TraceEvent`, the contract between the converter and the encoder
+([ADR-0007](0007-shared-trace-converter-pipeline.md)), came from the Chrome
+Trace Event format, and kept its vocabulary after
+[ADR-0021](0021-write-one-trace-format.md) removed the format that needed it:
+a `ph` discriminator, and a `(pid, tid)` pair in which a row belonging to no
+interpreter took a tid no interpreter would claim. The encoder is the only
+consumer left.
 
-Three things followed from the Chrome shape:
+These followed from the Chrome shape:
 
 - `ProcessMeta` and `ThreadMeta` existed so a producer could tell the encoder
   which rows to draw. Two producers implemented that, and the encoder never
   read the names they carried.
 - A counter event carried a dict of metrics, and the encoder concatenated a
   display name from it, with a special case to avoid `heap_size heap_size`.
-- Sentinel integers identified loss and RSS, so the encoder had to test the
-  tid to find out what kind of row it was writing.
+- Sentinel integers identified loss
+  ([ADR-0015](0015-gc-loss-spans-on-their-own-track.md)) and RSS
+  ([ADR-0013](0013-rss-sampling.md)), so the encoder had to test the tid to
+  find out what kind of row it was writing.
 
 ## Decision
 
 **A `Track` names a row, and every event carries one.**
 `ProcessTrack(process)`, `InterpreterTrack(process, iid)` and
 `LossTrack(process, iid)`. The `(pid, tid)` pair and the sentinels go.
-`LossTrack` and `InterpreterTrack` carry the same two fields and name
-different rows. The first field is a `Process`
-([ADR-0025](0025-create-every-process-in-one-place.md)), so a trace can draw
-two processes that shared a pid apart. A capture read back offline carries no
-epoch, so `combine` builds every pid a first process.
+`LossTrack` and `InterpreterTrack` carry the same two fields, the pair the
+statistics key on ([ADR-0016](0016-the-ring-is-the-statistics-unit.md)), and
+name different rows. A workload's mark is an `Instant` on its process's
+`ProcessTrack`
+([ADR-0023](0023-the-pyperf-hook-annotates-and-does-not-drive.md)). The first
+field is a `Process` ([ADR-0025](0025-create-every-process-in-one-place.md)),
+so a trace can draw two processes that shared a pid apart. A capture read back
+offline carries no epoch, so `combine` builds every pid a first process.
 
 **The encoder derives every other row from those.** Ahead of the first packet
 naming a track it emits the pid's process descriptor, whichever kind of track
@@ -46,9 +53,10 @@ implementations.
 
 **The meta dedup race closes by deletion rather than by relocation.** The race
 [ADR-0008](0008-buffered-exporter-and-encoder-protocol.md) records was two
-producers racing on a check-and-add under `BufferedTraceExporter._lock`. With
-no producers, dedup lives only in `PerfettoTrackState`, reached through
-`write_events` and `record_process_liveness`, both already under `_io_lock`.
+producers racing on a check-and-add under the buffering exporter's state lock.
+With no producers, dedup lives only in `PerfettoTrackState`, reached through
+`write_events` and the liveness call, both already under the exporter's I/O
+lock.
 
 **A counter carries one metric, its value and a written display name.** The
 converter writes the display name, `G0 collected` or `heap_size`, where the
@@ -59,8 +67,9 @@ the grouping: it drives the sibling rank and the shared y axis
 
 **A slice is one event, and the encoder expands it.**
 `Slice(track, name, cat, ts_start, ts_stop, args)` replaces `SliceBegin` and
-`SliceEnd`, which only ever went out as a pair. Perfetto has no complete-slice
-event, so the pair survives on the wire.
+`SliceEnd`, which only ever went out as a pair. Both ends are nanoseconds
+([ADR-0009](0009-nanoseconds-canonical-time-unit.md)). Perfetto has no
+complete-slice event, so the pair survives on the wire.
 
 **Nesting needs no reconstruction in gcmon.** Perfetto builds the stack: it
 sorts by timestamp, breaks ties by position in the sequence, and closes a
@@ -72,8 +81,8 @@ fuzz suite checks it against the real trace processor.
 
 - A trace an operator opens is unchanged. A `heap_size` counter track keeps
   its bare name, and a PerfettoSQL query matching `name = 'heap_size'` keeps
-  matching: the interpreter that owns one is named by the group the row hangs
-  off ([ADR-0027](0027-group-every-row-an-interpreter-owns.md)), not by the
+  matching: the interpreter that owns one is named by the group the row sits
+  in ([ADR-0027](0027-group-every-row-an-interpreter-owns.md)), not by the
   row's own name.
 - A JSONL capture carries no `tid`, and one written before this change still
   reads: nothing read the field, and `from_mapping` rebuilds a record from its
@@ -85,20 +94,20 @@ fuzz suite checks it against the real trace processor.
   Both were possible.
 - A record puts half as many slice events in the buffer: up to nine where
   there were up to eighteen.
-- Packet order changes: a pid's thread descriptors arrive at each track's
-  first slice rather than up front, and a pause's `SLICE_END` goes out
-  directly after its own `SLICE_BEGIN`. The trace a reader gets is the same
-  one, since the trace processor sorts.
+- Packet order changes: a pid's track descriptors arrive at each track's first
+  slice rather than up front, and a pause's `SLICE_END` goes out directly
+  after its own `SLICE_BEGIN`. The trace a reader gets is the same one, since
+  the trace processor sorts.
 
 ## Alternatives considered
 
 - **Delete the intermediate and emit Perfetto packets from the converter.** It
-  costs the oracle in `tests/cli/analyze/test_convert_cmd_perfetto.py`, which
-  needs both halves to exist, and the encoder's unit-test seam. It also puts
-  track state under the exporter's IO lock on every record rather than once
-  per flush, since a converter emitting packets has to allocate uuids as it
-  goes. The fact that would settle it differently: a second encoder never
-  arriving *and* the oracle being retired.
+  costs the oracle the conversion tests compare against, which needs both
+  halves to exist, and the encoder's unit-test seam. It also puts track state
+  under the exporter's IO lock on every record rather than once per flush,
+  since a converter emitting packets has to allocate uuids as it goes. The
+  fact that would settle it differently: a second encoder never arriving *and*
+  the oracle being retired.
 - **Name what an event is about rather than the row it is drawn on.** A
   `LossTrack` would collapse into `InterpreterTrack` plus a flag, and the flag
   is the sentinel again.

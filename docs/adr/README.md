@@ -84,7 +84,7 @@ module is neither.
 | [0005](0005-counter-y-axis-share-key.md) | Use the metric name itself as `CounterDescriptor.y_axis_share_key` | Accepted | exporters |
 | [0006](0006-begin-end-slice-pairs.md) | Represent durations as Begin/End pairs in both backends | Superseded by 0024 | exporters, model |
 | [0007](0007-shared-trace-converter-pipeline.md) | Convert GC stats to `TraceEvent` once, in a shared pipeline | Accepted | exporters, model, monitoring |
-| [0008](0008-buffered-exporter-and-encoder-protocol.md) | Split exporters into a buffering base class and a pluggable `EventEncoder` | Accepted | exporters |
+| [0008](0008-buffered-exporter-and-encoder-protocol.md) | Split the exporter's lifecycle from a pluggable `EventEncoder` | Accepted | exporters |
 | [0009](0009-nanoseconds-canonical-time-unit.md) | Store `TraceEvent.ts` in nanoseconds; convert at the encoder | Accepted | exporters, model, support |
 | [0010](0010-process-identity-cmdline-and-start-marker.md) | Duplicate the process cmdline per consumer, and force the process track to render | Accepted | exporters, monitoring |
 | [0011](0011-process-lifetime-and-ordering.md) | Show process lifetimes on one shared track, ordered by first observation | Accepted | exporters, monitoring |
@@ -100,7 +100,7 @@ module is neither.
 | [0021](0021-write-one-trace-format.md) | Write one trace format, and read only JSONL back | Accepted | cli, exporters |
 | [0022](0022-compress-each-batch-of-packets.md) | Compress each batch into one `TracePacket.zstd_compressed_packets` field | Accepted | exporters |
 | [0023](0023-the-pyperf-hook-annotates-and-does-not-drive.md) | Mark the benchmark from the pyperf hook, and drive nothing | Accepted | model, pyperf |
-| [0024](0024-an-event-names-the-track-it-is-drawn-on.md) | An event names the track it is drawn on, and the encoder derives the rest | Accepted | exporters, model |
+| [0024](0024-an-event-names-the-track-it-is-drawn-on.md) | An event names the track it is drawn on | Accepted | exporters, model |
 | [0025](0025-create-every-process-in-one-place.md) | Create every process in one place, and carry it instead of a pid | Accepted | cli, control, exporters, model, monitoring |
 | [0026](0026-two-subsystems-over-a-shared-base.md) | Split the package into a monitor and an analysis subsystem | Accepted | analysis, cli, exporters, monitoring |
 | [0027](0027-group-every-row-an-interpreter-owns.md) | Group every row an interpreter owns under one track | Accepted | exporters |

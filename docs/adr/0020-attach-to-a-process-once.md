@@ -23,8 +23,8 @@ detaches, and a `GCMonitor` object that attaches once and reads many times.
 ## Decision
 
 **Attachment is state, so it has one owner and one prune.** It lives behind
-`EventsReader` in `gcmon.monitoring.events_reader`, and the monitor drops it
-in the same pass that drops that pid's cursors and streaming statistics.
+`EventsReader` in `monitoring`, and the monitor drops it in the same pass that
+drops that pid's cursors and streaming statistics.
 [ADR-0017](0017-monitor-owns-the-pid-lifecycle.md)'s rule extends to it
 unchanged: cursors and attachment share a lifetime, and nothing prunes either
 one anywhere else. Child discovery stays outside the reader: it is stateless,
@@ -45,7 +45,13 @@ consumes that distinction today, because both collapse into
 `TargetUnavailable`. It becomes the right answer when something does.
 
 **gcmon holds an attachment only while its reads keep returning, and never
-remembers a failed attach.**
+remembers a failed attach.** An attachment holds a runtime address and debug
+offsets derived from the process that existed when it was made, and
+revalidates neither. Applied to a recycled pid it reads an unrelated process's
+memory at the old address. Every field gcmon wants is an integer copied out of
+memory, so the result is not a crash and not an error: it is a set of records
+that are structurally valid, pass every filter gcmon has, and reach the trace.
+A stale cursor makes a number wrong; a stale attachment invents the data.
 
 ## Consequences
 
@@ -53,14 +59,6 @@ remembers a failed attach.**
   deliberate.** It costs one attach on a tick that already failed, which is
   what every tick used to cost. Do not "optimise" it into a retry that keeps
   the old attachment.
-
-The reason is that an attachment holds a runtime address and debug offsets
-derived from the process that existed when it was made, and revalidates
-neither. Applied to a recycled pid it reads an unrelated process's memory at
-the old address. Every field gcmon wants is an integer copied out of memory,
-so the result is not a crash and not an error: it is a set of records that are
-structurally valid, pass every filter gcmon has, and reach the trace. A stale
-cursor makes a number wrong; a stale attachment invents the data.
 
 - **gcmon cannot notice a pid recycled between two successful reads.**
   [Spec 0052](../../specs/0052-a-recycled-pid-can-be-read-through-a-stale-attachment.md)
@@ -70,13 +68,12 @@ cursor makes a number wrong; a stale attachment invents the data.
   depends on the drop rule above, since only a failing read notices the swap
   there. Anything leaning on that safety has to say which platform it is on.
 
-- **`gcmon.monitoring.monitor` no longer names any exception type from
-  `_remote_debugging`.** What an unreadable target raises differs by platform,
-  and again under `debug=True`;
-  [Remote reads, per platform](../internals/remote-reads.md) has the whole
-  table. That vocabulary stops at the reader, which translates it into
-  `TargetUnavailable`. Test doubles say "unavailable" instead of impersonating
-  CPython's taxonomy.
+- **`EventsMonitor` names no exception type from `_remote_debugging`.** What
+  an unreadable target raises differs by platform, and again under
+  `debug=True`; [Remote reads, per platform](../internals/remote-reads.md) has
+  the whole table. That vocabulary stops at the reader, which translates it
+  into `TargetUnavailable`. Test doubles say "unavailable" instead of
+  impersonating CPython's taxonomy.
 
 - **The translation takes `ProcessLookupError` and `PermissionError`, not
   `OSError`.** Those two are the platform's way of saying the process is gone
@@ -122,7 +119,7 @@ cursor makes a number wrong; a stale attachment invents the data.
   the cost this decision exists to remove.
 
 - **Let the monitor widen its `except` clause instead of translating in the
-  reader.** Two words smaller, and it leaves `gcmon.monitoring.monitor` owning
-  the platform-specific error vocabulary the seam exists to contain. Returning
-  an empty result instead of raising was also rejected: it loses the cause the
+  reader.** Two words smaller, and it leaves the monitor owning the
+  platform-specific error vocabulary the seam exists to contain. Returning an
+  empty result instead of raising was also rejected: it loses the cause the
   debug log prints.

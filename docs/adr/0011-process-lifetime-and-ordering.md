@@ -44,9 +44,9 @@ in the suite passed anyway.
 
 **A single shared top-level track named `Processes`** holds one
 `TYPE_SLICE_BEGIN`/`TYPE_SLICE_END` pair per process, spanning
-`[first observed, last observed]` for that process (see the liveness section
-below for what counts as an observation). A span never covers a stretch in
-which the process it names did not exist.
+`[first observed, last observed]` for that process (what counts as an
+observation is below). A span never covers a stretch in which the process it
+names did not exist.
 
 **A slice is named for its process**, `Process <pid>` for the first to hold
 the pid and `Process <pid>#N` after it, the suffix the `--stats` table prints
@@ -98,7 +98,8 @@ with nothing under it.
 **The Perfetto process track is split per process, each row stamped and ranked
 from its own first observation.** The trace processor keys process identity on
 `ProcessDescriptor.pid`, not on the track uuid, so descriptors sharing a pid
-do not reliably draw a row each.
+do not reliably draw a row each. Measured against the trace processor the
+suite pins.
 
 **A row is written under a pid gcmon counts from 1, not the operating
 system's.** The `ProcessDescriptor` is the only place it reaches the trace:
@@ -112,8 +113,9 @@ gcmon's reads it.
 **Every process draws a full set of rows of its own**: process track, a group
 per interpreter holding that interpreter's rows, and a `Lifetime` slice, named
 `Process <pid>` and `Process <pid>#N` to match its `Processes` span.
-`start_timestamp_ns` stamps a row where its process started. Measured against
-the trace processor the suite pins in `tests.perfetto_prebuilt`.
+`start_timestamp_ns` stamps a row where its process started, and a counter's
+shared y axis stops at its own process's rows
+([ADR-0005](0005-counter-y-axis-share-key.md)).
 
 **The whole track is emitted at encoder close**, once per trace; convert
 passes record spans and emit nothing. Two reasons the BEGIN cannot go out
@@ -206,17 +208,18 @@ and `dur` are those two numbers.
 
 The shared slice says `clipped`, so a reader sees which processes diverge
 instead of subtracting one row's duration from the other's. It goes on every
-slice, true or false. The bar cannot carry it: a retired process's row is
-drawn at the next flush and the sweep has decided nothing yet.
+slice, true or false. The `Lifetime` slice cannot carry it: a retired
+process's row is drawn at the next flush and the sweep has decided nothing
+yet.
 
-**How much of the process gcmon read is counted in the convert pass.** The bar
-says `sampled_count` against `lost_count`, and the exporter's entry points are
-where those arrive: `add_event` takes one record and `add_loss_event` one poll
-interval. Neither holds the encoder lock, and the accumulators are read under
-it, so counting there means a second acquisition per record on the hot path.
-Counting in the convert pass costs nothing, since its caller already holds the
-lock, and it also covers `gcmon combine`, which builds a trace from a capture
-without an exporter.
+**How much of the process gcmon read is counted in the convert pass.** The
+`Lifetime` slice says `sampled_count` against `lost_count`, and the exporter's
+entry points are where those arrive: `add_event` takes one record and
+`add_loss_event` one poll interval. Neither holds the encoder lock, and the
+accumulators are read under it, so counting there means a second acquisition
+per record on the hot path. Counting in the convert pass costs nothing, since
+its caller already holds the lock, and it also covers `gcmon combine`, which
+builds a trace from a capture without an exporter.
 
 The pass sees events rather than records, so it counts the two that stand for
 one thing each: the `GC Pause` slice, which every record produces one of, and
@@ -232,24 +235,24 @@ slice to sum and would read as one gcmon never sampled.
 for close.** Once gcmon lets go of a pid the process's span is final: a record
 read afterwards is filed under whatever holds the pid now
 ([ADR-0025](0025-create-every-process-in-one-place.md)), and liveness and RSS
-both work off the tick's live set. The bar needs nothing but that one span, so
-it is drawn as soon as the events queued ahead of it have reached the
-accumulator. The `Processes` slice needs every other span in the run: the
+both work off the tick's live set. The `Lifetime` slice needs nothing but that
+one span, so it is drawn as soon as the events queued ahead of it have reached
+the accumulator. The `Processes` slice needs every other span in the run: the
 sweep is global, and a process discovered later can still open one inside a
 retired process's, because a poll returns collections that already happened. A
 slice drawn early could not be clipped against a sibling that did not exist
 yet, and two crossing slices on one track come back at widths neither was
 given with nothing reported.
 
-The Perfetto UI hides a row holding no events, so a bar that never reached the
-file takes its whole row with it, its interpreters' rows and all. A process
-already retired keeps its row; one still running does not, and neither does
-the minimap.
+The Perfetto UI hides a row holding no events, so a `Lifetime` slice that
+never reached the file takes its whole row with it, its interpreters' rows and
+all. A process already retired keeps its row; one still running does not, and
+neither does the minimap.
 
 The exception is the control plane, which files an instant by timestamp and
 can still name a retired process (ADR-0025). One arriving after the row was
-drawn lands on it outside the bar. Accepted: the alternative is holding every
-row back for a message that may never come.
+drawn lands on it outside the slice. Accepted: the alternative is holding
+every row back for a message that may never come.
 
 **No span is dropped.** A pid observed at a single instant, and a pid clipped
 down to nothing, both still get a BEGIN/END pair; the trace processor accepts
@@ -263,9 +266,8 @@ meaning gcmon read GC state out of that process then. One tick of monitoring
 is one call on the monitor, which reports the whole `PollStatus.OK` set
 through `add_process_liveness(processes, ts_ns)` once, after its poll phase,
 so the cost is one call per tick rather than one per pid. The accumulator
-folds an observation in as a plain min/max with no keyword: the counter
-carve-out this ADR called provisional is **removed**, since the sampler
-liveness it kept out of the end is now reported directly.
+folds an observation in as a plain min/max with no keyword, counters included,
+since liveness is reported directly.
 
 **A liveness report is stamped when the reads that proved it returned**, not
 when the tick opened. A tick polls its pids in sequence, and a process polled
@@ -274,7 +276,7 @@ the tick's last successful read returned. Every process alive in one tick then
 shares an end, which the sweep nests rather than clips. `MonitorLoop` still
 takes one stamping clock read per tick and hands it in; that instant opens the
 loss window ([ADR-0015](0015-gc-loss-spans-on-their-own-track.md)) and stamps
-a whole RSS round ([ADR-0013](0013-rss-sampling.md)), and only the liveness
+a whole RSS pass ([ADR-0013](0013-rss-sampling.md)), and only the liveness
 report carries the later one.
 
 **Liveness folds in alongside events rather than replacing them.**
@@ -301,7 +303,7 @@ only a min and a max. Correct under "liveness", wrong under "monitoring
 coverage"; representing the gap as two spans is out of scope.
 
 **Liveness is always on**, with no flag. The cost that justified `--rss`
-([ADR-0013](0013-rss-sampling.md)) does not transfer: `live_pids` is already
+([ADR-0013](0013-rss-sampling.md)) does not transfer: the live set is already
 built by the poll phase, and this is one batched call and two dict comparisons
 per pid per tick. A flag would ship two definitions of a `Processes` slice.
 
@@ -333,7 +335,7 @@ iteration.
   fan-out: children whose earliest evidence is the tick that first polled them
   share that timestamp and nest rather than clip, while those whose first GC
   event predates the poll keep their jitter.
-- **`--rss` adds no jitter of its own.** The sampler stamps a whole round with
+- **`--rss` adds no jitter of its own.** The sampler stamps a whole pass with
   the tick instant it was given ([ADR-0013](0013-rss-sampling.md)), so those
   spans share a start and nest rather than clipping each other.
 - **The drawn duration is a lower bound, never an upper one**, so deaths are
@@ -357,9 +359,10 @@ iteration.
   the loss rows and the counters are missing, because it produced nothing to
   draw on them.
 - **Deep nesting is now the normal shape.** Processes still alive when the
-  loop stops share an end timestamp, and the sweep breaks out on
-  `outer_end >= end`, so co-terminating spans nest one level per process
-  instead of clipping. Staggered deaths still clip, so traces mix both.
+  loop stops share an end timestamp, and the sweep reads an outer span ending
+  at or after the inner one as enclosing it, so co-terminating spans nest one
+  level per process instead of clipping. Staggered deaths still clip, so
+  traces mix both.
 - **The trace processor closes at most 512 nested slices.** The fuzz suite
   measures this against the real trace processor: at 512 every slice reads
   back intact, and each level past it leaves one more with `dur = -1`. The
@@ -370,12 +373,14 @@ iteration.
 - **`combine` diverges from live capture.** Offline conversion has no monitor
   polling anything, so its spans stay event-derived and narrower. Carrying
   liveness through JSONL so `combine` could reproduce it is out of scope.
-- **`sibling_order_rank` is not exposed as a SQL column.** It is a UI hint, so
-  the trace-processor tests act as a *schema-validity guard*: they confirm the
-  layout is accepted and the `process` and `track` tables survive intact, but
-  only the Perfetto UI can assert display order. Perfetto's docs call these
-  orderings "strong hints" in any case, so the UI may still rearrange tracks
-  in special contexts.
+- **A process track's `sibling_order_rank` reaches no SQL table.** It is a UI
+  hint, so the trace-processor tests act as a *schema-validity guard*: they
+  confirm the layout is accepted and the `process` and `track` tables survive
+  intact, but only the Perfetto UI can assert the order of process tracks. A
+  rank under an explicit group does reach one
+  ([ADR-0014](0014-perfetto-integration-test-strategy.md)). Perfetto's docs
+  call these orderings "strong hints" in any case, so the UI may still
+  rearrange tracks in special contexts.
 - **A process observed before one already described still sorts after it.**
   The rank is right within each group and follows the order gcmon reached them
   between groups. A process adopted mid-run that predates every other is the
@@ -405,16 +410,15 @@ iteration.
   per pid (8 workers running 1000 tasks needs 8 rows), but rejected: N
   children alive at once are N mutually crossing intervals and still need N
   lanes, so the timeline is as unreadable as before.
-- **Dropping a slice that ends up zero-length**, the original decision here.
-  Reversed: it optimised the rendering at the cost of the record, and the pids
-  likeliest to be clipped to nothing are the short-lived children a reader is
-  looking for.
+- **Dropping a slice that ends up zero-length.** Rejected: it optimises the
+  rendering at the cost of the record, and the pids likeliest to be clipped to
+  nothing are the short-lived children a reader is looking for.
 - **Snapping near-equal starts together before the sweep**, turning a jittered
   fan-out back into the nesting it almost is; every end survives at a cost of
   at most ε on each start, and a clipped fan-out keeps its whole observed
-  duration instead of microseconds of it. Not adopted, still open: ε is a
-  heuristic, nesting N deep costs N rows of vertical space inside the track,
-  and the trace processor stops closing slices past 512 (see Consequences).
+  duration instead of microseconds of it. Not adopted: ε is a heuristic,
+  nesting N deep costs N rows of vertical space inside the track, and the
+  trace processor stops closing slices past 512 (see Consequences).
 - **Extending the earlier span's end instead of clipping it**, nesting the
   later span inside. Rejected: it makes a dead process look alive, and the
   nesting implies a parent/child relationship that may not exist.
@@ -437,9 +441,9 @@ iteration.
   died.
 - **Sharing one process track across every process that held a pid**, on the
   grounds that two descriptors on one pid might collapse to a single `upid`.
-  The original decision here, and **reversed**: the shared row interleaved two
-  processes' thread events, stepped its counters between them with nothing
-  marking where, and carried a start stamp that predated the successor.
+  Rejected: the shared row interleaves two processes' events, steps its
+  counters between them with nothing marking where, and carries a start stamp
+  that predates the successor.
 - **Resolving the epoch inside the encoder**, asking a `ProcessLookup` which
   process held the pid at a record's timestamp. Rejected: the monitor already
   decided that when it created the process
@@ -452,11 +456,10 @@ iteration.
   lifetime slice and the command line wrong.
 - **Writing the operating system's pid on every descriptor**, leaving
   `process.pid` a trace-wide identifier a reader joins on and correlates
-  against other tools. The original decision here, and **reversed**: the first
-  measurement found that two descriptors on one pid split, and generalised
-  from it. A third does not, so the scheme costs a row per process past the
-  second. The join it buys is replaced by the `pid` annotation on both of a
-  process's spans and by the row's name.
+  against other tools. Rejected: two descriptors on one pid split and a third
+  does not, so the scheme costs a row per process past the second. The join it
+  buys is replaced by the `pid` annotation on both of a process's spans and by
+  the row's name.
 - **Leaving the operating system's pid on the first process to hold it**, and
   counting only its successors, keeping `process.pid` joinable for the rows a
   pid was never reused for. Rejected: a column true for most rows and false
@@ -475,9 +478,9 @@ iteration.
   Rejected: there is no correct value to write into a field two processes
   share, and the pause row, the counters, the start stamp and the lifetime
   slice stay merged behind it.
-- **Emitting liveness as a `TraceEvent`.** Rejected: at 10 Hz × N pids, a
-  60-second run with ten children carries ~6,000 extra events, visible on the
-  process tracks, to record two numbers per pid.
+- **Emitting liveness as a `TraceEvent`.** Rejected: at the default 0.1 s
+  rate, a 60-second run with ten children carries ~6,000 extra events, visible
+  on the process tracks, to record two numbers per pid.
 - **A `RssSampler`-style collaborator** accumulating `first`/`last` per pid
   and flushing at close. Rejected: it mirrors state the exporter already holds
   and adds a close-ordering hazard. Against a min/max, the redundant per-tick
@@ -486,8 +489,9 @@ iteration.
   `JsonEventEncoder`. Rejected: it widens a precise abstraction to carry
   per-trace state one implementation has, and taxes the other for the life of
   the protocol.
-- **Emitting the slice END at the end of each convert call.** The original
-  implementation, and wrong; see above.
+- **Emitting the slice END at the end of each convert call.** Rejected: a run
+  flushes many times, and Perfetto pairs a BEGIN with the first matching END,
+  orphaning the rest.
 - **Re-emitting a process descriptor with a corrected rank in a later batch.**
   Rejected: it breaks idempotent emission for a cosmetic gain in a rare
   ordering, and it does not work. The trace processor keeps the first

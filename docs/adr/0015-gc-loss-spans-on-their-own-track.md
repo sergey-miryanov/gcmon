@@ -109,44 +109,36 @@ every exporter takes it from one place and
 [ADR-0007](0007-shared-trace-converter-pipeline.md) holds. `combine` can then
 rebuild the spans from a JSONL capture.
 
-## What gcmon trusts the target for
-
-**The publish-last contract survives to the reader.** `add_stats` in
-`Python/gc.c` orders a record's stores so that a remote reader never selects a
-half-written one. A read can still land on a slot twice over, or on one still
-being filled, with nothing in the data marking either; gcmon's two filters
-exist for that.
-
-**One poll's records for one ring are contiguous.** A ring holds consecutive
-records, so a gap can only sit at the seam between two polls, and gcmon trusts
-that without checking. A hole inside one poll's records would still leave the
-counts right, since a count subtracts two end counters, but no gap would carry
-the hole's pause and the invariant would break in silence.
-
-**`duration` and the timestamps share a clock.** One is a `double` and the
-others are `PyTime_t`, and the arithmetic subtracts one from the other. The
-invariant tests it, and a failure there means the whole reconstruction is
-unsound.
-
-**Two hazards break the first two properties, and gcmon mitigates neither
-yet.** A torn read returns one poll's records with a hole in them. Store
-reordering returns a record holding the previous run's `ts_start` against this
-one's `ts_stop` under a fresh counter, which both filters pass and which
-reports a pause too long by the interval between the two runs.
-[Spec 0024](../../specs/0024-cpython-report-remote-readable-gc-stats.md)
-catalogues both for an upstream report, and
-[spec 0044](../../specs/0044-torn-reads-and-reordered-publishes.md) settles
-the reader's side: gcmon waits for the target to synchronize rather than
-guessing, since one of the two leaves no signature a reader can trust and the
-other is invisible from Python entirely.
-
-Lifetime totals rest on none of this. `collections` and `duration` run
-cumulative from interpreter start, and `gc_get_prev_stats` reads the immediate
-predecessor rather than the slot about to be overwritten, so the chain
-survives the ring wrapping.
-
 ## Consequences
 
+- **gcmon trusts the target to publish a record last.** CPython orders a
+  record's stores so that a remote reader never selects a half-written one
+  ([spec 0024](../../specs/0024-cpython-report-remote-readable-gc-stats.md)).
+  A read can still land on a slot twice over, or on one still being filled,
+  with nothing in the data marking either; gcmon's two filters exist for that.
+- **gcmon trusts one poll's records for one ring to be contiguous**, without
+  checking. A ring holds consecutive records, so a gap can only sit at the
+  seam between two polls. A hole inside one poll's records would still leave
+  the counts right, since a count subtracts two end counters, but no gap would
+  carry the hole's pause and the invariant would break in silence.
+- **gcmon trusts `duration` and the timestamps to share a clock.** One is a
+  floating-point total and the others are integer timestamps, and the
+  arithmetic subtracts one from the other. The invariant tests it, and a
+  failure there means the whole reconstruction is unsound.
+- **Two hazards break the first two, and gcmon mitigates neither.** A torn
+  read returns one poll's records with a hole in them. Store reordering
+  returns a record holding the previous run's `ts_start` against this one's
+  `ts_stop` under a fresh counter, which both filters pass and which reports a
+  pause too long by the interval between the two runs. Spec 0024 catalogues
+  both for an upstream report, and
+  [spec 0044](../../specs/0044-torn-reads-and-reordered-publishes.md) settles
+  the reader's side: gcmon waits for the target to synchronize rather than
+  guessing, since one of the two leaves no signature a reader can trust and
+  the other is invisible from Python entirely.
+- **Lifetime totals rest on none of this.** `collections` and `duration` run
+  cumulative from interpreter start, and CPython takes each record's running
+  totals from its immediate predecessor rather than from the slot about to be
+  overwritten, so the chain survives the ring wrapping.
 - **The track reads as a near-solid bar at default settings**, since gcmon is
   blind for most of every tick. A lower `--rate` or a calmer workload thins it
   out, and the numbers live in the args either way.
@@ -202,8 +194,7 @@ survives the ring wrapping.
   is temporal: that record held the interpreter at that moment, and
   collections in an interpreter are serialized, so anything lost after the
   read ran after that collection ended, whatever generation either belongs to.
-  No ring, no cross-key inference. Rejecting the first argument leaves the
-  second open.
+  No ring, no cross-key inference.
 - **Bounding a span by how many runs it could hold**, taking a ring's shortest
   observed interval between two records as a floor on its period. Rejected:
   one fast burst weakens that floor for the whole session, and it errs in the

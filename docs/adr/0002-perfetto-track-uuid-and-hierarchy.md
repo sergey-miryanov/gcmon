@@ -33,10 +33,10 @@ down below its own counters.
 ## Decision
 
 **UUIDs are allocated sequentially from a per-trace counter starting at 1**,
-lazily, on first use of each track. The state object maps identity (`pid`,
-`(pid, iid)`, `(pid, iid, name, metric)`) to the allocated UUID, so the same
-track reuses its UUID across flushes. Collision-freedom comes from the
-counter, not from bit arithmetic.
+lazily, on first use of each track. The state object maps identity (a
+`Process`, a `Track`, a `Track` and a counter's display name) to the allocated
+UUID, so the same track reuses its UUID across flushes. Collision-freedom
+comes from the counter, not from bit arithmetic.
 
 **`uuid = 0` is reserved.** Perfetto reads it as the root descriptor, and
 gcmon writes one there to carry the `process_ordering` hint. Nothing parents
@@ -51,13 +51,12 @@ to it, and the allocator starts at 1, so no track takes the number instead.
   Every row an interpreter owns parents to its group and is ranked inside it
   ([ADR-0027](0027-group-every-row-an-interpreter-owns.md)). No track gcmon
   writes carries a `ThreadDescriptor`.
-- Counters: parented to the `GC Metrics` group or to the process track,
-  following [ADR-0003](0003-gc-metrics-group-track.md) and
-  [ADR-0004](0004-toplevel-shared-counters.md).
+- Counters: a per-generation counter parents to the `GC Metrics` group
+  ([ADR-0003](0003-gc-metrics-group-track.md)), `heap_size` to its
+  interpreter's group (ADR-0027), and a counter a `ProcessTrack` owns to the
+  process track ([ADR-0024](0024-an-event-names-the-track-it-is-drawn-on.md)).
 - Track descriptors carry **no timestamp** on their containing `TracePacket`.
-  Descriptors are time-independent; an earlier version set a timestamp only on
-  the valid-pause path, which was inconsistent with the thread and counter
-  descriptors.
+  Descriptors are time-independent.
 
 **"Parented to the trace root" means the `parent_uuid` field is absent on the
 wire** (`parent_uuid=None`, which the encoder skips), never `parent_uuid=0`.
@@ -77,10 +76,7 @@ wire** (`parent_uuid=None`, which the encoder skips), never `parent_uuid=0`.
 
 ## Alternatives considered
 
-- **Arithmetic UUIDs derived from pid/iid** (`pid | 1<<60` etc.). Superseded.
-  Deterministic but fragile: it required a new bit-range per track kind,
-  `(pid << 20) | iid` collides for large pids, and it encoded a very large
+- **Arithmetic UUIDs derived from pid/iid** (`pid | 1<<60` etc.). Rejected:
+  deterministic but fragile. It requires a new bit-range per track kind,
+  `(pid << 20) | iid` collides for large pids, and it encodes a very large
   varint into every packet for no benefit.
-- **`child_ordering = EXPLICIT` on thread tracks.** Rejected as a no-op once
-  counters were reparented away from the thread; thread tracks have no
-  children.

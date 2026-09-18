@@ -12,8 +12,8 @@
 
 Every interpreter in a target keeps its own collector, its own rings and its
 own cumulative counters. The trace side has said so since
-[ADR-0015](0015-gc-loss-spans-on-their-own-track.md): records go on a thread
-track per `(process, iid)`, loss spans on a `GC Loss` track per
+[ADR-0015](0015-gc-loss-spans-on-their-own-track.md): records go on a pause
+row per `(process, iid)`, loss spans on a `GC Loss` track per
 `(process, iid)`, and [ADR-0003](0003-gc-metrics-group-track.md)'s counter
 group is per `(process, iid)` too. Open a trace of a process running three
 interpreters and you see three rows.
@@ -38,9 +38,9 @@ so the fix belongs in the key.
 
 ## Decision
 
-**The ring is the unit statistics are reported for.**
-`gcmon.stats.streaming_stats` holds one entry per `(process, iid)`, the pair a
-`Track` names ([ADR-0024](0024-an-event-names-the-track-it-is-drawn-on.md),
+**The ring is the unit statistics are reported for.** `StreamingStats` holds
+one entry per `(process, iid)`, the pair a `Track` names
+([ADR-0024](0024-an-event-names-the-track-it-is-drawn-on.md),
 [ADR-0025](0025-create-every-process-in-one-place.md)), and each entry keeps
 its sampled metrics, loss and lifetime totals in a dict per generation. A ring
 is one of those generations, and the three settle together because one entry
@@ -70,11 +70,11 @@ sample buffers go back, the slots go back, and the four percentiles left
 behind cover each of those rings end to end. A target that spawns and exits
 keeps a row per process it ran without exhausting the bound.
 
-**`gcmon.monitoring.monitor` decides who is alive, and
-`gcmon.stats.streaming_stats` takes that decision.** Whatever arrives on a pid
-gcmon called dead is a new process, the same one or not. The statistics never
-infer liveness a second time from the target's counters, so the two sides
-cannot disagree about which process a figure describes.
+**`EventsMonitor` decides who is alive, and `StreamingStats` takes that
+decision.** Whatever arrives on a pid gcmon called dead is a new process, the
+same one or not. The statistics never infer liveness a second time from the
+target's counters, so the two sides cannot disagree about which process a
+figure describes.
 
 **Everything a run keeps names the process rather than the pid.** A `Process`
 carries an epoch counting from 1 that advances on each of those deaths, so
@@ -109,9 +109,9 @@ the lifetime note stay whole on a target too wide for the table.
 
 **The coverage advisory tests rings.** It names the least covered one,
 interpreter alongside pid and generation, and fires once per run, latched in
-`gcmon.monitoring.monitor`: the remedy it suggests is `--rate`, which no ring
-owns. Firing once is why it names the worst ring over the first, since a
-marginal figure would otherwise stand for the whole capture.
+`EventsMonitor`: the remedy it suggests is `--rate`, which no ring owns.
+Firing once is why it names the worst ring over the first, since a marginal
+figure would otherwise stand for the whole capture.
 
 **The lifetime note folds, and says what it folded.** One line per generation
 whatever the size of the tree, stating the interpreter and process counts it
@@ -132,9 +132,6 @@ run-wide, the scope `Total` reports.
 
 ## Consequences
 
-- **Ordinary output changes.** A single-interpreter run's rows go from `12345`
-  to `12345:0`, so the documented examples and the row-level assertions in the
-  suite move with it. This is user-visible and belongs in the CHANGELOG.
 - **The advisory fires on runs that are silent today.** A starved interpreter
   beside a busy one trips the 90% floor on its own figure. That is the defect
   being fixed, and it makes the warning noisier on trees that were this
@@ -203,15 +200,15 @@ run-wide, the scope `Total` reports.
   every interpreter of an admitted process. Rejected: the footprint then has
   no bound in the dimension that grows.
 - **Evict the least recently used ring, and let it resume its entry when it
-  comes back.** What the branch did first. A resumed row printed `Count` and
-  `Sum` over the ring's whole life beside percentiles covering only the
-  stretch since it returned, and no column said so. And a materialized entry
-  outlives its process, so a reused pid resumed a dead one and added a second
-  process's records to it. Settling on exit costs the LRU policy and buys an
-  entry that only one process can write to.
+  comes back.** A resumed row printed `Count` and `Sum` over the ring's whole
+  life beside percentiles covering only the stretch since it returned, and no
+  column said so. And a materialized entry outlives its process, so a reused
+  pid resumed a dead one and added a second process's records to it. Settling
+  on exit costs the LRU policy and buys an entry that only one process can
+  write to.
 - **Give the successor of a reused pid no block at all**, counting its records
-  in `Total` and naming it in the footer. Tried between the two, and it keeps
-  every block honest for a line of code. Rejected: a live process gets no row
-  so that a dead one can keep its heading, and on a target that recycles pids
-  the table thins as the run goes on. The epoch costs one integer per pid and
-  gives both processes what they earned.
+  in `Total` and naming it in the footer. It keeps every block honest for a
+  line of code. Rejected: a live process gets no row so that a dead one can
+  keep its heading, and on a target that recycles pids the table thins as the
+  run goes on. The epoch costs one integer per pid and gives both processes
+  what they earned.

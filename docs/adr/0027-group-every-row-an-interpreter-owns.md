@@ -6,29 +6,29 @@
 
 ## Context
 
-gcmon draws an interpreter as an operating-system thread, and parents
-everything else that interpreter owns to the process track. The thread row
-carries a `ThreadDescriptor` holding the process's row pid and the iid as its
+gcmon drew an interpreter as an operating-system thread, and parented
+everything else that interpreter owned to the process track. The thread row
+carried a `ThreadDescriptor` holding the process's row pid and the iid as its
 `tid`, which is the only way a track descriptor can claim a thread.
 
 The trace processor derives `thread.is_main_thread` from `tid == pid`. gcmon
 numbers row pids from 1, in the order it discovers processes, and CPython
-numbers interpreters from 0, so the flag lands on the interpreter whose iid
+numbers interpreters from 0, so the flag landed on the interpreter whose iid
 equals its process's row pid. Three processes running four interpreters each,
-one workload: it marks iid 1, iid 2 and iid 3. gcmon writes none of the
-target's own threads, so there is no row the flag belongs on.
+one workload: it marked iid 1, iid 2 and iid 3. gcmon writes none of the
+target's own threads, so there was no row the flag belonged on.
 
-A thread row carries no name and no process of its own in the `track` table,
-so a pause reaches the interpreter that ran it only by joining back through
+A thread row carried no name and no process of its own in the `track` table,
+so a pause reached the interpreter that ran it only by joining back through
 `thread_track` and `thread`.
 
-gcmon emits a `GC Metrics` group per `(process, iid)` and parents each to the
-process track, and a trace comes back with one `GC Metrics` row per process
-holding every interpreter's counters. `G0 collected` appears in it once per
-interpreter, identically named, and nothing says which interpreter each
-belongs to. `heap_size` is the one counter a query can attribute, because
-[ADR-0024](0024-an-event-names-the-track-it-is-drawn-on.md) has the converter
-write the interpreter into its track name.
+gcmon emitted a `GC Metrics` group per `(process, iid)` and parented each to
+the process track, and a trace came back with one `GC Metrics` row per process
+holding every interpreter's counters. `G0 collected` appeared in it once per
+interpreter, identically named, and nothing said which interpreter each
+belonged to. `heap_size` was the one counter a query could attribute, because
+under [ADR-0024](0024-an-event-names-the-track-it-is-drawn-on.md) the
+converter wrote the interpreter into its track name.
 
 Two rules govern what the process track does to its children.
 [ADR-0003](0003-gc-metrics-group-track.md) found the first in
@@ -110,9 +110,10 @@ something, and a row exists because an event names it
   subtree carries no event, the process track included. Nothing has to
   suppress the two groups for a process that collected nothing: they are
   already absent.
-- A counter track is named `heap_size` again, so a query matching
-  `name = 'heap_size'` finds it. ADR-0024 broke that match when it qualified
-  the name with the interpreter.
+- A counter track is named `heap_size`, so a query matching
+  `name = 'heap_size'` finds it.
+- `heap_size` has no sibling counter in its interpreter's group, so it still
+  takes no share key ([ADR-0005](0005-counter-y-axis-share-key.md)).
 - **Accepted trade-off:** a reader reaches `heap_size` by expanding
   `Python Interpreters` and then `Interpreter {iid}`, two groups that did not
   exist before.
@@ -131,14 +132,13 @@ something, and a row exists because an event names it
   `Process <pid>` and the group are both slice-shaped, so the name decides
   which of the two leads, and `Process <pid>` sorts first; `rss` is a counter,
   which the same plugin ranks below every slice, so it comes last whatever
-  anything is called. Checked against Perfetto v58.2, the version
-  `tests/perfetto_prebuilt.py` pins.
-- Clauses elsewhere are void and move with this record: ADR-0003's parenting
-  of `GC Metrics` to the process track, ADR-0011's thread-descriptor clause,
-  ADR-0024's `heap_size` qualifier, the top-level placement ADR-0004 decided,
-  ADR-0015's parenting of the loss row, and the track kinds ADR-0002 and
-  ADR-0016 enumerate. ADR-0003's finding stands, and this record is built on
-  it: a custom group buys back the ordering an OS-scoped parent discards.
+  anything is called. Checked against Perfetto v58.2, the version the suite
+  pins.
+- Other records rest on this tree: ADR-0002's descriptor layout, ADR-0003's
+  parent for `GC Metrics`, the `heap_size` row ADR-0004 and ADR-0016 describe,
+  ADR-0011's root descriptor, ADR-0015's loss row and the bare `heap_size`
+  name in ADR-0024. ADR-0003's finding stands, and this record is built on it:
+  a custom group buys back the ordering an OS-scoped parent discards.
 
 ## Alternatives considered
 
@@ -160,17 +160,16 @@ something, and a row exists because an event names it
   reason ADR-0024 rejected the same shape for the `heap_size` name: gcmon is a
   streaming writer and does not know at descriptor time whether a sibling will
   appear.
-- **Name the group `Interpreters`.** What this record shipped with. It reads
-  better and it sorts above `Process <pid>`, which draws a process's
-  interpreters over the process that runs them.
+- **Name the group `Interpreters`.** It reads better. Rejected: it sorts above
+  `Process <pid>`, which draws a process's interpreters over the process that
+  runs them.
 - **Carry the iid as a track argument, so attribution is one join.** The
   descriptor's `description` field reaches the `args` table and would hold it.
   Rejected: `description` is a tooltip a human reads, and a row would then
   carry two sources of truth about who owns it that can disagree.
-- **Keep `tid = iid` and live with the flag.** What gcmon does today, landed
-  2026-09-09 to make the iid readable out of `thread.tid`. It moved the
-  `tid == pid` reading off interpreter 0 onto whichever interpreter equals the
-  row pid rather than retiring it.
+- **Keep `tid = iid` and live with the flag.** It makes the iid readable out
+  of `thread.tid`, and it moved the `tid == pid` reading off interpreter 0
+  onto whichever interpreter equals the row pid rather than retiring it.
 - **Renumber row pids so no iid can equal one.** Moves the collision without
   addressing the thread that should not exist, and ADR-0011 owns the pid
   scheme for reasons that have nothing to do with interpreters.

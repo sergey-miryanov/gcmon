@@ -1,4 +1,4 @@
-# ADR-0008: Split exporters into a buffering base class and a pluggable `EventEncoder`
+# ADR-0008: Split the exporter's lifecycle from a pluggable `EventEncoder`
 
 - **Status:** Accepted
 - **Date:** 2026-06-14
@@ -28,7 +28,7 @@ adding events for a brand-new pid could both pass the check and both emit a
 **`PerfettoExporter` owns the lifecycle:** the two locks, the buffer and flush
 threshold, and `add_event` / `add_instant_event` / `close`.
 
-**`EventEncoder`** (a `Protocol` in `encoder.py`) owns format-specific byte
+**`EventEncoder`** (a `Protocol` in `exporters`) owns format-specific byte
 production through three methods: `open(path)`, `write_events(events)`,
 `close()`. `ProtobufEventEncoder` is its one implementation
 ([ADR-0021](0021-write-one-trace-format.md)), and the protocol stays because
@@ -38,18 +38,16 @@ The exporter constructs its encoder, and its public constructor signature is
 unchanged.
 
 **The `EventEncoder` protocol stays declared, and is typed against nothing.**
-Both callers -- `PerfettoExporter` and `combine` -- name
-`ProtobufEventEncoder`. What ADR-0021 defended when it kept this split is the
-encoder being a separate class that runs with no exporter, no buffer and no
-lock around it, and dropping the base left that untouched. Whether a protocol
-with no annotation left still earns its declaration is a separate question,
-and open.
+Both callers, `PerfettoExporter` and `combine`, name `ProtobufEventEncoder`.
+What ADR-0021 defended when it kept this split is the encoder being a separate
+class that runs with no exporter, no buffer and no lock around it, and
+dropping the base left that untouched.
 
 **Meta building is atomic.** The check and the emit happen inside a single
 critical section under the state lock, which is what closes the race between
 two threads reaching a brand-new pid.
 
-The split settles three further questions:
+The split settles further questions:
 
 - **One place holds the seen-pid set**, `PerfettoTrackState` in the encoder
   ([ADR-0024](0024-an-event-names-the-track-it-is-drawn-on.md)). Exactly one
@@ -84,15 +82,14 @@ The split settles three further questions:
 
 ## Alternatives considered
 
-- **A buffering base class the exporters share.** What this record decided
-  first, and rejected once [ADR-0021](0021-write-one-trace-format.md) left one
-  exporter: the base had a fan-out of one. Meta building had moved to the
-  encoder under [ADR-0024](0024-an-event-names-the-track-it-is-drawn-on.md),
-  taking the seen-pid set and the atomic check-and-emit with it, so what
-  remained to merge was a buffer, two locks and four one-line `_enqueue`
-  calls. The second handle to the encoder went with it: that attribute existed
-  only because the base held the encoder as an `EventEncoder`, and one class
-  holds it at its own type.
+- **A buffering base class the exporters share.** Rejected: with one exporter
+  ([ADR-0021](0021-write-one-trace-format.md)) the base has a fan-out of one.
+  Meta building sits in the encoder
+  ([ADR-0024](0024-an-event-names-the-track-it-is-drawn-on.md)), with the
+  seen-pid set and the atomic check-and-emit, so what is left to merge is a
+  buffer, two locks and four one-line calls. A base holding the encoder as an
+  `EventEncoder` also needs a second handle to it at its own type, which one
+  class does not.
 - **A common base class with abstract encode methods instead of a separate
   protocol object.** Rejected: composition lets the encoder run without an
   exporter, which is what `combine` needs.
@@ -100,6 +97,6 @@ The split settles three further questions:
   double-checked locking that atomic meta building makes unnecessary, and the
   call now happens once per pid, so the serialization is not worth the
   complexity.
-- **Fold `JsonlExporter` / `StdoutExporter` into the same base.** Not done:
-  they consume raw `TGCStatsInfo`, not `TraceEvent`, so the data shapes
-  differ. This remains open work.
+- **Fold `JsonlExporter` / `StdoutExporter` into the same lifecycle.**
+  Rejected: they consume raw `TGCStatsInfo`, not `TraceEvent`, so the data
+  shapes differ.

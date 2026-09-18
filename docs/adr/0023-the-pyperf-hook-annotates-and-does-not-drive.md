@@ -44,9 +44,8 @@ calibrating, and pyperf's bookkeeping between values.
 - **The hook refuses to run without a monitor.** The constructor connects and
   raises pyperf's `HookError`, caught by its loader to print one message and
   exit 1.
-- **One module writes the grammar and reads it.** `src/gcmon/model/marks.py`
-  sits in `model/`, below both the hook that writes a mark and anything that
-  would read one.
+- **One module writes the grammar and reads it.** It sits in `model`, below
+  both the hook that writes a mark and anything that would read one.
 
 ## Consequences
 

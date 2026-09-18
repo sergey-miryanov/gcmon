@@ -8,10 +8,10 @@
 
 ## Context
 
-gcmon emits several counter tracks per generation per thread (`G0 collected`,
-`G0 candidates`, `G0 duration`, `G0 uncollectable`, and the same for G1 and
-G2). The list is long, and an arbitrary order makes it hard to compare one
-metric across generations.
+gcmon emits several counter tracks per generation per interpreter
+(`G0 collected`, `G0 candidates`, `G0 duration`, `G0 uncollectable`, and the
+same for G1 and G2). The list is long, and an arbitrary order makes it hard to
+compare one metric across generations.
 
 Perfetto's mechanism for this is `TrackDescriptor.child_ordering = EXPLICIT`
 on the parent plus `sibling_order_rank` on each child. gcmon set both,
@@ -51,9 +51,9 @@ ranking takes effect *inside* the group.
 
 Ranks come from a single ordered table covering each metric: `collected`,
 `uncollectable` (emitted only when non-zero), `candidates`, `duration`, and
-the rest. `rss` has an entry too, though a `ProcessTrack` draws it where the
-rank is discarded ([ADR-0004](0004-toplevel-shared-counters.md)); `heap_size`
-has none, because its interpreter's group ranks it
+the rest. `rss` has no entry, because a `ProcessTrack` draws it where a rank
+is discarded ([ADR-0004](0004-toplevel-shared-counters.md)); `heap_size` has
+none either, because its interpreter's group ranks it
 ([ADR-0027](0027-group-every-row-an-interpreter-owns.md)). Inserting a metric
 shifts the ranks below it, which is fine: only the relative order matters.
 

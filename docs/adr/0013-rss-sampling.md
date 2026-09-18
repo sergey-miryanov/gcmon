@@ -14,12 +14,12 @@ Correlating GC activity with real memory pressure (is GC driving RSS growth,
 or is RSS growth driving GC?) needs the OS-reported resident set size
 alongside the GC events.
 
-Three constraints shaped the design.
+These constraints shaped the design.
 
 **Cost.** `psutil.Process(pid).memory_info().rss` is cheap on Linux (a `/proc`
-read) but carries syscall overhead on Windows and macOS. The GC poll runs at
-10 Hz by default, and multiplying that by each child pid is a meaningful tax
-for a metric that moves slowly.
+read) but carries syscall overhead on Windows and macOS. A tick runs every 0.1
+s by default, and multiplying that by each child pid is a meaningful tax for a
+metric that moves slowly.
 
 **RSS has no thread.** The other counters went out per `(pid, tid)`, where
 `tid` was the interpreter id. RSS is a process-level number with no thread
@@ -31,15 +31,14 @@ spread a soft-optional dependency across the core.
 
 ## Decision
 
-**Sampling lives in its own class**, `RssSampler` in
-`src/gcmon/monitoring/rss_sampler.py`. It holds the exporter, the interval,
-and the last-sample time. Its only public method is `tick(now_ns, live)`, and
-the timer check is internal. `MonitorLoop` gains one optional constructor
-argument and one line in the loop body. It knows nothing about `psutil`,
-timers, or how a sample turns into an event.
+**Sampling lives in its own class**, `RssSampler` in `monitoring`. It holds
+the exporter, the interval, and the last-sample time. Its only public method
+is `tick(now_ns, live)`, and the timer check is internal. `MonitorLoop` gains
+one optional constructor argument and one line in the loop body. It knows
+nothing about `psutil`, timers, or how a sample turns into an event.
 
 `tick` takes the caller's instant in **nanoseconds**, which both paces the
-round and stamps every sample in it. The loop takes one **stamping**
+sampling and stamps every sample in a pass. The loop takes one **stamping**
 `time.monotonic_ns()` per tick and passes it unconverted, here and to the
 monitor ([ADR-0011](0011-process-lifetime-and-ordering.md),
 [ADR-0017](0017-monitor-owns-the-pid-lifecycle.md)), so nanoseconds reach the
@@ -52,22 +51,23 @@ covers everything a tick emits. `--rss-interval` stays seconds, because an
 operator types it; the sampler converts it once at construction.
 
 **The sampler reads no clock.** It used to stamp each sample with its own
-`time.monotonic_ns()`, spreading a round across however long `psutil` took.
-That spread carried no information: the round walks a `set`, so hash order
+`time.monotonic_ns()`, spreading a pass across however long `psutil` took.
+That spread carried no information: the pass walks a `set`, so hash order
 picked which pid got the earliest timestamp, and on the Perfetto side which
 sibling's lifetime span got clipped. Spans sharing a start nest, so one
-instant per round removes the effect.
+instant per pass removes the effect.
 
-**The sampler callback is injectable**, the same pattern as the cmdline
-provider in `ProtobufEventEncoder`. Tests pass a mock and never touch
-`psutil`. The constructor checks availability **once**: if the import fails,
-it disables the sampler, logs at info level, and `tick()` becomes a no-op. No
-per-sample import guard.
+**The sampler callback is injectable**, the same pattern as the command-line
+provider `ProcessRegistry` takes
+([ADR-0025](0025-create-every-process-in-one-place.md)). Tests pass a mock and
+never touch `psutil`. The constructor checks availability **once**: if the
+import fails, it disables the sampler, logs at info level, and `tick()`
+becomes a no-op. No per-sample import guard.
 
 **Only pids that returned `PollStatus.OK` from the most recent GC poll are
-sampled.** The live set is cleared each iteration, so a pid must pass a fresh
-poll to be sampled. No stale pids, and a process that dies between the poll
-and the RSS read yields nothing.
+sampled.** The live set is cleared each tick, so a pid must pass a fresh poll
+to be sampled. No stale pids, and a process that dies between the poll and the
+RSS read yields nothing.
 
 **RSS belongs to the process and conjures no thread.** A sample names a
 `ProcessTrack(process)`
@@ -78,15 +78,15 @@ the `GC Metrics` group, with the display name `rss`, all by construction.
 
 **Opt-in, with a decoupled interval.** `--rss` / `GCMON_RSS` (truthy: `1`,
 `true`, `yes`, `on`) enables it; `--rss-interval` / `GCMON_RSS_INTERVAL`
-defaults to 1.0 s, independent of the 0.1 s GC poll rate.
+defaults to 1.0 s, independent of the 0.1 s `--rate`.
 
 ## Consequences
 
-- The default 1 Hz sampling costs an order of magnitude less than sampling at
-  the GC poll rate, and RSS does not move fast enough for the resolution to
+- Sampling once a second by default costs an order of magnitude less than
+  sampling every tick, and RSS does not move fast enough for the resolution to
   matter.
 - **A sample is backdated to the start of its tick**, the price of one instant
-  per round. The instant is read before the poll phase and `psutil` runs after
+  per pass. The instant is read before the poll phase and `psutil` runs after
   it, so a value lands up to a whole poll phase before it was read, and
   earlier than every GC record from the same tick. The skew is bounded by how
   long the polls take, which on a wide tree exceeds the 0.1 s rate. Accepted:
@@ -97,11 +97,11 @@ defaults to 1.0 s, independent of the 0.1 s GC poll rate.
 - Missing `psutil`, a dead process, or a permission error each produce no
   sample and no error. `--rss` on a machine without `psutil` is ignored, with
   one info log.
-- **Perfetto-only.** An RSS sample is a no-op on the `EventsExporter` base and
+- **Perfetto-only.** An RSS sample is a no-op on `EventsExporter` and
   `PerfettoExporter` overrides it, so JSONL and stdout carry no RSS. Chrome
-  traces contained the counter event, a side effect of a shared base that
-  nobody validated; the format and the base are both gone
-  ([ADR-0021](0021-write-one-trace-format.md),
+  traces contained the counter event, a side effect nobody validated of the
+  buffering base the two trace exporters shared; that format and that base are
+  both gone ([ADR-0021](0021-write-one-trace-format.md),
   [ADR-0008](0008-buffered-exporter-and-encoder-protocol.md)).
   `RSS_CAPABLE_FORMATS` in the CLI layer names the one format that carries it.
 - **`rss` loses its `sibling_order_rank`.** A `ProcessTrack` owns the counter,
@@ -119,7 +119,7 @@ defaults to 1.0 s, independent of the 0.1 s GC poll rate.
   would manufacture a `ThreadMeta(pid, 0, "Thread 0")` that describes nothing.
   A negative sentinel could not collide, and a `ProcessTrack` says the same
   thing without a number at all (ADR-0024).
-- **Sampling inside `MonitorLoop` at the GC poll rate.** Rejected on cost and
+- **Sampling inside `MonitorLoop` on every tick.** Rejected on cost and
   coupling: ten times the syscalls for a slow-moving metric, and `psutil`
   knowledge pushed into the core loop.
 - **Making RSS always-on.** Rejected: it requires `psutil` and adds syscalls

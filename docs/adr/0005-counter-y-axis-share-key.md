@@ -2,7 +2,8 @@
 
 - **Status:** Accepted
 - **Date:** 2026-06-28
-- **Amended by:** [ADR-0011](0011-process-lifetime-and-ordering.md)
+- **Amended by:** [ADR-0011](0011-process-lifetime-and-ordering.md),
+  [ADR-0027](0027-group-every-row-an-interpreter-owns.md)
 - **Modules:** exporters
 
 ## Context
@@ -22,7 +23,7 @@ it was always the empty submessage.
 All per-generation counter tracks already share a parent, the
 per-`(process, iid)` `GC Metrics` group from
 [ADR-0003](0003-gc-metrics-group-track.md), so the "same parent" half of the
-requirement holds and sharing is scoped to a single process.
+requirement holds and sharing is scoped to a single interpreter.
 
 ## Decision
 
@@ -48,9 +49,10 @@ When a share key is set, the `CounterDescriptor` submessage contains **only**
 field 7. No other `CounterDescriptor` field (`type`, `categories`, `unit`,
 `unit_multiplier`, `is_incremental`, `unit_name`) is written.
 
-**`heap_size` and `rss` get no share key.** Both are drawn on the process
-track rather than inside the group, `heap_size` by the metric set and `rss` by
-the `ProcessTrack` that owns it
+**`heap_size` and `rss` get no share key.** Neither is drawn inside the
+`GC Metrics` group: `heap_size` sits in its interpreter's group
+([ADR-0027](0027-group-every-row-an-interpreter-owns.md)) and `rss` on the
+process track, where the `ProcessTrack` that owns it puts it
 ([ADR-0024](0024-an-event-names-the-track-it-is-drawn-on.md)), so neither has
 a peer to share an axis with. A key there would be a no-op, and omitting it
 keeps the wire format minimal.
@@ -61,19 +63,17 @@ keeps the wire format minimal.
   re-scaling.
 - Y-axis sharing and sibling ordering are independent features; both are
   preserved.
-- Sharing cannot cross processes, because each process has its own
-  `GC Metrics` group and Perfetto requires a shared parent, including two
-  processes that held one pid
+- Sharing crosses neither interpreters nor processes, because each
+  `(process, iid)` has its own `GC Metrics` group and Perfetto requires a
+  shared parent, and two processes that held one pid count as two
   ([ADR-0011](0011-process-lifetime-and-ordering.md)). That is the documented
   scope of the feature.
 - Older trace processors ignore the unknown field, so no write-time version
   gate is needed.
-- **The SQL-level tests are permanently `@pytest.mark.xfail(strict=False)`.**
-  The trace processor does not expose `y_axis_share_key` as a `counter_track`
-  column (established against Perfetto 0.56.0, which is what the tests'
-  `reason` strings still cite). `strict=False` means they flip to passing,
-  rather than to XPASS-and-fail, when a future Perfetto version surfaces it,
-  with no test edit. The wire-level tests are the source of truth.
+- **The SQL-level tests read the key from the stdlib table the UI builds its
+  TrackEvent rows from**, `_track_event_tracks_ordered_groups` in
+  `viz.summary.track_event`, because `counter_track` has no `y_axis_share_key`
+  column. The wire-level tests hold the bytes.
 
 ## Alternatives considered
 

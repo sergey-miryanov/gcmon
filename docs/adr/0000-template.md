@@ -2,6 +2,8 @@
 
 - **Status:** Accepted
 - **Date:** <YYYY-MM-DD the change shipped>
+- **Modules:** <the packages under `src/gcmon/` the decision shapes,
+  ascending, or `tests`>
 
 ## Context
 

@@ -63,7 +63,7 @@ implements are large enough to get their own files anyway:
 `test_perfetto_ordering.py` and `test_perfetto_counter_tracks.py`. Helpers
 shared by more than one of them live in `tests/exporters/perfetto_helpers.py`.
 
-Four rules make this safe:
+These rules make this safe:
 
 - **Every protobuf field number is a named `IntEnum` member**, one enum class
   per proto message, with the ordering and event-type value enums alongside
