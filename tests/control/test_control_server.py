@@ -756,18 +756,26 @@ class TestDrainConnections:
         mock_conn.close.assert_not_called()
 
     def test_drain_processes_messages_round_robin(self, server_not_started: ControlServer) -> None:
-        c1: MagicMock = MagicMock()
-        c1.poll.side_effect = [True, False]
-        c1.recv.return_value = {MSG: MSG_STOP, PID: 1, TS: 12345}
-        c2: MagicMock = MagicMock()
-        c2.poll.side_effect = [True, False]
-        c2.recv.return_value = {MSG: MSG_STOP, PID: 2, TS: 12346}
-        server_not_started._connections.update([c1, c2])
+        """Two messages wait on each connection. A pass takes one from each,
+        so neither child's second message is read before the other's first.
+        Which connection a pass visits first is the set's to decide."""
+        read_from: list[int] = []
+
+        def connection(child: int) -> MagicMock:
+            def recv() -> dict[str, str | int]:
+                read_from.append(child)
+                return {MSG: MSG_STOP, PID: child, TS: 12345}
+
+            conn: MagicMock = MagicMock()
+            conn.poll.side_effect = [True, True, False]
+            conn.recv.side_effect = recv
+            return conn
+
+        server_not_started._connections.update([connection(1), connection(2)])
 
         server_not_started._drain_connections()
 
-        assert server_not_started._enabled.get(1) is False
-        assert server_not_started._enabled.get(2) is False
+        assert [sorted(read_from[:2]), sorted(read_from[2:])] == [[1, 2], [1, 2]]
 
     def test_drain_timeout_expiry(self, server_not_started: ControlServer) -> None:
         """A connection that has data on every round. The clock steps 0.02 s a
