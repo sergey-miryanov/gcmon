@@ -332,6 +332,15 @@ class TestControlServerInternal:
         assert args[1].type == "i"
         assert args[1].ts == 12345
 
+    def test_a_message_for_a_pid_nobody_monitors_is_dropped(
+        self, server_not_started: ControlServer, mock_exporter: MagicMock
+    ) -> None:
+        """The server is handed pid 42. A mark for any other pid has no
+        process to land on."""
+        server_not_started._add_event("test event", 7, 12345)
+
+        mock_exporter.add_instant_event.assert_not_called()
+
     def test_remove_connections_closes_and_removes(
         self, server_not_started: ControlServer, mock_conn: MagicMock
     ) -> None:
