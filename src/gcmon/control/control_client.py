@@ -77,7 +77,7 @@ class ControlClient:
             return
 
         with self._lock:
-            if self._conn is not conn:  # pragma: no cover - a close() between the connect and this lock
+            if self._conn is not conn:
                 return
             try:
                 conn.send(to_send)

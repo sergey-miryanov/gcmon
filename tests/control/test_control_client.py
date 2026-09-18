@@ -3,6 +3,7 @@
 import os
 from collections.abc import Generator
 from itertools import count
+from multiprocessing.connection import Connection
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -132,6 +133,25 @@ class TestSend:
         client._send("test")
         assert client._conn is None
         mock_conn.close.assert_called_once()
+
+    def test_a_close_between_the_connect_and_the_send_sends_nothing(
+        self, client: ControlClient, mock_conn: MagicMock
+    ) -> None:
+        """The close another thread would make in the gap, made here on the
+        way out of the connect. The connection `_send` was handed is closed by
+        then, and a send on it would be an error to swallow."""
+        connect = client._ensure_connected
+
+        def connect_then_lose_it() -> Connection | None:
+            conn = connect()
+            client.close()
+            return conn
+
+        with patch.object(client, "_ensure_connected", side_effect=connect_then_lose_it):
+            client._send("test")
+
+        mock_conn.close.assert_called_once_with()
+        mock_conn.send.assert_not_called()
 
     def test_reconnects_after_cleared_connection(
         self, mock_connection_factory: MagicMock, mock_conn: MagicMock
