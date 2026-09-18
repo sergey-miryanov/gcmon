@@ -159,7 +159,9 @@ class TestConcurrentSend:
         client = ControlClient(server.address)
         try:
             senders = [(i, client) for i in range(N_SENDERS)]
+
             errors = _run_sender_threads(senders, threading.Barrier(N_SENDERS))
+
             _assert_no_thread_errors(errors)
             _assert_no_messages_loss(exporter, N_SENDERS * N_PER_SENDER)
             _assert_no_messages_garbling(exporter)
@@ -173,7 +175,9 @@ class TestConcurrentSend:
         clients = [ControlClient(server.address) for _ in range(N_SENDERS)]
         try:
             senders = [(i, clients[i]) for i in range(N_SENDERS)]
+
             errors = _run_sender_threads(senders, threading.Barrier(N_SENDERS))
+
             _assert_no_thread_errors(errors)
             _assert_no_messages_loss(exporter, N_SENDERS * N_PER_SENDER)
             _assert_send_order_preserved(exporter)
@@ -190,6 +194,7 @@ class TestSendCloseRace:
         client = ControlClient(server.address)
         try:
             errors = _run_send_and_close_threads(client, N_THREADS, LOOP_COUNT)
+
             _assert_no_thread_errors(errors)
         finally:
             client.close()
