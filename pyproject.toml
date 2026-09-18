@@ -127,7 +127,7 @@ exclude_also = [
     "raise NotImplementedError",
     "pass",
 ]
-fail_under = 80
+fail_under = 99
 show_missing = true
 skip_covered = true
 
