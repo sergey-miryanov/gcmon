@@ -97,8 +97,6 @@ class TestPerfettoProtoConstants:
         assert f["name"].number == TrackEventField.NAME
         assert f["counter_value"].number == TrackEventField.COUNTER_VALUE
         assert f["double_counter_value"].number == TrackEventField.DOUBLE_COUNTER_VALUE
-        assert f["timestamp_delta_us"].number == TrackEventField.TIMESTAMP_DELTA_US
-        assert f["timestamp_absolute_us"].number == TrackEventField.TIMESTAMP_ABSOLUTE_US
 
     def test_debug_annotation_field(self) -> None:
         desc = DebugAnnotation.DESCRIPTOR

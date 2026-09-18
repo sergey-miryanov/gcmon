@@ -83,8 +83,6 @@ class TrackEventField(IntEnum):
     NAME = 23
     COUNTER_VALUE = 30
     DOUBLE_COUNTER_VALUE = 44
-    TIMESTAMP_DELTA_US = 1
-    TIMESTAMP_ABSOLUTE_US = 16
 
 
 class DebugAnnotationField(IntEnum):
