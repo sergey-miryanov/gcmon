@@ -544,31 +544,30 @@ class TestProcessesTrack:
 
         assert [r.ts for r in rows] == [first_event]
 
+    @pytest.mark.parametrize("owner_pid", [DEFAULT_PID, _SECOND_PID])
     def test_cmdline_arg_present(
         self,
         trace_processor_with_cmdline: TraceProcessor,
+        owner_pid: int,
     ) -> None:
         """Each ``Process <pid>`` slice on the ``Processes`` track
         carries a ``cmdline`` debug annotation whose value is the
         argv joined with single spaces."""
-        for pid in (DEFAULT_PID, _SECOND_PID):
-            rows = list(
-                trace_processor_with_cmdline.query(
-                    f"SELECT a.string_value AS string_value "
-                    f"FROM args a "
-                    f"WHERE a.flat_key = '{flat_key(CMDLINE)}' "
-                    f"AND a.arg_set_id IN ("
-                    f"  SELECT s.arg_set_id FROM slice s "
-                    f"  JOIN track t ON s.track_id = t.id "
-                    f"  WHERE t.name = '{_PROCESS_LIFETIME_TRACK_NAME}' "
-                    f"  AND s.name = '{process_track_name(proc(pid))}'"
-                    f")"
-                )
+        rows = list(
+            trace_processor_with_cmdline.query(
+                f"SELECT a.string_value AS string_value "
+                f"FROM args a "
+                f"WHERE a.flat_key = '{flat_key(CMDLINE)}' "
+                f"AND a.arg_set_id IN ("
+                f"  SELECT s.arg_set_id FROM slice s "
+                f"  JOIN track t ON s.track_id = t.id "
+                f"  WHERE t.name = '{_PROCESS_LIFETIME_TRACK_NAME}' "
+                f"  AND s.name = '{process_track_name(proc(owner_pid))}'"
+                f")"
             )
-            assert len(rows) == 1, f"expected exactly one debug.cmdline arg for pid {pid}, got {rows}"
-            assert rows[0].string_value == _FAKE_CMDLINE_JOINED, (
-                f"debug.cmdline for pid {pid}: expected {_FAKE_CMDLINE_JOINED!r}, got {rows[0].string_value!r}"
-            )
+        )
+
+        assert [r.string_value for r in rows] == [_FAKE_CMDLINE_JOINED]
 
 
 class TestCrossingProcessSpans:

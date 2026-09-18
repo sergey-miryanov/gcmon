@@ -903,22 +903,24 @@ class TestTheTwoViews:
         assert "got no row" in self._out(capsys, stats, StatsView.FULL)
         assert "got no row" not in self._out(capsys, stats, StatsView.TOTAL)
 
-    def test_the_run_wide_notes_print_under_both(self, capsys: pytest.CaptureFixture[str]) -> None:
-        """Coverage and the lifetime totals are run-wide, so both views print
-        them word for word, and the numbering closes over whatever is left.
-        """
+    @pytest.mark.parametrize("view", [StatsView.TOTAL, StatsView.FULL])
+    def test_the_run_wide_notes_lead_either_view(self, capsys: pytest.CaptureFixture[str], view: StatsView) -> None:
+        """Coverage and the lifetime totals are run-wide, so they come first
+        and the numbering closes over whatever is left."""
+        notes = _notes(self._out(capsys, self._crowded(), view))
+
+        assert "Coverage:" in notes[0]
+        assert "Since each interpreter started" in notes[1]
+        assert [note.split(".", 1)[0] for note in notes[:2]] == ["1", "2"]
+
+    def test_the_run_wide_notes_read_the_same_under_both(self, capsys: pytest.CaptureFixture[str]) -> None:
+        """Word for word, the number aside."""
         stats = self._crowded()
-        bodies = {}
 
-        for view in (StatsView.TOTAL, StatsView.FULL):
-            notes = _notes(self._out(capsys, stats, view))
+        total = _notes(self._out(capsys, stats, StatsView.TOTAL))
+        full = _notes(self._out(capsys, stats, StatsView.FULL))
 
-            assert "Coverage:" in notes[0]
-            assert "Since each interpreter started" in notes[1]
-            assert [note.split(".", 1)[0] for note in notes[:2]] == ["1", "2"]
-            bodies[view] = [note.split(". ", 1)[1] for note in notes[:2]]
-
-        assert bodies[StatsView.TOTAL] == bodies[StatsView.FULL]
+        assert [note.split(". ", 1)[1] for note in total[:2]] == [note.split(". ", 1)[1] for note in full[:2]]
 
     def test_a_run_that_collected_nothing_says_so_in_either_view(self, capsys: pytest.CaptureFixture[str]) -> None:
         for view in (StatsView.TOTAL, StatsView.FULL):

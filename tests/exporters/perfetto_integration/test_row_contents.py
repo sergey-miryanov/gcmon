@@ -514,27 +514,27 @@ class TestRssCounterTrackIntegration:
     """Integration tests verifying RSS counter tracks are populated in
     Perfetto traces and queryable through the trace processor."""
 
+    @pytest.mark.parametrize(("expected_ts", "expected_val"), [(_RSS_TS_1, _RSS_VAL_1), (_RSS_TS_3, _RSS_VAL_3)])
     def test_rss_counter_values_match(
         self,
         trace_processor_with_rss: TraceProcessor,
+        expected_ts: int,
+        expected_val: int,
     ) -> None:
         """Values written via ``add_rss_sample`` must appear in the
         ``counter`` table with the correct timestamp and value."""
-        for expected_ts, expected_val in (
-            (_RSS_TS_1, _RSS_VAL_1),
-            (_RSS_TS_3, _RSS_VAL_3),
-        ):
-            rows = list(
-                trace_processor_with_rss.query(
-                    f"SELECT c.value, c.ts FROM counter c "
-                    f"JOIN counter_track ct ON c.track_id = ct.id "
-                    f"WHERE ct.name = '{RSS}' AND c.ts = {expected_ts}"
-                )
+        rows = list(
+            trace_processor_with_rss.query(
+                f"SELECT c.value, c.ts FROM counter c "
+                f"JOIN counter_track ct ON c.track_id = ct.id "
+                f"WHERE ct.name = '{RSS}' AND c.ts = {expected_ts}"
             )
-            matching = [r for r in rows if abs(r.value - expected_val) < 1]
-            assert matching, (
-                f"no counter row found for ts={expected_ts} val={expected_val}; got {[(r.ts, r.value) for r in rows]}"
-            )
+        )
+
+        matching = [r for r in rows if abs(r.value - expected_val) < 1]
+        assert matching, (
+            f"no counter row found for ts={expected_ts} val={expected_val}; got {[(r.ts, r.value) for r in rows]}"
+        )
 
     def test_rss_counter_outside_gc_metrics_group(
         self,
