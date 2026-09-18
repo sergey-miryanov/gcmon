@@ -193,6 +193,16 @@ class TestTerminateProcessWindows:
 class TestTerminateProcessCommon:
     """Platform-independent terminate_process tests."""
 
+    def test_a_process_that_already_exited_is_left_alone(self, mock_process: Mock) -> None:
+        """Signalling a pid the system may have handed on is the thing to avoid."""
+        mock_process.poll.return_value = 0
+
+        result = terminate_process(process=mock_process)
+
+        assert result == (b"", b"")
+        mock_process.send_signal.assert_not_called()
+        mock_process.communicate.assert_not_called()
+
     def test_each_escalation_is_logged(self, mock_process: Mock, patched_logger: Mock) -> None:
         """A process that never exits walks the whole ladder."""
         mock_process.returncode = None
