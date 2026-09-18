@@ -29,6 +29,7 @@ from gcmon.stats.metrics import (
     MarkAliveMetric,
     PauseMetric,
 )
+from tests.data_helpers import create_instant_msg
 
 
 class TestPauseMetric:
@@ -59,6 +60,14 @@ class TestPauseMetric:
         ts_start, ts_stop = metric.get_values(item)
         assert ts_start == 0
         assert ts_stop == 0
+
+    def test_an_item_that_is_no_collection_reads_as_zero(self) -> None:
+        """An instant carries `ts` and no `ts_start`, so it has no pause."""
+        metric = PauseMetric()
+
+        values = metric.get_values(create_instant_msg(ts=5_000))
+
+        assert values == (0, 0)
 
 
 class TestMarkAliveMetric:
