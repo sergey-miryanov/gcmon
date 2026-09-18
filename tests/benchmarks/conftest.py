@@ -32,7 +32,7 @@ from gcmon.model.names import (
 from tests.helpers import create_mock_incremental_item
 
 
-def make_gc_event(i: int, *, pid: int = 12345, iid: int = 0, gen: int = 0) -> GCStatsInfo:
+def make_gc_event(i: int, *, iid: int = 0, gen: int = 0) -> GCStatsInfo:
     """Build a fully-populated GCStatsInfo resembling a real GC pause record.
 
     All optional phase timestamps are filled in so the trace conversion and

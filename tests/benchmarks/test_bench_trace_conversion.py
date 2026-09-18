@@ -64,7 +64,7 @@ def test_convert_to_trace_format_many_pids(benchmark: BenchmarkFixture) -> None:
     for i in range(EVENT_COUNT):
         pid = 1000 + (i % 16)
         iid = i % 4
-        items.setdefault(pid, []).append(make_gc_event(i, pid=pid, iid=iid, gen=i % 3))
+        items.setdefault(pid, []).append(make_gc_event(i, iid=iid, gen=i % 3))
 
     result = benchmark(convert_to_trace_format, items)
     assert len(result) > EVENT_COUNT

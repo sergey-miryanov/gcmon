@@ -47,7 +47,7 @@ def test_streaming_stats_update_many_pids(benchmark: BenchmarkFixture) -> None:
     # the bound and then declines. The name stays so CodSpeed keeps one series
     # across the bound's move from processes to rings.
     pids = [FAN_OUT_FIRST_PID + (i % 200) for i in range(EVENT_COUNT)]
-    events = [(pid, make_gc_event(i, pid=pid)) for i, pid in enumerate(pids)]
+    events = [(pid, make_gc_event(i)) for i, pid in enumerate(pids)]
 
     def run() -> StreamingStats:
         stats = StreamingStats()
@@ -72,7 +72,7 @@ def test_streaming_stats_retain_wide_fan_out(benchmark: BenchmarkFixture) -> Non
         stats = StreamingStats()
         for pid in range(FAN_OUT_FIRST_PID, FAN_OUT_FIRST_PID + FAN_OUT_PIDS):
             for iid in range(FAN_OUT_IIDS):
-                stats.update(proc(pid), make_gc_event(pid + iid, pid=pid, iid=iid))
+                stats.update(proc(pid), make_gc_event(pid + iid, iid=iid))
         return (stats,), {}
 
     def run(stats: StreamingStats) -> StreamingStats:
