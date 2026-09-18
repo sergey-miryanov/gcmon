@@ -117,7 +117,7 @@ class TestASliceExpandsIntoAPair:
         assert [e.track_event.type for e in events] == [TrackEventType.SLICE_BEGIN, TrackEventType.SLICE_END]
         assert [e.timestamp for e in events] == [1_000, 1_000]
 
-    def test_a_slice_describes_its_track_before_naming_it(self, expansion: Converted) -> None:
+    def test_a_slice_describes_its_process_and_its_row(self, expansion: Converted) -> None:
         descriptors, _ = expansion
         named = [td.name for td in (parse_track_descriptor(d) for d in descriptors) if td is not None and td.name]
         assert ROW_PROCESS_NAME in named
