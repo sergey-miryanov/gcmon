@@ -4,6 +4,7 @@ The marks are driven through a real ``ControlClient`` into a real
 ``ControlServer``, the highest seam that sees one end to end.
 """
 
+import logging
 import os
 import subprocess
 import sys
@@ -25,10 +26,13 @@ from gcmon.model.protocol import TGCStatsInfo, TInstantMsg
 from gcmon.monitoring.events_reader import RemoteEventsReader, TargetUnavailable
 from gcmon.pyperf.hook import (
     ENV_PYPERF_HOOK_CONTROL_TIMEOUT,
+    ENV_PYPERF_HOOK_VERBOSE,
     GCMonitorHook,
     _get_env_pyperf_hook_control_timeout,
+    _setup_logging,
     gcmon_hook,
 )
+from gcmon.support.vocabulary import PROGRAM_NAME
 from tests.helpers import MockExporter, monitored, open_trace_processor, proc
 from tests.monitoring.real_target import target_executable
 
@@ -468,3 +472,43 @@ class TestGetEnvControlTimeout:
     def test_invalid_value_returns_default(self) -> None:
         with patch.dict(os.environ, {ENV_PYPERF_HOOK_CONTROL_TIMEOUT: "not-a-number"}):
             assert _get_env_pyperf_hook_control_timeout() == 10.0
+
+
+@pytest.fixture
+def gcmon_logger() -> Generator[logging.Logger]:
+    """The `gcmon` logger with no handlers, put back as it was afterwards."""
+    logger = logging.getLogger(PROGRAM_NAME)
+    handlers, level = logger.handlers[:], logger.level
+    logger.handlers.clear()
+    yield logger
+    logger.handlers[:] = handlers
+    logger.setLevel(level)
+
+
+class TestTheHooksLogging:
+    """pyperf imports the hook into a worker, where nothing has set logging up."""
+
+    @pytest.mark.parametrize(
+        ("value", "level"),
+        [("1", logging.DEBUG), ("TRUE", logging.DEBUG), ("", logging.WARNING), ("0", logging.WARNING)],
+    )
+    def test_the_variable_picks_the_level(
+        self, gcmon_logger: logging.Logger, monkeypatch: pytest.MonkeyPatch, value: str, level: int
+    ) -> None:
+        monkeypatch.setenv(ENV_PYPERF_HOOK_VERBOSE, value)
+
+        _setup_logging()
+
+        assert (gcmon_logger.level, [handler.level for handler in gcmon_logger.handlers]) == (level, [level])
+
+    def test_a_second_hook_in_one_worker_adds_no_second_handler(
+        self, gcmon_logger: logging.Logger, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """It resets the level of the one that is there."""
+        monkeypatch.delenv(ENV_PYPERF_HOOK_VERBOSE, raising=False)
+        _setup_logging()
+        monkeypatch.setenv(ENV_PYPERF_HOOK_VERBOSE, "1")
+
+        _setup_logging()
+
+        assert [handler.level for handler in gcmon_logger.handlers] == [logging.DEBUG]
