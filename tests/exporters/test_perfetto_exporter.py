@@ -72,6 +72,18 @@ def _count_descriptors(packet_fields: list[TracePacket]) -> int:
     return sum(1 for pf in packet_fields if pf.HasField("track_descriptor"))
 
 
+def _events_ahead_of_their_descriptor(packets: list[TracePacket]) -> list[int]:
+    """The track of every event written before anything described that track."""
+    described: set[int] = set()
+    early: list[int] = []
+    for packet in packets:
+        if packet.HasField("track_descriptor"):
+            described.add(packet.track_descriptor.uuid)
+        elif packet.HasField("track_event") and packet.track_event.track_uuid not in described:
+            early.append(packet.track_event.track_uuid)
+    return early
+
+
 class TestPerfettoExporter:
     def test_init(self, perfetto_exporter: ExporterFactory) -> None:
         exporter, path = perfetto_exporter()
@@ -242,13 +254,17 @@ class TestPerfettoExporter:
 
         assert path.read_bytes() == closed
 
-    def test_descriptors_written_before_events(self, perfetto_exporter: ExporterFactory) -> None:
+    def test_every_track_is_described_before_its_first_event(self, perfetto_exporter: ExporterFactory) -> None:
+        """Track by track, not for the file: the `Processes` descriptor is
+        written at closeout, after other tracks' events."""
         exporter, path = perfetto_exporter()
         exporter.add_event(proc(DEFAULT_PID), create_mock_stats_item())
+
         exporter.close()
 
         packets = _read_trace_packets(path)
-        assert packets[0].HasField("track_descriptor")
+        assert _count_event_type(packets, TrackEventType.SLICE_BEGIN) == 3
+        assert _events_ahead_of_their_descriptor(packets) == []
 
     def test_multiple_processes(self, perfetto_exporter: ExporterFactory) -> None:
         exporter, path = perfetto_exporter()
