@@ -145,7 +145,9 @@ class TestToMappingPartial:
             ts_fill_increment_start=1_000_500,
             ts_fill_increment_stop=1_001_000,
         )
+
         result = to_mapping(item)
+
         assert result[INCREMENT_SIZE] == 500
         assert result[TS_FILL_INCREMENT_START] == 1_000_500
         assert result[TS_FILL_INCREMENT_STOP] == 1_001_000
@@ -167,7 +169,9 @@ class TestToMappingPartial:
             ts_mark_alive_start=1_000_500,
             ts_mark_alive_stop=1_001_000,
         )
+
         result = to_mapping(item)
+
         assert result[ALIVE_SIZE] == 300
         assert result[TS_MARK_ALIVE_START] == 1_000_500
         assert result[TS_MARK_ALIVE_STOP] == 1_001_000
@@ -188,7 +192,9 @@ class TestToMappingPartial:
             ts_deduce_unreachable_start=1_000_500,
             ts_deduce_unreachable_stop=1_001_000,
         )
+
         result = to_mapping(item)
+
         assert result[TS_DEDUCE_UNREACHABLE_START] == 1_000_500
         assert result[TS_DEDUCE_UNREACHABLE_STOP] == 1_001_000
         assert INCREMENT_SIZE not in result
@@ -208,7 +214,9 @@ class TestToMappingPartial:
             ts_finalize_garbage_stop=1_005_000,
             finalized_garbage_count=42,
         )
+
         result = to_mapping(item)
+
         assert result[TS_FINALIZE_GARBAGE_STOP] == 1_005_000
         assert result[FINALIZED_GARBAGE_COUNT] == 42
         assert DELETED_GARBAGE_COUNT not in result
@@ -220,7 +228,9 @@ class TestToMappingPartial:
             ts_delete_garbage_stop=1_009_000,
             deleted_garbage_count=13,
         )
+
         result = to_mapping(item)
+
         assert result[TS_DELETE_GARBAGE_START] == 1_008_000
         assert result[TS_DELETE_GARBAGE_STOP] == 1_009_000
         assert result[DELETED_GARBAGE_COUNT] == 13
@@ -232,7 +242,9 @@ class TestToMappingPartial:
             ts_clear_weakrefs_stop=1_007_000,
             clear_weakrefs_count=7,
         )
+
         result = to_mapping(item)
+
         assert result[TS_CLEAR_WEAKREFS_STOP] == 1_007_000
         assert result[CLEAR_WEAKREFS_COUNT] == 7
         assert FINALIZED_GARBAGE_COUNT not in result
@@ -259,7 +271,9 @@ class TestToMappingPartial:
             ts_delete_garbage_stop=1_009_000,
             deleted_garbage_count=13,
         )
+
         result = to_mapping(item)
+
         assert result[INCREMENT_SIZE] == 500
         assert result[ALIVE_SIZE] == 300
         assert result[TS_MARK_ALIVE_START] == 1_000_500

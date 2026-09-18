@@ -116,7 +116,9 @@ class TestTheTableAgreesWithWhatAConversionWrites:
         `gens`, so neither shows in what one record serialises to.
         """
         path = tmp_path / "written.jsonl"
+
         write_jsonl(path, {1: [create_mock_stats_item(), create_mock_loss_item()]})
+
         written = _keys(json.loads(line) for line in path.read_text(encoding=ENCODING).splitlines())
         assert [f for f in JSONL_FIELDS if f not in written] == []
 
@@ -165,6 +167,7 @@ class TestAGenerationTheTableNeverHeld:
         """Handing back a held generation's name would draw the record as
         that generation, which is worse than raising."""
         beyond = max(GENERATIONS) + 1
+
         assert PAUSE.slice_names[beyond] not in PAUSE.slice_names.values()
         assert PAUSE.categories[beyond] not in PAUSE.categories.values()
 
@@ -172,6 +175,7 @@ class TestAGenerationTheTableNeverHeld:
         """A capture can name as many generations as it likes, and each one
         kept would be a row it grew the table by."""
         beyond = max(GENERATIONS) + 1
+
         assert PAUSE.slice_names[beyond]
         assert PAUSE.categories[beyond]
         assert set(PAUSE.slice_names) == set(GENERATIONS)

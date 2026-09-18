@@ -25,6 +25,7 @@ from gcmon.model.protocol import (
 class TestInstantMsg:
     def test_instant_msg_with_explicit_ts(self) -> None:
         msg = instant_msg("test event", 12345)
+
         assert isinstance(msg, InstantMsg)
         assert msg.type == "i"
         assert msg.name == "test event"
@@ -34,6 +35,7 @@ class TestInstantMsg:
 class TestFromMapping:
     def test_regular_item(self, gc_stats_dict: TMapping) -> None:
         result = from_mapping(gc_stats_dict)
+
         assert isinstance(result, GCStatsInfo)
         assert not has_incremental(result)
         assert result.gen == 0
@@ -49,6 +51,7 @@ class TestFromMapping:
 
     def test_incremental_item(self, incremental_dict: TMapping) -> None:
         result = from_mapping(incremental_dict)
+
         assert isinstance(result, GCStatsInfo)
         # Common fields (always present)
         assert result.gen == 1
@@ -81,6 +84,7 @@ class TestFromMapping:
 
     def test_from_mapping_returns_instant_msg(self, instant_dict: TMapping) -> None:
         result = from_mapping(instant_dict)
+
         assert isinstance(result, InstantMsg)
         assert result.type == "i"
         assert result.name == START_EVENT

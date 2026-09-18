@@ -62,6 +62,7 @@ class TestFencepost:
         """The delta of a cumulative field starts *after* the first record, so
         dropping the fencepost term would under-report by one pause."""
         events = build_run(5)
+
         accumulator.ingest(events)
 
         assert accumulator.exact_pause_ns == true_pause_ns(events, 1, 5)
@@ -71,6 +72,7 @@ class TestFencepost:
         """gcmon cannot tell "ran before we attached" from "lost", so
         collections before the first observed record are outside the span."""
         events = build_run(20)
+
         accumulator.ingest(events[10:])
 
         assert accumulator.exact_count == 10
@@ -84,6 +86,7 @@ class TestGapDetection:
     def test_a_skipped_record_opens_a_gap(self, accumulator: RingAccumulator) -> None:
         events = build_run(3)
         accumulator.ingest([events[0]])
+
         entry = accumulator.ingest([events[2]])
 
         assert entry.lost_count == 1
@@ -95,6 +98,7 @@ class TestGapDetection:
         arrived: the entry says so rather than saying "three of them"."""
         events = build_run(6)
         accumulator.ingest([events[0]])
+
         entry = accumulator.ingest([events[4]])
 
         assert (entry.lost_from, entry.lost_count) == (2, 3)
@@ -106,6 +110,7 @@ class TestGapDetection:
         reaching either would charge a collection twice."""
         events = build_run(3)
         accumulator.ingest([events[0]])
+
         entry = accumulator.ingest([events[2]])
 
         assert entry.lost_from == events[0].collections + 1
@@ -118,6 +123,7 @@ class TestGapDetection:
         that question, derived from the records rather than from the reads."""
         events = build_run(3)
         accumulator.ingest([events[0]])
+
         entry = accumulator.ingest([events[2]])
 
         assert set(msgspec.structs.asdict(entry)) == {
@@ -142,6 +148,7 @@ class TestGapDetection:
         )
 
         accumulator.ingest([first])
+
         entry = accumulator.ingest([third])
 
         assert entry.lost_pause_ns == 0
@@ -149,6 +156,7 @@ class TestGapDetection:
     def test_the_entry_carries_its_generation(self, accumulator: RingAccumulator) -> None:
         events = build_run(3, gen=1)
         accumulator.ingest([events[0]])
+
         entry = accumulator.ingest([events[2]])
 
         assert entry.gen == 1
@@ -162,6 +170,7 @@ class TestGapDetection:
 
     def test_no_gap_before_the_first_record_or_after_the_last(self, accumulator: RingAccumulator) -> None:
         events = build_run(30)
+
         entry = accumulator.ingest(events[10:20])
 
         assert entry.lost_count == 0
@@ -206,6 +215,7 @@ class TestObserveBatch:
         batched = RingAccumulator()
 
         batched.ingest(events[:5])
+
         entry = batched.ingest(events[12:])
 
         assert entry.lost_count == 7
