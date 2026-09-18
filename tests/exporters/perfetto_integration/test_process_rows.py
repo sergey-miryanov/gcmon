@@ -700,9 +700,8 @@ class TestZeroDurationProcessSpans:
         }
 
 
-@pytest.mark.stress
 class TestMultiFlushProcessesTrack:
-    """Multi-flush stress test for the ``Processes`` track slice END.
+    """Multi-flush test for the ``Processes`` track slice END.
 
     When the buffered exporter's ``flush_threshold`` is small enough to
     force many flushes for a single pid, the ``Processes``-track slice

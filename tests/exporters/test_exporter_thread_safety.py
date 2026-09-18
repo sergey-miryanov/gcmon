@@ -432,6 +432,8 @@ class TestExporterThreadSafety:
             proc_descs = capture.count_process_descriptors()
             assert proc_descs == 1, f"[perfetto] expected exactly 1 process descriptor, got {proc_descs}"
 
+
+class TestAddEventAfterClose:
     def test_post_close_add_event_does_not_crash(self, exporter_factory: ExporterFactory, tmp_path: Path) -> None:
         """Calling ``add_event`` after ``close()`` must not raise.
 
@@ -445,7 +447,6 @@ class TestExporterThreadSafety:
         exporter.add_instant_event(proc(MAIN_PID), create_instant_msg(name="post-close", ts=999_999))
 
 
-@pytest.mark.stress
 class TestPerfettoExporterCmdlinePath:
     """A process the registry read no command line for."""
 
