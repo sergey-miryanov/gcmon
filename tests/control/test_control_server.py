@@ -669,11 +669,10 @@ class TestDrainConnections:
         assert mock_conn not in server_not_started._connections
         mock_conn.close.assert_called_once()
 
-    def test_drain_handle_msg_error_is_nonfatal(self) -> None:
-        mock_exporter: MagicMock = MagicMock()
+    def test_drain_handle_msg_error_is_nonfatal(
+        self, server_not_started: ControlServer, mock_exporter: MagicMock
+    ) -> None:
         mock_exporter.add_instant_event.side_effect = ValueError("exporter failure")
-        server_not_started: ControlServer = ControlServer(mock_exporter, monitored(42))
-
         mock_conn: MagicMock = MagicMock()
         mock_conn.poll.side_effect = [True, False]
         mock_conn.recv.return_value = {MSG: MSG_STOP, PID: 42, TS: 12345}
