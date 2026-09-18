@@ -203,6 +203,7 @@ class TestRetain:
 
         ingest(monitor, PID, build_batch(POLL_0))
         assert exporter.events == [], "the retained pid kept its cursors"
+
         ingest(monitor, 999, build_batch(POLL_0))
         assert len(exporter.events) == 15, "the dropped pid started over"
 
@@ -285,6 +286,7 @@ class TestSettlingAnExitedPid:
 
         ingest(monitor, PID, [_record()])
         monitor._forget(PID, 5_000)
+
         ingest(
             monitor,
             PID,

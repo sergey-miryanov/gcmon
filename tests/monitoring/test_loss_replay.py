@@ -594,6 +594,7 @@ class TestAMidWriteSlot:
             reader=FakeEventsReader(),
             wait_policy_factory=no_wait_policy,
         )
+
         monitor._ingest(polled(monitor, PID), batch, ts_poll=1)
 
         assert half_written.ts_start > half_written.ts_stop
@@ -618,6 +619,7 @@ class TestAMidWriteSlot:
             reader=FakeEventsReader(),
             wait_policy_factory=no_wait_policy,
         )
+
         monitor._ingest(polled(monitor, PID), batch, ts_poll=1)
 
         counters = [record.collections for record in recorder.records if record.gen == 0]

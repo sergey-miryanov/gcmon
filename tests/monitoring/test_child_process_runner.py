@@ -93,10 +93,12 @@ class TestChildProcessRunnerInit:
 
     def test_custom_env(self) -> None:
         runner = ChildProcessRunner("script.py", env={"VAR": "val"})
+
         assert runner._env == {"VAR": "val"}
 
     def test_default_values(self) -> None:
         runner = ChildProcessRunner("script.py")
+
         assert runner._is_module is False
         assert runner._passthrough_args == []
         assert runner._process is None
@@ -108,6 +110,7 @@ class TestValidateTarget:
 
     def test_script_not_found(self) -> None:
         runner = ChildProcessRunner("/nonexistent/script.py")
+
         with pytest.raises(FileNotFoundError, match="Script not found"):
             runner._validate_target()
 
@@ -115,6 +118,7 @@ class TestValidateTarget:
         d = tmp_path / "a_directory"
         d.mkdir()
         runner = ChildProcessRunner(str(d))
+
         with pytest.raises(ValueError, match="not a file"):
             runner._validate_target()
 
@@ -123,6 +127,7 @@ class TestValidateTarget:
 
     def test_module_empty(self) -> None:
         runner = ChildProcessRunner("  ", is_module=True)
+
         with pytest.raises(ValueError, match="cannot be empty"):
             runner._validate_target()
 
@@ -130,6 +135,7 @@ class TestValidateTarget:
 class TestBuildCommand:
     def test_script_mode(self, runner: ChildProcessRunner, tmp_path: Path) -> None:
         cmd = runner._build_command()
+
         assert cmd[0] == sys.executable
         assert "-u" in cmd
         script_path = str((tmp_path / "test_script.py").resolve())
@@ -138,17 +144,21 @@ class TestBuildCommand:
 
     def test_module_mode(self, module_runner: ChildProcessRunner) -> None:
         cmd = module_runner._build_command()
+
         assert "-m" in cmd
         assert "my_module" in cmd
 
     def test_with_passthrough_args(self, runner_with_args: ChildProcessRunner) -> None:
         cmd = runner_with_args._build_command()
+
         assert "--verbose" in cmd
         assert "--output=file.json" in cmd
 
     def test_module_mode_with_args(self) -> None:
         runner = ChildProcessRunner("http.server", is_module=True, passthrough_args=["8080"])
+
         cmd = runner._build_command()
+
         assert "-m" in cmd
         assert cmd[cmd.index("-m") + 1] == "http.server"
         assert cmd[-1] == "8080"
@@ -158,12 +168,14 @@ class TestBuildEnv:
     def test_inherits_os_environ(self, runner: ChildProcessRunner) -> None:
         with patch.dict(os.environ, {"EXISTING": "value"}, clear=True):
             env = runner._build_env()
+
             assert env["EXISTING"] == "value"
 
     def test_merges_custom_env(self) -> None:
         runner = ChildProcessRunner("script.py", env={"CUSTOM": "val"})
         with patch.dict(os.environ, {"BASE": "base_val"}, clear=True):
             env = runner._build_env()
+
             assert env["BASE"] == "base_val"
             assert env["CUSTOM"] == "val"
 
@@ -183,11 +195,13 @@ class TestProperties:
 
     def test_is_running_true_when_running(self, runner: ChildProcessRunner, mock_popen: Mock) -> None:
         runner._process = mock_popen
+
         assert runner.is_running is True
 
     def test_returncode_after_terminate(self, runner: ChildProcessRunner, mock_popen: Mock) -> None:
         mock_popen.poll.return_value = 0
         runner._process = mock_popen
+
         assert runner.returncode == 0
 
 
@@ -262,17 +276,21 @@ class TestTerminate:
 
     def test_no_process_returns_empty(self, runner: ChildProcessRunner) -> None:
         result = runner.terminate()
+
         assert result == b""
 
 
 class TestWait:
     def test_wait_no_process(self, runner: ChildProcessRunner) -> None:
         runner.wait(timeout=1.0)
+
         assert runner.returncode is None
 
     def test_wait_exits_normally(self, runner: ChildProcessRunner, mock_popen: Mock) -> None:
         runner._process = mock_popen
+
         runner.wait(timeout=1.0)
+
         mock_popen.wait.assert_called_once_with(timeout=1.0)
 
     def test_wait_timeout_logs_warning(
@@ -281,6 +299,7 @@ class TestWait:
         mock_popen.wait.side_effect = subprocess.TimeoutExpired(cmd="test", timeout=0.1)
 
         runner._process = mock_popen
+
         runner.wait(timeout=0.1)
 
         assert "Timed out waiting for subprocess (PID 99999) to exit after 0.1 seconds" in caplog.text
@@ -291,14 +310,17 @@ class TestClose:
         runner._process = Mock()
 
         runner.close()
+
         mock_runner_terminate.assert_called_once()
 
 
 class TestContextManager:
     def test_enters_and_exits(self, runner: ChildProcessRunner, mock_popen: Mock, mock_runner_terminate: Mock) -> None:
         runner._process = mock_popen
+
         with runner:
             assert runner.is_running
+
         mock_runner_terminate.assert_called_once()
 
     def test_cleanup_on_exception(
@@ -318,7 +340,9 @@ class TestProcessStdoutReader:
         process.stdout = MagicMock()
         process.stdout.readline.return_value = b"data\n"
         reader = ProcessStdoutReader(process)
+
         reader.start()
+
         assert reader._thread.is_alive()
         reader.stop()
 
@@ -328,7 +352,9 @@ class TestProcessStdoutReader:
         process.stdout.readline.return_value = b"data\n"
         reader = ProcessStdoutReader(process)
         reader.start()
+
         reader.stop()
+
         assert not reader._thread.is_alive()
 
     def _reader_over(self, stdout: io.BytesIO | None) -> ProcessStdoutReader:

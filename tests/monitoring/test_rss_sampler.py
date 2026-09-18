@@ -67,7 +67,9 @@ class TestRssSampler:
 
         sampler = RssSampler(exporter, interval=1.0, rss_provider=provider_fn)
         sampler._last_sample_ns = 0
+
         sampler.tick(now_ns=2 * SEC, live={proc(101), proc(102)})
+
         assert sorted(calls) == [101, 102]
         sampled = sorted(call.args for call in exporter.add_rss_sample.call_args_list)
         assert sampled == [(proc(101), 42, 2 * SEC), (proc(102), 42, 2 * SEC)]
@@ -96,7 +98,9 @@ class TestRssSampler:
         exporter = MagicMock()
         sampler = RssSampler(exporter, interval=0.0, rss_provider=_noop_rss_sampler)
         sampler._last_sample_ns = -1 * SEC
+
         sampler.tick(now_ns=0, live={proc(TARGET_PID)})
+
         exporter.add_rss_sample.assert_not_called()
 
     def test_provider_exception_logged(self, caplog: pytest.LogCaptureFixture) -> None:
@@ -110,7 +114,9 @@ class TestRssSampler:
         logger = logging.getLogger(PROGRAM_NAME)
         logger.setLevel(logging.DEBUG)
         sampler._last_sample_ns = -1 * SEC
+
         sampler.tick(now_ns=0, live={proc(TARGET_PID)})
+
         exporter.add_rss_sample.assert_not_called()
         assert "Could not sample RSS for PID 1" in caplog.text
 
@@ -119,7 +125,9 @@ class TestRssSampler:
         exporter = MagicMock()
         sampler = RssSampler(exporter, interval=1.0, rss_provider=lambda pid: 42)
         sampler._last_sample_ns = 0
+
         sampler.tick(now_ns=5 * SEC, live={proc(TARGET_PID)})
+
         assert sampler._last_sample_ns == 5 * SEC
 
     def test_sample_carries_the_instant_the_round_was_given(self) -> None:
@@ -173,7 +181,9 @@ class TestRssSampler:
     def test_default_provider_uses_default_rss_sampler(self) -> None:
         """With rss_provider=None and psutil available, _default_rss_sampler is used."""
         exporter = MagicMock()
+
         sampler = RssSampler(exporter, interval=0.0)
+
         assert sampler._enabled
         assert sampler._provider is _default_rss_sampler
 
@@ -184,9 +194,12 @@ class TestRssSampler:
     ) -> None:
         """When psutil is missing, RssSampler disables and uses _noop_rss_sampler."""
         exporter = MagicMock()
+
         sampler = RssSampler(exporter, interval=0.0)
+
         assert not sampler._enabled
         assert sampler._provider is _noop_rss_sampler
+
         sampler.tick(now_ns=1 * SEC, live={proc(TARGET_PID)})
         exporter.add_rss_sample.assert_not_called()
 
@@ -198,17 +211,23 @@ class TestDefaultRssSamplerMocked:
 
     def test_returns_rss_value(self, mock_psutil: MagicMock) -> None:
         mock_psutil.Process.return_value.memory_info.return_value.rss = 42 * 4096
+
         result = _default_rss_sampler(123)
+
         assert result == 42 * 4096
 
     def test_zero_on_no_such_process(self, mock_psutil: MagicMock) -> None:
         mock_psutil.Process.side_effect = mock_psutil.NoSuchProcess(999)
+
         result = _default_rss_sampler(999)
+
         assert result == 0
 
     def test_zero_on_access_denied(self, mock_psutil: MagicMock) -> None:
         mock_psutil.Process.side_effect = mock_psutil.AccessDenied(999)
+
         result = _default_rss_sampler(999)
+
         assert result == 0
 
 
@@ -217,9 +236,11 @@ class TestDefaultRssSamplerIntegration:
 
     def test_default_sampler_returns_int(self) -> None:
         result = _default_rss_sampler(__import__("os").getpid())
+
         assert isinstance(result, int)
         assert result > 0
 
     def test_default_sampler_zero_for_invalid_pid(self) -> None:
         result = _default_rss_sampler(999_999_999)
+
         assert result == 0

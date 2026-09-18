@@ -86,9 +86,11 @@ class TestEventsMonitorExtra:
 
     def test_context_manager_enter_exit(self, monitor: EventsMonitor, exporter: MockExporter) -> None:
         assert monitor.is_enabled
+
         with monitor as m:
             assert m is monitor
             assert monitor.is_enabled
+
         assert not monitor.is_enabled
 
     def test_poll_updates_stats(
@@ -156,6 +158,7 @@ class TestEventsMonitor:
         item = create_mock_stats_item(ts_start=1_000_000_000, ts_stop=1_005_000_000)
 
         mock_read.return_value = [item]
+
         result = monitor._poll(12345)
 
         assert result.status == PollStatus.OK
@@ -169,6 +172,7 @@ class TestEventsMonitor:
         item3 = create_mock_stats_item(collections=51, ts_start=2_000_000_000, ts_stop=2_005_000_000)
 
         mock_read.return_value = [item1, item2, item3]
+
         monitor._poll(12345)
 
         assert len(exporter.events) == 2
@@ -261,6 +265,7 @@ class TestEventsMonitor:
 
     def test_poll_general_exception(self, monitor: EventsMonitor, mock_read: MagicMock) -> None:
         mock_read.side_effect = ValueError("Unexpected error")
+
         result = monitor._poll(12345)
 
         assert result.status == PollStatus.FAIL
@@ -281,16 +286,20 @@ class TestEventsMonitor:
 
     def test_poll_after_stop(self, monitor: EventsMonitor) -> None:
         monitor.stop()
+
         assert monitor._poll(12345).status == PollStatus.FAIL
 
     def test_stop(self, exporter: MockExporter, monitor: EventsMonitor) -> None:
         monitor.stop()
+
         assert not monitor.is_enabled
         assert exporter._close_called
 
     def test_stop_idempotent(self, monitor: EventsMonitor) -> None:
         monitor.stop()
+
         monitor.stop()
+
         assert not monitor.is_enabled
 
     def test_stop_lets_go_of_every_attachment(
@@ -377,6 +386,7 @@ class TestEventsMonitorReadTime:
         mock_read.return_value = NO_RECORDS
 
         first, second = make_monitor(pid=111), make_monitor(pid=222)
+
         first._poll(111)
         second._poll(222)
 
@@ -634,6 +644,7 @@ class TestTheStopCheck:
         """Shutdown need not wait out a whole process tree. The event behind
         the check belongs to the caller; the monitor only reads it."""
         answers = iter([False, True])
+
         reports = _drive(
             _monitor(exporter),
             listings=[[999]],
@@ -723,6 +734,7 @@ class TestOnePruneOverOneSet:
         """Same tick, same set. A policy outliving the cursor would judge a
         new process on what the old one did."""
         factory = Mock(side_effect=[_policy(True, True, True), _policy(True), _policy(True)])
+
         _drive(
             _monitor(exporter, wait_policy_factory=factory),
             listings=[[999], [], [999]],
@@ -767,6 +779,7 @@ class TestOnePruneOverOneSet:
         reach the trace.
         """
         monitor = _monitor(exporter)
+
         _drive(
             monitor,
             listings=[[999], [], []],
@@ -789,6 +802,7 @@ class TestOnePruneOverOneSet:
         retain pass keeps it and the per-pid forget is what has to drop it."""
         factory = Mock(side_effect=[_policy(True), _policy(False)])
         monitor = _monitor(exporter, wait_policy_factory=factory)
+
         _drive(
             monitor,
             listings=[[999]],
@@ -806,6 +820,7 @@ class TestOnePruneOverOneSet:
         """One set, one pass. The retain call the reader saw is the same set the
         cursors were pruned against, which is what "one prune" means."""
         monitor = _monitor(exporter)
+
         _drive(
             monitor,
             listings=[[999, 888], [999]],
@@ -825,6 +840,7 @@ class TestOnePruneOverOneSet:
         it would make every live child pay to attach again on the next tick,
         which is the cost this seam exists to remove."""
         monitor = _monitor(exporter)
+
         _drive(
             monitor,
             listings=[[999], Exception("cannot enumerate"), [999]],
@@ -905,6 +921,7 @@ class TestProcessLiveness:
             patch("gcmon.monitoring.monitor.time.monotonic_ns", side_effect=lambda: next(reads)),
         ):
             _reader_of(monitor).reads = lambda pid: [_ring(1)[0]]
+
             monitor.tick(TICK_NS, _never_stops)
 
         assert [ts for _pids, ts in exporter.liveness] == [TICK_NS + 40]
@@ -1020,6 +1037,7 @@ class TestARetirementIsReported:
 
     def test_a_pid_the_policy_gave_up_on_is_reported(self, exporter: MockExporter) -> None:
         factory = Mock(side_effect=[_policy(True, True), _policy(True, False)])
+
         _drive(
             _monitor(exporter, wait_policy_factory=factory),
             listings=[[999], [999]],
@@ -1080,6 +1098,7 @@ class TestAPidThePolicyGaveUpOn:
         count held for the wrong reason.
         """
         factory = Mock(side_effect=[_policy(True, True, True), _policy(True, False, False)])
+
         _drive(
             _monitor(exporter, wait_policy_factory=factory),
             listings=[[999], [999], [999]],
@@ -1100,6 +1119,7 @@ class TestAPidThePolicyGaveUpOn:
         loss window for collections that never happened.
         """
         factory = Mock(side_effect=[_policy(True, True, True), _policy(True, False, True)])
+
         _drive(
             _monitor(exporter, wait_policy_factory=factory),
             listings=[[999], [999], [999]],
@@ -1118,6 +1138,7 @@ class TestAPidThePolicyGaveUpOn:
         """Every policy giving up in one tick is how a run ends: nothing
         answered, so nothing is live and nothing holds the run open."""
         factory = Mock(side_effect=[_policy(False), _policy(False)])
+
         reports = _drive(
             _monitor(exporter, wait_policy_factory=factory),
             listings=[[999]],

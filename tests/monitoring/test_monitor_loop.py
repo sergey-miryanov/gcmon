@@ -66,12 +66,16 @@ class TestMonitorLoopInit:
 
     def test_close_sets_stop_event(self, loop: MonitorLoop) -> None:
         assert not loop._stop_event.is_set()
+
         loop.close()
+
         assert loop._stop_event.is_set()
 
     def test_close_idempotent(self, loop: MonitorLoop) -> None:
         loop.close()
+
         loop.close()
+
         assert loop._stop_event.is_set()
 
 
@@ -139,7 +143,9 @@ class TestMonitorLoopRun:
 
     def test_stop_event_set_after_normal_exit(self, loop: MonitorLoop) -> None:
         assert not loop._stop_event.is_set()
+
         loop.run()
+
         assert loop._stop_event.is_set()
 
 
@@ -147,8 +153,10 @@ class TestMonitorLoopContextManager:
     def test_exit_calls_close(self, mock_monitor: MagicMock) -> None:
         loop = MonitorLoop(mock_monitor, Mock(spec=Runner))
         assert not loop._stop_event.is_set()
+
         with loop:
             pass
+
         assert loop._stop_event.is_set()
 
 
@@ -457,6 +465,7 @@ class TestADeadTargetDoesNotExtendTheRun:
         ]
 
         loop = MonitorLoop(monitor, _runner(50), rate=0.001)
+
         loop.run()
 
         assert monitor.tick.call_count == 3, "the loop kept ticking a finished run"

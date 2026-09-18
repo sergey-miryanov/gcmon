@@ -229,6 +229,7 @@ class TestReconstructionAgainstGroundTruth:
     )
     def test_counts_and_pause_sums_are_exact(self, capacity: int, per_tick: int) -> None:
         events = build_run(400)
+
         acc = observe_all(ring_polls(events, capacity, per_tick))[(0, 0)]
 
         assert acc.exact_count == acc.last_collections - acc.first_collections + 1
@@ -280,6 +281,7 @@ class TestOneSpanPerPollInterval:
     @pytest.mark.parametrize(("gap_ns", "per_tick"), PACES)
     def test_a_poll_emits_at_most_one_record(self, gap_ns: int, per_tick: int) -> None:
         ingested = Ingested()
+
         emitted = [
             ingested.poll(batch) for batch in interpreter_polls(build_interleaved_run(2_000, gap_ns=gap_ns), per_tick)
         ]
@@ -363,6 +365,7 @@ class TestTheIntervalIsTheOneBetweenTwoPolls:
 
         ingested = Ingested()
         ingested.poll([events[0]], ts=5_000_000_000)
+
         emitted = ingested.poll([events[4]], ts=6_000_000_000)
 
         assert [(loss.ts_start, loss.ts_stop) for loss in emitted] == [(5_000_000_000, 6_000_000_000)]
@@ -693,6 +696,7 @@ class TestCounterOrderNotClockOrder:
         events = build_run(3)
 
         ingested = Ingested()
+
         ingested.poll([events[0], events[1], self.skewed(events, 2)])
 
         assert ingested[(0, 0)].last_collections == 3
@@ -704,6 +708,7 @@ class TestCounterOrderNotClockOrder:
 
         ingested = Ingested()
         ingested.poll([events[0], events[1], self.skewed(events, 2)])
+
         ingested.poll([events[3]])
 
         assert ingested.gaps_for((0, 0)) == []
@@ -845,6 +850,7 @@ class TestADuplicateCounterInOnePoll:
         first, later = self._pair()
 
         ingested = Ingested()
+
         ingested.poll([first, later])
 
         assert ingested[(0, 0)].last_duration == later.duration
@@ -854,6 +860,7 @@ class TestADuplicateCounterInOnePoll:
         first, later = self._pair()
 
         ingested = Ingested()
+
         ingested.poll([first, later])
 
         assert ingested[(0, 0)].sampled_count == 1
@@ -862,6 +869,7 @@ class TestADuplicateCounterInOnePoll:
         first, later = self._pair()
 
         ingested = Ingested()
+
         ingested.poll([first, later])
 
         assert ingested.gaps_for((0, 0)) == []

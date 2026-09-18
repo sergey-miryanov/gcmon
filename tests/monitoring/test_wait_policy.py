@@ -51,6 +51,7 @@ class TestTheNoWaitPolicyFactory:
 class TestStartupTimeoutPolicy:
     def test_ok_returns_true_sets_alive(self, make_policy: Callable[..., StartupTimeoutPolicy]) -> None:
         policy = make_policy()
+
         assert policy.wait(PollStatus.OK) is True
         assert policy._has_seen_alive
 
@@ -62,6 +63,7 @@ class TestStartupTimeoutPolicy:
     ) -> None:
         mock_monotonic.side_effect = [100.0, 103.0]
         policy = make_policy(5)
+
         assert policy.wait(PollStatus.INVALID_PROCESS) is True
 
     def test_invalid_process_after_timeout(
@@ -69,6 +71,7 @@ class TestStartupTimeoutPolicy:
     ) -> None:
         mock_monotonic.side_effect = [100.0, 110.0]
         policy = make_policy(5)
+
         assert policy.wait(PollStatus.INVALID_PROCESS) is False
 
     def test_invalid_process_at_exact_timeout(
@@ -76,16 +79,19 @@ class TestStartupTimeoutPolicy:
     ) -> None:
         mock_monotonic.side_effect = [100.0, 105.0]
         policy = make_policy(5)
+
         assert policy.wait(PollStatus.INVALID_PROCESS) is False
 
     def test_invalid_process_after_seen_alive(self, make_policy: Callable[..., StartupTimeoutPolicy]) -> None:
         policy = make_policy()
         policy.wait(PollStatus.OK)
+
         assert policy.wait(PollStatus.INVALID_PROCESS) is False
 
     def test_timeout_zero(self, make_policy: Callable[..., StartupTimeoutPolicy], mock_monotonic: Mock) -> None:
         mock_monotonic.side_effect = [100.0, 100.0]
         policy = make_policy(0)
+
         assert policy.wait(PollStatus.INVALID_PROCESS) is False
 
     def test_unknown_status_raises_value_error(self, make_policy: Callable[..., StartupTimeoutPolicy]) -> None:
@@ -94,5 +100,6 @@ class TestStartupTimeoutPolicy:
 
     def test_multiple_ok(self, make_policy: Callable[..., StartupTimeoutPolicy]) -> None:
         policy = make_policy()
+
         assert policy.wait(PollStatus.OK) is True
         assert policy.wait(PollStatus.OK) is True

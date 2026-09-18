@@ -33,6 +33,7 @@ def make_duration_runner() -> Callable[..., DurationRunner]:
 class TestInfinityRunner:
     def test_yields_while_not_stopped(self, infinity_runner: InfinityRunner, stop_never: Callable[[], bool]) -> None:
         gen = infinity_runner.run(stop_never)
+
         next(gen)
         next(gen)
         next(gen)
@@ -42,6 +43,7 @@ class TestInfinityRunner:
         gen = infinity_runner.run(lambda: flag[0])
         next(gen)
         flag[0] = True
+
         with pytest.raises(StopIteration):
             next(gen)
 
@@ -53,7 +55,9 @@ class TestDurationRunner:
         mock_monotonic.side_effect = [0, 0.6]
         runner = make_duration_runner(0.5)
         gen = runner.run(lambda: False)
+
         results = list(gen)
+
         assert len(results) == 1
 
     def test_stops_early_if_stop_flag(self, make_duration_runner: Callable[..., DurationRunner]) -> None:
@@ -61,6 +65,7 @@ class TestDurationRunner:
         gen = make_duration_runner(10).run(lambda: flag[0])
         next(gen)
         flag[0] = True
+
         with pytest.raises(StopIteration):
             next(gen)
 
@@ -68,7 +73,9 @@ class TestDurationRunner:
         mock_monotonic.side_effect = [100.0, 100.01]
         runner = make_duration_runner(0)
         gen = runner.run(lambda: False)
+
         results = list(gen)
+
         assert len(results) == 1
 
     def test_negative_duration(self, make_duration_runner: Callable[..., DurationRunner], mock_monotonic: Mock) -> None:
@@ -76,6 +83,7 @@ class TestDurationRunner:
         runner = make_duration_runner(-1.0)
         gen = runner.run(lambda: False)
         next(gen)
+
         with pytest.raises(StopIteration):
             next(gen)
 

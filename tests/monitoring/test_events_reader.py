@@ -83,6 +83,7 @@ class TestAttachOncePerPid:
         self, remote_reader: RemoteEventsReader, spy: SpyMonitor
     ) -> None:
         remote_reader.read(7)
+
         remote_reader.read(7)
         remote_reader.read(7)
 
@@ -246,7 +247,9 @@ class TestTheExceptionTaxonomy:
 class TestPruning:
     def test_forget_drops_the_attachment(self, remote_reader: RemoteEventsReader, spy: SpyMonitor) -> None:
         remote_reader.read(7)
+
         remote_reader.forget(7)
+
         remote_reader.read(7)
 
         assert attached_pids(spy) == [7, 7]
@@ -275,6 +278,7 @@ class TestPruning:
         remote_reader.read(7)
 
         remote_reader.retain({7, 8})
+
         remote_reader.read(7)
 
         assert attached_pids(spy) == [7]

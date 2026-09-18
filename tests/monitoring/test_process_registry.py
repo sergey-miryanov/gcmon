@@ -145,6 +145,7 @@ class TestTheCommandLine:
         registry = ProcessRegistry(cmdline_provider=lambda pid: next(programs))
         registry.create(100, publish)
         registry.retire(100, 10)
+
         registry.create(100, publish)
 
         assert published == [(Process(100, 1), ("first",)), (Process(100, 2), ("second",))]

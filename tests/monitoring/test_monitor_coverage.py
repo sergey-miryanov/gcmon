@@ -75,6 +75,7 @@ class TestCoverageWarning:
     def test_it_fires_below_the_threshold(self, monitor: EventsMonitor, caplog: pytest.LogCaptureFixture) -> None:
         """Two records read of ten that ran: 20%, under the 90% floor."""
         poll(monitor, PID, [1])
+
         poll(monitor, PID, [10])
 
         assert f"PID {PID} interpreter 0 generation 0: only 20% {ADVISORY}" in caplog.text
@@ -85,6 +86,7 @@ class TestCoverageWarning:
         """225 read of 251 is 89.6%, which rounds to the floor the warning
         fires below. `Cov` has the same hazard and the same answer."""
         poll(monitor, PID, range(1, 225))
+
         poll(monitor, PID, [251])
 
         assert f"only 89% {ADVISORY}" in caplog.text
@@ -95,12 +97,14 @@ class TestCoverageWarning:
         """29 read of 100 is 0.29, and 0.29 * 100 is 28.999999999999996.
         Truncating that alone understates a run by a whole point."""
         poll(monitor, PID, range(1, 29))
+
         poll(monitor, PID, [100])
 
         assert f"only 29% {ADVISORY}" in caplog.text
 
     def test_it_stays_quiet_above_the_threshold(self, monitor: EventsMonitor, caplog: pytest.LogCaptureFixture) -> None:
         poll(monitor, PID, range(1, 100))
+
         poll(monitor, PID, [101])
 
         assert ADVISORY not in caplog.text
@@ -119,6 +123,7 @@ class TestCoverageWarning:
         poll(monitor, PID, [1])
         poll(monitor, OTHER_PID, [1])
         poll(monitor, PID, [10])
+
         poll(monitor, OTHER_PID, [10])
 
         assert caplog.text.count(ADVISORY) == 1
@@ -131,6 +136,7 @@ class TestCoverageWarning:
         what kept this quiet while coverage was keyed per process.
         """
         poll_rings(monitor, PID, ring(range(1, 100), iid=0) + ring([1], iid=1))
+
         poll_rings(monitor, PID, ring([100], iid=0) + ring([10], iid=1))
 
         blended = monitor._stats.pause_totals_by_gen()[0]
@@ -143,6 +149,7 @@ class TestCoverageWarning:
         """Interpreter 0 reads 88 of 100, interpreter 1 two of twenty. One
         warning per run, so it goes to the one worth reading."""
         poll_rings(monitor, PID, ring(range(1, 88), iid=0) + ring([1], iid=1))
+
         poll_rings(monitor, PID, ring([100], iid=0) + ring([20], iid=1))
 
         assert f"PID {PID} interpreter 1 generation 0: only 10% {ADVISORY}" in caplog.text
@@ -158,6 +165,7 @@ class TestCoverageWarning:
         keep that figure for a run that ends at 99%.
         """
         poll(monitor, PID, [1, 2])
+
         poll(monitor, PID, range(4, 104))
 
         assert ADVISORY not in caplog.text
@@ -169,6 +177,7 @@ class TestCoverageWarning:
         ticks to know whether it is keeping up -- so it cannot say whether a
         smaller `--rate` would help. The end-of-run summary can, and does."""
         poll(monitor, PID, [1])
+
         poll(monitor, PID, [10])
 
         assert "reconstructed and exact" in caplog.text
@@ -179,6 +188,7 @@ class TestCoverageWarning:
         recovers ends far above. Stated flatly, it would read as contradicting
         the end-of-run summary's final one."""
         poll(monitor, PID, [1])
+
         poll(monitor, PID, [10])
 
         assert "only 20% of collections observed so far" in caplog.text
@@ -187,6 +197,7 @@ class TestCoverageWarning:
         """An operator cannot act on how many slots the target's ring holds,
         which is why the wording moved."""
         poll(monitor, PID, [1])
+
         poll(monitor, PID, [10])
 
         [warning] = [record.getMessage() for record in caplog.records]
