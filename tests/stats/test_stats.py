@@ -1148,12 +1148,13 @@ class TestTheHeapSizePercentile:
 
         assert stats.heap_size_p99() == 9_000
 
-    def test_two_processes_are_ranked_whatever_order_they_came_in(self) -> None:
-        """The larger mark arrives first. The 99th percentile of two values
-        sits 99% of the way from the smaller to the larger."""
+    @pytest.mark.parametrize("marks", [(2_000, 1_000), (1_000, 2_000)], ids=["larger first", "smaller first"])
+    def test_two_processes_are_ranked_whatever_order_they_came_in(self, marks: tuple[int, int]) -> None:
+        """The 99th percentile of two values sits 99% of the way from the
+        smaller to the larger."""
         stats = StreamingStats()
-        stats.update(proc(TARGET_PID), _pause(heap_size=2_000))
-        stats.update(proc(OTHER_PID), _pause(heap_size=1_000))
+        stats.update(proc(TARGET_PID), _pause(heap_size=marks[0]))
+        stats.update(proc(OTHER_PID), _pause(heap_size=marks[1]))
 
         assert stats.heap_size_p99() == pytest.approx(1_990)
 
