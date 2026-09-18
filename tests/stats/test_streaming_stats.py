@@ -134,6 +134,32 @@ class TestStreamingStatsUpdate:
         assert streaming_stats.metrics[PAUSE_KEY][0].count() == 1
         assert streaming_stats.metrics[PAUSE_KEY][0].sum() == 750
 
+    def test_update_tracks_heap_size(
+        self,
+        streaming_stats: StreamingStats,
+        gc_stats_item_factory: Callable[..., GCStatsInfo],
+    ) -> None:
+        item1 = gc_stats_item_factory(heap_size=1_000_000)
+        item2 = gc_stats_item_factory(heap_size=5_000_000)
+        streaming_stats.update(proc(DEFAULT_PID), item1)
+
+        streaming_stats.update(proc(DEFAULT_PID), item2)
+
+        assert streaming_stats._heap_size[proc(DEFAULT_PID)] == 5_000_000
+
+    def test_update_heap_size_is_max_per_pid(
+        self,
+        streaming_stats: StreamingStats,
+        gc_stats_item_factory: Callable[..., GCStatsInfo],
+    ) -> None:
+        item_small = gc_stats_item_factory(heap_size=100)
+        item_large = gc_stats_item_factory(heap_size=500)
+        streaming_stats.update(proc(DEFAULT_PID), item_large)
+
+        streaming_stats.update(proc(DEFAULT_PID), item_small)
+
+        assert streaming_stats._heap_size[proc(DEFAULT_PID)] == 500
+
 
 class TestStreamingStatsRingTracking:
     """Tests for StreamingStats ring tracking."""

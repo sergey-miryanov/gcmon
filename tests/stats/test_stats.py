@@ -29,12 +29,14 @@ PAUSE_NS: int = 1_000
 """One pause's length. The expected totals below are multiples of it."""
 
 
-def _pause(ns: int = PAUSE_NS, iid: int = 0) -> GCStatsInfo:
+def _pause(ns: int = PAUSE_NS, iid: int = 0, heap_size: int | None = None) -> GCStatsInfo:
     """A gen-0 pause *ns* long, starting at zero.
 
     These tests count pauses and sum their lengths, so nothing else about
     the record carries a claim."""
-    return create_mock_stats_item(iid=iid, gen=0, ts_start=0, ts_stop=ns)
+    if heap_size is None:
+        return create_mock_stats_item(iid=iid, gen=0, ts_start=0, ts_stop=ns)
+    return create_mock_stats_item(iid=iid, gen=0, ts_start=0, ts_stop=ns, heap_size=heap_size)
 
 
 class TestStatsUpdate:
@@ -1112,10 +1114,10 @@ class TestASettledRingNeverReopens:
 
     def _settled_then_late(self) -> StreamingStats:
         stats = StreamingStats()
-        stats.update(proc(TARGET_PID), _pause())
+        stats.update(proc(TARGET_PID), _pause(heap_size=4_000))
         stats.materialize(proc(TARGET_PID))
 
-        stats.update(proc(TARGET_PID), _pause(9_000))
+        stats.update(proc(TARGET_PID), _pause(9_000, heap_size=8_000))
         return stats
 
     def test_the_ring_keeps_one_row(self) -> None:
@@ -1131,6 +1133,9 @@ class TestASettledRingNeverReopens:
 
         assert (stats.count(), stats.pause_totals_by_gen()[0].sampled_pause_ns) == (1, 1_000)
 
+    def test_the_high_water_heap_size_is_left_alone(self) -> None:
+        assert self._settled_then_late().heap_size_p99() == 4_000
+
     def test_a_process_that_is_still_running_takes_the_record(self) -> None:
         """The control: only a settled process turns one away."""
         stats = StreamingStats()
@@ -1139,6 +1144,31 @@ class TestASettledRingNeverReopens:
         stats.update(proc(TARGET_PID), _pause(9_000))
 
         assert stats.pause_totals(proc(TARGET_PID), 0, 0).sampled_count == 2
+
+
+class TestTheHeapSizePercentile:
+    """`heap_size_p99` ranks one high-water mark per process."""
+
+    def test_a_run_with_no_record_has_none(self) -> None:
+        """`None` and not zero, so a caller leaves the metric out."""
+        assert StreamingStats().heap_size_p99() is None
+
+    def test_one_process_gives_its_high_water_mark(self) -> None:
+        stats = StreamingStats()
+        stats.update(proc(TARGET_PID), _pause(heap_size=3_000))
+        stats.update(proc(TARGET_PID), _pause(heap_size=9_000))
+        stats.update(proc(TARGET_PID), _pause(heap_size=5_000))
+
+        assert stats.heap_size_p99() == 9_000
+
+    def test_two_processes_are_ranked_whatever_order_they_came_in(self) -> None:
+        """The larger mark arrives first. The 99th percentile of two values
+        sits 99% of the way from the smaller to the larger."""
+        stats = StreamingStats()
+        stats.update(proc(TARGET_PID), _pause(heap_size=2_000))
+        stats.update(proc(OTHER_PID), _pause(heap_size=1_000))
+
+        assert stats.heap_size_p99() == pytest.approx(1_990)
 
 
 class TestAnInstallWithoutTheSketch:
