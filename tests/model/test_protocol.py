@@ -399,18 +399,15 @@ class TestIsLoss:
 
 
 class TestGuardsAreMutuallyExclusive:
-    def test_exactly_one_guard_claims_each_record_type(
-        self,
-        simple_item: GCStatsInfo,
-        incremental_item: GCStatsInfo,
-        instant_item: InstantMsg,
-        loss_item: LossMsg,
-    ) -> None:
+    @pytest.mark.parametrize("fixture_name", ["simple_item", "incremental_item", "instant_item", "loss_item"])
+    def test_exactly_one_guard_claims_each_record_type(self, request: pytest.FixtureRequest, fixture_name: str) -> None:
         """A record two guards claim takes a different branch depending on
         which guard a call site happens to ask first, and does it silently.
         Keeping them disjoint is cheaper than auditing every dispatch order
         as call sites come and go. Exactly one may hold, for every record
         type, whatever fields those types grow later."""
-        for item in (simple_item, incremental_item, instant_item, loss_item):
-            claims = [is_gc_stats(item), is_instant(item), is_loss(item)]
-            assert claims.count(True) == 1, f"{type(item).__name__} matched {claims}"
+        item = request.getfixturevalue(fixture_name)
+
+        claims = [is_gc_stats(item), is_instant(item), is_loss(item)]
+
+        assert claims.count(True) == 1, f"{type(item).__name__} matched {claims}"

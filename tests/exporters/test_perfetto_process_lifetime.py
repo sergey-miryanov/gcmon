@@ -298,14 +298,15 @@ class TestClipSpansToLaminar:
             clipped_span(TARGET_PID, 500, 500, 500, 500),
         ]
 
-    def test_output_is_sorted_whatever_the_input_order(self) -> None:
+    @pytest.mark.parametrize("order", [(2, 0, 1), (2, 1, 0), (0, 1, 2)])
+    def test_output_is_sorted_whatever_the_input_order(self, order: tuple[int, int, int]) -> None:
         """The result comes back in the sweep's own sort order, not the
         caller's, so ``finalize_perfetto_packets`` can emit it as given."""
         spans = [span(TARGET_PID, 0, 100), span(OTHER_PID, 10, 200), span(THIRD_PID, 20, 300)]
-        expected = [100, 200, 300]
 
-        for permuted in ([spans[2], spans[0], spans[1]], list(reversed(spans)), spans):
-            assert [row.process.pid for row in _clip_spans_to_laminar(permuted)] == expected
+        swept = _clip_spans_to_laminar([spans[i] for i in order])
+
+        assert [row.process.pid for row in swept] == [100, 200, 300]
 
     @pytest.mark.parametrize("seed", range(50))
     def test_invariants_hold_for_random_spans(self, seed: int) -> None:

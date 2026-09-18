@@ -922,9 +922,11 @@ class TestTheTwoViews:
 
         assert [note.split(". ", 1)[1] for note in total[:2]] == [note.split(". ", 1)[1] for note in full[:2]]
 
-    def test_a_run_that_collected_nothing_says_so_in_either_view(self, capsys: pytest.CaptureFixture[str]) -> None:
-        for view in (StatsView.TOTAL, StatsView.FULL):
-            assert "No GC statistics collected." in self._out(capsys, StreamingStats(), view)
+    @pytest.mark.parametrize("view", [StatsView.TOTAL, StatsView.FULL])
+    def test_a_run_that_collected_nothing_says_so_in_either_view(
+        self, capsys: pytest.CaptureFixture[str], view: StatsView
+    ) -> None:
+        assert "No GC statistics collected." in self._out(capsys, StreamingStats(), view)
 
 
 POINTER = "Run with --stats=total for the per-generation breakdown."

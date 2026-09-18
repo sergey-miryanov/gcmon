@@ -47,17 +47,19 @@ class TestDurationText:
     def test_it_reads_as_a_duration(self, ns: int, text: str) -> None:
         assert duration_text(ns) == text
 
-    def test_the_units_multiply_back_to_the_nanoseconds(self) -> None:
+    @pytest.mark.parametrize("ns", [1, 999, 1_000, 3_316_458_100, 86_400_000_000_123])
+    def test_the_units_multiply_back_to_the_nanoseconds(self, ns: int) -> None:
         """Every unit a component carries, against the number it came from.
         A wrong divisor produces text that still looks like a duration."""
         sizes = {"h": 3_600_000_000_000, "m": 60_000_000_000, "s": 1_000_000_000, "ms": 1_000_000, "µs": 1_000}
 
-        for ns in (1, 999, 1_000, 3_316_458_100, 86_400_000_000_123):
-            total = 0
-            for part in duration_text(ns).split():
-                digits = part.rstrip("hmsnµ")
-                total += int(digits) * sizes.get(part.removeprefix(digits), 1)
-            assert total == ns
+        text = duration_text(ns)
+
+        total = 0
+        for part in text.split():
+            digits = part.rstrip("hmsnµ")
+            total += int(digits) * sizes.get(part.removeprefix(digits), 1)
+        assert total == ns
 
 
 class TestSeenText:
