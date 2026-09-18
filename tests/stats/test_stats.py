@@ -107,6 +107,7 @@ class TestStatsMaterialize:
         stats_with_data.materialize()
         assert len(stats_with_data.buffer) == 0
 
+    @pytest.mark.skipif(not HAS_DDSKETCH, reason="ddsketch not installed")
     def test_materialize_disables_sketch(self, stats: Stats) -> None:
         for i in range(10):
             stats.update(float(i))
