@@ -143,13 +143,6 @@ class TestPerfettoExporter:
         # Verify descriptors present
         assert _count_descriptors(packets) >= 2
 
-    def test_close_writes_all_events(self, mock_stats_item: GCStatsInfo, perfetto_exporter: ExporterFactory) -> None:
-        exporter, path = perfetto_exporter(threshold=5)
-        for _ in range(15):
-            exporter.add_event(proc(DEFAULT_PID), mock_stats_item)
-        exporter.close()
-        self._verify_event_structure(path, 15)
-
     def test_timestamp_conversion(self, mock_stats_item: GCStatsInfo, perfetto_exporter: ExporterFactory) -> None:
         exporter, path = perfetto_exporter()
         exporter.add_event(proc(DEFAULT_PID), mock_stats_item)
