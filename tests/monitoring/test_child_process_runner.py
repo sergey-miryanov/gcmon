@@ -199,7 +199,7 @@ class TestStart:
         assert result.pid == 99999
         mock_popen_and_reader.assert_called_once()
 
-    def test_the_relay_is_given_both_of_the_childs_streams(
+    def test_the_relay_is_given_both_of_the_children_streams(
         self, runner: ChildProcessRunner, mock_popen_and_reader: Mock
     ) -> None:
         """One pipe, with stderr folded into it, is all the relay reads."""
