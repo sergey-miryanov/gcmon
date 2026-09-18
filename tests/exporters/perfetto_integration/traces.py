@@ -63,8 +63,6 @@ _UNCOLLECTABLE: int = 2
 
 _CANDIDATES: int = 3
 
-_DURATION: float = 0.005
-
 _TS_START: int = 1_500_000_000
 
 _TS_STOP: int = 1_500_005_000
