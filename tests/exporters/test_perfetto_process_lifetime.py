@@ -928,16 +928,16 @@ class TestARetiredProcessRowGoesOutEarly:
         closeout = finalize_perfetto_packets(state, sequence_id=1)
 
         lifetime_uuid = state.get_or_create_process_lifetime_track_uuid()
-        begins = [
-            (ts, name, annotations)
-            for ts, event_type, name, annotations in lifetime_slices(closeout, lifetime_uuid)
-            if event_type == TrackEventType.SLICE_BEGIN
+        drawn = lifetime_slices(closeout, lifetime_uuid)
+        assert [(ts, event_type, name) for ts, event_type, name, _ in drawn] == [
+            (500, TrackEventType.SLICE_BEGIN, TARGET_ROW_NAME),
+            (1_999, TrackEventType.SLICE_END, TARGET_ROW_NAME),
+            (2_000, TrackEventType.SLICE_BEGIN, OTHER_ROW_NAME),
+            (9_000, TrackEventType.SLICE_END, OTHER_ROW_NAME),
         ]
-        assert [(ts, name) for ts, name, _ in begins] == [
-            (500, TARGET_ROW_NAME),
-            (2_000, OTHER_ROW_NAME),
-        ]
-        assert begins[0][2][REAL_END_TS] == 5_000, "the observed pair is untouched by clipping"
+        retired = drawn[0][3]
+        assert retired[CLIPPED] is True
+        assert retired[REAL_END_TS] == 5_000, "the observed pair is untouched by clipping"
 
     def test_a_process_with_no_span_writes_nothing(self, state: PerfettoTrackState) -> None:
         """gcmon never observed it, so there is nothing to draw."""
