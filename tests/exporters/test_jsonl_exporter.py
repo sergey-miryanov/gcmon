@@ -2,7 +2,7 @@
 
 import json
 
-from gcmon.analysis.jsonl_io import read_jsonl
+from gcmon.analysis import jsonl_io
 from gcmon.control.protocol import START_EVENT, STOP_EVENT
 from gcmon.exporters import JsonlExporter
 from gcmon.model.data import GCStatsInfo
@@ -331,7 +331,7 @@ class TestJsonlLossRecords:
         exporter.add_loss_event(proc(DEFAULT_PID), msg)
         exporter.close()
 
-        assert read_jsonl(path) == {DEFAULT_PID: [msg]}
+        assert jsonl_io.read_jsonl(path) == {DEFAULT_PID: [msg]}
 
     def test_it_names_the_interpreter_that_lost_the_records(self, jsonl_exporter: ExporterFactory) -> None:
         """`iid` is the only thing on the line that says which interpreter
@@ -357,4 +357,4 @@ class TestJsonlLossRecords:
         )
         exporter.close()
 
-        assert read_jsonl(path)[DEFAULT_PID][0] == item
+        assert jsonl_io.read_jsonl(path)[DEFAULT_PID][0] == item
