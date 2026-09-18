@@ -147,6 +147,36 @@ def test_main_subcommands_dispatch(monkeypatch: pytest.MonkeyPatch, handler: str
 
 
 # =============================================================================
+# _split_run_args Tests
+# =============================================================================
+
+
+class TestWhereTheTargetsArgumentsBegin:
+    """`run` hands everything after its target to the target, unparsed."""
+
+    @pytest.mark.parametrize(
+        ("argv", "ours", "theirs"),
+        [
+            ([CMD_RUN, "-v", "-m", "pkg", "-v", "x"], [CMD_RUN, "-v", "-m", "pkg"], ["-v", "x"]),
+            ([CMD_RUN, "--module", "pkg", "x"], [CMD_RUN, "--module", "pkg"], ["x"]),
+            ([CMD_RUN, "-s", "a.py", "--rate", "1"], [CMD_RUN, "-s", "a.py"], ["--rate", "1"]),
+            ([CMD_RUN, "--script", "a.py"], [CMD_RUN, "--script", "a.py"], []),
+            ([CMD_RUN, "--module=pkg", "-v"], [CMD_RUN, "--module=pkg"], ["-v"]),
+            ([CMD_RUN, "-v", "--script=a.py", "x"], [CMD_RUN, "-v", "--script=a.py"], ["x"]),
+        ],
+    )
+    def test_the_split_falls_after_the_target(
+        self, cli_module: types.ModuleType, argv: list[str], ours: list[str], theirs: list[str]
+    ) -> None:
+        assert cli_module._split_run_args(argv) == (ours, theirs)
+
+    def test_with_no_target_everything_is_gcmons(self, cli_module: types.ModuleType) -> None:
+        """argparse then reports the missing target, which it could not do
+        for arguments it was never shown."""
+        assert cli_module._split_run_args([CMD_RUN, "-v", "--rate", "1"]) == ([CMD_RUN, "-v", "--rate", "1"], [])
+
+
+# =============================================================================
 # CLI Help Tests
 # =============================================================================
 
