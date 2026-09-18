@@ -148,6 +148,28 @@ class TestEnvVerbose:
         monkeypatch.setenv(env_module.ENV_VERBOSE, value)
         assert env_module.get_env_verbose() == 1
 
+    @pytest.mark.parametrize("value", ["loud", "false", "off", "2x"])
+    def test_a_word_it_does_not_know_is_quiet(
+        self, monkeypatch: pytest.MonkeyPatch, env_module: types.ModuleType, value: str
+    ) -> None:
+        monkeypatch.setenv(env_module.ENV_VERBOSE, value)
+
+        assert env_module.get_env_verbose() == 0
+
+
+class TestEnvControlName:
+    def test_the_name_is_read_as_written(self, monkeypatch: pytest.MonkeyPatch, env_module: types.ModuleType) -> None:
+        monkeypatch.setenv(env_module.ENV_CONTROL_NAME, "bench-7")
+
+        assert env_module.get_env_control_name() == "bench-7"
+
+    def test_unset_leaves_the_name_to_the_server(
+        self, monkeypatch: pytest.MonkeyPatch, env_module: types.ModuleType
+    ) -> None:
+        monkeypatch.delenv(env_module.ENV_CONTROL_NAME, raising=False)
+
+        assert env_module.get_env_control_name() is None
+
 
 class TestEnvFormat:
     """Tests for GCMON_FORMAT parsing."""
