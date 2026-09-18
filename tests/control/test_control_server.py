@@ -606,6 +606,29 @@ class TestControlServerReaderLoop:
         server_not_started._reader_loop()
         assert server_not_started._connections == set()
 
+    def test_a_stop_in_the_middle_of_a_batch_reads_no_further_connection(
+        self, server_not_started: ControlServer, mock_wait: MagicMock
+    ) -> None:
+        """Two connections come back ready and the stop lands while the first
+        is handled, which is where `close()` sets it. What the second holds is
+        the drain's to read, and its `poll` says there is nothing."""
+
+        def stop_then_answer() -> dict[str, object]:
+            server_not_started._stop_event.set()
+            return {MSG: MSG_STOP, PID: 42, TS: 12345}
+
+        first, second = MagicMock(), MagicMock()
+        first.recv.side_effect = stop_then_answer
+        first.poll.return_value = False
+        second.poll.return_value = False
+        server_not_started._connections.update((first, second))
+        mock_wait.return_value = [first, second]
+
+        server_not_started._reader_loop()
+
+        assert server_not_started._enabled.get(42) is False
+        second.recv.assert_not_called()
+
     def test_reader_loop_drains_pending_messages(
         self, server_not_started: ControlServer, mock_wait_and_stop: MagicMock
     ) -> None:
