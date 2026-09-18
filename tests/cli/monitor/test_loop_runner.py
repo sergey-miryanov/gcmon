@@ -1,5 +1,6 @@
 """Tests for `run_monitoring_loop`."""
 
+import signal
 from unittest.mock import ANY, MagicMock, patch
 
 import pytest
@@ -317,6 +318,25 @@ class TestRunMonitoringLoop:
         exporter = mock_loop_runner_deps["EventsExporterFactory"].return_value.return_value
         sampler_cls.assert_called_once_with(exporter, interval=2.5)
         assert mock_loop_runner_deps["MonitorLoop"].call_args.kwargs["rss_sampler"] is sampler_cls.return_value
+
+    def test_a_signal_closes_the_loop(
+        self,
+        mock_factory: MagicMock,
+        mock_wait_policy_factory: MagicMock,
+        monitoring_options: MagicMock,
+        mock_loop_runner_deps: dict[str, MagicMock],
+    ) -> None:
+        """The handler installed for the run stops the loop and nothing else:
+        the teardown stays with the context stack."""
+        from gcmon.cli.monitor.loop_runner import run_monitoring_loop
+
+        run_monitoring_loop(mock_factory, mock_wait_policy_factory, monitoring_options())
+        handler = mock_loop_runner_deps["replace_signals"].call_args.args[0]
+        loop = mock_loop_runner_deps["MonitorLoop"].return_value
+
+        handler(signal.SIGINT, None)
+
+        loop.close.assert_called_once_with()
 
     def test_monitor_constructed_from_process_exporter_and_stats(
         self,
