@@ -276,6 +276,14 @@ class TestCliVersion:
         monkeypatch.setattr(importlib.metadata, "version", not_installed)
         assert gcmon.__version__ == "0.0.0+unknown"
 
+    def test_any_other_missing_name_is_still_an_attribute_error(self) -> None:
+        """The module `__getattr__` answers for one name and must not swallow
+        the rest: `hasattr` and `from gcmon import x` both rely on the error."""
+        import gcmon
+
+        with pytest.raises(AttributeError, match="no_such_name"):
+            gcmon.no_such_name  # noqa: B018
+
 
 class TestCliMonitor:
     def test_missing_pid(self, gcmon_cli: list[str]) -> None:
