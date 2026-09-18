@@ -27,7 +27,7 @@ from gcmon.support.vocabulary import (
     FORMAT_STDOUT,
 )
 from tests.cli.monitor.conftest import MonitorArgsFactory
-from tests.helpers import assert_valid_perfetto_trace
+from tests.helpers import SUBPROCESS_WATCHDOG, assert_valid_perfetto_trace
 
 
 @pytest.fixture
@@ -374,6 +374,7 @@ class TestCliEnvHelp:
             capture_output=True,
             text=True,
             check=True,
+            timeout=SUBPROCESS_WATCHDOG,
         )
         for var in (ENV_OUTPUT, ENV_RATE, ENV_DURATION, ENV_VERBOSE, ENV_FORMAT):
             assert var in result.stdout
