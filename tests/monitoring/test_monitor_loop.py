@@ -93,9 +93,11 @@ class TestMonitorLoopRun:
         assert mock_monitor.tick.call_count == 3
 
     def test_stop_before_run_skips_the_loop(self, mock_monitor: MagicMock) -> None:
-        runner = Mock(spec=Runner)
-        runner.run.return_value = iter([])
-        loop = MonitorLoop(mock_monitor, runner, rate=0.01)
+        """A real runner, since the loop has no stop check of its own: the
+        runner is what reads the stop. The report ends a run that ticks
+        anyway, so losing the stop fails here instead of hanging."""
+        mock_monitor.tick.return_value = _report(12345, keep_running=False)
+        loop = MonitorLoop(mock_monitor, InfinityRunner(), rate=0.01)
         loop._stop_event.set()
 
         report = loop.run()
