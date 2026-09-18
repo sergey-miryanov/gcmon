@@ -5,6 +5,7 @@ import sys
 import threading
 import time
 from collections.abc import Generator
+from itertools import count
 from multiprocessing.connection import Client, Connection
 from typing import Any
 from unittest.mock import MagicMock, patch
@@ -698,16 +699,18 @@ class TestDrainConnections:
         assert server_not_started._enabled.get(2) is False
 
     def test_drain_timeout_expiry(self, server_not_started: ControlServer) -> None:
+        """A connection that has data on every round. The clock steps 0.02 s a
+        reading, so a 0.05 s drain is two rounds; the ten messages run out
+        before a drain that ignores its deadline can hang the suite."""
         mock_conn: MagicMock = MagicMock()
         mock_conn.poll.return_value = True
-        mock_conn.recv.return_value = {MSG: MSG_STOP, PID: 999, TS: 12345}
+        mock_conn.recv.side_effect = [{MSG: MSG_STOP, PID: 999, TS: 12345}] * 10
         server_not_started._connections.add(mock_conn)
 
-        start = time.monotonic()
-        server_not_started._drain_connections(timeout=0.05)
-        elapsed = time.monotonic() - start
+        with patch("gcmon.control.control_server.time.monotonic", side_effect=count(0.0, 0.02)):
+            server_not_started._drain_connections(timeout=0.05)
 
-        assert elapsed < 1.0
+        assert mock_conn.recv.call_count == 2
         assert server_not_started._enabled.get(999) is False
 
 
