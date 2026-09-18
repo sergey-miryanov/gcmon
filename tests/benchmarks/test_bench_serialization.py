@@ -23,11 +23,10 @@ from gcmon.model.protocol import TGCStatsInfo, TInstantMsg, to_mapping
 
 from .conftest import make_gc_event, make_jsonl_record
 
-pytestmark = pytest.mark.benchmark
-
 EVENT_COUNT = 5_000
 
 
+@pytest.mark.benchmark
 def test_from_mapping_decode(benchmark: BenchmarkFixture) -> None:
     records = [make_jsonl_record(i) for i in range(EVENT_COUNT)]
 
@@ -41,6 +40,7 @@ def test_from_mapping_decode(benchmark: BenchmarkFixture) -> None:
     assert benchmark(run) == EVENT_COUNT
 
 
+@pytest.mark.benchmark
 def test_to_mapping_encode(benchmark: BenchmarkFixture) -> None:
     events = [make_gc_event(i, gen=i % 3) for i in range(EVENT_COUNT)]
 
@@ -54,6 +54,7 @@ def test_to_mapping_encode(benchmark: BenchmarkFixture) -> None:
     assert benchmark(run) == EVENT_COUNT
 
 
+@pytest.mark.benchmark
 def test_json_decode_and_from_mapping(benchmark: BenchmarkFixture) -> None:
     lines = [msgspec.json.encode(make_jsonl_record(i)) for i in range(EVENT_COUNT)]
 
@@ -67,6 +68,7 @@ def test_json_decode_and_from_mapping(benchmark: BenchmarkFixture) -> None:
     assert benchmark(run) == EVENT_COUNT
 
 
+@pytest.mark.benchmark
 def test_read_jsonl(benchmark: BenchmarkFixture, tmp_path: Path) -> None:
     path = tmp_path / "events.jsonl"
     items: dict[int, list[TGCStatsInfo | TInstantMsg]] = {
@@ -78,6 +80,7 @@ def test_read_jsonl(benchmark: BenchmarkFixture, tmp_path: Path) -> None:
     assert sum(len(v) for v in result.values()) == EVENT_COUNT
 
 
+@pytest.mark.benchmark
 def test_convert_jsonl_to_trace_format(benchmark: BenchmarkFixture, tmp_path: Path) -> None:
     path = tmp_path / "events.jsonl"
     items: dict[int, list[TGCStatsInfo | TInstantMsg]] = {

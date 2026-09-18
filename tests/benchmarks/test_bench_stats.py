@@ -19,8 +19,6 @@ from tests.helpers import proc
 
 from .conftest import make_gc_event
 
-pytestmark = pytest.mark.benchmark
-
 EVENT_COUNT = 5_000
 # A tree wide enough for the settling cost to show, at several interpreters per
 # pid: settling walks the rings, not the pids.
@@ -29,6 +27,7 @@ FAN_OUT_IIDS = 3
 FAN_OUT_FIRST_PID = 1_000
 
 
+@pytest.mark.benchmark
 def test_streaming_stats_update_single_pid(benchmark: BenchmarkFixture) -> None:
     events = [make_gc_event(i) for i in range(EVENT_COUNT)]
 
@@ -42,6 +41,7 @@ def test_streaming_stats_update_single_pid(benchmark: BenchmarkFixture) -> None:
     assert result.count() == EVENT_COUNT
 
 
+@pytest.mark.benchmark
 def test_streaming_stats_update_many_pids(benchmark: BenchmarkFixture) -> None:
     # Spread events across more pids than MAX_ACTIVE_RINGS, so the run fills
     # the bound and then declines. The name stays so CodSpeed keeps one series
@@ -59,6 +59,7 @@ def test_streaming_stats_update_many_pids(benchmark: BenchmarkFixture) -> None:
     assert result.count() == EVENT_COUNT
 
 
+@pytest.mark.benchmark
 def test_streaming_stats_retain_wide_fan_out(benchmark: BenchmarkFixture) -> None:
     """A whole fan-out exiting inside one tick.
 
@@ -84,6 +85,7 @@ def test_streaming_stats_retain_wide_fan_out(benchmark: BenchmarkFixture) -> Non
     assert len(result.rings()) == StreamingStats.MAX_ACTIVE_RINGS
 
 
+@pytest.mark.benchmark
 def test_stats_update_and_percentiles(benchmark: BenchmarkFixture) -> None:
     values = [float((i * 7919) % 100_003) for i in range(EVENT_COUNT)]
 
@@ -97,6 +99,7 @@ def test_stats_update_and_percentiles(benchmark: BenchmarkFixture) -> None:
     assert p99 >= p50
 
 
+@pytest.mark.benchmark
 def test_get_quantile_value(benchmark: BenchmarkFixture) -> None:
     buffer = sorted(float((i * 7919) % 100_003) for i in range(EVENT_COUNT))
 

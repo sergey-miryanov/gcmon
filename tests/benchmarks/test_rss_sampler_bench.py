@@ -17,8 +17,6 @@ from pytest_codspeed import BenchmarkFixture
 
 from gcmon.monitoring.rss_sampler import _default_rss_sampler, _noop_rss_sampler
 
-pytestmark = pytest.mark.benchmark
-
 
 @pytest.fixture(scope="module")
 def child_pid() -> Generator[int]:
@@ -40,6 +38,7 @@ def loop(sampler: Callable[[int], int], pid: int) -> int:
     return result
 
 
+@pytest.mark.benchmark
 def test_rss_sampler_read_latency_self(benchmark: BenchmarkFixture) -> None:
     def _run(pid: int) -> int:
         return loop(_default_rss_sampler, pid)
@@ -48,6 +47,7 @@ def test_rss_sampler_read_latency_self(benchmark: BenchmarkFixture) -> None:
     assert result > 0
 
 
+@pytest.mark.benchmark
 def test_rss_sampler_read_latency_child(benchmark: BenchmarkFixture, child_pid: int) -> None:
     def _run(pid: int) -> int:
         return loop(_default_rss_sampler, pid)
@@ -56,6 +56,7 @@ def test_rss_sampler_read_latency_child(benchmark: BenchmarkFixture, child_pid: 
     assert result > 0
 
 
+@pytest.mark.benchmark
 def test_rss_sampler_noop_latency(benchmark: BenchmarkFixture) -> None:
     def _run(pid: int) -> int:
         return loop(_noop_rss_sampler, pid)

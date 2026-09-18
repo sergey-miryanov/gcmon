@@ -22,8 +22,6 @@ from tests.helpers import proc
 
 from .conftest import make_gc_event
 
-pytestmark = pytest.mark.benchmark
-
 PID = 12345
 EVENTS_PER_BATCH = 100
 BATCHES = 10
@@ -44,6 +42,7 @@ def _batches() -> list[list[TraceEvent]]:
     return batches
 
 
+@pytest.mark.benchmark
 def test_write_a_run_of_batches(benchmark: BenchmarkFixture, tmp_path: Path) -> None:
     batches = _batches()
     path = tmp_path / "bench.pftrace"

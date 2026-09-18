@@ -16,13 +16,12 @@ from gcmon.model.protocol import TGCStatsInfo
 from gcmon.monitoring.events_reader import RemoteEventsReader
 from tests.monitoring.test_events_reader import running_target
 
-pytestmark = pytest.mark.benchmark
-
 # Reads per measured call, enough that the work around the call does not set
 # the figure. Both benchmarks repeat the same count, so the pair stays a ratio.
 REPEATS = 50
 
 
+@pytest.mark.benchmark
 def test_remote_reader_reads_a_held_attachment(benchmark: BenchmarkFixture) -> None:
     """The steady state: every read after the first one of a pid.
 
@@ -44,6 +43,7 @@ def test_remote_reader_reads_a_held_attachment(benchmark: BenchmarkFixture) -> N
     assert {r.gen for r in records} == {0, 1, 2}, "a real read yields a row per generation"
 
 
+@pytest.mark.benchmark
 def test_remote_reader_attaches_and_reads(benchmark: BenchmarkFixture) -> None:
     """The first read of a pid, which is what gcmon used to pay every poll.
 
