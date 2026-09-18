@@ -25,7 +25,7 @@ extract_changelog = _load_module()
 
 
 @pytest.fixture
-def fake_changelog(tmp_path: Path) -> Path:
+def fake_changelog(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     p = tmp_path / "CHANGELOG.md"
     p.write_text(
         textwrap.dedent("""\
@@ -43,13 +43,15 @@ def fake_changelog(tmp_path: Path) -> Path:
         """),
         encoding=ENCODING,
     )
+    monkeypatch.setattr(extract_changelog, "CHANGELOG_PATH", p)
     return p
 
 
 @pytest.fixture
-def fake_pyproject(tmp_path: Path) -> Path:
+def fake_pyproject(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     p = tmp_path / "pyproject.toml"
     p.write_bytes(b'[tool.poetry]\nversion = "0.2.0"\n')
+    monkeypatch.setattr(extract_changelog, "PYPROJECT_PATH", p)
     return p
 
 
@@ -61,46 +63,22 @@ class TestResolveVersion:
         assert extract_changelog.resolve_version("v0.2.0a1") == "0.2.0a1"
 
     def test_falls_back_to_pyproject_when_tag_missing(self, fake_pyproject: Path) -> None:
-        original = extract_changelog.PYPROJECT_PATH
-        extract_changelog.PYPROJECT_PATH = fake_pyproject
-        try:
-            assert extract_changelog.resolve_version(None) == "0.2.0"
-        finally:
-            extract_changelog.PYPROJECT_PATH = original
+        assert extract_changelog.resolve_version(None) == "0.2.0"
 
     def test_falls_back_to_pyproject_when_tag_lacks_v_prefix(self, fake_pyproject: Path) -> None:
-        original = extract_changelog.PYPROJECT_PATH
-        extract_changelog.PYPROJECT_PATH = fake_pyproject
-        try:
-            assert extract_changelog.resolve_version("refs/heads/main") == "0.2.0"
-        finally:
-            extract_changelog.PYPROJECT_PATH = original
+        assert extract_changelog.resolve_version("refs/heads/main") == "0.2.0"
 
 
 class TestExtract:
     def test_returns_section_body(self, fake_changelog: Path) -> None:
-        original = extract_changelog.CHANGELOG_PATH
-        extract_changelog.CHANGELOG_PATH = fake_changelog
-        try:
-            assert extract_changelog.extract("0.2.0") == "- new feature\n- bug fix"
-        finally:
-            extract_changelog.CHANGELOG_PATH = original
+        assert extract_changelog.extract("0.2.0") == "- new feature\n- bug fix"
 
     def test_handles_version_with_date_suffix(self, fake_changelog: Path) -> None:
-        original = extract_changelog.CHANGELOG_PATH
-        extract_changelog.CHANGELOG_PATH = fake_changelog
-        try:
-            assert extract_changelog.extract("0.1.0") == "- initial release"
-        finally:
-            extract_changelog.CHANGELOG_PATH = original
+        assert extract_changelog.extract("0.1.0") == "- initial release"
 
     def test_returns_empty_on_miss(self, fake_changelog: Path, capsys: pytest.CaptureFixture[str]) -> None:
-        original = extract_changelog.CHANGELOG_PATH
-        extract_changelog.CHANGELOG_PATH = fake_changelog
-        try:
-            result = extract_changelog.extract("9.9.9")
-        finally:
-            extract_changelog.CHANGELOG_PATH = original
+        result = extract_changelog.extract("9.9.9")
+
         assert result == ""
         captured = capsys.readouterr()
         assert "No changelog section" in captured.err
@@ -108,12 +86,8 @@ class TestExtract:
         assert "0.1.0" in captured.err
 
     def test_word_boundary_prevents_false_match(self, fake_changelog: Path) -> None:
-        original = extract_changelog.CHANGELOG_PATH
-        extract_changelog.CHANGELOG_PATH = fake_changelog
-        try:
-            result = extract_changelog.extract("0.2")
-        finally:
-            extract_changelog.CHANGELOG_PATH = original
+        result = extract_changelog.extract("0.2")
+
         assert result == ""
 
 
@@ -125,17 +99,10 @@ class TestMain:
         capsys: pytest.CaptureFixture[str],
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        original_changelog = extract_changelog.CHANGELOG_PATH
-        original_pyproject = extract_changelog.PYPROJECT_PATH
-        extract_changelog.CHANGELOG_PATH = fake_changelog
-        extract_changelog.PYPROJECT_PATH = fake_pyproject
         monkeypatch.setattr("sys.argv", ["extract_changelog.py"])
         monkeypatch.delenv("GITHUB_OUTPUT", raising=False)
-        try:
-            rc = extract_changelog.main()
-        finally:
-            extract_changelog.CHANGELOG_PATH = original_changelog
-            extract_changelog.PYPROJECT_PATH = original_pyproject
+        rc = extract_changelog.main()
+
         assert rc == 0
         assert capsys.readouterr().out.strip() == "- new feature\n- bug fix"
 
@@ -145,14 +112,10 @@ class TestMain:
         capsys: pytest.CaptureFixture[str],
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        original_changelog = extract_changelog.CHANGELOG_PATH
-        extract_changelog.CHANGELOG_PATH = fake_changelog
         monkeypatch.setattr("sys.argv", ["extract_changelog.py", "v0.1.0"])
         monkeypatch.delenv("GITHUB_OUTPUT", raising=False)
-        try:
-            rc = extract_changelog.main()
-        finally:
-            extract_changelog.CHANGELOG_PATH = original_changelog
+        rc = extract_changelog.main()
+
         assert rc == 0
         assert capsys.readouterr().out.strip() == "- initial release"
 
@@ -167,17 +130,10 @@ class TestMainWritesToGitHubOutput:
     ) -> None:
         out_file = tmp_path / "gh_output"
         out_file.write_text("", encoding=ENCODING)
-        original_changelog = extract_changelog.CHANGELOG_PATH
-        original_pyproject = extract_changelog.PYPROJECT_PATH
-        extract_changelog.CHANGELOG_PATH = fake_changelog
-        extract_changelog.PYPROJECT_PATH = fake_pyproject
         monkeypatch.setenv("GITHUB_OUTPUT", str(out_file))
         monkeypatch.setattr("sys.argv", ["extract_changelog.py"])
-        try:
-            rc = extract_changelog.main()
-        finally:
-            extract_changelog.CHANGELOG_PATH = original_changelog
-            extract_changelog.PYPROJECT_PATH = original_pyproject
+        rc = extract_changelog.main()
+
         assert rc == 0
         content = out_file.read_text(encoding=ENCODING)
         assert content.startswith("body<<EOF\n")
@@ -194,17 +150,10 @@ class TestMainWritesToGitHubOutput:
     ) -> None:
         out_file = tmp_path / "gh_output"
         out_file.write_text("preface=true\n", encoding=ENCODING)
-        original_changelog = extract_changelog.CHANGELOG_PATH
-        original_pyproject = extract_changelog.PYPROJECT_PATH
-        extract_changelog.CHANGELOG_PATH = fake_changelog
-        extract_changelog.PYPROJECT_PATH = fake_pyproject
         monkeypatch.setenv("GITHUB_OUTPUT", str(out_file))
         monkeypatch.setattr("sys.argv", ["extract_changelog.py"])
-        try:
-            rc = extract_changelog.main()
-        finally:
-            extract_changelog.CHANGELOG_PATH = original_changelog
-            extract_changelog.PYPROJECT_PATH = original_pyproject
+        rc = extract_changelog.main()
+
         assert rc == 0
         content = out_file.read_text(encoding=ENCODING)
         assert content.startswith("preface=true\n")
@@ -220,17 +169,10 @@ class TestMainWritesToGitHubOutput:
     ) -> None:
         out_file = tmp_path / "gh_output"
         out_file.write_text("", encoding=ENCODING)
-        original_changelog = extract_changelog.CHANGELOG_PATH
-        original_pyproject = extract_changelog.PYPROJECT_PATH
-        extract_changelog.CHANGELOG_PATH = fake_changelog
-        extract_changelog.PYPROJECT_PATH = fake_pyproject
         monkeypatch.setenv("GITHUB_OUTPUT", str(out_file))
         monkeypatch.setattr("sys.argv", ["extract_changelog.py"])
-        try:
-            rc = extract_changelog.main()
-        finally:
-            extract_changelog.CHANGELOG_PATH = original_changelog
-            extract_changelog.PYPROJECT_PATH = original_pyproject
+        rc = extract_changelog.main()
+
         assert rc == 0
         captured = capsys.readouterr()
         assert captured.out.strip() == "- new feature\n- bug fix"
@@ -242,14 +184,10 @@ class TestMainWritesToGitHubOutput:
         capsys: pytest.CaptureFixture[str],
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
-        original_changelog = extract_changelog.CHANGELOG_PATH
-        extract_changelog.CHANGELOG_PATH = fake_changelog
         monkeypatch.setattr("sys.argv", ["extract_changelog.py", "v9.9.9"])
         monkeypatch.delenv("GITHUB_OUTPUT", raising=False)
-        try:
-            rc = extract_changelog.main()
-        finally:
-            extract_changelog.CHANGELOG_PATH = original_changelog
+        rc = extract_changelog.main()
+
         assert rc == 1
         captured = capsys.readouterr()
         assert captured.out == ""
@@ -263,12 +201,7 @@ class TestMainWritesToGitHubOutput:
     ) -> None:
         out_file = tmp_path / "gh_output"
         out_file.write_text("", encoding=ENCODING)
-        original_changelog = extract_changelog.CHANGELOG_PATH
-        extract_changelog.CHANGELOG_PATH = fake_changelog
         monkeypatch.setenv("GITHUB_OUTPUT", str(out_file))
         monkeypatch.setattr("sys.argv", ["extract_changelog.py", "v9.9.9"])
-        try:
-            extract_changelog.main()
-        finally:
-            extract_changelog.CHANGELOG_PATH = original_changelog
+        extract_changelog.main()
         assert out_file.read_text(encoding=ENCODING) == ""
