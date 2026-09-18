@@ -30,7 +30,7 @@ from gcmon.pyperf.hook import (
     gcmon_hook,
 )
 from tests.helpers import MockExporter, monitored, open_trace_processor, proc
-from tests.monitoring.test_events_reader import target_executable
+from tests.monitoring.real_target import target_executable
 
 
 class Marked(NamedTuple):
