@@ -47,6 +47,19 @@ def _pause(ns: int = PAUSE_NS, iid: int = 0, heap_size: int | None = None) -> GC
     return create_mock_stats_item(iid=iid, gen=0, ts_start=0, ts_stop=ns, heap_size=heap_size)
 
 
+def _one_interpreter() -> StreamingStats:
+    """Three pauses on one interpreter of one process."""
+    stats = StreamingStats()
+    for _ in range(3):
+        stats.update(proc(DEFAULT_PID), _pause())
+    return stats
+
+
+def _notes(out: str) -> list[str]:
+    """The numbered footer notes in a printed table."""
+    return [line for line in out.splitlines() if line[:1].isdigit()]
+
+
 class TestStatsOutput:
     """Tests for print_stats function."""
 
@@ -390,12 +403,6 @@ class TestTheTablePrintsRings:
     keeps apart.
     """
 
-    def _one_interpreter(self) -> StreamingStats:
-        stats = StreamingStats()
-        for _ in range(3):
-            stats.update(proc(DEFAULT_PID), _pause())
-        return stats
-
     def _two_interpreters(self) -> StreamingStats:
         """Same pid, different pause distributions: 1 ms against 20 ms."""
         stats = StreamingStats()
@@ -405,13 +412,13 @@ class TestTheTablePrintsRings:
         return stats
 
     def test_the_header_names_both_fields(self, capsys: pytest.CaptureFixture[str]) -> None:
-        print_stats(self._one_interpreter(), StatsView.FULL)
+        print_stats(_one_interpreter(), StatsView.FULL)
 
         assert table_rows(capsys.readouterr().out)[0][0] == "PID:IID"
 
     def test_an_ordinary_run_still_carries_its_iid(self, capsys: pytest.CaptureFixture[str]) -> None:
         """`12345:0` on a single-interpreter run as much as on a tree."""
-        print_stats(self._one_interpreter(), StatsView.FULL)
+        print_stats(_one_interpreter(), StatsView.FULL)
         labels = [row[0] for row in table_rows(capsys.readouterr().out)]
 
         assert "12345:0" in labels
@@ -420,7 +427,7 @@ class TestTheTablePrintsRings:
     def test_only_the_first_column_moves(self, capsys: pytest.CaptureFixture[str]) -> None:
         """The regression guard: one interpreter of one pid is the whole run,
         so its row and `Total` still agree cell for cell."""
-        print_stats(self._one_interpreter(), StatsView.FULL)
+        print_stats(_one_interpreter(), StatsView.FULL)
         rows = table_rows(capsys.readouterr().out)
 
         total = next(row for row in rows if row[0] == TOTAL_LABEL)
@@ -492,7 +499,7 @@ class TestTheTablePrintsRings:
         assert labels == ["12345:0", "12345:1", "22222:0", "22222:1"]
 
     def test_read_time_belongs_to_no_ring(self, capsys: pytest.CaptureFixture[str]) -> None:
-        stats = self._one_interpreter()
+        stats = _one_interpreter()
         stats.record_read_time(500_000)
 
         print_stats(stats, StatsView.FULL)
@@ -619,9 +626,6 @@ class TestTheFooterNotesAreNumbered:
     wrap across a narrow terminal.
     """
 
-    def _notes(self, out: str) -> list[str]:
-        return [line for line in out.splitlines() if line[:1].isdigit()]
-
     def test_every_note_present_is_numbered_in_order(self, capsys: pytest.CaptureFixture[str]) -> None:
         stats = StreamingStats()
         for _ in range(3):
@@ -630,7 +634,7 @@ class TestTheFooterNotesAreNumbered:
         stats.observe_cumulative(proc(TARGET_PID), 0, 0, 18, 0.02)
 
         print_stats(stats, StatsView.FULL)
-        notes = self._notes(capsys.readouterr().out)
+        notes = _notes(capsys.readouterr().out)
 
         assert [note.split(".", 1)[0] for note in notes] == ["1", "2"]
         assert "Coverage:" in notes[0]
@@ -646,7 +650,7 @@ class TestTheFooterNotesAreNumbered:
         stats.record_loss(proc(TARGET_PID), 0, 0, 7, 7_000_000)
 
         print_stats(stats, StatsView.FULL)
-        notes = self._notes(capsys.readouterr().out)
+        notes = _notes(capsys.readouterr().out)
 
         assert len(notes) == 1
         assert notes[0].startswith("1. Coverage:")
@@ -657,7 +661,7 @@ class TestTheFooterNotesAreNumbered:
 
         print_stats(stats, StatsView.FULL)
 
-        assert self._notes(capsys.readouterr().out) == []
+        assert _notes(capsys.readouterr().out) == []
 
 
 class TestTheCumulativeNoteNamesItsFold:
@@ -791,12 +795,6 @@ class TestTheTwoViews:
         stats.record_read_time(500_000)
         return stats
 
-    def _one_interpreter(self) -> StreamingStats:
-        stats = StreamingStats()
-        for _ in range(3):
-            stats.update(proc(DEFAULT_PID), _pause())
-        return stats
-
     def _crowded(self) -> StreamingStats:
         """A run with all three footer notes: a loss, a cumulative counter and
         one interpreter too many to hold a ring for."""
@@ -812,9 +810,6 @@ class TestTheTwoViews:
     def _out(self, capsys: pytest.CaptureFixture[str], stats: StreamingStats, view: StatsView) -> str:
         print_stats(stats, view)
         return capsys.readouterr().out
-
-    def _notes(self, out: str) -> list[str]:
-        return [line for line in out.splitlines() if line[:1].isdigit()]
 
     def test_total_prints_the_run_and_no_ring(self, capsys: pytest.CaptureFixture[str]) -> None:
         rows = table_rows(self._out(capsys, self._two_interpreters(), StatsView.TOTAL))
@@ -859,7 +854,7 @@ class TestTheTwoViews:
 
     def test_the_views_of_a_single_ring_run_differ_by_one_block(self, capsys: pytest.CaptureFixture[str]) -> None:
         """What `full` adds here is a copy of the roll-up above it."""
-        stats = self._one_interpreter()
+        stats = _one_interpreter()
         total = table_rows(self._out(capsys, stats, StatsView.TOTAL))
         full = table_rows(self._out(capsys, stats, StatsView.FULL))
         added = full[len(total) :]
@@ -881,7 +876,7 @@ class TestTheTwoViews:
         stats = self._crowded()
         bodies = {}
         for view in (StatsView.TOTAL, StatsView.FULL):
-            notes = self._notes(self._out(capsys, stats, view))
+            notes = _notes(self._out(capsys, stats, view))
 
             assert "Coverage:" in notes[0]
             assert "Since each interpreter started" in notes[1]
