@@ -834,6 +834,7 @@ class TestOnePruneOverOneSet:
         reader = _reader_of(monitor)
         assert reader.retained == [frozenset({12345, 999, 888}), frozenset({12345, 999})]
         assert reader.attached == {12345, 999}
+        assert monitor._pids.keys() == {12345, 999}
 
     def test_a_failed_listing_prunes_no_attachment_either(self, exporter: MockExporter) -> None:
         """``None`` from the listing means "no answer". Dropping attachments on
