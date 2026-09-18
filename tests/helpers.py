@@ -442,9 +442,8 @@ def create_jsonl_record(
 def read_jsonl_file(path: Path) -> list[JsonlRecord]:
     """Every record in a JSONL file, blank lines skipped.
 
-    A test that expects the file to hold something wants
-    :func:`assert_valid_jsonl_format` instead; this one returns an empty list
-    for an empty file, which is what a flush-threshold test asserts on.
+    An empty file gives an empty list, which is what a flush-threshold test
+    asserts on.
     """
     assert path.exists(), f"File {path} does not exist"
 
@@ -457,13 +456,6 @@ def read_jsonl_file(path: Path) -> list[JsonlRecord]:
             obj = json.loads(line)
             assert isinstance(obj, dict), f"Line {line_no} in JSONL file should be a JSON object, got {type(obj)}"
             data.append(obj)
-    return data
-
-
-def assert_valid_jsonl_format(file_path: Path) -> list[JsonlRecord]:
-    """The records in a JSONL file, which a caller here expects to hold some."""
-    data = read_jsonl_file(file_path)
-    assert len(data) > 0, f"JSONL file {file_path} is empty"
     return data
 
 
