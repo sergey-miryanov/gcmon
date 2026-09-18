@@ -170,7 +170,8 @@ type TItem = TGCStatsInfo | TInstantMsg | TLossMsg
 
 
 def has_pause_ts(item: object) -> TypeGuard[TGCStatsInfo]:
-    return getattr(item, TS_START, None) is not None
+    # A loss record carries `ts_start` too, and it is no GC record.
+    return is_gc_stats(item) and getattr(item, TS_START, None) is not None
 
 
 def has_incremental(item: object) -> TypeGuard[TIncrementalInfo]:

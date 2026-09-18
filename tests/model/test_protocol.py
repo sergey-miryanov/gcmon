@@ -122,6 +122,11 @@ class TestHasGuards:
     def test_something_that_is_not_a_record_does_not(self) -> None:
         assert not has_pause_ts(SimpleNamespace(gen=0))
 
+    def test_a_loss_record_does_not_either(self, loss_item: LossMsg) -> None:
+        """It carries `ts_start` and `ts_stop` as well, between two polls
+        rather than round a pause."""
+        assert not has_pause_ts(loss_item)
+
     @pytest.mark.parametrize(("guard", "field", "value"), SUB_PHASES, ids=[f[1] for f in SUB_PHASES])
     def test_a_guard_sees_the_field_it_names(self, guard: Guard, field: str, value: int) -> None:
         assert guard(create_mock_stats_item(**{field: value}))
