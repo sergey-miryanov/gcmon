@@ -20,11 +20,12 @@ from tests.helpers import proc
 
 from .conftest import make_gc_event
 
+pytestmark = pytest.mark.benchmark
+
 EVENT_COUNT = 5_000
 ITEM_BATCH = 200
 
 
-@pytest.mark.benchmark
 def test_convert_item_to_trace_format_batch(benchmark: BenchmarkFixture) -> None:
     """Per-item conversion, amortised over a batch.
 
@@ -48,7 +49,6 @@ def test_convert_item_to_trace_format_batch(benchmark: BenchmarkFixture) -> None
     assert benchmark(run) > ITEM_BATCH
 
 
-@pytest.mark.benchmark
 def test_convert_to_trace_format_single_pid(benchmark: BenchmarkFixture) -> None:
     items: dict[int, list[TGCStatsInfo | TInstantMsg]] = {
         12345: [make_gc_event(i, gen=i % 3) for i in range(EVENT_COUNT)]
@@ -58,7 +58,6 @@ def test_convert_to_trace_format_single_pid(benchmark: BenchmarkFixture) -> None
     assert len(result) > EVENT_COUNT
 
 
-@pytest.mark.benchmark
 def test_convert_to_trace_format_many_pids(benchmark: BenchmarkFixture) -> None:
     items: dict[int, list[TGCStatsInfo | TInstantMsg]] = {}
     for i in range(EVENT_COUNT):
