@@ -802,25 +802,27 @@ class TestTheStatsAreRecordedWhateverIsDrawn:
 class TestForgettingAPid:
     """A reused pid must inherit neither a counter nor an interval."""
 
-    def test_forget_drops_the_poll_instant(self) -> None:
-        events = build_run(6)
-
+    def test_the_poll_after_a_forget_reports_no_loss(self) -> None:
+        """Three collections ran between the two records polled here, and a
+        monitor still holding the first poll reports them lost."""
+        first, *_unread, fifth = build_run(5)
         ingested = Ingested()
-        ingested.poll([events[0]], ts=1_000)
+        ingested.poll([first], ts=1_000)
         ingested.monitor._forget(PID, 0)
-        ingested.poll([events[4]], ts=2_000)
 
-        assert ingested.recorder.losses == []
+        emitted = ingested.poll([fifth], ts=2_000)
 
-    def test_retain_drops_it_too(self) -> None:
-        events = build_run(6)
+        assert emitted == []
 
+    def test_the_poll_after_a_retain_without_it_reports_none_either(self) -> None:
+        first, *_unread, fifth = build_run(5)
         ingested = Ingested()
-        ingested.poll([events[0]], ts=1_000)
+        ingested.poll([first], ts=1_000)
         ingested.monitor._retain(set(), 0)
-        ingested.poll([events[4]], ts=2_000)
 
-        assert ingested.recorder.losses == []
+        emitted = ingested.poll([fifth], ts=2_000)
+
+        assert emitted == []
 
 
 class TestADuplicateCounterInOnePoll:
