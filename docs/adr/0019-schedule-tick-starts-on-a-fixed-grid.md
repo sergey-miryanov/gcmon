@@ -24,7 +24,7 @@ the cost of shutdown latency.
 
 **The tick's instant cannot pace the loop.** The loop reads the clock before
 the tick, and the monitor and the RSS sampler both run on that one instant
-([ADR-0011](0011-process-lifetime-and-ordering.md),
+([ADR-0029](0029-report-liveness-and-fold-it-into-the-span.md),
 [ADR-0013](0013-rss-sampling.md)). That instant is fixed before the tick's
 cost is known, and pacing off it is the arithmetic that produced the defect.
 

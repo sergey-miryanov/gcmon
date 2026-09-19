@@ -2,8 +2,8 @@
 
 - **Status:** Accepted
 - **Date:** 2026-06-08
-- **Amended by:** [ADR-0011](0011-process-lifetime-and-ordering.md),
-  [ADR-0025](0025-create-every-process-in-one-place.md)
+- **Amended by:** [ADR-0025](0025-create-every-process-in-one-place.md),
+  [ADR-0028](0028-draw-every-process-a-row-of-its-own.md)
 - **Modules:** exporters, monitoring
 
 ## Context
@@ -48,14 +48,15 @@ description.
 
 **Draw a `Lifetime` slice on the process track itself**, one
 `TYPE_SLICE_BEGIN` / `TYPE_SLICE_END` pair per process spanning the interval
-gcmon observed it ([ADR-0011](0011-process-lifetime-and-ordering.md)). The
-track therefore always holds an event, so it and its description always
-render, and the row says how long gcmon watched the process rather than only
-that it existed.
+gcmon observed it
+([ADR-0029](0029-report-liveness-and-fold-it-into-the-span.md)). The track
+therefore always holds an event, so it and its description always render, and
+the row says how long gcmon watched the process rather than only that it
+existed.
 
 **A process descriptor and a `Lifetime` slice belong to a process, not to a
 pid.** A pid handed on names two processes, each with its own command line to
-render ([ADR-0011](0011-process-lifetime-and-ordering.md)).
+render ([ADR-0028](0028-draw-every-process-a-row-of-its-own.md)).
 
 **A command line is read once per process, where the monitor creates it.**
 Reading it at the first flush instead cost two things: a process that exited

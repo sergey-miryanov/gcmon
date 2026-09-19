@@ -48,7 +48,7 @@ class EventsExporter(ABC):
         The monitor sends this once, when it stops polling a pid: the process
         left the tree, or the wait policy gave up on it. Only the Perfetto
         path acts on it, drawing that process's own row without waiting for
-        the end of the run; see ADR-0011.
+        the end of the run; see ADR-0028.
         """
 
     def add_process_liveness(self, processes: Set[Process], ts_ns: int) -> None:  # noqa: B027
@@ -57,5 +57,5 @@ class EventsExporter(ABC):
 
         One call per monitor tick carries the whole live set. Only the
         Perfetto path acts on it, widening each process's
-        ``Processes``-track span; see ADR-0011.
+        ``Processes``-track span; see ADR-0029.
         """

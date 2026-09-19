@@ -74,7 +74,7 @@ class TestProcessRowLifetimeSlice:
     its slice stack laminar. A process's own row holds one slice and the
     workload's marks, which nest without closing anything, so nothing on it
     can cross and nothing is clipped. The two rows therefore disagree for a
-    clipped process, and this one is the row telling the truth (ADR-0011).
+    clipped process, and this one is the row telling the truth (ADR-0028).
     """
 
     def _lifetimes(self, tp: TraceProcessor) -> dict[str, tuple[int, int]]:
@@ -149,7 +149,7 @@ class TestProcessRowLifetimeSlice:
 
         ``pid`` is on the bar because it is nowhere else a reader can reach:
         ``process.pid`` holds the row's, one gcmon hands out per process so
-        that a pid handed on draws a row per process (ADR-0011)."""
+        that a pid handed on draws a row per process (ADR-0028)."""
         rows = list(
             trace_processor_with_cmdline.query(
                 f"SELECT p.name AS name, a.flat_key AS flat_key, "

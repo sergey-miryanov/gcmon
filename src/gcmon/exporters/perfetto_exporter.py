@@ -40,7 +40,7 @@ class PerfettoExporter(EventsExporter):
         self._flush_threshold = flush_threshold
         self._output_path = output_path
         # Held at its own type: ``record_process_liveness`` is not on the
-        # ``EventEncoder`` protocol. See ADR-0011.
+        # ``EventEncoder`` protocol. See ADR-0029.
         self._encoder = ProtobufEventEncoder(sequence_id=sequence_id, codec=codec)
         self._closed = False
         self._encoder.open(output_path)

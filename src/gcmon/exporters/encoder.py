@@ -112,7 +112,7 @@ class ProtobufEventEncoder:
         gcmon read GC state out of at *ts_ns*.
 
         Kept off the ``EventEncoder`` protocol: a liveness observation is
-        neither a ``TraceEvent`` nor bytes. See ADR-0011. Writes nothing;
+        neither a ``TraceEvent`` nor bytes. See ADR-0029. Writes nothing;
         the observations reach the file at ``close()``.
         """
         for process in processes:
@@ -124,7 +124,7 @@ class ProtobufEventEncoder:
 
         Writes nothing here: the row goes out with the next batch, once the
         events queued ahead of it have reached the span accumulator. See
-        ADR-0011 for what that buys a run killed mid-flight, and
+        ADR-0028 for what that buys a run killed mid-flight, and
         :meth:`record_process_liveness` for why this is kept off the
         ``EventEncoder`` protocol.
         """

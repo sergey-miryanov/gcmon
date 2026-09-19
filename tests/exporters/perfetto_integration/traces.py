@@ -116,7 +116,7 @@ def _process_filter(pid: int) -> str:
     the trace processor gives the same ``upid``.
 
     Scoped on the name, not on ``process.pid``: that column holds the pid
-    gcmon writes for the row rather than the operating system's (ADR-0011).
+    gcmon writes for the row rather than the operating system's (ADR-0028).
     Every fixture using this holds one process per pid, so the unsuffixed
     name is the whole of it; a run that handed a pid on names the successors
     ``Process <pid>#2`` and up.

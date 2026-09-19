@@ -46,7 +46,7 @@ class TestReusedPidDrawsTwoOfEveryRow:
     The wire-level tests pin the bytes gcmon writes. This class asks the
     trace processor what it made of them: two ``ProcessDescriptor`` messages
     carrying one pid could have collapsed to a single ``upid``, and every
-    byte assertion in the suite would still have passed (ADR-0011).
+    byte assertion in the suite would still have passed (ADR-0028).
 
     Every query here scopes on ``upid`` or on the process name. Scoping on
     ``pid`` cannot tell a split from a merge, since the pid is equal by
@@ -87,7 +87,7 @@ class TestReusedPidDrawsTwoOfEveryRow:
         ``GC Pauses`` under a group named ``Interpreter 0``. What keeps their
         pauses apart is the ``upid``: a process row each, since the
         descriptor names the row pid gcmon counted for that process
-        (ADR-0011)."""
+        (ADR-0028)."""
         rows = list(
             reused_pid_trace_processor.query(
                 f"SELECT p.name AS pname, pt.id AS ctrack_id, pt.upid AS upid, s.ts AS ts "
@@ -234,7 +234,7 @@ class TestReusedPidDrawsTwoOfEveryRow:
     ) -> None:
         """Equal names are the whole of the pairing. The epoch reaches no
         column of its own, so this is how a reader joins a span's drawn
-        duration to a per-process aggregate (ADR-0011)."""
+        duration to a per-process aggregate (ADR-0028)."""
         spans = {
             r.name
             for r in reused_pid_trace_processor.query(
@@ -271,7 +271,7 @@ class TestAPidHeldFourTimesDrawsFourRows:
     The trace processor folds the third descriptor on a pid into the second's
     row and opens another for the fourth, so these four processes would come
     back as three rows, one carrying two ``Lifetime`` bars. gcmon writes a pid
-    of its own per process to stop that (ADR-0011), which is why these queries
+    of its own per process to stop that (ADR-0028), which is why these queries
     scope on the name and read the operating system's pid off the ``pid``
     annotation.
     """
@@ -404,7 +404,7 @@ class TestProcessOrderingIntegration:
         change the cardinality.
 
         Scoped on the name: ``process.pid`` is the pid gcmon writes for
-        the row, and each row carries one of its own (ADR-0011).
+        the row, and each row carries one of its own (ADR-0028).
         """
         rows = list(
             trace_processor.query(

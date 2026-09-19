@@ -2,7 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-08-31
-- **Amended by:** [ADR-0011](0011-process-lifetime-and-ordering.md)
+- **Amended by:** [ADR-0028](0028-draw-every-process-a-row-of-its-own.md)
 - **Modules:** cli, control, exporters, model, monitoring
 
 ## Context
@@ -25,12 +25,12 @@ tick, and a pid missing from one report and back in a later one opens a second
 epoch. A gap in those reports is not a departure. The control server
 suppresses a pid and the monitor stops polling it, which drops the pid out of
 every report until it is re-enabled
-([ADR-0011](0011-process-lifetime-and-ordering.md)), and the encoder counts
-one process twice. The control server's own path has no reports to read: it
-takes a pid and a timestamp off the wire and needs the process that held that
-pid then, which may have retired before the message arrived. The epoch would
-also be counted twice over one set of evidence, at the encoder and on
-`StreamingStats`, with nothing but a test to keep the two in step.
+([ADR-0029](0029-report-liveness-and-fold-it-into-the-span.md)), and the
+encoder counts one process twice. The control server's own path has no reports
+to read: it takes a pid and a timestamp off the wire and needs the process
+that held that pid then, which may have retired before the message arrived.
+The epoch would also be counted twice over one set of evidence, at the encoder
+and on `StreamingStats`, with nothing but a test to keep the two in step.
 
 ## Decision
 
@@ -71,8 +71,8 @@ nowhere. They went out under the predecessor already, and filing them under
 the successor would back-date its span to before it existed. Dating them back
 into the closed life instead would widen a span gcmon had stopped observing a
 tick earlier, and leave every retired process open to evidence arriving for it
-later ([ADR-0011](0011-process-lifetime-and-ordering.md)). The monitor counts
-what it drops and says so at debug level.
+later ([ADR-0028](0028-draw-every-process-a-row-of-its-own.md)). The monitor
+counts what it drops and says so at debug level.
 
 **The control plane holds a read-only view, not the registry.** A
 `ProcessLookup` protocol carrying `at` and nothing else lives in `model`,

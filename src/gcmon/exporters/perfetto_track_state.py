@@ -14,7 +14,7 @@ from ..model.trace_event import InterpreterTrack, Track
 
 
 class ProcessSpan(NamedTuple):
-    """The interval one process was observed over (ADR-0011)."""
+    """The interval one process was observed over (ADR-0029)."""
 
     process: Process
     start_ts: int
@@ -67,7 +67,7 @@ class PerfettoTrackState:
     def get_row_pid(self, process: Process) -> int:
         """The pid *process*'s row is written under, gcmon's own.
 
-        One per process rather than one per operating-system pid (ADR-0011).
+        One per process rather than one per operating-system pid (ADR-0028).
         ``Process.pid`` stays the operating system's and reaches the trace as
         an annotation.
         """
@@ -196,7 +196,7 @@ class PerfettoTrackState:
     def update_process_lifetime(self, process: Process, ts: int) -> None:
         """Fold *ts* into the recorded span for *process*: a plain min/max
         over every event and every liveness observation, with no
-        event-kind exception (ADR-0011).
+        event-kind exception (ADR-0029).
         """
         start_ts = self._process_lifetime_start.get(process)
         if start_ts is None or ts < start_ts:

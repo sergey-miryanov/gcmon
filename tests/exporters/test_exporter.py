@@ -16,7 +16,7 @@ from tests.helpers import create_mock_stats_item, proc
 class TestAddProcessLivenessIsPerfettoOnly:
     """Liveness is a ``Processes``-track concern, so every format but
     Perfetto reaches the base no-op on ``EventsExporter`` and comes out
-    byte-identical to a run that never reported any. See ADR-0011."""
+    byte-identical to a run that never reported any. See ADR-0029."""
 
     def _write(self, path: Path, exporter: EventsExporter, *, with_liveness: bool) -> bytes:
         exporter.add_event(proc(100), create_mock_stats_item())

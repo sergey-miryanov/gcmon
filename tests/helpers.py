@@ -217,7 +217,7 @@ class MockExporter(EventsExporter):
         # and `events` shows neither.
         self.events_by_pid: dict[int, list[TGCStatsInfo]] = {}
         self.loss_events: list[tuple[int, TLossMsg]] = []
-        # One entry per tick that observed anything (ADR-0011).
+        # One entry per tick that observed anything (ADR-0029).
         self.liveness: list[tuple[Set[int], int]] = []
         # One entry per process gcmon let go of, in the order it did.
         self.retired: list[Process] = []

@@ -146,7 +146,7 @@ def _pause_row(tp: TraceProcessor) -> list[tuple[str, int, int, int]]:
             "SELECT s.name, s.ts, s.dur, s.depth FROM slice s "
             "JOIN process_track pt ON s.track_id = pt.id "
             "JOIN process p ON pt.upid = p.upid "
-            # By name: `p.pid` is the row's, one gcmon hands out (ADR-0011).
+            # By name: `p.pid` is the row's, one gcmon hands out (ADR-0028).
             f"WHERE pt.name = '{_PAUSE_TRACK_NAME}' AND p.name = '{ROW_PROCESS_NAME}' ORDER BY s.ts, s.depth"
         )
     ]

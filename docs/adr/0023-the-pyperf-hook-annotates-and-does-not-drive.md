@@ -57,9 +57,9 @@ re-run to change your mind about where its boundaries were, and the marks mean
 you do not have to.
 
 Marks reach the exporter out of order with respect to records, by seconds
-rather than milliseconds. ADR-0011 covers that: the trace processor sorts by
-timestamp, and a freshly discovered child's first event can predate gcmon
-polling it.
+rather than milliseconds. ADR-0011 and ADR-0029 cover that: the trace
+processor sorts by timestamp, and a freshly discovered child's first event can
+predate gcmon polling it.
 
 One module writing and reading the grammar means a round trip agrees with
 itself on a changed separator, so the grammar is pinned as a literal string

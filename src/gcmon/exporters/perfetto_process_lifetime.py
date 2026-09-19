@@ -3,7 +3,7 @@
 The root descriptor that makes process order explicit, one process
 descriptor per process, one BEGIN/END pair per process on the shared
 ``Processes`` track clipped laminar, and one over the observed interval on
-the process's own row. See ADR-0011.
+the process's own row. See ADR-0011 and ADR-0028.
 """
 
 from typing import NamedTuple
@@ -213,7 +213,7 @@ def _emit_process_row_lifetime_slice(
     Drawn over the observed pair rather than the clipped one: clipping
     keeps the *shared* track's slice stack laminar, and this row holds one
     slice and the workload's ``Instant`` marks, which nest without closing
-    anything (ADR-0011). BEGIN first, so a process observed at a single
+    anything (ADR-0028). BEGIN first, so a process observed at a single
     instant reads as ``dur = 0`` rather than ``-1``.
 
     The caller describes *span*'s process first, so the track uuid this
@@ -279,7 +279,7 @@ def emit_retired_process_row(
 
     The ``Processes`` slice does not come with it. That one is clipped against
     its siblings and the sweep is global, so it waits for close; a process
-    discovered later can still open a span inside this one (ADR-0011).
+    discovered later can still open a span inside this one (ADR-0028).
 
     Returns nothing for a process gcmon never observed, for one already drawn,
     and for a trace whose closeout has gone out.

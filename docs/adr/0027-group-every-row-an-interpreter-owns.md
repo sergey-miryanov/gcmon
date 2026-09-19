@@ -171,5 +171,5 @@ something, and a row exists because an event names it
   of `thread.tid`, and it moved the `tid == pid` reading off interpreter 0
   onto whichever interpreter equals the row pid rather than retiring it.
 - **Renumber row pids so no iid can equal one.** Moves the collision without
-  addressing the thread that should not exist, and ADR-0011 owns the pid
+  addressing the thread that should not exist, and ADR-0028 owns the pid
   scheme for reasons that have nothing to do with interpreters.

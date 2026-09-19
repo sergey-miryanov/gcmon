@@ -52,7 +52,7 @@ def _process_descriptor_fields_for_pid(
 
     Matched on the name, which carries the pid and the epoch. The
     ``process.pid`` these descriptors carry is the row's, one per process
-    and none of them the operating system's (ADR-0011).
+    and none of them the operating system's (ADR-0028).
     """
     prefix = process_track_name(proc(pid))
     matched: list[TrackDescriptor] = []
@@ -464,7 +464,7 @@ class TestReusedPidRanksAndStampsPerProcess:
     def test_each_descriptor_carries_a_pid_of_its_own(self, state: PerfettoTrackState) -> None:
         """One pid on both would read as one process described twice, and
         fold the rows together. Each takes one off gcmon's own count instead
-        (ADR-0011)."""
+        (ADR-0028)."""
         events: list[TraceEvent] = [
             _first_epoch_instant(),
             _second_epoch_instant(),

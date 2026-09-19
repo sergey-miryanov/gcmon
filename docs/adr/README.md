@@ -87,7 +87,7 @@ module is neither.
 | [0008](0008-buffered-exporter-and-encoder-protocol.md) | Split the exporter's lifecycle from a pluggable `EventEncoder` | Accepted | exporters |
 | [0009](0009-nanoseconds-canonical-time-unit.md) | Store `TraceEvent.ts` in nanoseconds; convert at the encoder | Accepted | exporters, model, support |
 | [0010](0010-process-identity-cmdline-and-start-marker.md) | Duplicate the process cmdline per consumer, and force the process track to render | Accepted | exporters, monitoring |
-| [0011](0011-process-lifetime-and-ordering.md) | Show process lifetimes on one shared track, ordered by first observation | Accepted | exporters, monitoring |
+| [0011](0011-process-lifetime-and-ordering.md) | Show process lifetimes on one shared track, ordered by first observation | Accepted | exporters |
 | [0012](0012-trace-output-formats.md) | Support Perfetto output in `combine`, and dual output only in live mode | Superseded by 0021 | cli, exporters |
 | [0013](0013-rss-sampling.md) | Sample RSS in a standalone `RssSampler`, on the process track rather than a thread's | Accepted | cli, exporters, monitoring |
 | [0014](0014-perfetto-integration-test-strategy.md) | Validate traces against the real trace processor; deselect slow suites by marker | Accepted | tests |
@@ -104,3 +104,5 @@ module is neither.
 | [0025](0025-create-every-process-in-one-place.md) | Create every process in one place, and carry it instead of a pid | Accepted | cli, control, exporters, model, monitoring |
 | [0026](0026-two-subsystems-over-a-shared-base.md) | Split the package into a monitor and an analysis subsystem | Accepted | analysis, cli, exporters, monitoring |
 | [0027](0027-group-every-row-an-interpreter-owns.md) | Group every row an interpreter owns under one track | Accepted | exporters |
+| [0028](0028-draw-every-process-a-row-of-its-own.md) | Draw every process a row of its own, under a pid gcmon counts | Accepted | exporters |
+| [0029](0029-report-liveness-and-fold-it-into-the-span.md) | Report liveness once a tick, and fold it into a process's span | Accepted | exporters, monitoring |

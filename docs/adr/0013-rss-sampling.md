@@ -40,7 +40,7 @@ nothing about `psutil`, timers, or how a sample turns into an event.
 `tick` takes the caller's instant in **nanoseconds**, which both paces the
 sampling and stamps every sample in a pass. The loop takes one **stamping**
 `time.monotonic_ns()` per tick and passes it unconverted, here and to the
-monitor ([ADR-0011](0011-process-lifetime-and-ordering.md),
+monitor ([ADR-0029](0029-report-liveness-and-fold-it-into-the-span.md),
 [ADR-0017](0017-monitor-owns-the-pid-lifecycle.md)), so nanoseconds reach the
 encoder without a detour through seconds
 ([ADR-0009](0009-nanoseconds-canonical-time-unit.md)). The loop reads the

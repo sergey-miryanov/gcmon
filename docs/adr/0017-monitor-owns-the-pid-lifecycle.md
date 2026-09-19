@@ -63,8 +63,8 @@ cursor and re-exports its whole ring.
 - A pinned whole-run trace holds what an operator sees across the loop and the
   monitor together.
 - The liveness report comes from the monitor rather than `MonitorLoop`, and
-  [ADR-0011](0011-process-lifetime-and-ordering.md)'s constraints on it hold
-  unchanged.
+  [ADR-0029](0029-report-liveness-and-fold-it-into-the-span.md)'s constraints
+  on it hold unchanged.
 - A pid that leaves the tree and returns re-exports whatever its ring still
   holds, since the prune took its cursor. Duplicate slices are the price of
   not fabricating a loss window. They are drawn on the process that produced

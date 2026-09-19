@@ -2,8 +2,8 @@
 
 - **Status:** Accepted
 - **Date:** 2026-06-28
-- **Amended by:** [ADR-0011](0011-process-lifetime-and-ordering.md),
-  [ADR-0027](0027-group-every-row-an-interpreter-owns.md)
+- **Amended by:** [ADR-0027](0027-group-every-row-an-interpreter-owns.md),
+  [ADR-0028](0028-draw-every-process-a-row-of-its-own.md)
 - **Modules:** exporters
 
 ## Context
@@ -66,8 +66,8 @@ keeps the wire format minimal.
 - Sharing crosses neither interpreters nor processes, because each
   `(process, iid)` has its own `GC Metrics` group and Perfetto requires a
   shared parent, and two processes that held one pid count as two
-  ([ADR-0011](0011-process-lifetime-and-ordering.md)). That is the documented
-  scope of the feature.
+  ([ADR-0028](0028-draw-every-process-a-row-of-its-own.md)). That is the
+  documented scope of the feature.
 - Older trace processors ignore the unknown field, so no write-time version
   gate is needed.
 - **The SQL-level tests read the key from the stdlib table the UI builds its

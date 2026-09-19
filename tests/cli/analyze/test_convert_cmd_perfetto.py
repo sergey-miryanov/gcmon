@@ -331,7 +331,7 @@ class TestCombinedTraceIsStructurallyComplete:
     ) -> None:
         """`combine` reports no liveness, so every process here was described
         by the conversion pass and the sweep that describes a process gcmon
-        only ever polled finds nothing left to do (ADR-0011). One bar per
+        only ever polled finds nothing left to do (ADR-0028). One bar per
         process, and no command line invented for it (ADR-0024)."""
         rows = list(
             loaded_trace_processor.query(
