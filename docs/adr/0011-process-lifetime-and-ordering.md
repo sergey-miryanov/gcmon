@@ -267,7 +267,7 @@ process was monitored at all.
   duration instead of microseconds of it. Not adopted: ε is a heuristic,
   nesting N deep costs N rows of vertical space inside the track, and the
   trace processor stops closing slices past 512 (see Consequences).
-  [Spec 0070](../../specs/0070-keep-a-fanned-out-processs-width-on-the-processes-track.md)
+  [Spec 0070](../../specs/0070-keep-a-fanned-out-process-width-on-the-processes-track.md)
   specifies it.
 - **Extending the earlier span's end instead of clipping it**, nesting the
   later span inside. Rejected: it makes a dead process look alive, and the

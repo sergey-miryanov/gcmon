@@ -1,7 +1,6 @@
 """Minimal write-only protobuf wire-format encoder.
 
-Hand-rolled so that ``protobuf`` stays out of the runtime tree, and the first
-of the encoder's layers (ADR-0001).
+Hand-rolled so that ``perfetto`` stays out of the runtime tree (ADR-0001).
 """
 
 import struct

@@ -58,9 +58,9 @@ today, and nothing a query reads from `real_start_ts`, `real_end_ts` or the
    `docs/perfetto-sql.md` return what they return today.
 4. As an operator monitoring one process, I want a trace byte-identical to
    today's, so that this change costs me nothing.
-5. As someone opening a trace of a very wide fan-out, I want every slice to
-   close, so that a change made for readability does not leave `dur = -1`
-   behind the trace processor's nesting limit.
+5. As someone opening a trace of a fan-out wider than the trace processor's
+   nesting limit, I want every slice to close, so that a change made for
+   readability does not leave `dur = -1` behind.
 
 ## 4. Implementation decisions
 

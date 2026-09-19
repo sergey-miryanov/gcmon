@@ -46,7 +46,7 @@ PyTime_PerfCounterRaw(PyTime_t *result)
 exception, so it is safe to call without an attached thread state.
 
 `time.monotonic_ns()` is `PyTime_Monotonic` and `time.perf_counter_ns()` is
-`PyTime_PerfCounter`, so all three names read one clock.
+`PyTime_PerfCounter`, so all of them read one clock.
 
 ## What the monotonic clock is, per platform
 

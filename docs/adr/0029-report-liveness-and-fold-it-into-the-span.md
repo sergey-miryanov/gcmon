@@ -30,8 +30,7 @@ is one call on the monitor
 ([ADR-0017](0017-monitor-owns-the-pid-lifecycle.md)), which reports the whole
 `PollStatus.OK` set through `add_process_liveness(processes, ts_ns)` once,
 after its poll phase, so the cost is one call per tick rather than one per
-pid. The accumulator folds an observation in as a plain min/max with no
-keyword, counters included, since liveness is reported directly.
+pid. The accumulator folds every observation in as a plain min/max.
 
 **A liveness report is stamped when the reads that proved it returned**, not
 when the tick opened. A tick polls its pids in sequence, and a process polled
@@ -45,13 +44,12 @@ stamps a whole RSS pass ([ADR-0013](0013-rss-sampling.md)), and only the
 liveness report carries the later one.
 
 **Liveness folds in alongside events rather than replacing them.**
-`[first OK, last OK]` was rejected because `get_gc_stats` returns collections
-that *already happened*, so a freshly discovered child's first GC event can
-predate gcmon ever polling it. Under a replace rule every such child would
-draw a GC slice outside its own lifetime slice. Membership in `children` is
-**not** an observation: `get_child_pids` is the OS's claim about the process
-tree, and taking it as evidence reintroduces the `create_time()` approach
-rejected below.
+`get_gc_stats` returns collections that *already happened*, so a freshly
+discovered child's first GC event can predate gcmon ever polling it, and the
+span reaches back to that event. Membership in `children` is **not** an
+observation: `get_child_pids` is the OS's claim about the process tree, and
+taking it as evidence reintroduces the `create_time()` approach rejected
+below.
 
 **A successful read is what makes the span mean anything.** `get_gc_stats`
 returns only once the runtime has finished initializing, so the first `OK`
@@ -98,6 +96,9 @@ iteration.
 
 ## Alternatives considered
 
+- **A span of `[first OK, last OK]`, liveness replacing the events.**
+  Rejected: a child's first GC event can predate its first poll, so every such
+  child would draw a GC slice outside its own lifetime slice.
 - **OS-level process times via `psutil.Process(pid).create_time()`.**
   Rejected: the span should describe what gcmon observed, not when the OS
   started the process; the difference would be misread as monitoring coverage.
