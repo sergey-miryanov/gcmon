@@ -29,9 +29,9 @@ prefix to reach every generation at once, on the whole string to reach one.
 Every row but the first two needs a CPython build carrying the extra GC
 instrumentation; see [Output formats](formats.md#perfetto-output).
 
-`gc.loss` is the one to exclude from a pause query. A loss span's width is an
-interval nothing measured, so blending it into the pause distribution reads as
-a pause that never happened.
+`gc.loss` is the one to exclude from a pause query. A loss window's width is
+an interval nothing measured, so blending it into the pause distribution reads
+as a pause that never happened.
 
 ## Accessing the SQL Interface
 
@@ -87,7 +87,7 @@ gcmon traces use the standard Perfetto schema:
 ## Example: Replicating the Stats Table
 
 SQL reproduces the [`--stats` table](statistics.md). `gc.loss` is left out: a
-loss span's width is an interval gcmon went blind for rather than a pause it
+loss window's width is an interval gcmon went blind for rather than a pause it
 measured, so the two share no distribution
 ([GC Loss slices](formats.md#gc-loss-slices)).
 

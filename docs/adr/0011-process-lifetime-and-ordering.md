@@ -243,7 +243,7 @@ process was monitored at all.
   asserts the rejected orderings break, so the case that passes cannot pass by
   the order being irrelevant.
 - [ADR-0015](0015-gc-loss-spans-on-their-own-track.md) needs no sweep: its
-  loss spans are one per poll interval and meet without overlapping. Its
+  loss windows are one per poll interval and meet without overlapping. Its
   `GC Loss` track is separate so a reader can tell intervals gcmon recorded
   from intervals it lost.
 

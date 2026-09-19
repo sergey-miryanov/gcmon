@@ -13,7 +13,7 @@
 Every interpreter in a target keeps its own collector, its own rings and its
 own cumulative counters. The trace side has said so since
 [ADR-0015](0015-gc-loss-spans-on-their-own-track.md): records go on a pause
-row per `(process, iid)`, loss spans on a `GC Loss` track per
+row per `(process, iid)`, loss windows on a `GC Loss` track per
 `(process, iid)`, and [ADR-0003](0003-gc-metrics-group-track.md)'s counter
 group is per `(process, iid)` too. Open a trace of a process running three
 interpreters and you see three rows.

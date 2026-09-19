@@ -343,8 +343,8 @@ class TestJsonlExporterInstantEvents:
 
 
 class TestJsonlLossRecords:
-    def test_a_loss_span_round_trips(self, jsonl_exporter: ExporterFactory) -> None:
-        """The path `combine` depends on: a loss span written to JSONL has to
+    def test_a_loss_window_round_trips(self, jsonl_exporter: ExporterFactory) -> None:
+        """The path `combine` depends on: a loss window written to JSONL has to
         come back as the same record, so a converted capture carries the spans
         the live run drew."""
         exporter, path = jsonl_exporter()

@@ -72,7 +72,7 @@ def ingest(*batches: Sequence[GCStatsInfo]) -> list[TItem]:
 
     Through ``poll`` rather than ``_ingest``, so the poll instants come from
     where they come from in production. The clock is fixed to ``POLL_TIMES``:
-    every loss span's width is the distance between two reads, which a real
+    every loss window's width is the distance between two reads, which a real
     monotonic clock would make unrepeatable.
     """
     recorder = Recorder()

@@ -91,7 +91,7 @@ module is neither.
 | [0012](0012-trace-output-formats.md) | Support Perfetto output in `combine`, and dual output only in live mode | Superseded by 0021 | cli, exporters |
 | [0013](0013-rss-sampling.md) | Sample RSS in a standalone `RssSampler`, on the process track rather than a thread's | Accepted | cli, exporters, monitoring |
 | [0014](0014-perfetto-integration-test-strategy.md) | Validate traces against the real trace processor; deselect slow suites by marker | Accepted | tests |
-| [0015](0015-gc-loss-spans-on-their-own-track.md) | Draw reconstructed GC loss on a per-interpreter track, one span per poll interval | Accepted | exporters, model, monitoring, stats |
+| [0015](0015-gc-loss-spans-on-their-own-track.md) | Draw reconstructed GC loss on a per-interpreter track, one window per poll interval | Accepted | exporters, model, monitoring, stats |
 | [0016](0016-the-ring-is-the-statistics-unit.md) | Report statistics per ring, and drop the per-process row from the `--stats` table | Accepted | monitoring, pyperf, stats |
 | [0017](0017-monitor-owns-the-pid-lifecycle.md) | Give the monitor every piece of per-pid state, and leave the loop the clock | Accepted | monitoring |
 | [0018](0018-stats-requires-a-view-and-keeps-no-bare-alias.md) | Require a value on `--stats`, and keep no bare alias | Accepted | cli, stats |

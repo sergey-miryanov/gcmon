@@ -17,8 +17,8 @@ listing, through two expressions in two modules, with no test comparing them.
 Both prunes read one listing, so the two never diverged and no trace was
 affected. The split went because of what a divergence produces: a pid the OS
 reuses inherits the dead process's `collections` cursor, the next poll
-subtracts a fresh counter from a stale one, and gcmon draws a `GC Loss` span
-for hundreds of collections that never ran. That span looks like data, so an
+subtracts a fresh counter from a stale one, and gcmon draws a loss window for
+hundreds of collections that never ran. That span looks like data, so an
 operator has no reason to distrust it.
 
 ## Decision

@@ -527,7 +527,7 @@ _RSS_TS_3: int = 2_500_000_000
 
 def _write_every_row_trace(tmp: Path) -> Path:
     """One interpreter drawing every row it can: a pause with each counter
-    set, a loss span after it, and the process's `rss` beside them."""
+    set, a loss window after it, and the process's `rss` beside them."""
     path = tmp / "trace_every_row.pb"
     exporter = PerfettoExporter(output_path=path, flush_threshold=1000)
     pause = create_mock_incremental_item(gen=_GEN, iid=_IID, uncollectable=_UNCOLLECTABLE)

@@ -98,7 +98,7 @@ CHILD_PID = 33512
 
 # 600 ms is the period that puts both paths in the fixture. The target collects
 # gen 0 twelve or thirteen times in one, against a ring of eleven slots, so
-# almost every tick draws records *and* a loss span; gen 1 and gen 2 are
+# almost every tick draws records *and* a loss window; gen 1 and gen 2 are
 # outrun comfortably, so the same run carries generations that lose nothing.
 TICK_INTERVAL_NS = 600 * MS
 
