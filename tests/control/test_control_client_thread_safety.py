@@ -189,7 +189,7 @@ class TestConcurrentSend:
 
 class TestSendCloseRace:
     @pytest.mark.stress
-    def test_concurrent_real_work_loops_exercise_contention(self) -> None:
+    def test_threads_sending_and_closing_one_client_raise_nothing(self) -> None:
         server, _exporter = _make_server_with_exporter()
         client = ControlClient(server.address)
         try:
