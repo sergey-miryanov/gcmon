@@ -6,16 +6,16 @@
 
 ## Context
 
-`--rate` names the interval an operator wants between polls. The loop honoured
-it by waiting that long *after* each tick, so the interval was the rate plus
-whatever the tick had cost. The target sets that cost: the number of live
-pids, the rings read for each, the RSS round. A wide process tree therefore
-polled slower than the number asked for, and the error accumulated across a
-run rather than cancelling. Two captures of the same workload were not
-comparable either, because a tree that fanned out mid-capture changed its own
-sampling interval partway through.
+`--rate` names the interval an operator wants between one tick's start and the
+next. The loop honoured it by waiting that long *after* each tick, so the
+interval was the rate plus whatever the tick had cost. The target sets that
+cost: the number of live pids, the rings read for each, the RSS pass. A wide
+process tree therefore polled slower than the number asked for, and the error
+accumulated across a run rather than cancelling. Two captures of the same
+workload were not comparable either, because a tree that fanned out
+mid-capture changed its own sampling interval partway through.
 
-Two constraints shaped the fix.
+These constraints shaped the fix.
 
 **The wait must stay interruptible.** Shutdown reaches the loop through an
 event a signal handler sets, and the loop waits on that event rather than
@@ -24,7 +24,7 @@ the cost of shutdown latency.
 
 **The tick's instant cannot pace the loop.** The loop reads the clock before
 the tick, and the monitor and the RSS sampler both run on that one instant
-([ADR-0011](0011-process-lifetime-and-ordering.md),
+([ADR-0029](0029-report-liveness-and-fold-it-into-the-span.md),
 [ADR-0013](0013-rss-sampling.md)). That instant is fixed before the tick's
 cost is known, and pacing off it is the arithmetic that produced the defect.
 
@@ -60,16 +60,16 @@ and the tick after lands back on it.
 scheduled. The report carries the loop's state out to whoever prints it, and
 the loop decides nothing with it.
 
-**A run overruns when `OVERRUN_SHARE` of its ticks go missing.** One lost
-position tells an operator nothing: the loop loses positions for reasons the
-rate does not control, and only a systematic loss means the rate is
-unreachable.
+**A run overruns when more than `OVERRUN_SHARE`, a tenth, of its ticks go
+missing.** One lost position tells an operator nothing: the loop loses
+positions for reasons the rate does not control, and only a systematic loss
+means the rate is unreachable.
 
-**The summary decides what to tell the operator, once the run is over.**
-`stats_output` reads the report and picks the remedy from it. The low-coverage
-advisory fires mid-run, before any report exists, so it states the loss and
-prescribes nothing. A later decision that needs what the run did joins the
-summary rather than the loop.
+**The summary decides what to tell the operator, once the run is over.** The
+statistics output reads the report and picks the remedy from it. The
+low-coverage advisory fires mid-run, before any report exists, so it states
+the loss and prescribes nothing. A later decision that needs what the run did
+joins the summary rather than the loop.
 
 ## Consequences
 
@@ -91,10 +91,10 @@ summary rather than the loop.
   a millisecond before and could never hold it, so the run that used to start
   now does not.
 - The grid arithmetic and the run report sit in `model` rather than beside the
-  loop. `_env` and the option parser both import `stats.views`, so putting
-  either next to `monitor_loop` would pull the monitor in behind every
-  environment read. The per-poll report stays beside what produces it and
-  needs neither.
+  loop. The CLI's environment reader and option parser import the grid's bound
+  and `stats` imports the report, so putting either in `monitoring` would pull
+  the monitor in behind every environment read. The per-poll report stays
+  beside what produces it and needs neither.
 - The loop is tested against a scripted clock and a stop event that records
   what it was asked to wait for, never against elapsed wall time, which would
   assert the operating system rather than gcmon.
@@ -123,9 +123,9 @@ summary rather than the loop.
   That accumulation made captures incomparable.
 - **Extracting the arithmetic into a schedule object.** Rejected: the
   arithmetic is a pure function of the run's first instant, one later instant
-  and the rate, and `schedule.py` keeps it that way. An object holding a
-  position as state earns its keep only if something other than the loop needs
-  to ask, and nothing does.
+  and the rate, and it stays one. An object holding a position as state earns
+  its keep only if something other than the loop needs to ask, and nothing
+  does.
 - **Lending the monitor an overrun predicate**, the way the loop already lends
   it a stop predicate, so the advisory could pick its own wording. Rejected:
   the answer is meaningless in the first few ticks, when the advisory is most

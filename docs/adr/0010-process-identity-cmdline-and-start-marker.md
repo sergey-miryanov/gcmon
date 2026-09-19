@@ -2,8 +2,8 @@
 
 - **Status:** Accepted
 - **Date:** 2026-06-08
-- **Amended by:** [ADR-0011](0011-process-lifetime-and-ordering.md),
-  [ADR-0025](0025-create-every-process-in-one-place.md)
+- **Amended by:** [ADR-0025](0025-create-every-process-in-one-place.md),
+  [ADR-0028](0028-draw-every-process-a-row-of-its-own.md)
 - **Modules:** exporters, monitoring
 
 ## Context
@@ -48,14 +48,15 @@ description.
 
 **Draw a `Lifetime` slice on the process track itself**, one
 `TYPE_SLICE_BEGIN` / `TYPE_SLICE_END` pair per process spanning the interval
-gcmon observed it ([ADR-0011](0011-process-lifetime-and-ordering.md)). The
-track therefore always holds an event, so it and its description always
-render, and the row says how long gcmon watched the process rather than only
-that it existed.
+gcmon observed it
+([ADR-0029](0029-report-liveness-and-fold-it-into-the-span.md)). The track
+therefore always holds an event, so it and its description always render, and
+the row says how long gcmon watched the process rather than only that it
+existed.
 
 **A process descriptor and a `Lifetime` slice belong to a process, not to a
 pid.** A pid handed on names two processes, each with its own command line to
-render ([ADR-0011](0011-process-lifetime-and-ordering.md)).
+render ([ADR-0028](0028-draw-every-process-a-row-of-its-own.md)).
 
 **A command line is read once per process, where the monitor creates it.**
 Reading it at the first flush instead cost two things: a process that exited
@@ -84,8 +85,9 @@ line, and that is the only way to have none.
   them.
 - `psutil` stays an optional dependency (the `cmdline` extra). gcmon works
   without it, minus the cmdline.
-- **A `combine` run writes no command line.** Offline conversion creates no
-  process, so nothing is read.
+- **A `combine` run writes no command line.** Offline conversion
+  ([ADR-0021](0021-write-one-trace-format.md)) creates no process, so nothing
+  is read.
 - `description` joins the arguments with spaces and no shell quoting,
   favouring readability over round-trippability. The structured form is in
   `ProcessDescriptor.cmdline`.
@@ -100,12 +102,11 @@ line, and that is the only way to have none.
   surface `cmdline` would find it empty.
 - **Collect the cmdline in the exporter**, on the grounds that it is trace
   metadata only the Perfetto format needs, so the JSONL and stdout paths carry
-  no `psutil` cost. The original decision, and **reversed**: the exporter
-  learns of a process on the first flush that mentions it, which is the wrong
-  moment on both counts above; offline it asked the local machine about a
-  historical pid, which answers about an unrelated process once the pid has
-  been reissued; and the saving was one `psutil` call per process on a path
-  that already reads every process once a tick. The Perfetto-only part that
-  survives is the emission, not the collection.
+  no `psutil` cost. Rejected: the exporter learns of a process on the first
+  flush that mentions it, which is the wrong moment on both counts above;
+  offline it asks the local machine about a historical pid, which answers
+  about an unrelated process once the pid has been reissued; and the saving is
+  one `psutil` call per process on a path that already reads every process
+  once a tick. The Perfetto-only part is the emission, not the collection.
 - **Make `psutil` a hard dependency.** Rejected: gcmon is installed next to
   the process it monitors, and graceful degradation costs one `try`/`except`.

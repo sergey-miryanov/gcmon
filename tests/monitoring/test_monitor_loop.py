@@ -214,7 +214,7 @@ class TestRssSamplerInLoop:
 class TestTheTickInstant:
     """One stamping instant per tick, and everything downstream of it.
 
-    The monitor stamps liveness with it (ADR-0011) and the sampler both paces
+    The monitor stamps liveness with it (ADR-0029) and the sampler both paces
     and stamps with it (ADR-0013), so everything one tick emits agrees on when
     the tick was.
 

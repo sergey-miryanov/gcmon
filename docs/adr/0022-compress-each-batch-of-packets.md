@@ -92,11 +92,10 @@ flush, and the highest cannot run there.
 - **One gzip member per flush.** It reads correctly whole and fails
   identically when truncated. Rejected: it costs the "it is just a gzip file"
   simplicity and buys nothing.
-- **Deflate everywhere, which every Perfetto generation reads.** It was the
-  decision here, and what held it was the empty timeline an older reader
-  draws, never the codec. Rejected once v58.2 shipped a trace processor for
-  field 133 and the suite could pin one. It survives as the fallback, not as
-  the format.
+- **Deflate everywhere, which every Perfetto generation reads.** Rejected:
+  what argued for it was the empty timeline an older reader draws, never the
+  codec, and v58.2 ships a trace processor for field 133 that the suite pins.
+  Deflate is the fallback, not the format.
 - **Writing both fields, so that an old reader takes 50 and a new one takes
   133.** Rejected: a reader that knows both expands both and draws every slice
   twice. Perfetto's advice to set both codecs is about a service choosing one,

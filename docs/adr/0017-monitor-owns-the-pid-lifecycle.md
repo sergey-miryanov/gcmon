@@ -17,8 +17,8 @@ listing, through two expressions in two modules, with no test comparing them.
 Both prunes read one listing, so the two never diverged and no trace was
 affected. The split went because of what a divergence produces: a pid the OS
 reuses inherits the dead process's `collections` cursor, the next poll
-subtracts a fresh counter from a stale one, and gcmon draws a `GC Loss` span
-for hundreds of collections that never ran. That span looks like data, so an
+subtracts a fresh counter from a stale one, and gcmon draws a loss window for
+hundreds of collections that never ran. That span looks like data, so an
 operator has no reason to distrust it.
 
 ## Decision
@@ -26,9 +26,9 @@ operator has no reason to distrust it.
 **One tick of monitoring is one call.** `EventsMonitor.tick` performs a whole
 tick and reports which pids answered and whether any policy still wants the
 run open. Child discovery, the prune, the control-plane enable check, the
-poll, the policy verdict and the liveness report are all inside it, so
-`EventsMonitor.exporter` is gone: the loop used it to reach the exporter for
-that liveness call and nothing else did.
+poll, the policy verdict and the liveness report are all inside it, so the
+monitor exposes no exporter: the loop would reach for one only to make that
+liveness call.
 
 **Per-pid state has one owner and one prune.** Cursors, poll instant,
 streaming stats, wait policy and the process a pid is currently holding share
@@ -60,11 +60,11 @@ cursor and re-exports its whole ring.
   without the departure opens one. Both halves of policy-stays-cursors-go need
   an assertion each, since a test watching one half passes with the other
   inverted.
-- The pinned whole-run trace was written before this change and passed through
-  it untouched, which is the evidence that operators see the same trace.
-- Liveness reporting moved off `MonitorLoop`, so
-  [ADR-0011](0011-process-lifetime-and-ordering.md) was amended rather than
-  contradicted, and its constraints hold unchanged.
+- A pinned whole-run trace holds what an operator sees across the loop and the
+  monitor together.
+- The liveness report comes from the monitor rather than `MonitorLoop`, and
+  [ADR-0029](0029-report-liveness-and-fold-it-into-the-span.md)'s constraints
+  on it hold unchanged.
 - A pid that leaves the tree and returns re-exports whatever its ring still
   holds, since the prune took its cursor. Duplicate slices are the price of
   not fabricating a loss window. They are drawn on the process that produced

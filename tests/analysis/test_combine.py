@@ -377,7 +377,7 @@ class TestCombineFiles:
 
 
 class TestJsonlLossRoundTrip:
-    """`combine` reads and writes JSONL, so a loss span has to survive the
+    """`combine` reads and writes JSONL, so a loss window has to survive the
     round trip as well as a GC record does; otherwise a converted capture
     silently loses the spans the live run drew."""
 
@@ -441,7 +441,7 @@ class TestJsonlLossRoundTrip:
         assert record[IID] == 1
         assert "tid" not in record
 
-    def test_normalize_shifts_a_loss_span(self) -> None:
+    def test_normalize_shifts_a_loss_window(self) -> None:
         """It is neither a GC record nor an instant, so without a branch of its
         own it would keep raw timestamps while everything around it moved."""
         msg = self._msg(ts_start=7_000, ts_stop=8_000, lost_count=76)
@@ -452,10 +452,10 @@ class TestJsonlLossRoundTrip:
         assert (msg.ts_start, msg.ts_stop) == (2_000, 3_000)
         assert item.ts_start == 0
 
-    def test_a_loss_span_can_set_the_origin(self) -> None:
+    def test_a_loss_window_can_set_the_origin(self) -> None:
         """A window opens at the record before the gap and closes at the one
         after it, so a capture whose first poll already lost records starts on
-        a loss span. If the origin were taken from GC records alone every
+        a loss window. If the origin were taken from GC records alone every
         timestamp in the combined trace would be off by the difference, and
         the span itself would go negative."""
         msg = self._msg(ts_start=3_000, ts_stop=5_000, lost_count=76)
@@ -466,11 +466,11 @@ class TestJsonlLossRoundTrip:
         assert (msg.ts_start, msg.ts_stop) == (0, 2_000)
         assert (item.ts_start, item.ts_stop) == (2_000, 3_000)
 
-    def test_combine_normalizes_from_a_loss_span(self, tmp_path: Path) -> None:
+    def test_combine_normalizes_from_a_loss_window(self, tmp_path: Path) -> None:
         """The same claim down the path an operator takes, and read back off
         the trace rather than off the structs `combine` mutated in place.
 
-        A loss span is the earliest thing in this capture, so a normalization
+        A loss window is the earliest thing in this capture, so a normalization
         that only looked at GC records would leave it at a negative timestamp
         and zero the pause instead.
         """

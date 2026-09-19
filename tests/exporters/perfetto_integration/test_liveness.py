@@ -31,7 +31,7 @@ from tests.helpers import misplaced_end_events
 class TestMonitorReportedLiveness:
     """``Processes`` slices span what gcmon *observed*, not what it saw
     collect, so the monitor loop's per-tick liveness reports reach the
-    track alongside the events. See ADR-0011.
+    track alongside the events. See ADR-0029.
     """
 
     def test_no_misplaced_end_events(self, liveness_trace_processor: TraceProcessor) -> None:
@@ -87,7 +87,7 @@ class TestMonitorReportedLiveness:
         """``_SECOND_PID`` named no track all run, so nothing described it
         before close. It resolves to its own ``upid`` all the same, opening at
         its own first observation and carrying its own command line, and its
-        row holds the one ``Lifetime`` bar and nothing else (ADR-0011)."""
+        row holds the one ``Lifetime`` bar and nothing else (ADR-0028)."""
         rows = list(
             liveness_trace_processor.query(
                 f"SELECT p.upid AS upid, p.start_ts AS start_ts, s.name AS sname, "
@@ -149,7 +149,7 @@ class TestARunKilledMidFlight:
     """The file a ``SIGKILL`` leaves: batches on disk and no closeout.
 
     A process gcmon had already let go of keeps its row, because its bar went
-    out with the first batch after it retired rather than at close (ADR-0011).
+    out with the first batch after it retired rather than at close (ADR-0028).
     A process still running loses its, which is the part this does not reach.
     """
 

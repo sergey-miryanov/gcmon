@@ -44,9 +44,8 @@ calibrating, and pyperf's bookkeeping between values.
 - **The hook refuses to run without a monitor.** The constructor connects and
   raises pyperf's `HookError`, caught by its loader to print one message and
   exit 1.
-- **One module writes the grammar and reads it.** `src/gcmon/model/marks.py`
-  sits in `model/`, below both the hook that writes a mark and anything that
-  would read one.
+- **One module writes the grammar and reads it.** It sits in `model`, below
+  both the hook that writes a mark and anything that would read one.
 
 ## Consequences
 
@@ -58,9 +57,9 @@ re-run to change your mind about where its boundaries were, and the marks mean
 you do not have to.
 
 Marks reach the exporter out of order with respect to records, by seconds
-rather than milliseconds. ADR-0011 covers that: the trace processor sorts by
-timestamp, and a freshly discovered child's first event can predate gcmon
-polling it.
+rather than milliseconds. ADR-0011 and ADR-0029 cover that: the trace
+processor sorts by timestamp, and a freshly discovered child's first event can
+predate gcmon polling it.
 
 One module writing and reading the grammar means a round trip agrees with
 itself on a changed separator, so the grammar is pinned as a literal string
@@ -69,9 +68,11 @@ instead.
 pyperf's metadata holds nothing to trend across this change, and nothing in
 tree reads the marks: until a reader exists they are for the Perfetto UI.
 
-A mark and a GC record have to come from one clock, and gcmon assumes it is
-the one `time.monotonic_ns` reads. If CPython ever stamps a record from
-another, every mark is misplaced and nothing downstream catches it.
+A mark and a GC record have to come from one clock, the one
+`time.monotonic_ns` reads
+([The clock a GC record is stamped from](../internals/gc-record-clock.md)). If
+CPython ever stamps a record from another, every mark is misplaced and nothing
+downstream catches it.
 
 ## Alternatives considered
 

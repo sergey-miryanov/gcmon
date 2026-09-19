@@ -247,7 +247,7 @@ class TestProcessLifetimeState:
 
     def test_a_timestamp_past_either_end_moves_that_end(self, state: PerfettoTrackState) -> None:
         """No event kind is excepted: an RSS sample moves an end as a record
-        does (ADR-0011)."""
+        does (ADR-0029)."""
         state.update_process_lifetime(proc(TARGET_PID), 2_000)
         state.update_process_lifetime(proc(TARGET_PID), 4_000)
 
@@ -332,7 +332,7 @@ class TestTwoProcessesOnOnePidGetTheirOwnRows:
     """A `Track` names the process it was drawn for, and every row the
     exporter allocates is filed under that process: a pid handed on draws two
     process tracks, two interpreter tracks, two loss tracks, two counter groups and
-    two of each counter (ADR-0011)."""
+    two of each counter (ADR-0028)."""
 
     FIRST = interpreter_track(TARGET_PID, 0, 1)
     SECOND = interpreter_track(TARGET_PID, 0, 2)
@@ -449,7 +449,7 @@ class TestRowPids:
 
     The trace processor keys process identity on that field, so it is the one
     thing that has to differ between two processes on one operating-system pid
-    (ADR-0011).
+    (ADR-0028).
     """
 
     def test_one_process_keeps_the_same_row_pid(self, state: PerfettoTrackState) -> None:

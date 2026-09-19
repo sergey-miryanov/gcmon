@@ -464,7 +464,7 @@ def _lifetime_spans(path: Path) -> dict[str, tuple[int, int]]:
 class TestProcessLivenessRoundTrip:
     """``add_process_liveness`` folds into the same span accumulator GC
     events feed, so a ``Processes`` slice covers what gcmon observed
-    rather than what it saw collect. See ADR-0011."""
+    rather than what it saw collect. See ADR-0029."""
 
     def test_liveness_only_pid_gets_a_slice(self, perfetto_exporter: ExporterFactory) -> None:
         """A pid gcmon polled OK for a run that never collected produces

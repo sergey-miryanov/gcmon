@@ -7,13 +7,13 @@
 
 ## Context
 
-`chrome_trace_format.py` and `perfetto_format.py` each independently turned a
+The Chrome and Perfetto format modules each independently turned a
 `TGCStatsInfo` into output. Both re-implemented the same GC sub-phase
 discovery (the `has_*` guards for mark-alive, fill-increment,
 deduce-unreachable, handle-weakrefs, finalize-garbage, handle-resurrected,
 clear-weakrefs, delete-garbage), the same name and category strings for each
 sub-phase, and the same counter-metric collection. Only the `has_*` TypeGuards
-in `protocol.py` had been factored out.
+had been factored out.
 
 Adding a sub-phase meant editing both files identically. Getting one of them
 wrong produced two traces of the same run that disagreed, which is a slow,
@@ -25,14 +25,13 @@ conversion.
 
 ## Decision
 
-A single pipeline `TGCStatsInfo → list[TraceEvent]` lives in
-`src/gcmon/exporters/trace_converter.py`. It owns the only copy of the
-sub-phase logic and the naming strings.
+A single pipeline `TGCStatsInfo → list[TraceEvent]` lives in `exporters`. It
+owns the only copy of the sub-phase logic and the naming strings.
 
-`TraceEvent`, the union in `src/gcmon/model/trace_event.py`, is the contract
-between the converter and the backends. It is `Slice | Instant | Counter`: an
-event names the `Track` it is drawn on, the encoder derives the descriptors
-from that, and the ordering follows by construction
+`TraceEvent`, the union in `model`, is the contract between the converter and
+the backends. It is `Slice | Instant | Counter`: an event names the `Track` it
+is drawn on, the encoder derives the descriptors from that, and the ordering
+follows by construction
 ([ADR-0024](0024-an-event-names-the-track-it-is-drawn-on.md)). A span is one
 `Slice` carrying both its ends. A backend consumes that list and does nothing
 but encode, and inspects no `TGCStatsInfo` field. Track UUID management stays
@@ -57,14 +56,11 @@ everywhere.
 
 ## Consequences
 
-- A new sub-phase or metric is added in one place, and both output formats get
-  it.
+- A new sub-phase or metric is added in one place.
 - Every output format carries the same events by construction. While there
   were two, that equivalence was asserted by comparing one against the other;
   with one format left, the trace is asserted against the `list[TraceEvent]`
   it was built from ([ADR-0021](0021-write-one-trace-format.md)).
-- `chrome_trace_format.py` became a thin re-export module so existing
-  importers kept working. It went with the format.
 - Records with `ts_start >= ts_stop` no longer reach any exporter, and the
   monitor's poll is the one place that drops them.
 - Adding an output format means writing an encoder, not a converter.

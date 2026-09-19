@@ -6,11 +6,10 @@
 - **Amended by:** [ADR-0027](0027-group-every-row-an-interpreter-owns.md)
 - **Modules:** exporters
 
-> Superseded on 2026-08-26. The single-arg display-name rule and the top-level
-> metric set holding both `heap_size` and `rss` are gone: the converter writes
-> every display name, and a counter a `ProcessTrack` owns parents to the
-> process track by construction. The body below is what the record still
-> decides.
+> The single-arg display-name rule and the top-level metric set holding both
+> `heap_size` and `rss` are gone: the converter writes every display name, and
+> a counter a `ProcessTrack` owns parents to the process track by
+> construction. The body below is what the record still decides.
 
 ## What still holds
 

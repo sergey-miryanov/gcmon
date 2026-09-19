@@ -1,8 +1,7 @@
-"""Pluggable encoder interface for trace event exporters.
+"""The encoder that turns batches of ``TraceEvent`` into a Perfetto trace.
 
-An ``EventEncoder`` translates a batch of ``TraceEvent`` objects into the
-bytes of a single on-disk format. A new output format arrives as a second
-implementation (ADR-0008).
+A class of its own rather than part of the exporter, because ``combine``
+drives it with no exporter, no buffer and no lock around it (ADR-0008).
 """
 
 from __future__ import annotations
@@ -11,7 +10,7 @@ import zlib
 from collections.abc import Callable, Sequence, Set
 from functools import partial
 from pathlib import Path
-from typing import NamedTuple, Protocol
+from typing import NamedTuple
 
 from ..model.process import Process
 from ..model.trace_event import TraceEvent
@@ -51,23 +50,9 @@ def _resolve_codec() -> Codec:
 _CODEC = _resolve_codec()
 
 __all__ = [
-    "EventEncoder",
     "ProtobufEventEncoder",
     "convert_trace_events_to_perfetto",
 ]
-
-
-class EventEncoder(Protocol):
-    """Translate batches of ``TraceEvent`` into on-disk bytes."""
-
-    def open(self, path: Path) -> None:
-        """Prepare the encoder for writing to *path*."""
-
-    def write_events(self, events: Sequence[TraceEvent]) -> None:
-        """Encode and persist *events* as a single batch."""
-
-    def close(self) -> None:
-        """Finalize the output. May be a no-op for some encoders."""
 
 
 class ProtobufEventEncoder:
@@ -100,9 +85,6 @@ class ProtobufEventEncoder:
     def record_process_cmdline(self, process: Process, cmdline: tuple[str, ...] | None) -> None:
         """Keep what *process* is running, for its descriptor and its
         ``Processes``-track span to name.
-
-        Kept off the ``EventEncoder`` protocol for the reason
-        :meth:`record_process_liveness` gives.
         """
         self._track_state.set_cmdline(process, cmdline)
 
@@ -111,9 +93,8 @@ class ProtobufEventEncoder:
         ``Processes``-track span accumulator: *processes* are the ones
         gcmon read GC state out of at *ts_ns*.
 
-        Kept off the ``EventEncoder`` protocol: a liveness observation is
-        neither a ``TraceEvent`` nor bytes. See ADR-0011. Writes nothing;
-        the observations reach the file at ``close()``.
+        See ADR-0029. Writes nothing; the observations reach the file at
+        ``close()``.
         """
         for process in processes:
             self._track_state.update_process_lifetime(process, ts_ns)
@@ -124,9 +105,7 @@ class ProtobufEventEncoder:
 
         Writes nothing here: the row goes out with the next batch, once the
         events queued ahead of it have reached the span accumulator. See
-        ADR-0011 for what that buys a run killed mid-flight, and
-        :meth:`record_process_liveness` for why this is kept off the
-        ``EventEncoder`` protocol.
+        ADR-0028 for what that buys a run killed mid-flight.
         """
         self._retired.append(process)
 

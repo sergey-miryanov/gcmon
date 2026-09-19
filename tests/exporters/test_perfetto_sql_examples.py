@@ -163,11 +163,11 @@ class TestTheDocumentedQueries:
             f"a process with a span and no `process` row was dropped: {sorted(names)}"
         )
 
-    def test_the_statistics_example_leaves_loss_spans_out(
+    def test_the_statistics_example_leaves_loss_windows_out(
         self,
         documented_trace_processor: TraceProcessor,
     ) -> None:
-        """The reason that example filters on the category. A loss span's
+        """The reason that example filters on the category. A loss window's
         width is an interval gcmon went blind for, and blending it into the
         pause percentiles reads as a pause nothing measured."""
         statistics = next(sql for sql in _examples() if "PERCENTILE" in sql)
@@ -176,5 +176,5 @@ class TestTheDocumentedQueries:
 
         assert names, "the statistics example found nothing to group"
         assert not any(name.startswith(_LOSS_TRACK_NAME) for name in names), (
-            f"loss spans reached the pause statistics: {sorted(names)}"
+            f"loss windows reached the pause statistics: {sorted(names)}"
         )

@@ -39,6 +39,7 @@ This file holds the open set and the order to take it in. The other two:
 | [0061](0061-build-the-statistics-table-from-a-tracefile.md) | Feature (enhancement) | L | The statistics table exists only while gcmon is running; a capture from last week holds every number and offers no way to see them |
 | [0062](0062-name-a-workload-from-a-sanitized-command-line.md) | Feature (enhancement) | M | A pyperformance run prints one `Total` folding sixty benchmarks and hundreds of blocks keyed by a pid that means nothing afterwards; the level anyone asks about is missing |
 | [0063](0063-compare-two-tracefiles.md) | Feature (enhancement) | L | Nothing answers "did GC get worse between these two runs"; two tables side by side works for one row and fails for sixty |
+| [0070](0070-keep-a-fanned-out-processs-width-on-the-processes-track.md) | Feature (enhancement) | S | Workers forked in one loop each ran for seconds and are drawn microseconds wide on the `Processes` track, because the clip cuts a span at its next sibling's start |
 
 Every row here has a file. A missing number either retired or never became
 one; [RETIRED.md](RETIRED.md) says which.
@@ -73,6 +74,8 @@ the position. A blank cell means no recorded reason, so that row can move.
   worth a fourth row.
 - **0044** waits on CPython synchronizing the ring. Its section 4 states the
   one measurement that would put it back in play sooner.
+- **0070** needs one number before anyone can build it: the gap between
+  sibling starts in a real fan-out capture, which is what its ε has to exceed.
 - **0054** was found in CPython's source and not in a run. Nobody should size
   it until the ports have been counted on a Mac.
 

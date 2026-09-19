@@ -6,24 +6,24 @@
 
 ## Context
 
-The package is one linear stack, and `tests/architecture/test_layering.py`
-enforces it: `support`, then `model`, then `exporters` and `stats`, then
+The package was one linear stack, and the layer table in the architecture
+suite enforced it: `support`, then `model`, then `exporters` and `stats`, then
 `control`, then `monitoring`, then `cli`.
 
-Two kinds of work sit in that stack. One attaches to a live process and writes
+Two kinds of work sat in that stack. One attaches to a live process and writes
 a file. The other reads a file gcmon already wrote and reports on it. The
 boundary between them is the file itself, and it is not a new idea here: a
 capture is what `monitor` produces and what `combine` consumes.
 
-A linear stack cannot say that. `cli` is permitted every layer beneath it, so
-a command that only reads a tracefile may import `monitoring`, and nothing
-objects. The permission is not hypothetical: specs 0061 and 0063 add two
-commands that read files and nothing else, and they land in `cli` beside
-`monitor` and `run`.
+A linear stack cannot say that. `cli` was permitted every layer beneath it, so
+a command that only reads a tracefile could import `monitoring`, and nothing
+objected. The permission was not hypothetical: specs 0061 and 0063 add two
+commands that read files and nothing else, and they would have landed in `cli`
+beside `monitor` and `run`.
 
-`exporters/` already holds both directions. `jsonl_io` and `combine` consume a
-file; the Perfetto modules and `jsonl_exporter` produce one. The layer's name
-describes half its contents.
+`exporters/` held both directions. `jsonl_io` and `combine` consume a file;
+the Perfetto modules and `jsonl_exporter` produce one. The layer's name
+described half its contents.
 
 [ADR-0001](0001-hand-rolled-perfetto-protobuf-encoder.md) argued gcmon's
 runtime dependency tree from the package being installable next to the process
@@ -49,24 +49,25 @@ target never sees.
 - The monitor subsystem is `control`, `monitoring`, `pyperf` and
   `cli.monitor`.
 - The analysis subsystem is `analysis` and `cli.analyze`.
-- **Neither subsystem imports the other.** `cli` itself, meaning `main.py` and
-  the two root modules, is the one place both are reachable, because it
-  assembles the parser from both.
+- **Neither subsystem imports the other.** `cli` itself, meaning its entry
+  point and the two root modules, is the one place both are reachable, because
+  it assembles the parser from both.
 - `cli.shared` holds what both subsystems' parsers need, and imports nothing.
-  It exists so that a subsystem never imports `cli`, where `main.py` reaches
-  both.
+  It exists so that a subsystem never imports `cli`, where the entry point
+  reaches both.
 - `analysis` holds what consumes a file gcmon wrote: `combine`, `jsonl_io`,
   and the tracefile reader spec 0061 adds. `combine` writes a trace as its
   output, and belongs here regardless, because what it reads is a capture.
 - `stats` stays in the base. The live statistics table and the offline one are
   the same accumulation, and spec 0061 exists in the shape it does so that
   they cannot drift apart.
-- The layer table in `tests/architecture/test_layering.py` carries the
-  subsystems, and `layer_of` answers `cli.monitor`, `cli.analyze` or
-  `cli.shared` by subdirectory, trying the two-segment name before the head. A
-  directory under `cli/` it does not name is placed nowhere, so `unplaced`
-  fails on it and no new directory is handed the CLI's permissions by sitting
-  still.
+- The layer table in the architecture suite carries the subsystems, behind the
+  `architecture` marker
+  ([ADR-0014](0014-perfetto-integration-test-strategy.md)). It places a module
+  under `cli/` as `cli.monitor`, `cli.analyze` or `cli.shared` by
+  subdirectory, trying the two-segment name before the head. A directory under
+  `cli/` it does not name is placed nowhere, and the suite fails on it, so no
+  new directory is handed the CLI's permissions by sitting still.
 
 ## Consequences
 

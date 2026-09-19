@@ -791,7 +791,7 @@ class TestAQuietProcessGetsARow:
     span in and nothing else ever named it, so no convert pass described it.
 
     Finalization describes it instead, and it draws a row like any other:
-    ADR-0011 puts a process gcmon watched and read nothing from on the
+    ADR-0028 puts a process gcmon watched and read nothing from on the
     timeline, distinct from one it never reached.
     """
 
@@ -884,7 +884,7 @@ class TestARetiredProcessRowGoesOutEarly:
     What a run killed mid-flight loses shrinks to the processes still running.
     The shared ``Processes`` slice cannot follow: it is clipped against its
     siblings and a process discovered later can still open a span inside this
-    one (ADR-0011).
+    one (ADR-0028).
     """
 
     RETIRED = proc(TARGET_PID)
@@ -967,7 +967,7 @@ class TestWhatCloseAlreadyKnows:
 
     They sit on different rows because they settle at different moments.
     The interpreter count is final when the process retires, and the bar
-    can go out then (ADR-0011); ``clipped`` is the close-time sweep's
+    can go out then (ADR-0028); ``clipped`` is the close-time sweep's
     verdict, so only the slice that waits for close can carry it.
     """
 

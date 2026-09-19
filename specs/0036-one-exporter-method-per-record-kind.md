@@ -10,8 +10,8 @@
   - [ADR-0008](../docs/adr/0008-buffered-exporter-and-encoder-protocol.md):
     the exporter buffers and the encoder serializes, and a record after
     `close()` is dropped: sections 4.4 and 4.5.
-  - [ADR-0011](../docs/adr/0011-process-lifetime-and-ordering.md): liveness
-    arrives batched, once per tick: 4.1.
+  - [ADR-0029](../docs/adr/0029-report-liveness-and-fold-it-into-the-span.md):
+    liveness arrives batched, once per tick: 4.1.
   - [ADR-0013](../docs/adr/0013-rss-sampling.md): RSS on the process track
     rather than a thread's: 4.2.
   - [ADR-0015](../docs/adr/0015-gc-loss-spans-on-their-own-track.md): a loss
@@ -84,7 +84,7 @@ is wrong for the process-lifecycle three. `add_process_cmdline`,
 `add_process_retired` and `add_process_liveness` never reach the buffer:
 `PerfettoExporter` takes `_io_lock` and calls the encoder directly for all
 three, where every record kind goes through `_enqueue`. `add_process_liveness`
-also takes a *set* of processes and one timestamp, deliberately: ADR-0011 has
+also takes a *set* of processes and one timestamp, deliberately: ADR-0029 has
 the monitor report the whole live set once per tick, and one lock acquisition
 covers the batch. So:
 
@@ -123,7 +123,7 @@ Three producers call the interface, and all three move: `EventsMonitor`
 `ControlServer` (`add_instant_event`) and `RssSampler` (`add_rss_sample`).
 
 **Rejected: N per-pid calls for liveness.** It preserves a one-method
-interface and costs ADR-0011's batching: a lock acquisition per process per
+interface and costs ADR-0029's batching: a lock acquisition per process per
 tick instead of one.
 
 **Rejected: folding the lifecycle three into `add` as records.** They take a
@@ -253,10 +253,8 @@ already-open stream.
   that deliberately and this spec does not reopen it.
 - Compression, rotation, or line-buffering policy for `--format stdout`.
   *(carried from 0029)*
-- The `EventEncoder` `Protocol` to `ABC` question. ADR-0008 chose the protocol
-  deliberately.
 - Batching anything else the way liveness is batched. Liveness is batched
-  because ADR-0011 made it a per-tick observation; nothing else is.
+  because ADR-0029 made it a per-tick observation; nothing else is.
 
 ## 7. Further notes
 

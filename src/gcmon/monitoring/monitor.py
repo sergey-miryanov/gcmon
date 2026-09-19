@@ -63,7 +63,7 @@ class PollReport(msgspec.Struct):
 
     ``live`` answered :attr:`PollStatus.OK`. For a process that never
     collects, a successful read is the only evidence gcmon has that it existed,
-    which is what liveness reporting rests on (ADR-0011).
+    which is what liveness reporting rests on (ADR-0029).
 
     ``keep_running`` is false once no wait policy wants the run to go on.
     """
@@ -137,7 +137,7 @@ class EventsMonitor:
 
         # Liveness is stamped no earlier than the reads that prove these
         # processes alive, so two alive in one tick share an end
-        # (ADR-0011).
+        # (ADR-0029).
         self._tick_read_ns = now_ns
 
         live: set[Process] = set()
@@ -166,7 +166,7 @@ class EventsMonitor:
         live_processes = frozenset(live)
 
         # After the poll phase, one batched call, skipped on an empty set.
-        # ADR-0011 argues all three.
+        # ADR-0029 argues all three.
         if live_processes:
             self._exporter.add_process_liveness(live_processes, self._tick_read_ns)
 

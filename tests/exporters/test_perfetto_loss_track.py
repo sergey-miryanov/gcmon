@@ -1,6 +1,6 @@
-"""Does the trace processor draw loss spans where gcmon means them to go?
+"""Does the trace processor draw loss windows where gcmon means them to go?
 
-Two claims that nothing at the wire level can settle. First, that a loss span
+Two claims that nothing at the wire level can settle. First, that a loss window
 lands on a row of its own rather than among the collections, which is the whole
 point of the `LossTrack` and of a track descriptor Perfetto could ignore.
 Second, that consecutive poll intervals come back as neighbours on that row
@@ -54,7 +54,7 @@ def _pause(ts_start: int, ts_stop: int, collections: int) -> GCStatsInfo:
 def _write(events: list[TraceEvent], tmp_path: Path, name: str) -> Path:
     """Write the trace the way the exporter does, close included: the
     ``Lifetime`` bar the process row carries is drawn there, and it is what a
-    misparented loss span would reshape."""
+    misparented loss window would reshape."""
     state = PerfettoTrackState()
     descriptors, packets = convert_trace_events_to_perfetto(events, state, SEQUENCE_ID)
     closeout = finalize_perfetto_packets(state, SEQUENCE_ID)
@@ -134,7 +134,7 @@ def _events(*losses: LossMsg) -> list[TraceEvent]:
     return events
 
 
-def test_a_loss_span_lands_on_its_own_track(tmp_path: Path) -> None:
+def test_a_loss_window_lands_on_its_own_track(tmp_path: Path) -> None:
     """A `LossTrack` has to survive as a real, named row: the descriptor is
     emitted off the slices, and nothing else in the trace refers to it."""
     misplaced, slices = _load(_events(_loss(2_000, 9_000, 500)), tmp_path, "own_track")
@@ -188,7 +188,7 @@ def _process_slices(events: list[TraceEvent], tmp_path: Path, name: str) -> list
         ]
 
 
-def test_the_process_row_is_untouched_by_loss_spans(tmp_path: Path) -> None:
+def test_the_process_row_is_untouched_by_loss_windows(tmp_path: Path) -> None:
     """The loss track sits inside its interpreter's group, so a descriptor
     naming the wrong parent would land its spans on the process's own row and
     reshape the `Lifetime` bar ADR-0013 keeps clear of it.

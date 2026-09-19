@@ -515,7 +515,7 @@ def charges(ingested: Ingested, key: tuple[int, int]) -> Counter[int]:
 
 class TestTheRingSpanIsPartitioned:
     """Every collection between the first and last gcmon observed on a ring is
-    either drawn as a ``GC Pause`` slice or inside exactly one loss span's
+    either drawn as a ``GC Pause`` slice or inside exactly one loss window's
     range for that generation. No collection twice, none unaccounted for.
 
     This is what ``lost_from`` buys, and it is the strongest statement

@@ -1,6 +1,6 @@
 # 0033: Show how much was lost, not only where
 
-- **Status:** Not started (unblocked; the loss-span redesign landed as
+- **Status:** Not started (unblocked; the loss-window redesign landed as
   ADR-0015)
 - **Kind:** feature (enhancement)
 - **Effort:** S
@@ -98,10 +98,10 @@ can be compared by eye.
 **Note on the research this came from.** The grilling session recommended a
 loss counter as insurance against Perfetto summarising away narrow loss
 slices: *"a loss region much narrower than event spans may vanish when zoomed
-out."* That reason does not hold here. gcmon's loss spans are the widest thing
-on the track, and the `GC Pause` slices beside them are the sub-pixel ones.
-Keep the recommendation and drop the reason, and do not carry the reason into
-an ADR if this graduates.
+out."* That reason does not hold here. gcmon's loss windows are the widest
+thing on the track, and the `GC Pause` slices beside them are the sub-pixel
+ones. Keep the recommendation and drop the reason, and do not carry the reason
+into an ADR if this graduates.
 
 ## 5. Seams and testing decisions
 
@@ -145,7 +145,7 @@ an ADR if this graduates.
 ## 7. Further notes
 
 Settle when picked up: whether the counter is per `(pid, iid, gen)` or per
-`(pid, gen)` summed across interpreters. Per-key matches the loss spans and
+`(pid, gen)` summed across interpreters. Per-key matches the loss windows and
 the `GC Loss` row, and is the default assumed above; per-`(pid, gen)` matches
 the `--stats` table, which keys loss on `(pid, gen)`. A multi-interpreter
 capture is what settles it: if the two interpreters' curves are legible

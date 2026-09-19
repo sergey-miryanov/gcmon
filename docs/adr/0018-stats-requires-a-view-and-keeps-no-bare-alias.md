@@ -31,8 +31,8 @@ So the alias buys compatibility for three of the four orderings: it keeps
 its argv at the first `-m` or `-s`, both of which start with `-`, so it works
 either way.
 
-That left three options: a partial alias, an `argparse.Action` that recognises
-an all-digit value and hands it back to the positional, or no alias.
+That left a partial alias, an `argparse.Action` that recognises an all-digit
+value and hands it back to the positional, or no alias.
 
 The wider view also needed a name. `total` and `all` are synonyms: ask which
 of `--stats=total` and `--stats=all` prints more and the words give no answer,
@@ -103,12 +103,11 @@ point.
 The narrower view carries the wider one's cells unchanged, so a change that
 alters a cell in one alters it in both.
 
-`GCMON_STATS` is the first gcmon environment variable that can fail a run.
-Every other `get_env_*` fell back on an unreadable value: `GCMON_FORMAT=bogus`
-yielded the default format, `GCMON_TABLE_FORMAT=bogus` yields plain. A
+`GCMON_STATS` can fail a run, where a variable with a usable default falls
+back on an unreadable value: `GCMON_TABLE_FORMAT=bogus` yields plain. A
 variable selecting between two named views has no default that is one of them.
-[ADR-0021](0021-write-one-trace-format.md) took this shape for `GCMON_FORMAT`
-four days later, and cites this record for it.
+`GCMON_FORMAT` takes the same shape
+([ADR-0021](0021-write-one-trace-format.md)).
 
 Reversing this costs more than deleting a check. Re-admitting bare `--stats`
 means choosing which view it prints, a decision nobody has had to make yet.

@@ -1,7 +1,7 @@
 # ADR-0014: Validate traces against the real trace processor; deselect slow suites by marker
 
 - **Status:** Accepted
-- **Date:** 2026-06-12 (the stress marker)
+- **Date:** 2026-06-12
 - **Amended by:** [ADR-0026](0026-two-subsystems-over-a-shared-base.md)
 - **Modules:** tests
 
@@ -90,12 +90,13 @@ code.
 - These tests replaced the manual "open it in ui.perfetto.dev and look"
   acceptance step. Running the trace processor covers strictly more, since
   that is what the UI runs.
-- **Some behaviour is not SQL-observable at all.** `sibling_order_rank`
+- **Some behaviour is not in the core tables.** `sibling_order_rank`
   ([ADR-0011](0011-process-lifetime-and-ordering.md)) and `y_axis_share_key`
-  ([ADR-0005](0005-counter-y-axis-share-key.md)) are UI rendering hints that
-  the trace processor does not surface as columns. Tests touching them are
-  schema-validity guards or permanent `xfail(strict=False)`; asserting on a
-  column that does not exist is not available as a fix.
+  ([ADR-0005](0005-counter-y-axis-share-key.md)) are UI rendering hints with
+  no column in `track` or `counter_track`. The stdlib table the UI builds its
+  TrackEvent rows from carries both, the rank as the `order_id` it sorts a
+  row's children on, and the tests read them there. A process track's rank
+  shows in no table, so the tests touching it are schema-validity guards.
 - Stress tests are the only probabilistic tests in the suite, so they are the
   only ones whose failures can depend on how loaded the runner is.
 
@@ -105,16 +106,15 @@ code.
   keep it out of the runtime tree. Dev-group membership gives the tests what
   they need and ships nothing extra.
 - **Keep the trace-processor tests behind an `integration` marker with
-  `importorskip`.** Superseded. Deselecting them by default meant they seldom
-  ran, and nothing else in the suite catches the bugs they exist for.
+  `importorskip`.** Rejected: deselected by default they seldom run, and
+  nothing else in the suite catches the bugs they exist for.
 - **Session-scoped trace processor fixture.** Rejected: one instance holds one
   trace; sharing it means either reloading anyway or coupling every test to a
   single fixture trace.
 - **Real captured GC data as test input.** Rejected: slower, noisier, and it
   exercises no code path that one fully-populated synthetic item does not.
 - **Stress tests for `ControlClient`'s lazy-reconnect and failure-recovery
-  contracts.** Rejected as redundant: the unit tests in
-  `tests/control/test_control_client.py` already assert that a close followed
-  by a send reconnects silently, and that `BrokenPipeError` clears the
-  connection for the next call. Those assertions are stricter than "no
-  exception under contention."
+  contracts.** Rejected as redundant: the `ControlClient` unit tests already
+  assert that a close followed by a send reconnects silently, and that
+  `BrokenPipeError` clears the connection for the next call. Those assertions
+  are stricter than "no exception under contention."

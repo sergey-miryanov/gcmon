@@ -2,7 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-08-31
-- **Amended by:** [ADR-0011](0011-process-lifetime-and-ordering.md)
+- **Amended by:** [ADR-0028](0028-draw-every-process-a-row-of-its-own.md)
 - **Modules:** cli, control, exporters, model, monitoring
 
 ## Context
@@ -25,12 +25,12 @@ tick, and a pid missing from one report and back in a later one opens a second
 epoch. A gap in those reports is not a departure. The control server
 suppresses a pid and the monitor stops polling it, which drops the pid out of
 every report until it is re-enabled
-([ADR-0011](0011-process-lifetime-and-ordering.md)), and the encoder counts
-one process twice. The control server's own path has no reports to read: it
-takes a pid and a timestamp off the wire and needs the process that held that
-pid then, which may have retired before the message arrived. The epoch would
-also be counted twice over one set of evidence, at the encoder and on
-`StreamingStats`, with nothing but a test to keep the two in step.
+([ADR-0029](0029-report-liveness-and-fold-it-into-the-span.md)), and the
+encoder counts one process twice. The control server's own path has no reports
+to read: it takes a pid and a timestamp off the wire and needs the process
+that held that pid then, which may have retired before the message arrived.
+The epoch would also be counted twice over one set of evidence, at the encoder
+and on `StreamingStats`, with nothing but a test to keep the two in step.
 
 ## Decision
 
@@ -51,7 +51,8 @@ afterwards opens at whatever number those attempts reached.
 
 **Below the registry a pid is an `int`; above it, a `Process`.** The reader,
 the child listing and the `psutil` calls take the number the operating system
-gave; `Track`, the statistics keys and the trace take the process. The
+gave; `Track`, the statistics keys, the RSS sampler's live set
+([ADR-0013](0013-rss-sampling.md)) and the trace take the process. The
 registry is the one place the two meet.
 
 **A control-plane instant is filed under `at(pid, ts)`; a record is filed
@@ -70,13 +71,13 @@ nowhere. They went out under the predecessor already, and filing them under
 the successor would back-date its span to before it existed. Dating them back
 into the closed life instead would widen a span gcmon had stopped observing a
 tick earlier, and leave every retired process open to evidence arriving for it
-later ([ADR-0011](0011-process-lifetime-and-ordering.md)). The monitor counts
-what it drops and says so at debug level.
+later ([ADR-0028](0028-draw-every-process-a-row-of-its-own.md)). The monitor
+counts what it drops and says so at debug level.
 
 **The control plane holds a read-only view, not the registry.** A
 `ProcessLookup` protocol carrying `at` and nothing else lives in `model`,
 which every layer may import. `control` cannot import `monitoring`: the layer
-table in `tests/architecture/test_layering.py` forbids that edge.
+table in the architecture suite forbids that edge.
 
 **A new process reaches the exporter before anything can resolve it.**
 `ProcessRegistry.create` takes the exporter's command-line sink and calls it
@@ -111,8 +112,8 @@ wait behind it.
   lock and takes the exporter's. Nothing running under the exporter's may take
   the registry's, and the sink may not call back into the registry. The layer
   table blocks every way of breaking that but one: `ProcessLookup` is in
-  `model`, so an exporter may legally hold a reader of the registry.
-  `tests/architecture/test_lock_order.py` is where that import fails.
+  `model`, so an exporter may legally hold a reader of the registry. The
+  lock-order test in the architecture suite is where that import fails.
 - **The registry keeps every departure for the life of the run**, because that
   is what `at` answers from.
 - **The command-line provider is injected, never defaulted.** A test naming a
@@ -148,10 +149,10 @@ wait behind it.
 - **A module-level registry.** Rejected: two runs in one process would share
   epochs, and every test would have to reset it.
 - **Carry what gcmon read on the `Process`**, a discovery timestamp and a
-  command line beside the pair. What ADR-0010 shipped. Rejected: a `Process`
-  is a dict key on the write path, and a struct whose fields are not all
-  identity needs `__eq__` and `__hash__` written in Python. The discovery
-  timestamp had no reader at all.
+  command line beside the pair. Rejected: a `Process` is a dict key on the
+  write path, and a struct whose fields are not all identity needs `__eq__`
+  and `__hash__` written in Python. The discovery timestamp had no reader at
+  all.
 - **Key the statistics on `(pid, iid, epoch)` and leave the exporters on
-  pids.** What ADR-0016 shipped. Rejected: three fields where one value does,
-  and the trace still could not say which process a slice belonged to.
+  pids.** Rejected: three fields where one value does, and the trace still
+  could not say which process a slice belonged to.

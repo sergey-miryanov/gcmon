@@ -875,7 +875,7 @@ class TestOnePruneOverOneSet:
 class TestProcessLiveness:
     """A successful read is the only evidence gcmon has that a process was
     still there, and for a process that never collects it is the only evidence
-    of any kind. The tick that produced it is what reports it. See ADR-0011.
+    of any kind. The tick that produced it is what reports it. See ADR-0029.
     """
 
     def test_reported_once_per_tick_with_the_whole_live_set(self, exporter: MockExporter) -> None:
@@ -914,7 +914,7 @@ class TestProcessLiveness:
         that draws the `Processes` track sees them nest rather than cross. The
         opening instant does not do it: reads are sequential, so the pid polled
         second is observed later, and a long-lived parent would be clipped back
-        to the start of a short child that recycled a pid (ADR-0011)."""
+        to the start of a short child that recycled a pid (ADR-0029)."""
         monitor = _monitor(exporter)
         reads = iter([TICK_NS + 10, TICK_NS + 20, TICK_NS + 30, TICK_NS + 40])
         with (
@@ -958,7 +958,7 @@ class TestProcessLiveness:
         assert exporter.liveness == []
 
     def test_reported_after_the_records_the_same_tick_produced(self) -> None:
-        """ADR-0011: after the poll phase, never during it. That ordering is
+        """ADR-0029: after the poll phase, never during it. That ordering is
         what leaves a batch crossing `flush_threshold` mid-poll still able to
         emit a rank-less process descriptor -- which the ADR records, and which
         stays true for the same reason now that both happen in one call."""
@@ -1010,7 +1010,7 @@ class TestTheCommandLineReachesTheExporter:
 class TestARetirementIsReported:
     """The exporter is told the moment gcmon lets go of a process, so it can
     draw that process's row without waiting for the end of the run. A run
-    killed mid-flight keeps every row already written (ADR-0011).
+    killed mid-flight keeps every row already written (ADR-0028).
 
     Both ways out of the registry report it: a pid that left the tree, and one
     the wait policy gave up on.

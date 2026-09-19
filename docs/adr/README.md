@@ -84,14 +84,14 @@ module is neither.
 | [0005](0005-counter-y-axis-share-key.md) | Use the metric name itself as `CounterDescriptor.y_axis_share_key` | Accepted | exporters |
 | [0006](0006-begin-end-slice-pairs.md) | Represent durations as Begin/End pairs in both backends | Superseded by 0024 | exporters, model |
 | [0007](0007-shared-trace-converter-pipeline.md) | Convert GC stats to `TraceEvent` once, in a shared pipeline | Accepted | exporters, model, monitoring |
-| [0008](0008-buffered-exporter-and-encoder-protocol.md) | Split exporters into a buffering base class and a pluggable `EventEncoder` | Accepted | exporters |
+| [0008](0008-buffered-exporter-and-encoder-protocol.md) | Split the exporter's lifecycle from the encoder that writes the bytes | Accepted | exporters |
 | [0009](0009-nanoseconds-canonical-time-unit.md) | Store `TraceEvent.ts` in nanoseconds; convert at the encoder | Accepted | exporters, model, support |
 | [0010](0010-process-identity-cmdline-and-start-marker.md) | Duplicate the process cmdline per consumer, and force the process track to render | Accepted | exporters, monitoring |
-| [0011](0011-process-lifetime-and-ordering.md) | Show process lifetimes on one shared track, ordered by first observation | Accepted | exporters, monitoring |
+| [0011](0011-process-lifetime-and-ordering.md) | Show process lifetimes on one shared track, ordered by first observation | Accepted | exporters |
 | [0012](0012-trace-output-formats.md) | Support Perfetto output in `combine`, and dual output only in live mode | Superseded by 0021 | cli, exporters |
 | [0013](0013-rss-sampling.md) | Sample RSS in a standalone `RssSampler`, on the process track rather than a thread's | Accepted | cli, exporters, monitoring |
 | [0014](0014-perfetto-integration-test-strategy.md) | Validate traces against the real trace processor; deselect slow suites by marker | Accepted | tests |
-| [0015](0015-gc-loss-spans-on-their-own-track.md) | Draw reconstructed GC loss on a per-interpreter track, one span per poll interval | Accepted | exporters, model, monitoring, stats |
+| [0015](0015-gc-loss-spans-on-their-own-track.md) | Draw reconstructed GC loss on a per-interpreter track, one window per poll interval | Accepted | exporters, model, monitoring, stats |
 | [0016](0016-the-ring-is-the-statistics-unit.md) | Report statistics per ring, and drop the per-process row from the `--stats` table | Accepted | monitoring, pyperf, stats |
 | [0017](0017-monitor-owns-the-pid-lifecycle.md) | Give the monitor every piece of per-pid state, and leave the loop the clock | Accepted | monitoring |
 | [0018](0018-stats-requires-a-view-and-keeps-no-bare-alias.md) | Require a value on `--stats`, and keep no bare alias | Accepted | cli, stats |
@@ -100,7 +100,9 @@ module is neither.
 | [0021](0021-write-one-trace-format.md) | Write one trace format, and read only JSONL back | Accepted | cli, exporters |
 | [0022](0022-compress-each-batch-of-packets.md) | Compress each batch into one `TracePacket.zstd_compressed_packets` field | Accepted | exporters |
 | [0023](0023-the-pyperf-hook-annotates-and-does-not-drive.md) | Mark the benchmark from the pyperf hook, and drive nothing | Accepted | model, pyperf |
-| [0024](0024-an-event-names-the-track-it-is-drawn-on.md) | An event names the track it is drawn on, and the encoder derives the rest | Accepted | exporters, model |
+| [0024](0024-an-event-names-the-track-it-is-drawn-on.md) | An event names the track it is drawn on | Accepted | exporters, model |
 | [0025](0025-create-every-process-in-one-place.md) | Create every process in one place, and carry it instead of a pid | Accepted | cli, control, exporters, model, monitoring |
 | [0026](0026-two-subsystems-over-a-shared-base.md) | Split the package into a monitor and an analysis subsystem | Accepted | analysis, cli, exporters, monitoring |
 | [0027](0027-group-every-row-an-interpreter-owns.md) | Group every row an interpreter owns under one track | Accepted | exporters |
+| [0028](0028-draw-every-process-a-row-of-its-own.md) | Draw every process a row of its own, under a pid gcmon counts | Accepted | exporters |
+| [0029](0029-report-liveness-and-fold-it-into-the-span.md) | Report liveness once a tick, and fold it into a process's span | Accepted | exporters, monitoring |

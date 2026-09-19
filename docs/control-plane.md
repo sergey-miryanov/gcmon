@@ -24,7 +24,7 @@ Stopping stops gcmon reading that pid. The target keeps collecting. CPython's
 buffer holds the newest few records
 ([How gcmon reads a process](monitoring.md)), so a gap wider than a few
 collections overwrites them, and the first poll after `start_monitoring` reads
-counters spanning the whole gap. The gap becomes one GC Loss span
+counters spanning the whole gap. The gap becomes one loss window
 ([Trace Formats](formats.md)): gcmon counts the collections and has lost the
 records that described them.
 
@@ -68,7 +68,7 @@ client.instant_msg("work_end", ts=stopped)
 The measured code pays two clock reads and nothing else; the send happens
 outside it.
 
-Use `time.monotonic_ns`: gcmon stamps a GC record from the same clock, so your
+Use `time.monotonic_ns`: a GC record is stamped from the same clock, so your
 instants sit on the same timeline as the records.
 
 ## When to Use
