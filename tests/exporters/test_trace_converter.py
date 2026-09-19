@@ -19,7 +19,7 @@ from gcmon.model.names import (
     gc_pause_slice_name,
 )
 from gcmon.model.protocol import TItem
-from gcmon.model.trace_event import Counter, Instant, Slice
+from gcmon.model.trace_event import Counter, InterpreterTrack, LossTrack, ProcessTrack, Slice
 from tests.data_helpers import create_instant_msg
 from tests.helpers import create_mock_incremental_item, create_mock_loss_item, create_mock_stats_item, proc
 
@@ -172,4 +172,8 @@ class TestAnItemOfNoKnownKind:
         three real ones reach their branches, so all three go in together."""
         capture: list[TItem] = [create_mock_stats_item(), create_mock_loss_item(), create_instant_msg()]
 
-        assert {type(e) for e in convert_to_trace_format({1: capture})} == {Slice, Counter, Instant}
+        events = convert_to_trace_format({1: capture})
+
+        # Each kind draws on a track type of its own. The event types would
+        # not show a loss, which is a `Slice` like a pause.
+        assert {type(e.track) for e in events} == {InterpreterTrack, LossTrack, ProcessTrack}
