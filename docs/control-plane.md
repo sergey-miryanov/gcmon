@@ -68,7 +68,7 @@ client.instant_msg("work_end", ts=stopped)
 The measured code pays two clock reads and nothing else; the send happens
 outside it.
 
-Use `time.monotonic_ns`: gcmon stamps a GC record from the same clock, so your
+Use `time.monotonic_ns`: a GC record is stamped from the same clock, so your
 instants sit on the same timeline as the records.
 
 ## When to Use

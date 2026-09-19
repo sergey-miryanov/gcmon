@@ -122,8 +122,9 @@ rebuild the windows from a JSONL capture.
   seam between two polls. A hole inside one poll's records would still leave
   the counts right, since a count subtracts two end counters, but no gap would
   carry the hole's pause and the invariant would break in silence.
-- **gcmon trusts `duration` and the timestamps to share a clock.** One is a
-  floating-point total and the others are integer timestamps, and the
+- **gcmon trusts `duration` and the timestamps to share a clock**
+  ([The clock a GC record is stamped from](../internals/gc-record-clock.md)).
+  One is a floating-point total and the others are integer timestamps, and the
   arithmetic subtracts one from the other. The invariant tests it, and a
   failure there means the whole reconstruction is unsound.
 - **Two hazards break the first two, and gcmon mitigates neither.** A torn

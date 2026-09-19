@@ -2,8 +2,7 @@
 
 How the suites are split, how to run each one, and the conventions a test in
 them keeps. [`CONTRIBUTING.md`](../CONTRIBUTING.md) covers setting up a
-working copy; [ADR-0014](adr/0014-perfetto-integration-test-strategy.md) holds
-the reasoning behind the split.
+working copy.
 
 ## The default suite
 

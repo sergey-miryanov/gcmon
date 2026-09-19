@@ -96,8 +96,8 @@ of three intervals:
   out of `Cov` and `F`.
 
 Always write the qualifier: bare *lifetime* means a process's span on the
-`Processes` track ([ADR-0011](adr/0011-process-lifetime-and-ordering.md)), a
-wall-clock interval.
+`Processes` track ([output formats](formats.md#perfetto-output)), a wall-clock
+interval.
 
 The observed span starts at the first record gcmon read. gcmon cannot tell
 "ran before we attached" from "lost", so an earlier run falls outside the span

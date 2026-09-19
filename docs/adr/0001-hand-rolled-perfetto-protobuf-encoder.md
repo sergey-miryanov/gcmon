@@ -39,29 +39,25 @@ The production encoder is hand-rolled, and the `perfetto` package is a
 **dev-only** dependency used exclusively on the read side in tests (see
 [ADR-0014](0014-perfetto-integration-test-strategy.md)).
 
-It is layered across six modules in `src/gcmon/exporters/`, each importing
-only from ones above it:
+It is layered inside `exporters`, each layer a module importing only from ones
+above it:
 
-| Module | Holds |
-|--------|-------|
-| `protobuf_encoder.py` | varint and length-delimited wire primitives |
-| `perfetto_proto.py` | field numbers and enum values, nothing else |
-| `perfetto_track_state.py` | uuid allocation and per-trace bookkeeping |
-| `perfetto_builders.py` | message builders, pure values in and bytes out |
-| `perfetto_process_lifetime.py` | the shared `Processes` track ([ADR-0011](0011-process-lifetime-and-ordering.md)) |
-| `perfetto_format.py` | track layout policy, the conversion pass, and the re-exports importers use |
+1. varint and length-delimited wire primitives
+2. field numbers and enum values, nothing else
+3. uuid allocation and per-trace bookkeeping
+4. message builders, pure values in and bytes out
+5. the shared `Processes` track
+   ([ADR-0011](0011-process-lifetime-and-ordering.md))
+6. track layout policy, the conversion pass, and the re-exports importers use
 
 **The direction must stay acyclic.** It is what keeps the wire-format layer
 small enough to audit against upstream Perfetto, which is the reason for
-hand-rolling at all. Refuse an import that points the other way, such as
-`perfetto_builders` reaching for a layout constant.
+hand-rolling at all. Refuse an import that points the other way, such as a
+message builder reaching for a layout constant. The architecture suite names
+the modules in this order and fails on one.
 
-`tests/exporters/` carries a `test_` module per row, importing from the module
-that owns each symbol rather than through the `perfetto_format` re-exports, so
-a test failure names the layer. Two subjects that `perfetto_format.py`
-implements are large enough to get their own files anyway:
-`test_perfetto_ordering.py` and `test_perfetto_counter_tracks.py`. Helpers
-shared by more than one of them live in `tests/exporters/perfetto_helpers.py`.
+The suite tests each layer through the module that owns the symbol rather than
+through the re-exports, so a test failure names the layer.
 
 These rules make this safe:
 
