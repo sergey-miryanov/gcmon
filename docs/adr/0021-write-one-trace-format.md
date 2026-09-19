@@ -71,11 +71,11 @@ a corrupt capture.
 - The CLI derives no file extension from `--output-format`; it uses the `-o`
   path verbatim. Only the *default* changed.
 
-**`EventEncoder` stays a Protocol with one implementation.** ADR-0008 split
-the encoder from the exporter for two reasons, and only one of them was "two
-formats": the other is that `combine` drives `ProtobufEventEncoder` with no
-exporter, no buffer and no lock. That is still true, so the split stays, and a
-new output format is a second `EventEncoder` implementation.
+**The encoder stays a class of its own.** ADR-0008 split the encoder from the
+exporter for two reasons, and only one of them was "two formats": the other is
+that `combine` drives `ProtobufEventEncoder` with no exporter, no buffer and
+no lock. That is still true, so the split stays. The protocol declared over
+the two encoders does not: one format leaves it one implementation.
 
 ## Consequences
 

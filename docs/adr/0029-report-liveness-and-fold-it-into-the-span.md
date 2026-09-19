@@ -74,15 +74,16 @@ reports is therefore not a departure
 and this is one batched call and two dict comparisons per pid per tick. A flag
 would ship two definitions of a `Processes` slice.
 
-**Liveness attaches at `PerfettoExporter`, not on the `EventEncoder`
-protocol**, which is three methods meaning "translate a batch of `TraceEvent`
-into bytes"; a liveness observation is neither. `PerfettoExporter` builds its
-own `ProtobufEventEncoder`, so it keeps a typed handle and overrides the
-liveness call; JSONL and stdout reach the `EventsExporter` no-op. The override
-takes the I/O lock, which is not optional: it guards every other encoder
-touch, closing included, and `ControlServer` writes from its own thread.
-Without it a concurrent read-modify-write can drop a min/max update, and a new
-pid arriving while the exporter closes can raise
+**Liveness attaches at `PerfettoExporter`, beside the encoder's three methods
+rather than through them.** They mean "translate a batch of `TraceEvent` into
+bytes" ([ADR-0008](0008-buffered-exporter-and-encoder-protocol.md)), and a
+liveness observation is neither. `PerfettoExporter` builds its own
+`ProtobufEventEncoder` and overrides the liveness call; JSONL and stdout reach
+the `EventsExporter` no-op. The override takes the I/O lock, which is not
+optional: it guards every other encoder touch, closing included, and
+`ControlServer` writes from its own thread. Without it a concurrent
+read-modify-write can drop a min/max update, and a new pid arriving while the
+exporter closes can raise
 `RuntimeError: dictionary changed size during iteration` out of the span
 iteration.
 
@@ -107,7 +108,3 @@ iteration.
   and flushing at close. Rejected: it mirrors state the exporter already holds
   and adds a close-ordering hazard. Against a min/max, the redundant per-tick
   calls cost only dict comparisons.
-- **A fourth method on the `EventEncoder` protocol**, with a no-op in
-  `JsonEventEncoder`. Rejected: it widens a precise abstraction to carry
-  per-trace state one implementation has, and taxes the other for the life of
-  the protocol.

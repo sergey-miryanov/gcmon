@@ -253,8 +253,6 @@ already-open stream.
   that deliberately and this spec does not reopen it.
 - Compression, rotation, or line-buffering policy for `--format stdout`.
   *(carried from 0029)*
-- The `EventEncoder` `Protocol` to `ABC` question. ADR-0008 chose the protocol
-  deliberately.
 - Batching anything else the way liveness is batched. Liveness is batched
   because ADR-0029 made it a per-tick observation; nothing else is.
 

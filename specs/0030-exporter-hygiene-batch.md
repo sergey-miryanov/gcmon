@@ -121,5 +121,3 @@ The lazy import is what makes it work.
 - `psutil` as a hard dependency (see section 4, not adopted).
 - Splitting `perfetto_format`, which is large enough to deserve it but not as
   part of a hygiene pass.
-- The `EventEncoder` `Protocol` → `ABC` question. Unrelated; ADR-0008 chose
-  the protocol.
