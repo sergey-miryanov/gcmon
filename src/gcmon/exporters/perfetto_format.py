@@ -1,4 +1,5 @@
-"""Track layout policy and the GC-to-Perfetto conversion pass.
+"""Track layout policy and the GC-to-Perfetto conversion pass, the last of the
+encoder's layers (ADR-0001).
 
 ``convert_trace_events_to_perfetto`` maps ``TraceEvent`` objects from the
 shared ``trace_converter`` to Perfetto packets; the ``_emit_*`` helpers

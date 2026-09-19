@@ -1,4 +1,5 @@
-"""Per-trace uuid allocation and bookkeeping, with no protobuf knowledge.
+"""Per-trace uuid allocation and bookkeeping, with no protobuf knowledge
+(ADR-0001).
 
 ``PerfettoTrackState`` keeps descriptor emission idempotent across the
 many convert calls a buffered export makes.

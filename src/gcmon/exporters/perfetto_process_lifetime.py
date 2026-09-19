@@ -3,7 +3,8 @@
 The root descriptor that makes process order explicit, one process
 descriptor per process, one BEGIN/END pair per process on the shared
 ``Processes`` track clipped laminar, and one over the observed interval on
-the process's own row. See ADR-0011 and ADR-0028.
+the process's own row. See ADR-0011 and ADR-0028, and ADR-0001 for where this
+sits among the encoder's layers.
 """
 
 from typing import NamedTuple

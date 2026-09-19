@@ -1,4 +1,8 @@
-"""Minimal write-only protobuf wire-format encoder."""
+"""Minimal write-only protobuf wire-format encoder.
+
+Hand-rolled so that ``protobuf`` stays out of the runtime tree, and the first
+of the encoder's layers (ADR-0001).
+"""
 
 import struct
 

@@ -1,6 +1,6 @@
 # 0033: Show how much was lost, not only where
 
-- **Status:** Not started (unblocked; the loss-span redesign landed as
+- **Status:** Not started (unblocked; the loss-window redesign landed as
   ADR-0015)
 - **Kind:** feature (enhancement)
 - **Effort:** S

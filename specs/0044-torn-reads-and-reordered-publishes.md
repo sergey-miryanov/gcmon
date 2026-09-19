@@ -6,9 +6,8 @@
 - **Kind:** bug (correctness)
 - **Effort:** S once unblocked; see section 7 for the M-sized alternative that
   does not wait
-- **Origin:** the loss-spans working set, itself from ADR-0015's
-  `## What gcmon trusts the target for`, which names both hazards and
-  mitigates neither
+- **Origin:** the loss-window working set, itself from the trust bullets in
+  ADR-0015's Consequences, which name both hazards and mitigate neither
 - **Respects:**
   - [ADR-0015](../docs/adr/0015-gc-loss-spans-on-their-own-track.md): what
     gcmon reconstructs from an incomplete sample.
@@ -64,9 +63,8 @@ settles the cursor. Contiguity it trusts without checking, see ADR-0015."*,
 and `_gen_loss` is only ever called on `events[0]`, so a hole after it opens
 no window.
 
-ADR-0015 records the same two in its `## What gcmon trusts the target for`,
-under **"Two hazards break the first two properties, and gcmon mitigates
-neither yet."**
+ADR-0015 records the same two in its Consequences, under **"Two hazards break
+the first two, and gcmon mitigates neither."**
 
 ## 3. Scope
 
@@ -111,12 +109,11 @@ for one of the two.**
    the first version carrying the fix rather than assuming it: if the retry is
    exposed to the caller instead of handled internally, this step becomes a
    real change and this spec grows.
-3. **Version-gate the caveat.** ADR-0015's
-   `## What gcmon trusts the target for` and 0024 section 4's handling table
-   both state "not handled" unconditionally. Once a fixed CPython exists the
-   statement is version-dependent, and the docs have to say which side of the
-   line a capture was taken on; an operator holding a trace needs to know
-   whether the caveat applies to it.
+3. **Version-gate the caveat.** ADR-0015's Consequences and 0024 section 4's
+   handling table both state "not handled" unconditionally. Once a fixed
+   CPython exists the statement is version-dependent, and the docs have to say
+   which side of the line a capture was taken on; an operator holding a trace
+   needs to know whether the caveat applies to it.
 4. **Re-verify with ground truth** per section 5 before either caveat is
    relaxed. "The hazard is fixed upstream" is a claim about the target, and
    the property gcmon should assert is its own: the records one poll returns
@@ -196,7 +193,7 @@ record can also leave, so any client-side test for it is a heuristic over
 plausible pause lengths, and that is a detector that eventually drops a real
 long pause, the one record an operator most wants.
 
-**Where the answer goes.** ADR-0015's `## What gcmon trusts the target for` is
-the statement of record and is amended when this lands, per
+**Where the answer goes.** The trust bullets in ADR-0015's Consequences are
+the statement of record and are amended when this lands, per
 [CONVENTIONS.md](CONVENTIONS.md) rule 4. 0024 section 4's handling table
 carries the same two rows and stays in step with it.

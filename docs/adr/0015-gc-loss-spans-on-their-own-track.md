@@ -192,12 +192,14 @@ rebuild the windows from a JSONL capture.
   orders a ring's lost records against that ring's kept records and says
   nothing about another generation's, so a lost gen-0 run can have happened
   after an observed gen-2 one. Clipping can also leave a window narrower than
-  the pause it reports. This rejects the **eviction-order** inference, not
-  every narrowing. A bound taken from a record still in progress at the read
-  is temporal: that record held the interpreter at that moment, and
-  collections in an interpreter are serialized, so anything lost after the
-  read ran after that collection ended, whatever generation either belongs to.
-  No ring, no cross-key inference.
+  the pause it reports.
+- **Moving a window's near edge to the end of a record in progress at the
+  read.** That record held the interpreter at that moment, and collections in
+  an interpreter are serialized, so anything lost after the read ran after
+  that collection ended, whatever generation either belongs to. The argument
+  is temporal and leans on no ring. Rejected: it narrows a window by one pause
+  out of a poll interval, and gcmon learns that a record straddled a read only
+  from a later poll, if the record survives to be read.
 - **Bounding a window by how many runs it could hold**, taking a ring's
   shortest observed interval between two records as a floor on its period.
   Rejected: one fast burst weakens that floor for the whole session, and it
