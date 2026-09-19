@@ -227,25 +227,28 @@ class TestWhatIsNotProse:
         assert all(line.startswith("> ") for line in wrapped.split("\n"))
 
 
-class TestAFileItWillNotTouch:
-    """`process` rewrites documentation in place, so each way out that leaves
-    the file alone is a guard worth holding."""
+def _page(tmp_path: Path, text: str) -> Path:
+    path = tmp_path / "page.md"
+    path.write_bytes(text.encode(ENCODING))
+    return path
 
-    def _file(self, tmp_path: Path, text: str) -> Path:
-        path = tmp_path / "page.md"
-        path.write_bytes(text.encode(ENCODING))
-        return path
 
+class TestAFileItRewrites:
     def test_a_long_paragraph_is_rewritten(self, tmp_path: Path) -> None:
-        path = self._file(tmp_path, LONG.rstrip() + "\n")
+        path = _page(tmp_path, LONG.rstrip() + "\n")
 
         done = wrap_markdown.process(path, 40, check=False)
 
         assert done
         assert max(len(line) for line in path.read_text(encoding=ENCODING).split("\n")) <= 40
 
+
+class TestAFileItWillNotTouch:
+    """`process` rewrites documentation in place, so each way out that leaves
+    the file alone is a guard worth holding."""
+
     def test_check_reports_the_file_and_leaves_it(self, tmp_path: Path) -> None:
-        path = self._file(tmp_path, LONG.rstrip() + "\n")
+        path = _page(tmp_path, LONG.rstrip() + "\n")
 
         done = wrap_markdown.process(path, 40, check=True)
 
@@ -253,13 +256,13 @@ class TestAFileItWillNotTouch:
         assert path.read_text(encoding=ENCODING) == LONG.rstrip() + "\n"
 
     def test_a_file_already_wrapped_passes_the_check(self, tmp_path: Path) -> None:
-        path = self._file(tmp_path, "short\n")
+        path = _page(tmp_path, "short\n")
 
         assert wrap_markdown.process(path, 40, check=True)
 
     def test_a_crlf_file_is_skipped(self, tmp_path: Path) -> None:
         text = LONG.rstrip() + "\r\n"
-        path = self._file(tmp_path, text)
+        path = _page(tmp_path, text)
 
         done = wrap_markdown.process(path, 40, check=False)
 
@@ -268,7 +271,7 @@ class TestAFileItWillNotTouch:
 
     def test_a_file_with_indented_code_is_skipped(self, tmp_path: Path) -> None:
         text = f"{LONG.rstrip()}\n\n    indented = code\n"
-        path = self._file(tmp_path, text)
+        path = _page(tmp_path, text)
 
         done = wrap_markdown.process(path, 40, check=False)
 
