@@ -68,9 +68,11 @@ instead.
 pyperf's metadata holds nothing to trend across this change, and nothing in
 tree reads the marks: until a reader exists they are for the Perfetto UI.
 
-A mark and a GC record have to come from one clock, and gcmon assumes it is
-the one `time.monotonic_ns` reads. If CPython ever stamps a record from
-another, every mark is misplaced and nothing downstream catches it.
+A mark and a GC record have to come from one clock, the one
+`time.monotonic_ns` reads
+([The clock a GC record is stamped from](../internals/gc-record-clock.md)). If
+CPython ever stamps a record from another, every mark is misplaced and nothing
+downstream catches it.
 
 ## Alternatives considered
 

@@ -9,8 +9,8 @@
 
 `TGCStatsInfo` records timestamps in nanoseconds, on the clock
 `time.monotonic_ns()` reads
-([ADR-0023](0023-the-pyperf-hook-annotates-and-does-not-drive.md)). The
-`TraceEvent` model stored microseconds, so the converter divided each
+([The clock a GC record is stamped from](../internals/gc-record-clock.md)).
+The `TraceEvent` model stored microseconds, so the converter divided each
 timestamp field down on the way in.
 
 That was fine while Chrome was the only backend: the Chrome Trace Event format
