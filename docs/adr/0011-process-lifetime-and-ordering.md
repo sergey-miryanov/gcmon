@@ -300,5 +300,4 @@ process was monitored at all.
   ([ADR-0010](0010-process-identity-cmdline-and-start-marker.md)), and only
   the whole subtree can move. A process descriptor arriving after the rows
   beneath it loses the per-process split (ADR-0028), since the pid is already
-  bound to a row, and a counter event on a track described later is dropped
-  outright.
+  bound to a row, and a counter event on a track described later is dropped.

@@ -84,9 +84,9 @@ is wrong for the process-lifecycle three. `add_process_cmdline`,
 `add_process_retired` and `add_process_liveness` never reach the buffer:
 `PerfettoExporter` takes `_io_lock` and calls the encoder directly for all
 three, where every record kind goes through `_enqueue`. `add_process_liveness`
-also takes a *set* of processes and one timestamp, deliberately: ADR-0029 has
-the monitor report the whole live set once per tick, and one lock acquisition
-covers the batch. So:
+also takes a *set* of processes and one timestamp: ADR-0029 has the monitor
+report the whole live set once per tick, and one lock acquisition covers the
+batch. So:
 
 ```python
 type ExportRecord = TItem | RssSample

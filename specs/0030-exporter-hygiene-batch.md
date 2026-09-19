@@ -58,8 +58,8 @@ field numbers (ADR-0001) and ranks are our own layout policy.
 internally thread-safe and does not need to be: every call reaches it through
 `ProtobufEventEncoder.write_events` under `PerfettoExporter._io_lock`, and
 `PerfettoExporter.add_process_liveness` takes that same lock explicitly for
-exactly this reason (ADR-0029). Add that to the class docstring. No locking,
-no behaviour change.
+this reason (ADR-0029). Add that to the class docstring. No locking, no
+behaviour change.
 
 **4.3: dropped, 2026-08-26.** It asked `BufferedTraceExporter._build_meta` to
 state the atomicity of its check-and-emit. There is no such method: no

@@ -55,7 +55,7 @@ went blind before clicking anything.
 
 **A window's width is uncertainty, not GC time.** One short lost run can draw
 a bar as wide as the poll interval, which beside the `GC Pause` slices reads
-as a very long pause. That is why loss gets a row of its own.
+as a long pause. That is why loss gets a row of its own.
 
 The bar also covers the runs gcmon did see. Runs inside an interpreter
 serialize, so no lost run happened during an observed one, and trimming the

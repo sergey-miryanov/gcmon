@@ -50,12 +50,12 @@ nothing and reaches neither the monitor nor the sampler, so one instant still
 covers everything a tick emits. `--rss-interval` stays seconds, because an
 operator types it; the sampler converts it once at construction.
 
-**The sampler reads no clock.** It used to stamp each sample with its own
-`time.monotonic_ns()`, spreading a pass across however long `psutil` took.
-That spread carried no information: the pass walks a `set`, so hash order
-picked which pid got the earliest timestamp, and on the Perfetto side which
-sibling's lifetime span got clipped. Spans sharing a start nest, so one
-instant per pass removes the effect.
+**The sampler reads no clock.** A sample stamped with its own
+`time.monotonic_ns()` spreads a pass across however long `psutil` takes. That
+spread carries no information: the pass walks a `set`, so hash order picks
+which pid gets the earliest timestamp, and on the Perfetto side which
+sibling's lifetime span is clipped. Spans sharing a start nest, so one instant
+per pass removes the effect.
 
 **The sampler callback is injectable**, the same pattern as the command-line
 provider `ProcessRegistry` takes

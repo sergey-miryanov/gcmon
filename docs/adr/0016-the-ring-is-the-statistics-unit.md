@@ -132,10 +132,10 @@ run-wide, the scope `Total` reports.
 
 ## Consequences
 
-- **The advisory fires on runs that are silent today.** A starved interpreter
-  beside a busy one trips the 90% floor on its own figure. That is the defect
-  being fixed, and it makes the warning noisier on trees that were this
-  incomplete before.
+- **The advisory fires where a per-process figure stayed silent.** A starved
+  interpreter beside a busy one trips the 90% floor on its own figure. That is
+  the defect the ring unit fixes, and the warning is noisier on a tree that
+  incomplete.
 - **`Total` holds the table's only blended percentile.** Every other row
   describes one distribution.
 - **Footprint scales with interpreters running at once.** A process creating

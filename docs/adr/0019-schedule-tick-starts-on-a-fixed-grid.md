@@ -87,9 +87,8 @@ joins the summary rather than the loop.
   before.
 - RSS sampling inherits an evenly spaced schedule: the sampler paces off the
   stamping instant, and the grid changed nothing in its interval logic.
-- `--rate` has a lower bound where it had none. gcmon accepted anything under
-  a millisecond before and could never hold it, so the run that used to start
-  now does not.
+- `--rate` has a lower bound. gcmon could never hold a rate under a
+  millisecond, so a run that asks for one does not start.
 - The grid arithmetic and the run report sit in `model` rather than beside the
   loop. The CLI's environment reader and option parser import the grid's bound
   and `stats` imports the report, so putting either in `monitoring` would pull

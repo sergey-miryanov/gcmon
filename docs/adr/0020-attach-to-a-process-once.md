@@ -9,8 +9,8 @@
 Reading a process's GC records has two halves. One is finding the target:
 opening it, locating its runtime, reading and validating its debug offsets.
 The other is copying the rings out. Only the second is the point, and gcmon
-used to do both on every poll of every process, throwing the first half away
-each time.
+did both on every poll of every process, throwing the first half away each
+time.
 
 Attaching scans the target's loaded modules for the runtime section and
 validates what it finds; a read is a handful of remote memory copies. The gap
@@ -57,8 +57,8 @@ A stale cursor makes a number wrong; a stale attachment invents the data.
 
 - **Reconstructing an attachment after a failed read looks wasteful and is
   deliberate.** It costs one attach on a tick that already failed, which is
-  what every tick used to cost. Do not "optimise" it into a retry that keeps
-  the old attachment.
+  what attaching per poll costs on every tick. Do not "optimise" it into a
+  retry that keeps the old attachment.
 
 - **gcmon cannot notice a pid recycled between two successful reads.**
   [Spec 0052](../../specs/0052-a-recycled-pid-can-be-read-through-a-stale-attachment.md)
@@ -91,7 +91,7 @@ A stale cursor makes a number wrong; a stale attachment invents the data.
 
 - **The gap the decision rests on is measured**, a held read against a fresh
   attach, so a change that reattaches per poll fails a benchmark rather than
-  quietly costing an order of magnitude.
+  costing an order of magnitude.
 - **The first poll of each process still pays for the attach**, and
   `Read Time` carries that cost rather than excluding it. An operator sees one
   outlier per process, and the cost of reading alone after it.

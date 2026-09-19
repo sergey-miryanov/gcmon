@@ -87,9 +87,9 @@ target never sees.
 ## Alternatives considered
 
 **One stack with two tips**, adding `analysis` as another layer under `cli`.
-Rejected because `cli`'s permission to import every layer is exactly the
-import the split exists to prevent: an analysis command reaching into
-`monitoring` would still pass.
+Rejected because `cli`'s permission to import every layer is the import the
+split exists to prevent: an analysis command reaching into `monitoring` would
+still pass.
 
 **Two distributions**, one per subsystem. Rejected. gcmon is pure Python, so
 splitting buys no per-platform wheel and no build simplification, and the

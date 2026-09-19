@@ -78,5 +78,5 @@ wire** (`parent_uuid=None`, which the encoder skips), never `parent_uuid=0`.
 
 - **Arithmetic UUIDs derived from pid/iid** (`pid | 1<<60` etc.). Rejected:
   deterministic but fragile. It requires a new bit-range per track kind,
-  `(pid << 20) | iid` collides for large pids, and it encodes a very large
-  varint into every packet for no benefit.
+  `(pid << 20) | iid` collides for large pids, and it encodes a large varint
+  into every packet for no benefit.

@@ -22,14 +22,14 @@ length-delimited submessages, and a few dozen field numbers, a few hundred
 lines to write by hand.
 
 The cost is owning those field numbers against a proto that changes upstream.
-Three field-number bugs have shipped: `TrackEvent.type` and `track_uuid`
-renumbered upstream, timestamps written inside `TrackEvent` where field 1 is a
+Field-number bugs have shipped: `TrackEvent.type` and `track_uuid` renumbered
+upstream, timestamps written inside `TrackEvent` where field 1 is a
 `timestamp_delta_us` oneof member, and `DebugAnnotation.name` moving from
-field 1 to field 10 (field 1 is now a `uint64` interned ID). A fourth was
+field 1 to field 10 (field 1 is now a `uint64` interned ID). Another was
 arithmetic: the varint encoder masked to 32 bits, so `sibling_order_rank = -1`
 was written as `0`.
 
-All four fail the same way. The trace still parses; it renders wrong, and only
+They all fail the same way. The trace still parses; it renders wrong, and only
 a human opening the UI notices. That failure mode, rather than any individual
 bug, is what the decision has to address.
 
