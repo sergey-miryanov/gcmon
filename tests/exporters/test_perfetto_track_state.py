@@ -246,23 +246,18 @@ class TestProcessLifetimeState:
         assert state.get_process_lifetimes() == [span(TARGET_PID, 1_000, 5_000)]
 
     def test_a_timestamp_past_either_end_moves_that_end(self, state: PerfettoTrackState) -> None:
-        """The reverse of the old rule, where a counter moved the start
-        and never the end. An RSS sample at 9us is evidence the process
-        was alive at 9us exactly as a GC event would be, and the caller
-        no longer says which kind it is holding."""
+        """No event kind is excepted: an RSS sample moves an end as a record
+        does (ADR-0011)."""
         state.update_process_lifetime(proc(TARGET_PID), 2_000)
         state.update_process_lifetime(proc(TARGET_PID), 4_000)
 
-        # A counter before the span's start pulls the start back...
         state.update_process_lifetime(proc(TARGET_PID), 1_000)
-        # ...and one after its end pushes the end out.
         state.update_process_lifetime(proc(TARGET_PID), 9_000)
 
         assert state.get_process_lifetimes() == [span(TARGET_PID, 1_000, 9_000)]
 
     def test_a_pid_seen_twice_gets_a_start_and_a_span(self, state: PerfettoTrackState) -> None:
-        """A pid seen only through counters used to get a start, and
-        therefore a rank, but no span and no slice. It now gets both."""
+        """The row opens where the span drawn for it starts."""
         state.update_process_lifetime(proc(TARGET_PID), 1_000)
         state.update_process_lifetime(proc(TARGET_PID), 7_000)
 
@@ -271,13 +266,13 @@ class TestProcessLifetimeState:
         assert state.get_process_lifetimes() == [span(TARGET_PID, 1_000, 7_000)]
 
     def test_a_first_timestamp_later_than_the_rest_stays_the_end(self, state: PerfettoTrackState) -> None:
-        """A counter sets the end like anything else, including when it
-        is the first event folded for a pid.
+        """The first timestamp folded for a pid seeds the end as well as the
+        start.
 
-        Events reach the encoder in buffer order, not timestamp order: a
-        poll returns GC events that already happened, while an RSS sample
-        is stamped when taken, so a counter can arrive first and carry a
-        later ts than every GC event in the batch.
+        Events reach the encoder in buffer order, not timestamp order. A poll
+        returns records already written and an RSS sample is stamped when
+        taken, so the sample can arrive first and carry the latest ts in the
+        batch.
         """
         state.update_process_lifetime(proc(TARGET_PID), 1_000)
         state.update_process_lifetime(proc(TARGET_PID), 500)
