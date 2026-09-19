@@ -306,8 +306,6 @@ class TestProcessOrderingByFirstTs:
         assert start_ts == {1: 3_000, 2: 2_000}
 
     def test_each_batch_stamps_its_own_process_with_its_first_ts(self) -> None:
-        """First-ts recorded in one batch must be remembered when
-        the process descriptor is emitted in a later batch."""
         s = PerfettoTrackState()
 
         d1, _ = convert_trace_events_to_perfetto(
