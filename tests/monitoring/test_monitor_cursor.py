@@ -163,6 +163,17 @@ class TestCursorScope:
 
         assert seen(exporter) == {(0, 90), (0, 3)}
 
+    def test_a_stale_cursor_silences_a_reused_pid(self, monitor: EventsMonitor, exporter: MockExporter) -> None:
+        """Why the loop has to drop cursors for pids that leave the process
+        tree. Nothing here notices the counter restarting, so a reused pid
+        stays silent until it climbs past its predecessor."""
+        ingest(monitor, PID, [_record(collections=800, ts_start=8_000, ts_stop=8_500)])
+        exporter.events.clear()
+
+        ingest(monitor, PID, [_record(collections=2, ts_start=100, ts_stop=200)])
+
+        assert exporter.events == []
+
     def test_forget_drops_cursors_for_one_pid(
         self, monitor: EventsMonitor, exporter: MockExporter, poll_0: list[GCStatsInfo]
     ) -> None:
@@ -181,17 +192,6 @@ class TestCursorScope:
 
 
 class TestRetain:
-    def test_a_stale_cursor_silences_a_reused_pid(self, monitor: EventsMonitor, exporter: MockExporter) -> None:
-        """Why the loop has to drop cursors for pids that leave the process
-        tree. Nothing here notices the counter restarting, so a reused pid
-        stays silent until it climbs past its predecessor."""
-        ingest(monitor, PID, [_record(collections=800, ts_start=8_000, ts_stop=8_500)])
-        exporter.events.clear()
-
-        ingest(monitor, PID, [_record(collections=2, ts_start=100, ts_stop=200)])
-
-        assert exporter.events == []
-
     def test_retain_drops_pids_outside_the_tree(
         self, monitor: EventsMonitor, exporter: MockExporter, poll_0: list[GCStatsInfo]
     ) -> None:
