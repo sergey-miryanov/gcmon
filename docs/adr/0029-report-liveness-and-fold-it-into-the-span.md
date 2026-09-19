@@ -63,8 +63,8 @@ one.
 server suppresses mid-run is not polled and so not observed, but if re-enabled
 it gets **one continuous span across the gap**, because the accumulator stores
 only a min and a max. Correct under "liveness", wrong under "monitoring
-coverage"; representing the gap as two spans is out of scope. A gap in the
-reports is therefore not a departure
+coverage", and gcmon draws no second span for the gap. A gap in the reports is
+therefore not a departure
 ([ADR-0025](0025-create-every-process-in-one-place.md)).
 
 **Liveness is always on**, with no flag. The cost that justified `--rss`
@@ -91,8 +91,8 @@ iteration.
   it gets a `Processes` slice and a rank (ADR-0011) and a row of its own
   (ADR-0028).
 - **`combine` diverges from live capture.** Offline conversion has no monitor
-  polling anything, so its spans stay event-derived and narrower. Carrying
-  liveness through JSONL so `combine` could reproduce it is out of scope.
+  polling anything, so its spans stay event-derived and narrower. JSONL
+  carries no liveness for `combine` to reproduce it from.
 
 ## Alternatives considered
 

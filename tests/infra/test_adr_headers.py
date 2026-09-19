@@ -23,6 +23,10 @@ RECORDS = sorted(p for p in ADR_DIR.glob("0*.md") if p.name != TEMPLATE)
 INDEX_ROW = re.compile(r"^\| \[(\d{4})\]\([^)]*\) \| .* \| .* \| (.*?) \|$", re.M)
 FIELD = re.compile(r"^- \*\*Modules:\*\* (.+)$", re.M)
 LINK = re.compile(r"^- \*\*(Amended by|Supersedes|Status):\*\*(.*?)(?=^- |\n\n)", re.M | re.S)
+TITLE = re.compile(r"^# ADR-\d{4}: (.+)$", re.M)
+INDEX_TITLE = re.compile(r"^\| \[(\d{4})\]\([^)]*\) \| (.*?) \| ", re.M)
+CITED = re.compile(r"ADR-(\d{4})")
+SECTIONS = ["Context", "Decision", "Consequences", "Alternatives considered"]
 
 
 def modules_of(path: Path) -> list[str]:
@@ -42,6 +46,22 @@ def header_links(path: Path) -> list[str]:
 def index_modules() -> dict[str, str]:
     text = (ADR_DIR / "README.md").read_text(encoding=ENCODING)
     return {m.group(1): m.group(2).strip() for m in INDEX_ROW.finditer(text)}
+
+
+def amended_by(path: Path) -> list[str]:
+    """The numbers in *path*'s ``Amended by`` field, in the order written."""
+    text = path.read_text(encoding=ENCODING)
+    return [
+        number
+        for field in LINK.finditer(text)
+        if field.group(1) == "Amended by"
+        for number in CITED.findall(field.group(2))
+    ]
+
+
+def cited_in_body(path: Path) -> set[str]:
+    _, _, body = path.read_text(encoding=ENCODING).partition("\n## ")
+    return set(CITED.findall(body))
 
 
 class TestThereIsSomethingToCheck:
@@ -96,3 +116,39 @@ class TestEveryRecordLinkResolves:
         for path in RECORDS:
             for target in header_links(path):
                 assert (ADR_DIR / target).exists(), f"{path.name} -> {target}"
+
+
+class TestAmendedByIsTheReverseOfALink:
+    def test_some_record_is_amended(self) -> None:
+        assert [number for path in RECORDS for number in amended_by(path)]
+
+    def test_the_amending_record_cites_the_one_it_amends(self) -> None:
+        by_number = {path.name[:4]: path for path in RECORDS}
+        for path in RECORDS:
+            for number in amended_by(path):
+                assert path.name[:4] in cited_in_body(by_number[number]), f"{path.name} <- {number}"
+
+    def test_the_field_is_ascending(self) -> None:
+        for path in RECORDS:
+            assert amended_by(path) == sorted(set(amended_by(path))), path.name
+
+
+class TestTheIndexTitleIsTheRecordsTitle:
+    def test_each_row_carries_its_records_h1(self) -> None:
+        readme = (ADR_DIR / "README.md").read_text(encoding=ENCODING)
+        rows = {m.group(1): m.group(2) for m in INDEX_TITLE.finditer(readme)}
+        for path in RECORDS:
+            title = TITLE.search(path.read_text(encoding=ENCODING))
+            assert title is not None, path.name
+            assert rows[path.name[:4]] == title.group(1), path.name
+
+
+class TestARecordHasFourSections:
+    def test_the_headings_are_the_templates(self) -> None:
+        for path in RECORDS:
+            text = path.read_text(encoding=ENCODING)
+            if "**Status:** Superseded" in text:
+                # Trimmed to what it still decides, so it keeps no fixed shape.
+                continue
+            headings = re.findall(r"^## (.+)$", text, re.M)
+            assert headings == SECTIONS, f"{path.name}: {headings}"

@@ -1,7 +1,6 @@
 """The encoder that turns batches of ``TraceEvent`` into a Perfetto trace.
 
-A class of its own rather than part of the exporter, because ``combine``
-drives it with no exporter, no buffer and no lock around it (ADR-0008).
+``combine`` drives it with no exporter around it (ADR-0008).
 """
 
 from __future__ import annotations
