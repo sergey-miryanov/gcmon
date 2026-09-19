@@ -9,6 +9,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from gcmon.analysis.jsonl_io import read_jsonl
 from gcmon.cli.monitor._env import (
     ENV_DURATION,
     ENV_FLUSH_THRESHOLD,
@@ -223,6 +224,16 @@ class TestCliJsonlFormat:
         result = run_monitor(["--format", FORMAT_JSONL, "-o", str(output_file), "-d", "0.1", "-v"])
 
         assert "Format: jsonl" in result.stderr
+
+    def test_the_file_written_reads_back_as_records(self, run_monitor_self: Any, tmp_path: Path) -> None:
+        """Against the running gcmon, since a run that read nothing writes no
+        file to find."""
+        output_file = tmp_path / "test.jsonl"
+
+        result = run_monitor_self(["--format", FORMAT_JSONL, "-o", str(output_file), "-d", "0.3"])
+
+        assert result.returncode == 0
+        assert read_jsonl(output_file)
 
     def test_cli_overrides_env(self, run_monitor_self: Any, tmp_path: Path) -> None:
         output_file = tmp_path / "test.pftrace"
