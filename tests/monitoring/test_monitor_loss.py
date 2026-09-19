@@ -209,12 +209,13 @@ def observe_all(batches: Iterable[Sequence[GCStatsInfo]]) -> Ingested:
 
 
 def polls_losing_three(polls: int = 2, ts0: int = TS0) -> list[list[GCStatsInfo]]:
-    """What each of *polls* reads, one record apiece, with three collections
-    lost between every two.
+    """One batch per poll. Each batch holds one record, and each poll after
+    the first misses three collections.
 
-    `build_run` counts from one and a poll here reads every fourth record, so
-    two polls read collections 1 and 5. A monitor that kept the first reports
-    2, 3 and 4 lost on the second: three lost and two observed, of five.
+    `build_run` counts from one and every fourth record is polled, so two
+    polls read collections 1 and 5. A monitor that kept the first poll
+    reports 2, 3 and 4 lost on the second: three lost, two observed, five in
+    all.
     """
     return [[event] for event in build_run(4 * (polls - 1) + 1, ts0=ts0)[::4]]
 
