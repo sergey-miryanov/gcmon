@@ -111,11 +111,8 @@ narrow a platform, and a constant defeats it.
 
 The exception is a value that is not a name gcmon draws. The Chrome capture in
 `tests/cli/analyze/test_convert_cmd.py` is a file an earlier release wrote;
-the two process names in
-`tests/exporters/test_perfetto_emission_order_fuzz.py` are labels a stack has
-to tell apart; the names in `tests/exporters/test_perfetto_builders.py` are
-arguments to a builder that writes down whatever it is handed. Each says so in
-a comment.
+the names in `tests/exporters/test_perfetto_builders.py` are arguments to a
+builder that writes down whatever it is handed. Each says so in a comment.
 
 Import for a value the test does not care about, such as the category on a
 `Slice` it builds only to read back. Keep the literal for a threshold or a
