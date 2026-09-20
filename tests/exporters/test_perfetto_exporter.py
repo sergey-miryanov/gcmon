@@ -1,7 +1,7 @@
 """Tests for Perfetto binary protobuf exporter."""
 
 import threading
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from collections.abc import Set as AbstractSet
 from pathlib import Path
 from typing import Any
@@ -39,7 +39,13 @@ from tests.conftest import DEFAULT_PID
 from tests.data_helpers import create_instant_msg
 from tests.exporters.conftest import ExporterFactory
 from tests.exporters.perfetto_helpers import pause_item
-from tests.helpers import create_mock_incremental_item, create_mock_stats_item, perfetto_packets, proc
+from tests.helpers import (
+    create_mock_incremental_item,
+    create_mock_loss_item,
+    create_mock_stats_item,
+    perfetto_packets,
+    proc,
+)
 
 # Pids that only ever show up as liveness observations: gcmon polled
 # them successfully but they never collected, so they produce no events.
@@ -585,129 +591,192 @@ class TestProcessLivenessRoundTrip:
         exporter.close()
 
 
-class _EncoderUnderTheLock:
-    """A stand-in for the encoder that asserts the exporter's lock is held
-    on the way in."""
+class _SectionLog:
+    """What the exporter did, in order: each critical section it opened, and
+    each touch of the buffer or the encoder.
 
-    def __init__(self, encoder: ProtobufEventEncoder, lock: threading.Lock) -> None:
+    ``sections`` is what happened inside each one, ``outside`` what happened
+    with none open. Between them they tell a flush that reads the buffer and
+    writes it in one section from the two shapes that reopen the race
+    ADR-0011 records: a release between the read and the write, and a buffer
+    guarded by a lock of its own.
+    """
+
+    def __init__(self) -> None:
+        self.entries: list[str] = []
+
+    @property
+    def sections(self) -> list[list[str]]:
+        """The touches inside each critical section, in the order the
+        sections opened."""
+        sections: list[list[str]] = []
+        inside: list[str] | None = None
+        for entry in self.entries:
+            if entry == "enter":
+                inside = []
+                sections.append(inside)
+            elif entry == "exit":
+                inside = None
+            elif inside is not None:
+                inside.append(entry)
+        return sections
+
+    @property
+    def outside(self) -> list[str]:
+        """Every touch made with no critical section open."""
+        outside: list[str] = []
+        inside = False
+        for entry in self.entries:
+            if entry == "enter":
+                inside = True
+            elif entry == "exit":
+                inside = False
+            elif not inside:
+                outside.append(entry)
+        return outside
+
+
+class _LoggingLock:
+    """The exporter's lock, logging each critical section it opens."""
+
+    def __init__(self, log: _SectionLog) -> None:
+        self._log = log
+        self._lock = threading.Lock()
+
+    def __enter__(self) -> _LoggingLock:
+        self._lock.acquire()
+        self._log.entries.append("enter")
+        return self
+
+    def __exit__(self, *exc_info: object) -> None:
+        self._log.entries.append("exit")
+        self._lock.release()
+
+
+class _LoggingBuffer:
+    """The exporter's buffer, logging the four operations a flush performs.
+
+    Written out rather than delegated through ``__getattr__``: Python looks
+    up an implicitly invoked dunder on the type, so ``len(buffer)`` and
+    ``buffer[:]`` would never reach it. An operation this does not name
+    raises ``AttributeError`` rather than going unlogged.
+    """
+
+    def __init__(self, log: _SectionLog) -> None:
+        self._log = log
+        self._items: list[TraceEvent] = []
+
+    def extend(self, items: Iterable[TraceEvent]) -> None:
+        self._log.entries.append("buffer.extend")
+        self._items.extend(items)
+
+    def clear(self) -> None:
+        self._log.entries.append("buffer.clear")
+        self._items.clear()
+
+    def __len__(self) -> int:
+        self._log.entries.append("buffer.len")
+        return len(self._items)
+
+    def __getitem__(self, index: slice) -> list[TraceEvent]:
+        self._log.entries.append("buffer.read")
+        return self._items[index]
+
+
+class _LoggingEncoder:
+    """The encoder, logging each call that reaches it."""
+
+    def __init__(self, encoder: ProtobufEventEncoder, log: _SectionLog) -> None:
         self._encoder = encoder
-        self._lock = lock
-        self.touched: list[str] = []
+        self._log = log
 
     def __getattr__(self, name: str) -> Any:
         attribute = getattr(self._encoder, name)
         if not callable(attribute):
             return attribute
 
-        def guarded(*args: object, **kwargs: object) -> object:
-            assert self._lock.locked(), f"{name} reached the encoder with the lock free"
-            self.touched.append(name)
+        def logged(*args: object, **kwargs: object) -> object:
+            self._log.entries.append(f"encoder.{name}")
             return attribute(*args, **kwargs)
 
-        return guarded
+        return logged
 
 
-class _BufferUnderTheLock:
-    """A stand-in for the exporter's buffer, asserting the lock is held on
-    every touch: the four operations a flush performs on it.
+_TARGET = proc(DEFAULT_PID)
 
-    This is what tells the one-lock shape from a buffer lock taken outside
-    the one that orders encoder state. The encoder guard above cannot: a
-    flush reading the buffer under its own lock still writes under the
-    other one, so the encoder sees nothing wrong.
+# Every public way into the exporter, each a call that reaches the buffer,
+# the encoder or both.
+_ENTRY_POINTS: list[tuple[str, Callable[[PerfettoExporter], None]]] = [
+    ("add_event", lambda exporter: exporter.add_event(_TARGET, create_mock_stats_item(ts_start=1_000, ts_stop=2_000))),
+    ("add_instant_event", lambda exporter: exporter.add_instant_event(_TARGET, create_instant_msg(ts=2_500))),
+    ("add_rss_sample", lambda exporter: exporter.add_rss_sample(_TARGET, 4_096, 2_600)),
+    ("add_loss_event", lambda exporter: exporter.add_loss_event(_TARGET, create_mock_loss_item())),
+    ("add_process_cmdline", lambda exporter: exporter.add_process_cmdline(_TARGET, ("python3", "-m", "target"))),
+    ("add_process_retired", lambda exporter: exporter.add_process_retired(_TARGET)),
+    ("add_process_liveness", lambda exporter: exporter.add_process_liveness({_TARGET}, 3_000)),
+    ("close", lambda exporter: exporter.close()),
+]
+
+
+class TestOneCriticalSectionPerCall:
+    """Every call into the exporter does its work inside one critical
+    section, touching nothing outside it.
+
+    Two sections where there is one reopens the race ADR-0011 records: a
+    flush reads the buffer, releases, and a retirement reaches the encoder
+    before the events the flush is holding get there. A touch outside every
+    section is what a second lock over the buffer alone produced.
     """
 
-    def __init__(self, lock: threading.Lock) -> None:
-        self._lock = lock
-        self._items: list[TraceEvent] = []
-
-    def _check(self, what: str) -> None:
-        assert self._lock.locked(), f"the buffer was {what} with the lock free"
-
-    def extend(self, items: Iterable[TraceEvent]) -> None:
-        self._check("extended")
-        self._items.extend(items)
-
-    def clear(self) -> None:
-        self._check("cleared")
-        self._items.clear()
-
-    def __len__(self) -> int:
-        self._check("measured")
-        return len(self._items)
-
-    def __getitem__(self, index: slice) -> list[TraceEvent]:
-        self._check("copied")
-        return self._items[index]
-
-
-class TestOneLockGuardsTheBufferAndTheEncoder:
-    """The order encoder touches happen in is the order the calls arrived
-    in, which holds because one lock covers both reading the buffer and
-    writing what it held.
-
-    A second lock for the buffer alone left a window between the two: a
-    flush holding events it had taken out of the buffer, and a retirement
-    free to reach the encoder first and draw a span those events had not
-    reached (ADR-0011).
-    """
-
-    def _guarded(
-        self, tmp_path: Path, threshold: int = 1
-    ) -> tuple[PerfettoExporter, _EncoderUnderTheLock, _BufferUnderTheLock]:
+    def _logged(self, tmp_path: Path, threshold: int = 1) -> tuple[PerfettoExporter, _SectionLog]:
         exporter = PerfettoExporter(output_path=tmp_path / "trace.pftrace", flush_threshold=threshold)
-        encoder = _EncoderUnderTheLock(exporter._encoder, exporter._io_lock)
-        buffer = _BufferUnderTheLock(exporter._io_lock)
-        exporter._encoder = encoder  # type: ignore[assignment]
-        exporter._buffer = buffer  # type: ignore[assignment]
-        return exporter, encoder, buffer
+        log = _SectionLog()
+        exporter._io_lock = _LoggingLock(log)  # type: ignore[assignment]
+        exporter._buffer = _LoggingBuffer(log)  # type: ignore[assignment]
+        exporter._encoder = _LoggingEncoder(exporter._encoder, log)  # type: ignore[assignment]
+        return exporter, log
 
-    def test_every_entry_point_holds_it(self, tmp_path: Path) -> None:
-        """Each of these reaches the encoder by its own route: a flush out of
-        the buffer, three that hand it state directly, and the closeout."""
-        exporter, encoder, _buffer = self._guarded(tmp_path)
-        target = proc(DEFAULT_PID)
+    @pytest.mark.parametrize(("name", "call"), _ENTRY_POINTS, ids=[name for name, _call in _ENTRY_POINTS])
+    def test_each_entry_point_is_one_section(
+        self, tmp_path: Path, name: str, call: Callable[[PerfettoExporter], None]
+    ) -> None:
+        exporter, log = self._logged(tmp_path)
 
-        exporter.add_process_cmdline(target, ("python3", "-m", "target"))
-        exporter.add_event(target, create_mock_stats_item(ts_start=1_000, ts_stop=2_000))
-        exporter.add_instant_event(target, create_instant_msg(name="mark", ts=2_500))
-        exporter.add_rss_sample(target, 4_096, 2_600)
-        exporter.add_process_liveness({target}, 3_000)
-        exporter.add_process_retired(target)
+        call(exporter)
+
+        assert log.outside == [], name
+        assert len(log.sections) == 1, name
         exporter.close()
 
-        assert set(encoder.touched) == {
-            "record_process_cmdline",
-            "write_events",
-            "record_process_liveness",
-            "record_process_retired",
-            "close",
-        }
+    def test_a_flush_reads_the_buffer_and_writes_it_in_the_same_section(self, tmp_path: Path) -> None:
+        """The property one lock buys, and the one a second lock cost:
+        reading the buffer in one section and writing in the next leaves the
+        window a retirement slips into."""
+        exporter, log = self._logged(tmp_path)
 
-    def test_an_enqueue_that_does_not_flush_holds_it_too(self, tmp_path: Path) -> None:
-        """The buffer is touched on every call, so the lock is taken whether
-        or not the call writes anything."""
-        exporter, encoder, _buffer = self._guarded(tmp_path, threshold=1_000)
+        exporter.add_event(_TARGET, create_mock_stats_item(ts_start=1_000, ts_stop=2_000))
 
-        exporter.add_event(proc(DEFAULT_PID), create_mock_stats_item(ts_start=1_000, ts_stop=2_000))
-
-        assert encoder.touched == []
-        exporter.close()
-        assert encoder.touched == ["write_events", "close"]
-
-    def test_the_encoder_guard_fires_when_the_lock_is_free(self, tmp_path: Path) -> None:
-        """A guard that never fails would pass whatever the exporter did."""
-        exporter, encoder, _buffer = self._guarded(tmp_path)
-
-        with pytest.raises(AssertionError, match="reached the encoder with the lock free"):
-            encoder.close()
-
+        assert log.outside == []
+        assert len(log.sections) == 1
+        section = log.sections[0]
+        assert {"buffer.read", "buffer.clear", "encoder.write_events"} <= set(section)
+        assert section.index("buffer.read") < section.index("encoder.write_events")
         exporter.close()
 
-    def test_the_buffer_guard_fires_when_the_lock_is_free(self, tmp_path: Path) -> None:
-        exporter, _encoder, buffer = self._guarded(tmp_path)
+    def test_the_log_counts_a_released_section_as_two(self) -> None:
+        """The shape a release between the read and the write produces, which
+        is what the tests above are here to fail on."""
+        log = _SectionLog()
+        log.entries += ["enter", "buffer.read", "exit", "enter", "encoder.write_events", "exit"]
 
-        with pytest.raises(AssertionError, match="the buffer was measured with the lock free"):
-            len(buffer)
+        assert len(log.sections) == 2
+        assert log.outside == []
 
-        exporter.close()
+    def test_the_log_reports_a_touch_with_no_section_open(self) -> None:
+        """The shape a second lock over the buffer produces: the buffer work
+        is guarded, but not by the lock that orders encoder state."""
+        log = _SectionLog()
+        log.entries += ["buffer.extend", "buffer.read", "enter", "encoder.write_events", "exit"]
+
+        assert log.outside == ["buffer.extend", "buffer.read"]
+        assert log.sections == [["encoder.write_events"]]
