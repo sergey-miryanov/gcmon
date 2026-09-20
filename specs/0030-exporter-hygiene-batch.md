@@ -61,6 +61,14 @@ internally thread-safe and does not need to be: every call reaches it through
 this reason (ADR-0029). Add that to the class docstring. No locking, no
 behaviour change.
 
+`PerfettoExporter` now takes `_io_lock` around the whole of a flush, so every
+touch of `_buffer` sits inside it and `_lock` guards nothing `_io_lock` does
+not. Collapsing the two is the follow-on, and it is this item's to take: a
+lock that is always held inside another reads as concurrency the class does
+not have. The order is pinned by
+`tests/exporters/test_perfetto_exporter.py::TestAFlushHoldsTheIoLockThroughout`,
+so either shape has to keep it.
+
 **4.3: dropped, 2026-08-26.** It asked `BufferedTraceExporter._build_meta` to
 state the atomicity of its check-and-emit. There is no such method: no
 producer decides what a batch's descriptors are any more
