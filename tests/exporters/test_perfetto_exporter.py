@@ -591,7 +591,7 @@ class _SectionLog:
     ``sections`` is what happened inside each one, ``outside`` what happened
     with none open. Between them they tell a flush that reads the buffer and
     writes it in one section from the two shapes that reopen the race
-    ADR-0011 records: a release between the read and the write, and a buffer
+    ADR-0008 records: a release between the read and the write, and a buffer
     guarded by a lock of its own.
     """
 
@@ -715,7 +715,7 @@ class TestOneCriticalSectionPerCall:
     """Every call into the exporter does its work inside one critical
     section, touching nothing outside it.
 
-    Two sections where there is one reopens the race ADR-0011 records: a
+    Two sections where there is one reopens the race ADR-0008 records: a
     flush reads the buffer, releases, and a retirement reaches the encoder
     before the events the flush is holding get there. A touch outside every
     section is what a second lock over the buffer alone produced.

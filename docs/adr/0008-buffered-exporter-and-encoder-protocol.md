@@ -92,10 +92,11 @@ The split settles further questions:
   buffer, a lock and four one-line calls.
 - **A second lock for the buffer alone.** Rejected: it leaves a window between
   taking events out of the buffer and writing them. A retirement reaching the
-  encoder inside that window draws a process's span from an accumulator those
-  events have not reached, leaving it short at whichever end they would have
-  moved ([ADR-0011](0011-process-lifetime-and-ordering.md)). The one lock
-  costs an append the wait for a write already in progress.
+  encoder inside that window draws a process's `Lifetime` bar from an
+  accumulator those events have not reached, leaving it short at whichever end
+  they would have moved
+  ([ADR-0029](0029-report-liveness-and-fold-it-into-the-span.md)). The one
+  lock costs an append the wait for a write already in progress.
 - **A `Protocol` declared over the encoder.** Rejected: with one format there
   is one implementation and nothing typed against the protocol.
 - **A common base class with abstract encode methods instead of a separate
