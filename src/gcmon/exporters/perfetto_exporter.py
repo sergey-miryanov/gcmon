@@ -22,8 +22,7 @@ class PerfettoExporter(EventsExporter):
     """Buffer what the monitor reports as `TraceEvent`s, and write them as
     a Perfetto trace.
 
-    One class rather than a buffering base and a subclass on top, and one
-    lock, `_io_lock`, over the buffer and every touch of encoder state; see
+    One class rather than a buffering base and a subclass on top; see
     ADR-0008.
     """
 

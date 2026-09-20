@@ -63,8 +63,8 @@ behaviour change.
 
 `PerfettoExporter` holds `_io_lock` across the whole of a flush and has no
 second lock: one lock guards the buffer and the encoder together, so a flush
-reads the buffer and writes what it read in one critical section. The class
-docstring carries that, and
+reads the buffer and writes what it read in one critical section. ADR-0008
+carries that, and
 `tests/exporters/test_perfetto_exporter.py::TestOneCriticalSectionPerCall`
 holds it there, so 4.2 documents `PerfettoTrackState` alone.
 
