@@ -87,7 +87,6 @@ class TrackEventField(IntEnum):
 
 class DebugAnnotationField(IntEnum):
     NAME = 10
-    BOOL_VALUE = 2
     INT_VALUE = 4
     STRING_VALUE = 6
     DICT_ENTRIES = 11

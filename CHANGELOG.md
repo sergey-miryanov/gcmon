@@ -2,6 +2,14 @@
 
 ## WIP
 
+### Breaking changes
+
+- A `Processes` slice carries no `real_start_ts`, `real_end_ts` or `clipped` annotation
+
+### Features
+
+- Every process's span on the `Processes` row is as wide as gcmon observed that process for, and `dur` there is a duration gcmon measured
+
 ## Version 0.8.0 (2026-09-20)
 
 ### Breaking changes

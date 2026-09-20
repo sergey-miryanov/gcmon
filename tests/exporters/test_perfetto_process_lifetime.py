@@ -33,15 +33,12 @@ from gcmon.exporters.trace_converter import (
 )
 from gcmon.model.data import GCStatsInfo
 from gcmon.model.names import (
-    CLIPPED,
     CMDLINE,
     LOST_COUNT,
     LOST_PAUSE,
     LOST_PAUSE_NS,
     PID,
     PID_EPOCH,
-    REAL_END_TS,
-    REAL_START_TS,
     SAMPLED_COUNT,
 )
 from gcmon.model.process import Process
@@ -213,8 +210,8 @@ class TestEverySpanIsDrawnAsObserved:
         """A span is drawn for a pid that never reached ``mark_process_descriptor``
         -- one polled OK for a whole run that never collected, so it named no
         track and no convert pass described it. gcmon read no command line for
-        this one, so its slice carries only ``pid_epoch`` and the ``real_*``
-        annotations. Its own row is ``TestAQuietProcessGetsARow``'s subject."""
+        this one, so its slice carries the pid and the epoch and nothing else.
+        Its own row is ``TestAQuietProcessGetsARow``'s subject."""
         state.update_process_lifetime(proc(TARGET_PID), 500)
         state.update_process_lifetime(proc(TARGET_PID), 5_000)
         assert not state.has_process_descriptor(proc(TARGET_PID))
@@ -226,7 +223,7 @@ class TestEverySpanIsDrawnAsObserved:
                 500,
                 TrackEventType.SLICE_BEGIN,
                 TARGET_ROW_NAME,
-                {PID: 100, PID_EPOCH: 1, REAL_START_TS: 500, REAL_END_TS: 5_000, CLIPPED: False},
+                {PID: 100, PID_EPOCH: 1},
             ),
             (5_000, TrackEventType.SLICE_END, "", {}),
         ]
@@ -390,9 +387,6 @@ class TestProcessLifetimeSlices:
                     CMDLINE: "python3 -m fake_target",
                     PID: 100,
                     PID_EPOCH: 1,
-                    REAL_START_TS: 1_000,
-                    REAL_END_TS: 2_000,
-                    CLIPPED: False,
                 },
             ),
             (2_000, TrackEventType.SLICE_END, "", {}),
@@ -406,7 +400,7 @@ class TestProcessLifetimeSlices:
         _, packets = convert_item(target, pause_item(), state, sequence_id=1)
 
         begin = lifetime_slices(packets, processes_row_uuids(state, target))[0]
-        assert list(begin[3]) == [PID, PID_EPOCH, REAL_START_TS, REAL_END_TS, CLIPPED]
+        assert list(begin[3]) == [PID, PID_EPOCH]
 
 
     def test_two_crossing_pids_each_keep_their_pair(self, state: PerfettoTrackState) -> None:
@@ -439,9 +433,6 @@ class TestProcessLifetimeSlices:
                     CMDLINE: "python3 -m early_target",
                     PID: 100,
                     PID_EPOCH: 1,
-                    REAL_START_TS: 500,
-                    REAL_END_TS: 1_500,
-                    CLIPPED: False,
                 },
             ),
             (1_500, TrackEventType.SLICE_END, "", {}),
@@ -453,9 +444,6 @@ class TestProcessLifetimeSlices:
                     CMDLINE: "python3 -m late_target",
                     PID: 200,
                     PID_EPOCH: 1,
-                    REAL_START_TS: 1_000,
-                    REAL_END_TS: 5_000,
-                    CLIPPED: False,
                 },
             ),
             (5_000, TrackEventType.SLICE_END, "", {}),
@@ -487,9 +475,6 @@ class TestProcessLifetimeSlices:
                     CMDLINE: "python3 -m first_target",
                     PID: 100,
                     PID_EPOCH: 1,
-                    REAL_START_TS: 1_000,
-                    REAL_END_TS: 2_000,
-                    CLIPPED: False,
                 },
             ),
             (2_000, TrackEventType.SLICE_END, "", {}),
@@ -501,9 +486,6 @@ class TestProcessLifetimeSlices:
                     CMDLINE: "python3 -m second_target",
                     PID: 100,
                     PID_EPOCH: 2,
-                    REAL_START_TS: 3_000,
-                    REAL_END_TS: 4_000,
-                    CLIPPED: False,
                 },
             ),
             (4_000, TrackEventType.SLICE_END, "", {}),
@@ -546,9 +528,6 @@ class TestProcessLifetimeSlices:
                     CMDLINE: "python3 -m fake_target",
                     PID: 100,
                     PID_EPOCH: 1,
-                    REAL_START_TS: 1_000,
-                    REAL_END_TS: 4_000,
-                    CLIPPED: False,
                 },
             ),
             (4_000, TrackEventType.SLICE_END, "", {}),

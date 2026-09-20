@@ -15421,18 +15421,6 @@ track_event {
     int_value: 1
     name: "pid_epoch"
   }
-  debug_annotations {
-    int_value: 1000000000
-    name: "real_start_ts"
-  }
-  debug_annotations {
-    int_value: 5802600000
-    name: "real_end_ts"
-  }
-  debug_annotations {
-    bool_value: false
-    name: "clipped"
-  }
   type: TYPE_SLICE_BEGIN
   track_uuid: 46
   name: "Process 33328"
@@ -15499,18 +15487,6 @@ track_event {
     int_value: 1
     name: "pid_epoch"
   }
-  debug_annotations {
-    int_value: 1002600000
-    name: "real_start_ts"
-  }
-  debug_annotations {
-    int_value: 2802600000
-    name: "real_end_ts"
-  }
-  debug_annotations {
-    bool_value: false
-    name: "clipped"
-  }
   type: TYPE_SLICE_BEGIN
   track_uuid: 47
   name: "Process 33512"
@@ -15533,18 +15509,6 @@ track_event {
   debug_annotations {
     int_value: 2
     name: "pid_epoch"
-  }
-  debug_annotations {
-    int_value: 3497509800
-    name: "real_start_ts"
-  }
-  debug_annotations {
-    int_value: 5802600000
-    name: "real_end_ts"
-  }
-  debug_annotations {
-    bool_value: false
-    name: "clipped"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 48

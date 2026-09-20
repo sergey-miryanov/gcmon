@@ -9,7 +9,7 @@ from gcmon.exporters.perfetto_process_lifetime import (
     _PROCESS_LIFETIME_TRACK_NAME,
     _PROCESS_ROW_SLICE_NAME,
 )
-from gcmon.model.names import GC_PAUSE_NAME, REAL_END_TS, REAL_START_TS
+from gcmon.model.names import GC_PAUSE_NAME
 from tests.conftest import DEFAULT_PID
 from tests.exporters.perfetto_integration.traces import (
     _DEFAULT_ROW_NAME,
@@ -23,7 +23,6 @@ from tests.exporters.perfetto_integration.traces import (
     _SECOND_PID,
     _SECOND_ROW_NAME,
     _process_row_filter,
-    flat_key,
 )
 from tests.helpers import misplaced_end_events
 
@@ -67,18 +66,13 @@ class TestMonitorReportedLiveness:
         event's and the end is the last tick's."""
         rows = list(
             liveness_trace_processor.query(
-                f"SELECT a.flat_key AS flat_key, a.int_value AS int_value FROM args a "
-                f"JOIN slice s ON s.arg_set_id = a.arg_set_id "
+                f"SELECT s.ts AS ts, s.dur AS dur FROM slice s "
                 f"JOIN track t ON s.track_id = t.id "
-                f"WHERE t.name = '{_PROCESS_LIFETIME_TRACK_NAME}' AND s.name = '{_DEFAULT_ROW_NAME}' "
-                f"AND a.flat_key IN ('{flat_key(REAL_START_TS)}', '{flat_key(REAL_END_TS)}')"
+                f"WHERE t.name = '{_PROCESS_LIFETIME_TRACK_NAME}' AND s.name = '{_DEFAULT_ROW_NAME}'"
             )
         )
 
-        assert {r.flat_key: r.int_value for r in rows} == {
-            flat_key(REAL_START_TS): _LIVE_GC_START,
-            flat_key(REAL_END_TS): _LIVE_TICKS[-1],
-        }
+        assert [(r.ts, r.ts + r.dur) for r in rows] == [(_LIVE_GC_START, _LIVE_TICKS[-1])]
 
     def test_the_quiet_process_gets_a_row_of_its_own(
         self,

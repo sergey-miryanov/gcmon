@@ -8,7 +8,6 @@ this sits among the encoder's layers.
 """
 
 from ..model.names import (
-    CLIPPED,
     CMDLINE,
     LOST_COUNT,
     LOST_PAUSE,
@@ -16,14 +15,11 @@ from ..model.names import (
     PAUSE,
     PID,
     PID_EPOCH,
-    REAL_END_TS,
-    REAL_START_TS,
     SAMPLED_COUNT,
 )
 from ..model.process import Process
 from ..model.trace_event import LossTrack, Slice, TraceEvent
 from .perfetto_builders import (
-    _build_debug_annotation_bool,
     _build_debug_annotation_int,
     _build_debug_annotation_string,
     build_trace_packet,
@@ -161,9 +157,6 @@ def _emit_process_lifetime_slice(
         *_cmdline_annotation(span.process, state),
         _build_debug_annotation_int(PID, span.process.pid),
         _build_debug_annotation_int(PID_EPOCH, span.process.pid_epoch),
-        _build_debug_annotation_int(REAL_START_TS, span.start_ts),
-        _build_debug_annotation_int(REAL_END_TS, span.end_ts),
-        _build_debug_annotation_bool(CLIPPED, False),
     ]
     return [
         build_trace_packet(

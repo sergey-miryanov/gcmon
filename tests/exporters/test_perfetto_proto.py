@@ -104,7 +104,6 @@ class TestPerfettoProtoConstants:
         f = desc.fields_by_name
 
         assert f["name"].number == DebugAnnotationField.NAME
-        assert f["bool_value"].number == DebugAnnotationField.BOOL_VALUE
         assert f["int_value"].number == DebugAnnotationField.INT_VALUE
         assert f["string_value"].number == DebugAnnotationField.STRING_VALUE
         assert f["dict_entries"].number == DebugAnnotationField.DICT_ENTRIES

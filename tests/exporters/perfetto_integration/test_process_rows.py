@@ -27,8 +27,6 @@ from gcmon.model.names import (
     LOST_PAUSE_NS,
     PID,
     PID_EPOCH,
-    REAL_END_TS,
-    REAL_START_TS,
     SAMPLED_COUNT,
 )
 from tests.conftest import DEFAULT_PID
@@ -120,20 +118,6 @@ class TestProcessRowLifetimeSlice:
 
         assert [r.dur for r in shared] == [7_000_000]
         assert self._lifetimes(trace_processor)[_SECOND_ROW_NAME][1] == 7_000_000
-
-    def test_carries_no_real_ts_annotations(self, trace_processor: TraceProcessor) -> None:
-        """``ts`` and ``dur`` *are* the observed pair here, so copying it into
-        annotations would state one fact twice."""
-        rows = list(
-            trace_processor.query(
-                f"SELECT a.flat_key AS flat_key FROM args a "
-                f"JOIN slice s ON s.arg_set_id = a.arg_set_id "
-                f"WHERE s.name = '{_PROCESS_ROW_SLICE_NAME}' "
-                f"AND a.flat_key IN ('{flat_key(REAL_START_TS)}', '{flat_key(REAL_END_TS)}')"
-            )
-        )
-
-        assert rows == []
 
     def test_carries_cmdline_pid_and_epoch(
         self,
@@ -474,30 +458,25 @@ class TestProcessesTrack:
             _SECOND_ROW_NAME: (_TS_START - 2_000_000, _TS_START + 5_000_000),
         }
 
-    def test_every_slice_records_its_real_span(
+    def test_a_span_annotates_only_what_it_cannot_draw(
         self,
         trace_processor: TraceProcessor,
     ) -> None:
-        """Both slices carry the span gcmon observed, which is the span
-        they draw."""
+        """Which process this is, and nothing about the interval: `ts` and
+        `dur` are the pair gcmon observed, so an annotation repeating either
+        would state one fact twice."""
         rows = list(
             trace_processor.query(
-                f"SELECT s.name AS name, a.flat_key AS flat_key, a.int_value AS int_value "
-                f"FROM args a "
+                f"SELECT DISTINCT a.flat_key AS flat_key FROM args a "
                 f"JOIN slice s ON s.arg_set_id = a.arg_set_id "
                 f"JOIN track t ON s.track_id = t.id "
                 f"WHERE t.name = '{_PROCESS_LIFETIME_TRACK_NAME}' "
-                f"AND a.flat_key IN ('{flat_key(REAL_START_TS)}', '{flat_key(REAL_END_TS)}') "
-                f"ORDER BY s.name, a.flat_key"
+                f"AND a.flat_key GLOB 'debug.*' "
+                f"ORDER BY a.flat_key"
             )
         )
 
-        assert {(r.name, r.flat_key): r.int_value for r in rows} == {
-            (_DEFAULT_ROW_NAME, flat_key(REAL_START_TS)): _TS_START - 1_000_000,
-            (_DEFAULT_ROW_NAME, flat_key(REAL_END_TS)): _TS_START + 9_000_000,
-            (_SECOND_ROW_NAME, flat_key(REAL_START_TS)): _TS_START - 2_000_000,
-            (_SECOND_ROW_NAME, flat_key(REAL_END_TS)): _TS_START + 5_000_000,
-        }
+        assert [r.flat_key for r in rows] == [flat_key(PID), flat_key(PID_EPOCH)]
 
     def test_no_misplaced_end_events(
         self,
@@ -640,31 +619,6 @@ class TestCrossingProcessSpans:
         merged = {int(one) for group in groups for one in str(group.track_ids).split(",")}
         assert merged == {r.track_id for r in rows}, "one row merges both of them"
 
-    def test_every_slice_records_its_real_span(
-        self,
-        crossing_trace_processor: TraceProcessor,
-    ) -> None:
-        """Both slices carry ``real_start_ts`` / ``real_end_ts``, holding the
-        pair they draw."""
-        rows = list(
-            crossing_trace_processor.query(
-                f"SELECT s.name AS name, a.flat_key AS flat_key, a.int_value AS int_value "
-                f"FROM args a "
-                f"JOIN slice s ON s.arg_set_id = a.arg_set_id "
-                f"JOIN track t ON s.track_id = t.id "
-                f"WHERE t.name = '{_PROCESS_LIFETIME_TRACK_NAME}' "
-                f"AND a.flat_key IN ('{flat_key(REAL_START_TS)}', '{flat_key(REAL_END_TS)}') "
-                f"ORDER BY s.name, a.flat_key"
-            )
-        )
-
-        assert {(r.name, r.flat_key): r.int_value for r in rows} == {
-            (_DEFAULT_ROW_NAME, flat_key(REAL_START_TS)): _CROSS_A_START,
-            (_DEFAULT_ROW_NAME, flat_key(REAL_END_TS)): _CROSS_A_STOP,
-            (_SECOND_ROW_NAME, flat_key(REAL_START_TS)): _CROSS_B_START,
-            (_SECOND_ROW_NAME, flat_key(REAL_END_TS)): _CROSS_B_STOP,
-        }
-
 
 class TestZeroDurationProcessSpans:
     """A ``Processes`` slice of a pid observed at a single instant is still
@@ -702,32 +656,6 @@ class TestZeroDurationProcessSpans:
             _SECOND_ROW_NAME: (_ZERO_CROSSER_START, _ZERO_CROSSER_STOP - _ZERO_CROSSER_START),
         }
 
-    def test_zero_duration_slices_still_record_their_real_span(
-        self,
-        zero_duration_trace_processor: TraceProcessor,
-    ) -> None:
-        """``_THIRD_PID`` draws as ``dur = 0``, and its annotations say the
-        same: one instant, start and end together."""
-        rows = list(
-            zero_duration_trace_processor.query(
-                f"SELECT s.name AS name, a.flat_key AS flat_key, a.int_value AS int_value "
-                f"FROM args a "
-                f"JOIN slice s ON s.arg_set_id = a.arg_set_id "
-                f"JOIN track t ON s.track_id = t.id "
-                f"WHERE t.name = '{_PROCESS_LIFETIME_TRACK_NAME}' "
-                f"AND a.flat_key IN ('{flat_key(REAL_START_TS)}', '{flat_key(REAL_END_TS)}') "
-                f"ORDER BY s.name, a.flat_key"
-            )
-        )
-
-        assert {(r.name, r.flat_key): r.int_value for r in rows} == {
-            (_DEFAULT_ROW_NAME, flat_key(REAL_START_TS)): _ZERO_CROSSED_START,
-            (_DEFAULT_ROW_NAME, flat_key(REAL_END_TS)): _ZERO_CROSSED_STOP,
-            (_SECOND_ROW_NAME, flat_key(REAL_START_TS)): _ZERO_CROSSER_START,
-            (_SECOND_ROW_NAME, flat_key(REAL_END_TS)): _ZERO_CROSSER_STOP,
-            (_THIRD_ROW_NAME, flat_key(REAL_START_TS)): _ZERO_INSTANT_TS,
-            (_THIRD_ROW_NAME, flat_key(REAL_END_TS)): _ZERO_INSTANT_TS,
-        }
 
 
 class TestMultiFlushProcessesTrack:

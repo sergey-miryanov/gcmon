@@ -46,9 +46,7 @@ A trace carries these:
   carries a `pid_epoch` annotation counting from 1. Processes that overlap sit
   in lanes of the row, which is as tall as the largest number of them alive at
   once, and a lane says nothing about which process started which. Filter on
-  the track name `Processes` in SQL. Every slice also carries `real_start_ts`,
-  `real_end_ts` and `clipped`, holding the start and end the slice already has
-  and `false`. See [Perfetto SQL](perfetto-sql.md).
+  the track name `Processes` in SQL. See [Perfetto SQL](perfetto-sql.md).
 - **One process track per process**, `Process 12345` and `Process 12345#2`,
   each carrying that process's own `Python Interpreters` group, counters,
   start time and command line. The PID on the row is gcmon's, not the
@@ -62,8 +60,8 @@ A trace carries these:
   [Process command lines](#process-command-lines).
 - **`Lifetime` slice**: one per process track, over the interval gcmon
   observed that process, carrying what it was running and how much of it gcmon
-  read; see [The `Lifetime` slice](#the-lifetime-slice). It reads longer than
-  the same process's `Processes` slice wherever that one was cut short.
+  read; see [The `Lifetime` slice](#the-lifetime-slice). It covers the same
+  interval as that process's slice on the `Processes` row.
 
 > **Note:** sub-step slices (`GC Mark Alive`, `GC Fill Increment`,
 > `GC Deduce Unreachable`, …) need a CPython build carrying the extra GC

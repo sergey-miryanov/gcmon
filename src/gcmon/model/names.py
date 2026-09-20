@@ -22,7 +22,6 @@ __all__ = [
     "CANDIDATES",
     "CLEAR_WEAKREFS",
     "CLEAR_WEAKREFS_COUNT",
-    "CLIPPED",
     "CMDLINE",
     "COLLECTED",
     "COLLECTIONS",
@@ -58,8 +57,6 @@ __all__ = [
     "PAUSE",
     "PID",
     "PID_EPOCH",
-    "REAL_END_TS",
-    "REAL_START_TS",
     "RSS",
     "SAMPLED_COUNT",
     "SLICE_ARGS",
@@ -205,9 +202,6 @@ NAME: Final = "name"
 GENERATION: Final = "generation"
 CMDLINE: Final = "cmdline"
 PID_EPOCH: Final = "pid_epoch"
-REAL_START_TS: Final = "real_start_ts"
-REAL_END_TS: Final = "real_end_ts"
-CLIPPED: Final = "clipped"
 SAMPLED_COUNT: Final = "sampled_count"
 OBSERVED_COUNT: Final = "observed_count"
 LOST_COUNT: Final = "lost_count"
@@ -234,9 +228,6 @@ JSONL_FIELDS: Final = (
 SLICE_ARGS: Final = (
     CMDLINE,
     PID_EPOCH,
-    REAL_START_TS,
-    REAL_END_TS,
-    CLIPPED,
     SAMPLED_COUNT,
     LOST_PAUSE,
 )

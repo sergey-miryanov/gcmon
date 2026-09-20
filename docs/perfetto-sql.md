@@ -198,8 +198,8 @@ ORDER BY p.start_ts
 ```
 
 A `cmdline` debug annotation carries the same string on each slice of the
-`Processes` lifetime track, which pairs it with that process's start and end
-times. On a reused PID both are per process, and the two agree:
+`Processes` row, which pairs it with that process's start and end times. On a
+reused PID both are per process, and the two agree:
 
 ```sql
 -- Command line alongside each process's lifetime
@@ -207,9 +207,7 @@ SELECT
     s.name,
     s.ts,
     s.dur,
-    EXTRACT_ARG(s.arg_set_id, 'debug.cmdline') AS cmdline,
-    EXTRACT_ARG(s.arg_set_id, 'debug.real_end_ts')
-        - EXTRACT_ARG(s.arg_set_id, 'debug.real_start_ts') AS observed_dur
+    EXTRACT_ARG(s.arg_set_id, 'debug.cmdline') AS cmdline
 FROM slice s
 JOIN track t ON s.track_id = t.id
 WHERE t.name = 'Processes'
@@ -242,9 +240,8 @@ keeps its row:
 -- Each process's observed lifetime beside the pauses it recorded
 SELECT
     span.name,
-    COUNT(gc.id) AS pauses,
-    EXTRACT_ARG(span.arg_set_id, 'debug.real_end_ts')
-        - EXTRACT_ARG(span.arg_set_id, 'debug.real_start_ts') AS observed_dur
+    span.dur AS observed_dur,
+    COUNT(gc.id) AS pauses
 FROM slice span
 JOIN track spant ON span.track_id = spant.id AND spant.name = 'Processes'
 LEFT JOIN process p ON p.name = span.name

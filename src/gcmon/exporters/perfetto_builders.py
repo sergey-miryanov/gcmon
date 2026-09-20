@@ -140,17 +140,6 @@ def build_trace_packet(
     return result
 
 
-def _build_debug_annotation_bool(name: str, value: bool) -> bytes:
-    """A flag the UI and SQL both read as ``true`` / ``false``.
-
-    Always written, whichever way it reads: a consumer asks for the value
-    and never for the field's presence.
-    """
-    result = encode_string_field(DebugAnnotationField.NAME, name)
-    result += encode_varint_field(DebugAnnotationField.BOOL_VALUE, int(value))
-    return result
-
-
 def _build_debug_annotation_int(name: str, value: int) -> bytes:
     result = encode_string_field(DebugAnnotationField.NAME, name)
     result += encode_varint_field(DebugAnnotationField.INT_VALUE, value)
