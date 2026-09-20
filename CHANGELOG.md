@@ -2,20 +2,30 @@
 
 ## WIP
 
+## Version 0.8.0 (2026-09-20)
+
 ### Breaking changes
 
-- A Perfetto trace holds no `thread` row of gcmon's. An interpreter is not an operating-system thread, so every row one owns is a plain custom track. The one row left in `thread` is the nameless one the trace processor builds per process, and `thread.is_main_thread` marks it
-- An interpreter's pause row is named `GC Pauses`, under a group named `Interpreter {iid}`, where it was `Thread {iid}` beside the process track
-- A query that joined `thread_track` joins `process_track`. Every row gcmon draws carries its process's `upid`
-- An interpreter's loss row is named `GC Loss`, under its `Interpreter {iid}` group, where it was `GC Loss {iid}` beside the process track
-- A `heap_size` counter track is named `heap_size`, on its `Interpreter {iid}` group, where it was `Thread {iid} heap_size` beside the process track. A query matching `name = 'heap_size'` finds it again
-- Every sub-step slice carries the `GC ` prefix its `--stats` row already carried: `GC Mark Alive(0)`, `GC Fill Increment(0)`, `GC Deduce Unreachable(0)` and the rest, where the slice was `Mark Alive(0)` and the row `GC Mark Alive`. `GC Fill Increment` also takes the row's capital `I`. Categories are unchanged, so `gc.deduce(gen=0)` still matches
+- A Perfetto trace holds no `thread` row of gcmon's
+- The one row left in `thread` is the nameless one the trace processor builds per process, and `thread.is_main_thread` marks it
+- Every row an interpreter owns sits in its `Interpreter {iid}` group, where it sat beside the process track
+- An interpreter's pause row is named `GC Pauses`, where it was `Thread {iid}`
+- An interpreter's pause row is in the `process_track` table, where it was in `thread_track`
+- An interpreter's loss row is named `GC Loss`, where it was `GC Loss {iid}`
+- An interpreter's `heap_size` counter track is named `heap_size`, where it was `Thread {iid} heap_size`
+- Every sub-step slice is named with a `GC ` prefix
+- The `GC Fill Increment(0)` slice takes a capital `I`, where it was `Fill increment(0)`
+
+### Features
+
+- Each process draws a `Python Interpreters` group beside its `Process <pid>` row, holding an `Interpreter {iid}` group per interpreter
 
 ### Bugfixes
 
-- A per-generation counter names the interpreter that owns it. A process running several interpreters draws a `GC Metrics` row each, where the copies used to merge into one row per process holding every interpreter's counters, identically named and unattributable
+- A process running several interpreters draws a `GC Metrics` row per interpreter, where those rows used to merge into one per process holding every interpreter's counters
+- A record with a zero `ts_start` is dropped, where it was drawn as a pause starting at zero
 - `gcmon combine` names the file and line of a JSONL line it cannot read, where it printed a traceback or an error with no location
-- `gcmon combine` converts a hand-edited record that holds a sub-step's stop time and not its start, drawing the pause alone, where it printed a traceback
+- `gcmon combine` converts a hand-edited record that holds a sub-step's stop time and not its start, drawing the record without that sub-step, where it printed a traceback
 
 ### Internal
 
