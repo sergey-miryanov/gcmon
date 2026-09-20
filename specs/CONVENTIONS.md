@@ -43,7 +43,7 @@ of the target's ring is a **record**; one thing written into a trace is an
 **event**. gcmon identifies an interpreter by its **iid** and names its group
 in a trace after it. An interval whose records the target overwrote before
 gcmon read them is a **loss window** or a **blind interval**, never "missing
-data". A `Processes`-track slice is a **span**. A group of layers on one side
+data". A slice on the `Processes` row is a **span**. A group of layers on one
 of the capture file is a **subsystem**
 ([ADR-0026](../docs/adr/0026-two-subsystems-over-a-shared-base.md)), never a
 tower, a side or a half. Timestamps are nanoseconds inside gcmon, and the

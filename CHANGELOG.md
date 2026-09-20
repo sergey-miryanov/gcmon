@@ -8,7 +8,15 @@
 
 ### Features
 
-- Every process's span on the `Processes` row is as wide as gcmon observed that process for, and `dur` there is a duration gcmon measured
+- Every process's span on the `Processes` row is as wide as gcmon observed that process for
+- `dur` on a `Processes` slice is a duration gcmon measured
+- Processes whose lifetimes overlap sit in lanes of the `Processes` row
+- The `Processes` row is as tall as the largest number of processes alive at once
+- A trace from a run that was killed holds the `Processes` span of every process gcmon had already let go of
+
+### Internal
+
+- Stability, correctness and performance improvements
 
 ## Version 0.8.0 (2026-09-20)
 

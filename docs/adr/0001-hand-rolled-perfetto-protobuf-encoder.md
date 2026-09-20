@@ -46,7 +46,7 @@ above it:
 2. field numbers and enum values, nothing else
 3. uuid allocation and per-trace bookkeeping
 4. message builders, pure values in and bytes out
-5. the shared `Processes` track
+5. the shared `Processes` row
    ([ADR-0011](0011-process-lifetime-and-ordering.md))
 6. track layout policy, the conversion pass, and the re-exports importers use
 

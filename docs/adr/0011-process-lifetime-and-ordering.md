@@ -49,7 +49,7 @@ process gets a top-level track carrying one
 as an observation. A span never covers a stretch in which the process it names
 did not exist, and it is drawn at the width gcmon observed. Every one of those
 tracks carries the same name, which is what the trace processor merges them
-on, so the UI draws one row and packs the spans into lanes of it.
+on: it packs the spans into lanes of one row, and the UI draws that row.
 
 **A slice is named for its process**, `Process <pid>` for the first to hold
 the pid and `Process <pid>#N` after it, the suffix the `--stats` table prints
@@ -135,11 +135,9 @@ the observed pair, so no annotation restates either.
 
 **A span is identified by its slice name or its annotations, never by
 `track_id`.** The trace processor folds mergeable descriptors as it imports
-them: a span lands on a track of its merge group whose stack is empty, so the
-`track` table holds as many `Processes` rows as the largest number of
-processes alive at once, and no one of them belongs to one process.
-`track.name = 'Processes'` still selects the whole row, and no slice nests on
-any of those rows.
+them: a span lands on a track of its merge group whose stack is empty, so a
+`track` row belongs to no one process. `track.name = 'Processes'` still
+selects the whole row, and no slice nests on any of those rows.
 
 **No span is dropped.** A pid observed at a single instant still gets a
 BEGIN/END pair; the trace processor accepts it and reports `dur = 0`. A
@@ -152,15 +150,24 @@ missing slice would leave no record that the process was monitored at all.
 - **`dur` on a `Processes` slice is a duration gcmon observed.** A query reads
   it directly, and a death is reported where it was seen.
 - **The row is as tall as the largest number of processes alive at once**, so
-  a tree whose processes all overlap gets a lane for each. That is the price
-  of the widths, and bounding the height is out of scope.
-- **A lane carries no meaning.** The UI packs by time alone, so which lane a
+  a tree whose processes all overlap gets a lane for each, and the `track`
+  table holds that many `Processes` rows. That is the price of the widths, and
+  bounding the height is out of scope.
+- **A lane carries no meaning.** The fold packs by time alone, so which lane a
   span lands in depends on the spans before it and says nothing about
   parentage. The tree is readable from `pid` and from the per-process rows
   (ADR-0028).
 - **A killed run keeps the span of every process gcmon had retired**, beside
   the rows ADR-0010 keeps for them. Only a process still running when the run
   died loses its span.
+- **An observation folded in after a retired process's pair went out is not
+  drawn.** Both ends are in the file by then, and Perfetto pairs a BEGIN with
+  the first matching END, so a second pair would draw the process twice rather
+  than widen it. Nothing should arrive: gcmon has let go of the pid, and a
+  record read afterwards belongs to whatever holds it now (ADR-0025). Where a
+  flush races the retirement anyway, the span is short by the tail rather than
+  wrong at the start, which is the shape ADR-0028 already accepts for a
+  control-plane instant arriving after the row is drawn.
 - **One `Processes` slice per process gcmon polled**, so a consumer joining
   slices to pids joins many to one and reads `pid_epoch` to tell them apart. A
   process that answered a single poll and never collected gets one; only a pid
@@ -196,8 +203,9 @@ missing slice would leave no record that the process was monitored at all.
   it.
 - **A reader that merges nothing draws a row per process**, each span intact.
   Perfetto moved the merge out of the UI and into the trace processor in
-  v52.0, and the UI merged by name before that, so this asks nothing newer
-  than the 0.57 the root descriptor already wants.
+  v52.0, and the UI merged by name before that, so a reader from either side
+  of that release draws one row. The oldest reader this record asks for is
+  still the one the root descriptor's ordering hint asks for.
 - [ADR-0015](0015-gc-loss-spans-on-their-own-track.md) needs no row of this
   shape: its loss windows are one per poll interval and meet without
   overlapping, so one track per interpreter holds them. Its `GC Loss` track is

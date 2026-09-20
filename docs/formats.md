@@ -168,7 +168,7 @@ gcmon writes each command line in these places:
 |---|---|---|---|
 | `ProcessDescriptor.cmdline` on the process track | argv, one string per argument | Yes | **No**. The trace processor does not surface this field |
 | `description` on the process track | argv joined with single spaces | Yes | Yes, via `args` (key `description`) |
-| `cmdline` debug annotation on the `Process {pid}` slice of the `Processes` track | argv joined with single spaces | Yes, in the slice's details | Yes, via `args` (key `debug.cmdline`) |
+| `cmdline` debug annotation on the `Process {pid}` slice of the `Processes` row | argv joined with single spaces | Yes, in the slice's details | Yes, via `args` (key `debug.cmdline`) |
 | `cmdline` debug annotation on that process's own `Lifetime` slice | argv joined with single spaces | Yes, in the slice's details | Yes, via `args` (key `debug.cmdline`) |
 
 The two `debug.cmdline` annotations hold the same string under the same key on

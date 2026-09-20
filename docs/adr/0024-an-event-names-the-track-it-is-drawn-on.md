@@ -47,7 +47,7 @@ offline carries no epoch, so `combine` builds every pid a first process.
 **The encoder derives every other row from those.** Ahead of the first packet
 naming a track it emits the pid's process descriptor, whichever kind of track
 it is, then the track's own where it has one. No event names a counter's row,
-the `GC Metrics` group holding it or the `Processes` track; the encoder
+the `GC Metrics` group holding it or the `Processes` row; the encoder
 allocates all three. `ProcessMeta` and `ThreadMeta` go, with both
 implementations.
 
@@ -74,7 +74,7 @@ complete-slice event, so the pair survives on the wire.
 **Nesting needs no reconstruction in gcmon.** Perfetto builds the stack: it
 sorts by timestamp, breaks ties by position in the sequence, and closes a
 slice on a `SLICE_END`. gcmon already emits a span as an adjacent pair on the
-`Processes` track ([ADR-0011](0011-process-lifetime-and-ordering.md)), where a
+`Processes` row ([ADR-0011](0011-process-lifetime-and-ordering.md)), where a
 fuzz suite checks it against the real trace processor.
 
 ## Consequences
