@@ -64,9 +64,9 @@ behaviour change.
 `PerfettoExporter` holds `_io_lock` across the whole of a flush and has no
 second lock: one lock guards the buffer and the encoder together, so a flush
 reads the buffer and writes what it read in one critical section. ADR-0008
-carries that, and
-`tests/exporters/test_perfetto_exporter.py::TestOneCriticalSectionPerCall`
-holds it there, so 4.2 documents `PerfettoTrackState` alone.
+carries that, and `_flush_locked` is the one step that empties the buffer into
+the encoder, so both call sites show the section they sit in, so 4.2 documents
+`PerfettoTrackState` alone.
 
 **4.3: dropped, 2026-08-26.** It asked `BufferedTraceExporter._build_meta` to
 state the atomicity of its check-and-emit. There is no such method: no
