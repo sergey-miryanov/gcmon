@@ -25,14 +25,15 @@ class PerfettoExporter(EventsExporter):
     One class rather than a buffering base and a subclass on top; see
     ADR-0008.
 
-    **`_io_lock` is taken before `_lock`, and held across both deciding
-    what to write and writing it.** It serializes every touch of encoder
-    state, so holding it over the whole of a flush is what makes the order
-    of those touches the order the calls arrived in. Taking it after the
-    buffer lock instead leaves a window in which one thread holds events it
-    has removed from the buffer and no lock: a retirement arriving there is
-    drawn from an accumulator those events have not reached, and its two
-    slices are short at whichever end they would have moved (ADR-0011).
+    **One lock, `_io_lock`, guards the buffer and every touch of encoder
+    state.** It is held across both deciding what to write and writing it,
+    which is what makes the order those touches happen in the order the
+    calls arrived in. A second lock for the buffer alone left a window
+    between the two: a flush holding events it had taken out of the buffer
+    and nothing serializing it against a retirement, which then drew a span
+    from an accumulator those events had not reached and came out short at
+    whichever end they would have moved (ADR-0011). The price of the one
+    lock is that an append waits for a write already in progress.
     """
 
     def __init__(
@@ -43,7 +44,6 @@ class PerfettoExporter(EventsExporter):
         codec: Codec | None = None,
     ) -> None:
         super().__init__()
-        self._lock = threading.Lock()
         self._io_lock = threading.Lock()
         self._buffer: list[TraceEvent] = []
         self._flush_threshold = flush_threshold
@@ -54,16 +54,14 @@ class PerfettoExporter(EventsExporter):
 
     def _enqueue(self, events: list[TraceEvent]) -> None:
         with self._io_lock:
-            to_write: list[TraceEvent] = []
-            with self._lock:
-                if self._closed:
-                    return
-                self._buffer.extend(events)
-                if len(self._buffer) >= self._flush_threshold:
-                    to_write = self._buffer[:]
-                    self._buffer.clear()
-            if to_write:
-                self._encoder.write_events(to_write)
+            if self._closed:
+                return
+            self._buffer.extend(events)
+            if len(self._buffer) < self._flush_threshold:
+                return
+            to_write = self._buffer[:]
+            self._buffer.clear()
+            self._encoder.write_events(to_write)
 
     @override
     def add_event(self, process: Process, item: TGCStatsInfo) -> None:
@@ -118,17 +116,16 @@ class PerfettoExporter(EventsExporter):
     def close(self) -> None:
         """Drain the buffer and close the encoder.
 
-        Under `_io_lock` from the first statement, for the reason the class
-        gives: a flush that snapshotted the buffer outside it could reach
-        the encoder after the closeout had gone out.
+        Under the lock from the first statement, for the reason the class
+        gives: a flush that read the buffer outside it could reach the
+        encoder after the closeout had gone out.
         """
         with self._io_lock:
-            with self._lock:
-                if self._closed:
-                    return
-                self._closed = True
-                remaining = self._buffer[:]
-                self._buffer.clear()
+            if self._closed:
+                return
+            self._closed = True
+            remaining = self._buffer[:]
+            self._buffer.clear()
             if remaining:
                 self._encoder.write_events(remaining)
             self._encoder.close()
