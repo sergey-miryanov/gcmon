@@ -14,7 +14,7 @@ from gcmon.exporters import PerfettoExporter
 from gcmon.exporters.perfetto_format import (
     TrackEventType,
 )
-from gcmon.exporters.perfetto_process_lifetime import _PROCESS_ROW_PREFIX, process_track_name
+from gcmon.exporters.perfetto_process_lifetime import _PROCESS_LIFETIME_TRACK_NAME, process_track_name
 from gcmon.model.data import GCStatsInfo
 from gcmon.model.names import (
     CLEAR_WEAKREFS,
@@ -441,23 +441,30 @@ class TestRssRoundTrip:
 
 def _lifetime_spans(path: Path) -> dict[str, tuple[int, int]]:
     """Return ``{slice name: (begin ts, end ts)}`` for the ``Processes``
-    track, read back off disk.
+    row, read back off disk.
 
-    The track is the only one carrying named BEGIN/END pairs, and the
-    encoder emits each pair adjacently, so matching by name is enough.
+    Each process draws on a track of its own, so a pair is matched by the
+    track it sits on rather than by name; only the BEGIN carries one.
     """
-    begins: dict[str, int] = {}
+    rows: set[int] = set()
+    begins: dict[int, tuple[str, int]] = {}
     spans: dict[str, tuple[int, int]] = {}
     for packet in _read_trace_packets(path):
+        if packet.HasField("track_descriptor"):
+            descriptor = packet.track_descriptor
+            if descriptor.name == _PROCESS_LIFETIME_TRACK_NAME:
+                rows.add(descriptor.uuid)
+            continue
         if not packet.HasField("track_event"):
             continue
         track_event = packet.track_event
-        if not track_event.name.startswith(_PROCESS_ROW_PREFIX):
+        if track_event.track_uuid not in rows:
             continue
         if track_event.type == TrackEventType.SLICE_BEGIN:
-            begins[track_event.name] = packet.timestamp
+            begins[track_event.track_uuid] = (track_event.name, packet.timestamp)
         elif track_event.type == TrackEventType.SLICE_END:
-            spans[track_event.name] = (begins[track_event.name], packet.timestamp)
+            name, begin_ts = begins.pop(track_event.track_uuid)
+            spans[name] = (begin_ts, packet.timestamp)
     return spans
 
 

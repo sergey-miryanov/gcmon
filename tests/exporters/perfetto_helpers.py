@@ -5,6 +5,7 @@ modules. Anything used by a single module stays in that module.
 """
 
 import functools
+from collections.abc import Collection
 
 from perfetto.protos.perfetto.trace.perfetto_trace_pb2 import (
     TracePacket,
@@ -13,7 +14,7 @@ from perfetto.protos.perfetto.trace.perfetto_trace_pb2 import (
 )
 
 from gcmon.exporters.perfetto_format import convert_trace_events_to_perfetto
-from gcmon.exporters.perfetto_process_lifetime import ClippedSpan, finalize_perfetto_packets
+from gcmon.exporters.perfetto_process_lifetime import finalize_perfetto_packets
 from gcmon.exporters.perfetto_track_state import PerfettoTrackState, ProcessSpan
 from gcmon.exporters.trace_converter import convert_item_to_trace_format
 from gcmon.model.data import GCStatsInfo
@@ -44,11 +45,10 @@ def span(pid: int, start_ts: int, end_ts: int, pid_epoch: int = 1) -> ProcessSpa
     return ProcessSpan(proc(pid, pid_epoch), start_ts, end_ts)
 
 
-def clipped_span(
-    pid: int, start_ts: int, end_ts: int, real_start_ts: int, real_end_ts: int, pid_epoch: int = 1
-) -> ClippedSpan:
-    """A `ClippedSpan` for a test that names a pid. See :func:`span`."""
-    return ClippedSpan(proc(pid, pid_epoch), start_ts, end_ts, real_start_ts, real_end_ts)
+def processes_row_uuids(state: PerfettoTrackState, *processes: Process) -> set[int]:
+    """The uuids of the tracks *processes* draw their spans on, which the
+    ``Processes`` row merges into one (ADR-0011)."""
+    return {state.get_process_lifetime_track_uuid(process) for process in processes}
 
 
 def convert_item(
@@ -99,10 +99,14 @@ def convert_items(
 
 def lifetime_slices(
     packets: list[bytes],
-    lifetime_uuid: int,
+    track_uuids: Collection[int],
 ) -> list[tuple[int, int, str, dict[str, str | int]]]:
     """Return ``[(ts, type, name, annotations), ...]`` for the slice
-    events on the ``Processes`` track, in packet order."""
+    events on any of *track_uuids*, in packet order.
+
+    A process's span and its ``Lifetime`` bar sit on tracks of their own, so
+    reading the whole ``Processes`` row takes every process's uuid; see
+    :func:`processes_row_uuids`."""
     out: list[tuple[int, int, str, dict[str, str | int]]] = []
     for p in packets:
         packet = TracePacket()
@@ -110,7 +114,7 @@ def lifetime_slices(
         if not packet.HasField("track_event"):
             continue
         track_event = packet.track_event
-        if track_event.track_uuid != lifetime_uuid:
+        if track_event.track_uuid not in track_uuids:
             continue
         if track_event.type not in (
             TrackEvent.Type.TYPE_SLICE_BEGIN,

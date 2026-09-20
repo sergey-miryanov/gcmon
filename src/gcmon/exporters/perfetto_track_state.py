@@ -33,7 +33,8 @@ class PerfettoTrackState:
         self._process_uuids: dict[Process, int] = {}
         self._row_pids: dict[Process, int] = {}
         self._track_uuids: dict[Track, int] = {}
-        self._process_lifetime_track_uuid: int | None = None
+        self._process_lifetime_uuids: dict[Process, int] = {}
+        self._process_lifetime_tracks_described: set[Process] = set()
         self._cmdlines: dict[Process, tuple[str, ...]] = {}
         self._process_lifetime_start: dict[Process, int] = {}
         self._sampled_counts: dict[Process, int] = {}
@@ -169,13 +170,21 @@ class PerfettoTrackState:
             self._interpreter_group_uuids[key] = self._alloc_uuid()
         return self._interpreter_group_uuids[key]
 
-    def has_process_lifetime_track(self) -> bool:
-        return self._process_lifetime_track_uuid is not None
+    def has_process_lifetime_track(self, process: Process) -> bool:
+        return process in self._process_lifetime_tracks_described
 
-    def get_or_create_process_lifetime_track_uuid(self) -> int:
-        if self._process_lifetime_track_uuid is None:
-            self._process_lifetime_track_uuid = self._alloc_uuid()
-        return self._process_lifetime_track_uuid
+    def mark_process_lifetime_track(self, process: Process) -> None:
+        self._process_lifetime_tracks_described.add(process)
+
+    def get_process_lifetime_track_uuid(self, process: Process) -> int:
+        """The uuid of the track *process* draws its span on.
+
+        One track per process, every one of them named alike, which is what
+        the trace processor merges into the shared row (ADR-0011).
+        """
+        if process not in self._process_lifetime_uuids:
+            self._process_lifetime_uuids[process] = self._alloc_uuid()
+        return self._process_lifetime_uuids[process]
 
     def set_cmdline(self, process: Process, cmdline: tuple[str, ...] | None) -> None:
         """Record what *process* is running, for its descriptor and its

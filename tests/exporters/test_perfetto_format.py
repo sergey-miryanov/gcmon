@@ -78,6 +78,7 @@ from tests.exporters.perfetto_helpers import (
     lifetime_slices,
     parse_track_descriptor,
     pause_item,
+    processes_row_uuids,
 )
 from tests.helpers import create_mock_loss_item, interpreter_track, proc, process_track
 
@@ -288,7 +289,7 @@ class TestConvertItemToPerfettoPackets:
         # 100" slice begin on the shared "Processes" track precedes it.
         # Find the GC pause slice by name to disambiguate.
         assert len(packets) >= 2
-        lifetime_uuid = state.get_or_create_process_lifetime_track_uuid()
+        lifetime_uuids = processes_row_uuids(state, proc(TARGET_PID))
 
         begin_packet = None
         for p in packets:
@@ -296,7 +297,7 @@ class TestConvertItemToPerfettoPackets:
             packet.ParseFromString(p)
             if (
                 packet.track_event.type == TrackEvent.Type.TYPE_SLICE_BEGIN
-                and packet.track_event.track_uuid != lifetime_uuid
+                and packet.track_event.track_uuid not in lifetime_uuids
                 and packet.track_event.name == gc_pause_slice_name(0)
             ):
                 begin_packet = p
@@ -532,14 +533,14 @@ class TestConvertItemToPerfettoPackets:
         # The process_track_name(proc(100)) slice begin on the shared "Processes" track
         # precedes the GC pause slice begin. Identify the GC pause slice
         # by its name.
-        lifetime_uuid = state.get_or_create_process_lifetime_track_uuid()
+        lifetime_uuids = processes_row_uuids(state, proc(TARGET_PID))
         begin_packet = None
         for p in packets:
             packet = TracePacket()
             packet.ParseFromString(p)
             if (
                 packet.track_event.type == TrackEvent.Type.TYPE_SLICE_BEGIN
-                and packet.track_event.track_uuid != lifetime_uuid
+                and packet.track_event.track_uuid not in lifetime_uuids
                 and packet.track_event.name == gc_pause_slice_name(0)
             ):
                 begin_packet = packet
@@ -561,14 +562,14 @@ class TestConvertItemToPerfettoPackets:
 
         # Disambiguate by name (and exclude the spec-15 "Processes" track
         # slice begin) to find the GC pause slice.
-        lifetime_uuid = state.get_or_create_process_lifetime_track_uuid()
+        lifetime_uuids = processes_row_uuids(state, proc(TARGET_PID))
         begin_packet = None
         for p in packets:
             packet = TracePacket()
             packet.ParseFromString(p)
             if (
                 packet.track_event.type == TrackEvent.Type.TYPE_SLICE_BEGIN
-                and packet.track_event.track_uuid != lifetime_uuid
+                and packet.track_event.track_uuid not in lifetime_uuids
                 and packet.track_event.name == gc_pause_slice_name(0)
             ):
                 begin_packet = p
@@ -628,7 +629,7 @@ class TestConvertInstantToPerfettoPacket:
         assert names == [
             START_EVENT,
             TARGET_ROW_NAME,
-            TARGET_ROW_NAME,
+            None,
             _PROCESS_ROW_SLICE_NAME,
             None,
         ]
@@ -669,15 +670,14 @@ class TestConvertInstantToPerfettoPacket:
 
         closeout = finalize_perfetto_packets(state, sequence_id=1)
         assert len(closeout) == 5
-        lifetime_uuid = state.get_or_create_process_lifetime_track_uuid()
-        assert lifetime_slices(closeout, lifetime_uuid) == [
+        assert lifetime_slices(closeout, processes_row_uuids(state, proc(TARGET_PID))) == [
             (
                 5_000,
                 TrackEventType.SLICE_BEGIN,
                 TARGET_ROW_NAME,
                 {PID: 100, PID_EPOCH: 1, REAL_START_TS: 5_000, REAL_END_TS: 10_000, CLIPPED: False},
             ),
-            (10_000, TrackEventType.SLICE_END, TARGET_ROW_NAME, {}),
+            (10_000, TrackEventType.SLICE_END, "", {}),
         ]
 
     def test_instant_after_gc_event_no_duplicate_descriptor(self, state: PerfettoTrackState) -> None:

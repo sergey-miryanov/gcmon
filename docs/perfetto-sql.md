@@ -219,10 +219,9 @@ ORDER BY s.ts
 Both return nothing when the extra is missing or gcmon could not read the
 command line. The rest of the trace still queries.
 
-**Do not read `dur` on this track as an observed duration.** Crossing spans
-cut each other short, sometimes to a microsecond. `s.dur` is what Perfetto
-could draw; `real_start_ts` and `real_end_ts` are what gcmon observed, and
-every slice carries them whether it was cut or not.
+`s.dur` is the duration gcmon observed. Each process draws on a track of its
+own and the row is those tracks merged, so a span keeps its width however many
+others overlap it, and a `track_id` names no one process.
 
 Every monitored process gets one slice, a process that never collected
 included. A process known from liveness alone drew no row of its own and has
@@ -232,7 +231,7 @@ no `process` entry at all, so this track is the only place it appears.
 of them under the operating system's PID. To gather every process that held
 one, filter on the `debug.pid` annotation or on the name, `Process 12345` and
 `Process 12345#2` from the second process on. A `dur = 0` slice is one
-observed at a single instant, or cut down to nothing.
+observed at a single instant.
 
 A slice and the process it describes carry **the same name**. That is the
 pairing: `p.pid` is per process, and the epoch reaches no column of its own.
@@ -255,25 +254,8 @@ GROUP BY span.id
 ORDER BY span.ts
 ```
 
-Processes still alive when monitoring stops share an end timestamp and nest,
-and the trace processor closes at most **512** nested slices. Past that they
-return `dur = -1` with no diagnostic, so filter on `s.dur >= 0` if more than
-512 processes may have been running at the end. Compare spans only across
-traces captured the same way: `gcmon combine` spans cover GC activity alone.
-
-```sql
--- Processes whose drawn duration is shorter than what gcmon observed
-SELECT
-    s.name,
-    s.dur AS drawn_dur,
-    EXTRACT_ARG(s.arg_set_id, 'debug.real_end_ts')
-        - EXTRACT_ARG(s.arg_set_id, 'debug.real_start_ts') AS observed_dur
-FROM slice s
-JOIN track t ON s.track_id = t.id
-WHERE t.name = 'Processes'
-  AND observed_dur > s.dur
-ORDER BY observed_dur - s.dur DESC
-```
+Compare spans only across traces captured the same way: `gcmon combine` spans
+cover GC activity alone.
 
 ## Tips for Writing Queries
 

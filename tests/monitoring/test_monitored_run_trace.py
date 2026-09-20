@@ -51,10 +51,10 @@ count from 1 in allocation order, which the script above already fixes, and
 the registry the monitor builds for itself has no cmdline provider, so psutil
 is never asked what a pid this machine does not have was running.
 
-*Liveness arrives in the order the script produced.* The `Processes` track
-clips one pid's span against another's, so its slices depend on the sequence of
-ticks and not only on their contents. That sequence is `_poll_order`, written
-down.
+*Liveness arrives in the order the script produced.* A `Processes` span runs
+from the first instant gcmon saw that pid to the last, so it depends on the
+sequence of ticks and not only on their contents. That sequence is
+`_poll_order`, written down.
 
 The fixture is every `TracePacket` in the file, decoded through Perfetto's own
 generated schema and written out as text. Decoding reads each field back
@@ -311,20 +311,25 @@ class MonitoredRun:
         ]
 
     def track_uuid(self, name: str) -> int:
-        uuids = [
-            packet.track_descriptor.uuid
+        uuids = self.track_uuids(name)
+        assert len(uuids) == 1, f"expected one {name!r} track, found {len(uuids)}"
+        return uuids[0]
+
+    def track_uuids(self, name: str) -> list[int]:
+        """Every track described under *name*. The ``Processes`` row is one
+        track per process, all under the one name (ADR-0011)."""
+        return [
+            int(packet.track_descriptor.uuid)
             for packet in self.packets()
             if packet.HasField("track_descriptor") and packet.track_descriptor.name == name
         ]
-        assert len(uuids) == 1, f"expected one {name!r} track, found {len(uuids)}"
-        return int(uuids[0])
 
-    def begins_on(self, uuid: int) -> list[str]:
+    def begins_on(self, *uuids: int) -> list[str]:
         return [
             packet.track_event.name
             for packet in self.packets()
             if packet.HasField("track_event")
-            and packet.track_event.track_uuid == uuid
+            and packet.track_event.track_uuid in uuids
             and packet.track_event.type == TrackEvent.Type.TYPE_SLICE_BEGIN
         ]
 
@@ -458,7 +463,7 @@ class TestTheScriptIsWorthPinning:
         only the Perfetto exporter overrides it. A run whose spans went missing
         here would still write every pause and every loss slice.
         """
-        drawn = run.begins_on(run.track_uuid(_PROCESS_LIFETIME_TRACK_NAME))
+        drawn = run.begins_on(*run.track_uuids(_PROCESS_LIFETIME_TRACK_NAME))
 
         assert sorted(drawn) == sorted(
             [

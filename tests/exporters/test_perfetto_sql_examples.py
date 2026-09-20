@@ -57,8 +57,8 @@ FIRST_CMDLINE: tuple[str, ...] = ("python3", "-m", "first_target")
 SECOND_CMDLINE: tuple[str, ...] = ("python3", "-m", "second_target")
 
 # Two more processes whose spans cross: A starts first and dies first, B starts
-# inside A and outlives it. The sweep clips A back to `B.start - 1`, which is
-# the only way an example asking for drawn < observed finds a row (ADR-0011).
+# inside A and outlives it. Each draws on a track of its own, so the row the
+# examples select by name is a merge of several tracks (ADR-0011).
 CROSS_A_PID: int = 1111
 CROSS_B_PID: int = 2222
 

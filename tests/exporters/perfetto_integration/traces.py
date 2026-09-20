@@ -276,9 +276,9 @@ def _write_crossing_trace(tmp: Path) -> Path:
 
 _ZERO_INSTANT_TS: int = 100_000_000
 
-_ZERO_CLIPPED_START: int = 300_000_000
+_ZERO_CROSSED_START: int = 300_000_000
 
-_ZERO_CLIPPED_STOP: int = 800_000_000
+_ZERO_CROSSED_STOP: int = 800_000_000
 
 _ZERO_CROSSER_START: int = 300_000_001
 
@@ -286,16 +286,16 @@ _ZERO_CROSSER_STOP: int = 900_000_000
 
 
 def _write_zero_duration_trace(tmp: Path) -> Path:
-    """Write a Perfetto trace containing both ways a ``Processes`` slice
-    can end up zero-length: a pid observed at a single instant, and a pid
-    clipped down to nothing by a pid starting 1ns later."""
+    """Write a Perfetto trace holding a pid observed at a single instant,
+    whose ``Processes`` slice is zero-length, beside two pids starting one
+    nanosecond apart."""
     path = tmp / "zero.pb"
     exporter = PerfettoExporter(output_path=path, flush_threshold=1000)
     for pid, ts in (
         (_THIRD_PID, _ZERO_INSTANT_TS),
-        (DEFAULT_PID, _ZERO_CLIPPED_START),
+        (DEFAULT_PID, _ZERO_CROSSED_START),
         (_SECOND_PID, _ZERO_CROSSER_START),
-        (DEFAULT_PID, _ZERO_CLIPPED_STOP),
+        (DEFAULT_PID, _ZERO_CROSSED_STOP),
         (_SECOND_PID, _ZERO_CROSSER_STOP),
     ):
         exporter.add_instant_event(proc(pid), create_instant_msg(name=_INSTANT_NAME, ts=ts))

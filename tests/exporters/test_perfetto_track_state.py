@@ -210,21 +210,39 @@ class TestInterpreterCount:
 
 
 class TestProcessLifetimeState:
-    """State accessors for the shared ``Processes`` track."""
+    """State accessors for the tracks the shared ``Processes`` row merges."""
 
     def test_track_uuid_lazy_and_idempotent(self, state: PerfettoTrackState) -> None:
-        assert not state.has_process_lifetime_track()
+        uuid1 = state.get_process_lifetime_track_uuid(proc(TARGET_PID))
 
-        uuid1 = state.get_or_create_process_lifetime_track_uuid()
-        assert state.has_process_lifetime_track()
+        assert state.get_process_lifetime_track_uuid(proc(TARGET_PID)) == uuid1
 
-        uuid2 = state.get_or_create_process_lifetime_track_uuid()
-        assert uuid1 == uuid2
+    def test_every_process_gets_a_track_of_its_own(self, state: PerfettoTrackState) -> None:
+        """Including two processes that held one pid, which is what lets the
+        row draw both (ADR-0011)."""
+        uuids = [
+            state.get_process_lifetime_track_uuid(proc(TARGET_PID)),
+            state.get_process_lifetime_track_uuid(proc(OTHER_PID)),
+            state.get_process_lifetime_track_uuid(proc(TARGET_PID, pid_epoch=2)),
+        ]
+
+        assert len(set(uuids)) == 3
+
+    def test_the_descriptor_flag_is_per_process(self, state: PerfettoTrackState) -> None:
+        """Allocating the uuid is not describing the track: a test reads the
+        uuid to find the slices, and that must not spend the one descriptor."""
+        state.get_process_lifetime_track_uuid(proc(TARGET_PID))
+        assert not state.has_process_lifetime_track(proc(TARGET_PID))
+
+        state.mark_process_lifetime_track(proc(TARGET_PID))
+
+        assert state.has_process_lifetime_track(proc(TARGET_PID))
+        assert not state.has_process_lifetime_track(proc(OTHER_PID))
 
     def test_track_uuid_distinct_from_process_uuid(self, state: PerfettoTrackState) -> None:
         proc_uuid = state.get_process_track_uuid(proc(TARGET_PID))
 
-        lifetime_uuid = state.get_or_create_process_lifetime_track_uuid()
+        lifetime_uuid = state.get_process_lifetime_track_uuid(proc(TARGET_PID))
 
         assert lifetime_uuid != proc_uuid
 

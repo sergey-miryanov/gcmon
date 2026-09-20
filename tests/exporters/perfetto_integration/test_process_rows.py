@@ -21,7 +21,6 @@ from gcmon.exporters.perfetto_process_lifetime import (
 )
 from gcmon.exporters.trace_converter import duration_text
 from gcmon.model.names import (
-    CLIPPED,
     CMDLINE,
     LOST_COUNT,
     LOST_PAUSE,
@@ -50,8 +49,8 @@ from tests.exporters.perfetto_integration.traces import (
     _SECOND_ROW_NAME,
     _THIRD_ROW_NAME,
     _TS_START,
-    _ZERO_CLIPPED_START,
-    _ZERO_CLIPPED_STOP,
+    _ZERO_CROSSED_START,
+    _ZERO_CROSSED_STOP,
     _ZERO_CROSSER_START,
     _ZERO_CROSSER_STOP,
     _ZERO_INSTANT_TS,
@@ -70,11 +69,10 @@ class TestProcessRowLifetimeSlice:
     """Every process's own row carries one ``Lifetime`` slice spanning the
     interval gcmon observed that process.
 
-    The ``Processes`` track shortens a span that crosses a sibling's to keep
-    its slice stack laminar. A process's own row holds one slice and the
-    workload's marks, which nest without closing anything, so nothing on it
-    can cross and nothing is clipped. The two rows therefore disagree for a
-    clipped process, and this one is the row telling the truth (ADR-0028).
+    The bar and the process's span on the shared ``Processes`` row cover the
+    same interval, drawn once per row because each row answers a different
+    question: this one is the process, and the shared one is the run
+    (ADR-0028).
     """
 
     def _lifetimes(self, tp: TraceProcessor) -> dict[str, tuple[int, int]]:
@@ -93,8 +91,8 @@ class TestProcessRowLifetimeSlice:
         return {r.name: (r.ts, r.dur) for r in rows}
 
     def test_one_slice_per_process_row(self, trace_processor: TraceProcessor) -> None:
-        """One pair per process, on the process's own track, drawing the
-        interval gcmon observed rather than the one the sweep left."""
+        """One pair per process, on the process's own track, over the
+        interval gcmon observed."""
         default_start = _TS_START - 1_000_000
 
         assert self._lifetimes(trace_processor) == {
@@ -102,16 +100,14 @@ class TestProcessRowLifetimeSlice:
             _SECOND_ROW_NAME: (_TS_START - 2_000_000, 7_000_000),
         }
 
-    def test_clipped_process_draws_longer_on_its_own_row(
+    def test_both_rows_draw_the_same_span(
         self,
         trace_processor: TraceProcessor,
     ) -> None:
-        """The two-row divergence, asserted on both rows at once.
-
-        ``_SECOND_PID`` crosses ``DEFAULT_PID``, so the sweep pulls its
-        ``Processes`` span back to 1ms. Its own row keeps the 7ms gcmon
-        measured. A test reading only one of the two rows would pass on an
-        implementation that clipped both.
+        """``_SECOND_PID`` crosses ``DEFAULT_PID`` here, which is the shape
+        that used to cost the shared row 6ms of a 7ms lifetime. Read on both
+        rows at once, since a test reading one of them would pass on an
+        implementation that shortened the other.
         """
         shared = list(
             trace_processor.query(
@@ -122,7 +118,7 @@ class TestProcessRowLifetimeSlice:
             )
         )
 
-        assert [r.dur for r in shared] == [999_999], "expected the shared row to draw the clipped span"
+        assert [r.dur for r in shared] == [7_000_000]
         assert self._lifetimes(trace_processor)[_SECOND_ROW_NAME][1] == 7_000_000
 
     def test_carries_no_real_ts_annotations(self, trace_processor: TraceProcessor) -> None:
@@ -394,28 +390,51 @@ class TestProcessRowLifetimeSlice:
 
         assert lifetimes[_THIRD_ROW_NAME] == (_ZERO_INSTANT_TS, 0)
         assert lifetimes[_DEFAULT_ROW_NAME] == (
-            _ZERO_CLIPPED_START,
-            _ZERO_CLIPPED_STOP - _ZERO_CLIPPED_START,
+            _ZERO_CROSSED_START,
+            _ZERO_CROSSED_STOP - _ZERO_CROSSED_START,
         )
 
 
 class TestProcessesTrack:
-    """The Perfetto encoder emits a single shared top-level track named
-    ``Processes`` that holds one ``TYPE_SLICE_BEGIN`` /
-    ``TYPE_SLICE_END`` pair per pid, spanning the first-to-last
-    non-counter non-meta event timestamps for that pid.
+    """The Perfetto encoder gives every process a top-level track named
+    ``Processes``, holding one ``TYPE_SLICE_BEGIN`` / ``TYPE_SLICE_END``
+    pair spanning the first-to-last non-counter non-meta event timestamps
+    for that process. The trace processor merges them into one row.
     """
 
-    def test_track_present(
+    def test_one_row_merges_every_process_s_track(
         self,
         trace_processor: TraceProcessor,
     ) -> None:
-        """The ``Processes`` track is present exactly once."""
-        rows = list(trace_processor.query(f"SELECT name FROM track WHERE name = '{_PROCESS_LIFETIME_TRACK_NAME}'"))
+        """The row an operator sees, read through the query the UI builds
+        its rows from.
 
-        assert len(rows) == 1, (
-            f"expected exactly one {_PROCESS_LIFETIME_TRACK_NAME!r} track, got {[r.name for r in rows]}"
+        Both processes are alive at once in this trace, so the trace
+        processor holds two tracks named ``Processes`` and folds both into
+        one row. A ``track_id`` therefore names no process, and a consumer
+        selects on the name (ADR-0011).
+        """
+        groups = list(
+            trace_processor.query(
+                f"INCLUDE PERFETTO MODULE viz.summary.track_event; "
+                f"SELECT (parent_id IS NULL) AS at_top_level, track_ids AS track_ids "
+                f"FROM _track_event_tracks_ordered_groups "
+                f"WHERE name = '{_PROCESS_LIFETIME_TRACK_NAME}'"
+            )
         )
+        drawn_on = list(
+            trace_processor.query(
+                f"SELECT DISTINCT s.track_id AS track_id FROM slice s "
+                f"JOIN track t ON s.track_id = t.id "
+                f"WHERE t.name = '{_PROCESS_LIFETIME_TRACK_NAME}'"
+            )
+        )
+
+        assert len(groups) == 1, f"expected one {_PROCESS_LIFETIME_TRACK_NAME!r} row, got {len(groups)}"
+        assert groups[0].at_top_level == 1, "the row sits at the top level, under no group"
+        merged = {int(one) for one in str(groups[0].track_ids).split(",")}
+        assert merged == {r.track_id for r in drawn_on}, "the row covers every track a span is drawn on"
+        assert len(merged) == 2, "two processes overlap here, so the row merges two tracks"
 
     def test_slice_per_pid(
         self,
@@ -430,11 +449,9 @@ class TestProcessesTrack:
 
         This fixture's two spans cross. ``_SECOND_PID`` is observed from
         ``_TS_START - 2ms`` to ``_TS_START + 5ms``; ``DEFAULT_PID`` starts
-        1ms later and runs 4ms longer. So ``_SECOND_PID``'s end is
-        clipped back to just before ``DEFAULT_PID`` begins, collapsing a
-        7ms span to 1ms, and ``DEFAULT_PID`` keeps its full 10ms. Before
-        the clip, the trace processor reported ``DEFAULT_PID`` as
-        6_000_000ns long against a real span of 10_000_000ns.
+        1ms later and runs 4ms longer. Each keeps what it was observed
+        for. On one shared track neither could: the trace processor
+        reported ``DEFAULT_PID`` as 6ms long against an observed 10ms.
         """
         rows = list(
             trace_processor.query(
@@ -452,21 +469,17 @@ class TestProcessesTrack:
         for r in rows:
             assert r.dur > 0, f"slice {r.name!r} has dur={r.dur}, expected > 0"
         spans = {r.name: (r.ts, r.ts + r.dur) for r in rows}
-        default_start = _TS_START - 1_000_000
         assert spans == {
-            _DEFAULT_ROW_NAME: (default_start, _TS_START + 9_000_000),
-            _SECOND_ROW_NAME: (_TS_START - 2_000_000, default_start - 1),
+            _DEFAULT_ROW_NAME: (_TS_START - 1_000_000, _TS_START + 9_000_000),
+            _SECOND_ROW_NAME: (_TS_START - 2_000_000, _TS_START + 5_000_000),
         }
 
     def test_every_slice_records_its_real_span(
         self,
         trace_processor: TraceProcessor,
     ) -> None:
-        """Both slices carry the span gcmon observed, whether or not the
-        drawing survived it. ``_SECOND_PID`` is the one clipped in this
-        fixture: its slice draws to ``default_start - 1`` but records the
-        real end 5ms later. ``DEFAULT_PID`` is untouched and records the
-        same span it draws -- read the same way, no branch needed."""
+        """Both slices carry the span gcmon observed, which is the span
+        they draw."""
         rows = list(
             trace_processor.query(
                 f"SELECT s.name AS name, a.flat_key AS flat_key, a.int_value AS int_value "
@@ -573,17 +586,17 @@ class TestProcessesTrack:
 class TestCrossingProcessSpans:
     """Two pids whose observed spans cross rather than nest.
 
-    Slices on one Perfetto track are a stack, so a crossing pair cannot
-    be expressed: the trace processor closes both slices at the earlier
-    END and discards the later one. Before the encoder clipped these
-    spans, this trace produced ``misplaced_end_event: 1`` and handed
-    ``_SECOND_PID`` a duration ending at ``DEFAULT_PID``'s last event.
+    Slices on one Perfetto track are a stack, so a crossing pair cannot be
+    expressed on one: the trace processor closes both slices at the earlier
+    END and discards the later one. On one shared track this trace produced
+    ``misplaced_end_event: 1`` and handed ``_SECOND_PID`` a duration ending
+    at ``DEFAULT_PID``'s last event. A track each is what settles it.
     """
 
     def test_no_misplaced_end_events(self, crossing_trace_processor: TraceProcessor) -> None:
         assert misplaced_end_events(crossing_trace_processor) == 0
 
-    def test_earlier_span_is_clipped_and_later_span_is_intact(
+    def test_both_spans_are_drawn_as_observed(
         self,
         crossing_trace_processor: TraceProcessor,
     ) -> None:
@@ -598,20 +611,41 @@ class TestCrossingProcessSpans:
 
         spans = {r.name: (r.ts, r.ts + r.dur) for r in rows}
         assert spans == {
-            # Clipped to one nanosecond before the later pid begins.
-            _DEFAULT_ROW_NAME: (_CROSS_A_START, _CROSS_B_START - 1),
-            # Untouched: this is the span that used to be truncated.
+            _DEFAULT_ROW_NAME: (_CROSS_A_START, _CROSS_A_STOP),
             _SECOND_ROW_NAME: (_CROSS_B_START, _CROSS_B_STOP),
         }
+
+    def test_the_two_spans_sit_on_two_tracks_of_one_row(
+        self,
+        crossing_trace_processor: TraceProcessor,
+    ) -> None:
+        """What lets them both keep their ends. The row is the merge of the
+        two tracks, so an operator still reads one row."""
+        rows = list(
+            crossing_trace_processor.query(
+                f"SELECT s.name AS name, s.track_id AS track_id FROM slice s "
+                f"JOIN track t ON s.track_id = t.id "
+                f"WHERE t.name = '{_PROCESS_LIFETIME_TRACK_NAME}'"
+            )
+        )
+        groups = list(
+            crossing_trace_processor.query(
+                f"INCLUDE PERFETTO MODULE viz.summary.track_event; "
+                f"SELECT track_ids FROM _track_event_tracks_ordered_groups "
+                f"WHERE name = '{_PROCESS_LIFETIME_TRACK_NAME}'"
+            )
+        )
+
+        assert len({r.track_id for r in rows}) == 2, "a crossing pair needs a track each"
+        merged = {int(one) for group in groups for one in str(group.track_ids).split(",")}
+        assert merged == {r.track_id for r in rows}, "one row merges both of them"
 
     def test_every_slice_records_its_real_span(
         self,
         crossing_trace_processor: TraceProcessor,
     ) -> None:
-        """Both slices carry ``real_start_ts`` / ``real_end_ts``, so the
-        drawn duration can always be told apart from the observed one --
-        including for the clipped slice, whose drawn end is 200ms short
-        of the truth."""
+        """Both slices carry ``real_start_ts`` / ``real_end_ts``, holding the
+        pair they draw."""
         rows = list(
             crossing_trace_processor.query(
                 f"SELECT s.name AS name, a.flat_key AS flat_key, a.int_value AS int_value "
@@ -631,44 +665,15 @@ class TestCrossingProcessSpans:
             (_SECOND_ROW_NAME, flat_key(REAL_END_TS)): _CROSS_B_STOP,
         }
 
-    def test_every_slice_says_whether_the_sweep_moved_it(
-        self,
-        crossing_trace_processor: TraceProcessor,
-    ) -> None:
-        """``clipped`` is the verdict the sweep reached, on the one row the
-        sweep decides. It goes out either way, so a consumer reads the value
-        rather than the presence of the annotation.
-
-        ``value_type`` pins it as a bool: written as an int it would read
-        back as ``1`` and ``0`` in both the UI and SQL.
-        """
-        rows = list(
-            crossing_trace_processor.query(
-                f"SELECT s.name AS name, a.value_type AS value_type, a.int_value AS int_value "
-                f"FROM args a "
-                f"JOIN slice s ON s.arg_set_id = a.arg_set_id "
-                f"JOIN track t ON s.track_id = t.id "
-                f"WHERE t.name = '{_PROCESS_LIFETIME_TRACK_NAME}' "
-                f"AND a.flat_key = '{flat_key(CLIPPED)}'"
-            )
-        )
-
-        assert {r.name: r.int_value for r in rows} == {
-            # Pulled back 200ms short of its last event.
-            _DEFAULT_ROW_NAME: 1,
-            _SECOND_ROW_NAME: 0,
-        }
-        assert {r.value_type for r in rows} == {"bool"}
-
 
 class TestZeroDurationProcessSpans:
-    """A ``Processes`` slice that ends up zero-length is still drawn.
+    """A ``Processes`` slice of a pid observed at a single instant is still
+    drawn.
 
-    Two ways to get one: a pid observed at a single instant, and a pid
-    clipped down to nothing by a pid starting one nanosecond later. Both
-    are in this fixture. Dropping such a slice would leave the pid off
-    the track with nothing to indicate it was ever monitored, and a
-    reader has no way to notice an absence.
+    Dropping it would leave the pid off the row with nothing to indicate it
+    was ever monitored, and a reader has no way to notice an absence. The
+    fixture puts two pids starting one nanosecond apart beside it, the
+    spacing a fan-out arrives with.
     """
 
     def test_no_misplaced_end_events(self, zero_duration_trace_processor: TraceProcessor) -> None:
@@ -680,7 +685,8 @@ class TestZeroDurationProcessSpans:
         self,
         zero_duration_trace_processor: TraceProcessor,
     ) -> None:
-        """All three pids appear, two of them with ``dur = 0``."""
+        """All three pids appear, the single-instant one with ``dur = 0`` and
+        the two crossing ones at the widths they were observed at."""
         rows = list(
             zero_duration_trace_processor.query(
                 f"SELECT s.name AS name, s.ts AS ts, s.dur AS dur FROM slice s "
@@ -692,7 +698,7 @@ class TestZeroDurationProcessSpans:
 
         assert {r.name: (r.ts, r.dur) for r in rows} == {
             _THIRD_ROW_NAME: (_ZERO_INSTANT_TS, 0),
-            _DEFAULT_ROW_NAME: (_ZERO_CLIPPED_START, 0),
+            _DEFAULT_ROW_NAME: (_ZERO_CROSSED_START, _ZERO_CROSSED_STOP - _ZERO_CROSSED_START),
             _SECOND_ROW_NAME: (_ZERO_CROSSER_START, _ZERO_CROSSER_STOP - _ZERO_CROSSER_START),
         }
 
@@ -700,9 +706,8 @@ class TestZeroDurationProcessSpans:
         self,
         zero_duration_trace_processor: TraceProcessor,
     ) -> None:
-        """This is the whole point of drawing them: ``DEFAULT_PID`` draws
-        as ``dur = 0`` but was observed for 500ms, and that is readable
-        from the trace."""
+        """``_THIRD_PID`` draws as ``dur = 0``, and its annotations say the
+        same: one instant, start and end together."""
         rows = list(
             zero_duration_trace_processor.query(
                 f"SELECT s.name AS name, a.flat_key AS flat_key, a.int_value AS int_value "
@@ -716,8 +721,8 @@ class TestZeroDurationProcessSpans:
         )
 
         assert {(r.name, r.flat_key): r.int_value for r in rows} == {
-            (_DEFAULT_ROW_NAME, flat_key(REAL_START_TS)): _ZERO_CLIPPED_START,
-            (_DEFAULT_ROW_NAME, flat_key(REAL_END_TS)): _ZERO_CLIPPED_STOP,
+            (_DEFAULT_ROW_NAME, flat_key(REAL_START_TS)): _ZERO_CROSSED_START,
+            (_DEFAULT_ROW_NAME, flat_key(REAL_END_TS)): _ZERO_CROSSED_STOP,
             (_SECOND_ROW_NAME, flat_key(REAL_START_TS)): _ZERO_CROSSER_START,
             (_SECOND_ROW_NAME, flat_key(REAL_END_TS)): _ZERO_CROSSER_STOP,
             (_THIRD_ROW_NAME, flat_key(REAL_START_TS)): _ZERO_INSTANT_TS,

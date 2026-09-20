@@ -40,13 +40,15 @@ A trace carries these:
   itself carries whatever name it passed.
 - **`rss` counter** per process under `--rss`, in bytes, sampled at
   `--rss-interval` (default 1s).
-- **`Processes` track**: a minimap of the session, one slice per monitored
-  process. A reused PID gets one slice per process, the second named
-  `Process 12345#2`, and every slice carries a `pid_epoch` annotation counting
-  from 1. Filter on the track name `Processes` in SQL. **Read a process's span
-  from the `real_start_ts` and `real_end_ts` annotations, not from the slice
-  width**, which overlapping processes cut short and sometimes to nothing;
-  `clipped` says which slices were cut. See [Perfetto SQL](perfetto-sql.md).
+- **`Processes` row**: a minimap of the session, one slice per monitored
+  process, as wide as gcmon observed that process for. A reused PID gets one
+  slice per process, the second named `Process 12345#2`, and every slice
+  carries a `pid_epoch` annotation counting from 1. Processes that overlap sit
+  in lanes of the row, which is as tall as the largest number of them alive at
+  once, and a lane says nothing about which process started which. Filter on
+  the track name `Processes` in SQL. Every slice also carries `real_start_ts`,
+  `real_end_ts` and `clipped`, holding the start and end the slice already has
+  and `false`. See [Perfetto SQL](perfetto-sql.md).
 - **One process track per process**, `Process 12345` and `Process 12345#2`,
   each carrying that process's own `Python Interpreters` group, counters,
   start time and command line. The PID on the row is gcmon's, not the
