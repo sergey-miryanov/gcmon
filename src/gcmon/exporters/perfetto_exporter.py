@@ -25,9 +25,6 @@ class PerfettoExporter(EventsExporter):
     One class rather than a buffering base and a subclass on top, and one
     lock, `_io_lock`, over the buffer and every touch of encoder state; see
     ADR-0008.
-
-    The lock is held across deciding what to write and writing it, so
-    encoder state is touched in the order the calls arrived in.
     """
 
     def __init__(
