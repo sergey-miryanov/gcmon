@@ -51,10 +51,8 @@ class PerfettoExporter(EventsExporter):
                 self._flush_locked()
 
     def _flush_locked(self) -> None:
-        if not self._buffer:
-            return
-        to_write = self._buffer[:]
-        self._buffer.clear()
+        to_write = self._buffer
+        self._buffer = []
         self._encoder.write_events(to_write)
 
     @override
