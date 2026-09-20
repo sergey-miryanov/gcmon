@@ -87,7 +87,7 @@ module is neither.
 | [0008](0008-buffered-exporter-and-encoder-protocol.md) | Split the exporter's lifecycle from the encoder that writes the bytes | Accepted | exporters |
 | [0009](0009-nanoseconds-canonical-time-unit.md) | Store `TraceEvent.ts` in nanoseconds; convert at the encoder | Accepted | exporters, model, support |
 | [0010](0010-process-identity-cmdline-and-start-marker.md) | Duplicate the process cmdline per consumer, and force the process track to render | Accepted | exporters, monitoring |
-| [0011](0011-process-lifetime-and-ordering.md) | Show process lifetimes on one shared row, ordered by first observation | Accepted, unbuilt (spec 0071) | exporters |
+| [0011](0011-process-lifetime-and-ordering.md) | Show process lifetimes on one shared row, ordered by first observation | Accepted | exporters |
 | [0012](0012-trace-output-formats.md) | Support Perfetto output in `combine`, and dual output only in live mode | Superseded by 0021 | cli, exporters |
 | [0013](0013-rss-sampling.md) | Sample RSS in a standalone `RssSampler`, on the process track rather than a thread's | Accepted | cli, exporters, monitoring |
 | [0014](0014-perfetto-integration-test-strategy.md) | Validate traces against the real trace processor; deselect slow suites by marker | Accepted | tests |

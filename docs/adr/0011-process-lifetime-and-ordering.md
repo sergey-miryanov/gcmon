@@ -1,6 +1,6 @@
 # ADR-0011: Show process lifetimes on one shared row, ordered by first observation
 
-- **Status:** Accepted, unbuilt (spec 0071)
+- **Status:** Accepted
 - **Date:** 2026-09-20
 - **Amended by:** [ADR-0013](0013-rss-sampling.md),
   [ADR-0015](0015-gc-loss-spans-on-their-own-track.md),
