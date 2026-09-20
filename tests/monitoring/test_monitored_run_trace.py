@@ -89,7 +89,7 @@ from gcmon.monitoring.wait_policy import no_wait_policy
 from gcmon.stats.streaming_stats import StreamingStats
 from gcmon.support.vocabulary import DEFAULT_TRACE_FILE, ENCODING
 from tests.helpers import FakeEventsReader, perfetto_packets, proc
-from tests.monitoring.test_loss_replay import MS, READ_COST_NS, RING_SIZES, capture_records, ring_at
+from tests.monitoring.test_loss_replay import CAPTURE_ORIGIN_NS, MS, READ_COST_NS, RING_SIZES, capture_records, ring_at
 
 FIXTURE = Path(__file__).resolve().parent.parent / "fixtures" / "monitored_run_perfetto_trace.txt"
 
@@ -171,7 +171,7 @@ def _script() -> tuple[list[int], list[tuple[int, int]]]:
     clock: list[int] = []
     reads: list[tuple[int, int]] = []
     for tick, pids in enumerate(_poll_order()):
-        instant = tick * TICK_INTERVAL_NS
+        instant = CAPTURE_ORIGIN_NS + tick * TICK_INTERVAL_NS
         clock.append(instant)
         for slot, pid in enumerate(pids, start=1):
             ts_read_start = instant + slot * READ_SLOT_NS

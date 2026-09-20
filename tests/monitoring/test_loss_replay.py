@@ -49,6 +49,10 @@ FREE_THREADED_SIZES = {0: 1, 1: 1, 2: 1}
 
 MS = 1_000_000
 
+# Where the capture's first collection starts. The table is rebased to zero, and
+# a zero `ts_start` is what CPython leaves when the clock read fails.
+CAPTURE_ORIGIN_NS = 1_000 * MS
+
 # What one read costs the replayed monitor. Only the read-time
 # statistic reads it; a span's edges are two wakes, and a wake is where the
 # read began.
@@ -97,8 +101,8 @@ def capture_records(
             create_mock_stats_item(
                 gen=gen,
                 iid=IID,
-                ts_start=ts_start,
-                ts_stop=ts_stop,
+                ts_start=CAPTURE_ORIGIN_NS + ts_start,
+                ts_stop=CAPTURE_ORIGIN_NS + ts_stop,
                 heap_size=0,
                 collections=collections,
                 collected=0,

@@ -7,7 +7,9 @@ managed to see. gen 0: 230 (1..230), gen 1: 20 (1..20), gen 2: 2 (1..2), over 11
 
 Timestamps are rebased so the first collection starts at zero. Nothing in the
 loss arithmetic reads an absolute timestamp (it compares them and subtracts
-them), so the shift costs nothing and keeps the table legible.
+them), so the shift costs nothing and keeps the table legible. The monitor does
+read one absolute value: a zero ``ts_start`` is a failed clock read, so a replay
+adds an origin back before it feeds these in.
 
 ``duration`` is the target's own cumulative pause total in seconds, carried
 verbatim. It is the field the reconstruction runs on, and it accumulates in a

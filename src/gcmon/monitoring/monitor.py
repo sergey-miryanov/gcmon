@@ -32,9 +32,10 @@ __all__ = ["EventsMonitor", "PollReport"]
 
 
 def _is_complete(record: TGCStatsInfo) -> bool:
-    """False for a slot holding no finished record: never written, or
-    mid-write with ``ts_start`` published and ``ts_stop`` not yet."""
-    return record.ts_start < record.ts_stop
+    """False for a slot holding no finished record: never written, mid-write
+    with ``ts_start`` published and ``ts_stop`` not yet, or stamped by a start
+    read that failed, which leaves ``0`` in ``ts_start``."""
+    return 0 < record.ts_start < record.ts_stop
 
 
 class PidState(msgspec.Struct):

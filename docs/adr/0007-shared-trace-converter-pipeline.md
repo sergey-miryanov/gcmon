@@ -47,12 +47,14 @@ time-independent across the board. Consumers must not rely on a descriptor
 timestamp.
 
 **Invalid-timestamp filtering moved to the producer.** The
-`ts_start < ts_stop` guard now lives in the monitor's poll, not in the
+`0 < ts_start < ts_stop` guard now lives in the monitor's poll, not in the
 Perfetto converter. This is an intentional behaviour change for the Chrome
 backend, which previously emitted zero-duration events for such records and
 now drops them the way Perfetto always did. Filtering at the producer is
 exporter-agnostic and keeps the shared converter pure: filter once, emit
-everywhere.
+everywhere. The lower bound drops a record whose start read failed: CPython
+writes `0` there and publishes the record unmarked
+([the clock a GC record is stamped from](../internals/gc-record-clock.md)).
 
 ## Consequences
 

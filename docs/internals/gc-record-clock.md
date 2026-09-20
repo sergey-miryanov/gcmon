@@ -2,7 +2,8 @@
 
 Which clock CPython reads for a record's `ts_start` and `ts_stop`, where
 `duration` comes from, and why a number gcmon reads off its own clock sits on
-the same timeline. [ADR-0009](../adr/0009-nanoseconds-canonical-time-unit.md),
+the same timeline. [ADR-0007](../adr/0007-shared-trace-converter-pipeline.md),
+[ADR-0009](../adr/0009-nanoseconds-canonical-time-unit.md),
 [ADR-0015](../adr/0015-gc-loss-spans-on-their-own-track.md) and
 [ADR-0023](../adr/0023-the-pyperf-hook-annotates-and-does-not-drive.md) are
 the decisions this backs.
@@ -82,3 +83,9 @@ The collector discards the return value of both reads, with the comment "don't
 interrupt the GC if reading the clock fails". On failure `PyTime_MonotonicRaw`
 writes `0` into the field, so the record is published with a zero in it and
 nothing marks it.
+
+gcmon drops a record whose `ts_start` is zero (ADR-0007). A failed stop read
+needs no case of its own: `ts_stop` is then zero, which is not above
+`ts_start`, and the record is dropped as a mid-write one is. Either way
+CPython has already added the record's `duration`, computed from the zero, to
+the cumulative total, and that total stays wrong.

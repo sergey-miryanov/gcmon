@@ -25,7 +25,7 @@ PAUSE_NS: int = 1_000
 """How long a record's pause runs where the test does not say otherwise."""
 
 
-def _record(collections: int = 1, ts_start: int = 0, ts_stop: int = PAUSE_NS, iid: int = 0) -> GCStatsInfo:
+def _record(collections: int = 1, ts_start: int = 1, ts_stop: int = 1 + PAUSE_NS, iid: int = 0) -> GCStatsInfo:
     """One gen-0 record at a given counter. `collections` is what the cursor
     reads, so it is the field a test here usually varies."""
     return create_mock_stats_item(gen=0, iid=iid, collections=collections, ts_start=ts_start, ts_stop=ts_stop)
@@ -140,6 +140,29 @@ class TestSubsequentPoll:
         ingest(monitor, PID, [item, twin])
 
         assert len(exporter.events) == 1
+
+
+class TestAFailedClockRead:
+    """CPython discards a failed clock read and publishes the record with `0`
+    where the timestamp belongs, see `docs/internals/gc-record-clock.md`."""
+
+    def test_a_record_with_no_start_is_dropped(self, monitor: EventsMonitor, exporter: MockExporter) -> None:
+        """The stop read succeeded, so the record is ordered, and drawn it
+        would be a pause reaching back to the clock's origin."""
+        ingest(monitor, PID, [_record(ts_start=0, ts_stop=PAUSE_NS)])
+
+        assert exporter.events == []
+
+    def test_the_records_around_it_are_kept(self, monitor: EventsMonitor, exporter: MockExporter) -> None:
+        batch = [
+            _record(collections=1, ts_start=1_000, ts_stop=2_000),
+            _record(collections=2, ts_start=0, ts_stop=4_000),
+            _record(collections=3, ts_start=5_000, ts_stop=6_000),
+        ]
+
+        ingest(monitor, PID, batch)
+
+        assert seen(exporter) == {(0, 1), (0, 3)}
 
 
 class TestCursorScope:
