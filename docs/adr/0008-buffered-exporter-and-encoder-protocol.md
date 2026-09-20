@@ -25,7 +25,7 @@ adding events for a brand-new pid could both pass the check and both emit a
 
 ## Decision
 
-**`PerfettoExporter` owns the lifecycle:** the two locks, the buffer and flush
+**`PerfettoExporter` owns the lifecycle:** the lock, the buffer and flush
 threshold, and `add_event` / `add_instant_event` / `close`.
 
 **`ProtobufEventEncoder` owns byte production** through three methods:
@@ -85,7 +85,7 @@ The split settles further questions:
   Meta building sits in the encoder
   ([ADR-0024](0024-an-event-names-the-track-it-is-drawn-on.md)), with the
   seen-pid set and the atomic check-and-emit, so what is left to merge is a
-  buffer, two locks and four one-line calls.
+  buffer, a lock and four one-line calls.
 - **A `Protocol` declared over the encoder.** Rejected: with one format there
   is one implementation and nothing typed against the protocol.
 - **A common base class with abstract encode methods instead of a separate

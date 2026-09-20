@@ -910,11 +910,9 @@ class TestProcessLiveness:
         assert [ts for _pids, ts in exporter.liveness] == [TICK_NS, 2 * TICK_NS]
 
     def test_stamped_no_earlier_than_the_reads_that_proved_them_alive(self, exporter: MockExporter) -> None:
-        """Two processes alive in one tick have to share an end, so the sweep
-        that draws the `Processes` track sees them nest rather than cross. The
-        opening instant does not do it: reads are sequential, so the pid polled
-        second is observed later, and a long-lived parent would be clipped back
-        to the start of a short child that recycled a pid (ADR-0029)."""
+        """Every process alive in one tick shares an end. The opening instant
+        does not give them one they were all seen at: reads are sequential, so
+        the pid polled second is observed later (ADR-0029)."""
         monitor = _monitor(exporter)
         reads = iter([TICK_NS + 10, TICK_NS + 20, TICK_NS + 30, TICK_NS + 40])
         with (

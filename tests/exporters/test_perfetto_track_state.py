@@ -310,8 +310,8 @@ class TestProcessLifetimeState:
         assert sorted(state.get_process_lifetimes()) == [span(TARGET_PID, 1_000, 3_000), span(OTHER_PID, 2_000, 2_000)]
 
     def test_get_returns_every_span_regardless_of_order(self, state: PerfettoTrackState) -> None:
-        """Order is not part of the contract -- ``_clip_spans_to_laminar``
-        sorts what it needs -- so this pins the contents only."""
+        """Order is not part of the contract -- the closeout sorts what it
+        draws -- so this pins the contents only."""
         # Inserted out of order, with a tie on start ts
         # between pids 300 and 100.
         for one in (

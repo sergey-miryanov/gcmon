@@ -141,9 +141,8 @@ class TestRssSampler:
         exporter.add_rss_sample.assert_called_once_with(proc(42), 42, 987_654_321)
 
     def test_one_round_lands_on_one_instant(self) -> None:
-        """Every pid in a round shares a timestamp, so their Perfetto lifetime
-        spans nest instead of being clipped in set-iteration order (ADR-0011).
-        """
+        """Every pid in a round shares a timestamp, so set-iteration order does
+        not pick where each lifetime span begins (ADR-0013)."""
         exporter = MagicMock()
         sampler = RssSampler(exporter, interval=0.0, rss_provider=lambda pid: 42)
 

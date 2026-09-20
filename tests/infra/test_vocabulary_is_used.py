@@ -54,8 +54,6 @@ ALLOWED: dict[str, frozenset[str]] = {
     "tests/control/test_control_server.py": frozenset({"win32"}),
     # A capture an earlier release wrote, not something gcmon writes now.
     "tests/cli/analyze/test_convert_cmd.py": frozenset({"GC Pause(0)"}),
-    # Two labels a slice stack has to tell apart, not rows gcmon draws.
-    "tests/exporters/test_perfetto_emission_order_fuzz.py": frozenset({"Process A", "Process B"}),
     # Arguments to builders that write down whatever they are handed.
     "tests/exporters/test_perfetto_builders.py": frozenset({"Process 100", "collected", "duration"}),
     # `get_env_duration` and `get_env_rss`, resolved by suffix.

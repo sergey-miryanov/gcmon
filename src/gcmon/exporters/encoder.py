@@ -92,7 +92,8 @@ class ProtobufEventEncoder:
         ``Processes``-track span accumulator: *processes* are the ones
         gcmon read GC state out of at *ts_ns*.
 
-        See ADR-0029. Writes nothing; the observations reach the file at
+        See ADR-0029. Writes nothing; the observations reach the file when
+        the span is drawn, at the flush that retires the process or at
         ``close()``.
         """
         for process in processes:
