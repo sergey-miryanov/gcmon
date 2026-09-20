@@ -657,7 +657,6 @@ class TestZeroDurationProcessSpans:
         }
 
 
-
 class TestMultiFlushProcessesTrack:
     """Multi-flush test for the ``Processes`` track slice END.
 
