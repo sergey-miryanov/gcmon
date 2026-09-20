@@ -87,7 +87,16 @@ One row in a trace. An **event** names the track it is drawn on: a
 **process**'s row for its marks and its RSS, an **interpreter**'s **pause
 row** for that interpreter's collections, or its **loss** row.
 _Avoid_: thread (a track is not one), tid, row (in output; fine in prose). A
-**lane** is not a track either, and has its own entry.
+**lane** is not a track either; it is the entry below.
+
+**Lane**:
+One of the sub-rows a **track** stacks overlapping slices into. Every process
+draws its **span** on a track of its own and the `Processes` row is those
+tracks merged, so the row is as many lanes tall as the largest number of
+processes alive at once, and which lane a span lands in follows from the spans
+before it and means nothing else.
+_Avoid_: track and sub-track (the merge leaves a lane no track of its own to
+name), slot, depth, level
 
 **Interpreter group**:
 The `Interpreter {iid}` row every track one **interpreter** owns hangs under:
@@ -125,15 +134,6 @@ _Avoid_: dump, log, export, trace file (that is the Perfetto file)
 A slice bounding a process's observed lifetime, on the shared `Processes` row
 or on the process's own.
 _Avoid_: lifetime (unqualified; see below), duration, extent
-
-**Lane**:
-One of the vertical slots a row stacks overlapping slices into. Every process
-draws its **span** on a track of its own and the `Processes` row is those
-tracks merged, so the row is as many lanes tall as the largest number of
-processes alive at once, and which lane a span lands in follows from the spans
-before it and means nothing else.
-_Avoid_: track (a lane is not one, and the merge leaves no track of its own to
-name), depth, level, sub-track
 
 **Intern id**:
 The number a packet writes in place of a string the trace has already spelled
