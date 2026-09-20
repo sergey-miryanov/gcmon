@@ -41,9 +41,13 @@ implementation ([ADR-0021](0021-write-one-trace-format.md)), and both callers,
 defends is the encoder being a separate class that runs with no exporter, no
 buffer and no lock around it, and a class boundary needs no declaration.
 
+**One lock guards the buffer and every touch of encoder state.** It is held
+across deciding what to write and writing it, so encoder state is touched in
+the order the calls arrived in.
+
 **Meta building is atomic.** The check and the emit happen inside a single
-critical section under the state lock, which is what closes the race between
-two threads reaching a brand-new pid.
+critical section under that lock, which is what closes the race between two
+threads reaching a brand-new pid.
 
 The split settles further questions:
 
@@ -86,6 +90,12 @@ The split settles further questions:
   ([ADR-0024](0024-an-event-names-the-track-it-is-drawn-on.md)), with the
   seen-pid set and the atomic check-and-emit, so what is left to merge is a
   buffer, a lock and four one-line calls.
+- **A second lock for the buffer alone.** Rejected: it leaves a window between
+  taking events out of the buffer and writing them. A retirement reaching the
+  encoder inside that window draws a process's span from an accumulator those
+  events have not reached, leaving it short at whichever end they would have
+  moved ([ADR-0011](0011-process-lifetime-and-ordering.md)). The one lock
+  costs an append the wait for a write already in progress.
 - **A `Protocol` declared over the encoder.** Rejected: with one format there
   is one implementation and nothing typed against the protocol.
 - **A common base class with abstract encode methods instead of a separate

@@ -22,18 +22,12 @@ class PerfettoExporter(EventsExporter):
     """Buffer what the monitor reports as `TraceEvent`s, and write them as
     a Perfetto trace.
 
-    One class rather than a buffering base and a subclass on top; see
+    One class rather than a buffering base and a subclass on top, and one
+    lock, `_io_lock`, over the buffer and every touch of encoder state; see
     ADR-0008.
 
-    **One lock, `_io_lock`, guards the buffer and every touch of encoder
-    state.** It is held across both deciding what to write and writing it,
-    which is what makes the order those touches happen in the order the
-    calls arrived in. A second lock for the buffer alone left a window
-    between the two: a flush holding events it had taken out of the buffer
-    and nothing serializing it against a retirement, which then drew a span
-    from an accumulator those events had not reached and came out short at
-    whichever end they would have moved (ADR-0011). The price of the one
-    lock is that an append waits for a write already in progress.
+    The lock is held across deciding what to write and writing it, so
+    encoder state is touched in the order the calls arrived in.
     """
 
     def __init__(
@@ -114,12 +108,7 @@ class PerfettoExporter(EventsExporter):
 
     @override
     def close(self) -> None:
-        """Drain the buffer and close the encoder.
-
-        Under the lock from the first statement, for the reason the class
-        gives: a flush that read the buffer outside it could reach the
-        encoder after the closeout had gone out.
-        """
+        """Drain the buffer and close the encoder."""
         with self._io_lock:
             if self._closed:
                 return
