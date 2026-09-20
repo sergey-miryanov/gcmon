@@ -47,11 +47,15 @@ class PerfettoExporter(EventsExporter):
             if self._closed:
                 return
             self._buffer.extend(events)
-            if len(self._buffer) < self._flush_threshold:
-                return
-            to_write = self._buffer[:]
-            self._buffer.clear()
-            self._encoder.write_events(to_write)
+            if len(self._buffer) >= self._flush_threshold:
+                self._flush_locked()
+
+    def _flush_locked(self) -> None:
+        if not self._buffer:
+            return
+        to_write = self._buffer[:]
+        self._buffer.clear()
+        self._encoder.write_events(to_write)
 
     @override
     def add_event(self, process: Process, item: TGCStatsInfo) -> None:
@@ -96,8 +100,5 @@ class PerfettoExporter(EventsExporter):
             if self._closed:
                 return
             self._closed = True
-            remaining = self._buffer[:]
-            self._buffer.clear()
-            if remaining:
-                self._encoder.write_events(remaining)
+            self._flush_locked()
             self._encoder.close()
