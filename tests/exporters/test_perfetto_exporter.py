@@ -578,3 +578,70 @@ class TestProcessLivenessRoundTrip:
         assert not liveness.is_alive() and not writer.is_alive()
 
         exporter.close()
+
+
+class _BufferLockTakenSecond:
+    """The exporter's buffer lock, asserting the I/O lock was taken first.
+
+    Stands in for `PerfettoExporter._lock`. Both locks are private and there
+    is no other way to read the order they are taken in, which is the whole
+    of what this pins.
+    """
+
+    def __init__(self, io_lock: threading.Lock) -> None:
+        self._io_lock = io_lock
+        self._inner = threading.Lock()
+
+    def __enter__(self) -> None:
+        assert self._io_lock.locked(), (
+            "the buffer lock was taken with the I/O lock free, which leaves a window where one "
+            "thread holds events it has taken out of the buffer and another can reach the encoder"
+        )
+        self._inner.acquire()
+
+    def __exit__(self, *_exc: object) -> None:
+        self._inner.release()
+
+
+class TestAFlushHoldsTheIoLockThroughout:
+    """`_io_lock` comes before `_lock` and stays held across deciding what
+    to write and writing it.
+
+    Taken the other way round, a retirement arriving between the two is
+    drawn from an accumulator the flusher's events have not reached, and the
+    two slices it writes are short at whichever end those events would have
+    moved (ADR-0011). Nothing observable in the trace distinguishes the two
+    orders, because the window needs a second thread inside it, so the order
+    itself is what is asserted.
+    """
+
+    def _guarded(self, tmp_path: Path) -> PerfettoExporter:
+        exporter = PerfettoExporter(output_path=tmp_path / "trace.pftrace", flush_threshold=1)
+        exporter._lock = _BufferLockTakenSecond(exporter._io_lock)  # type: ignore[assignment]
+        return exporter
+
+    def test_a_flush_takes_the_io_lock_first(self, tmp_path: Path) -> None:
+        exporter = self._guarded(tmp_path)
+
+        exporter.add_event(proc(DEFAULT_PID), create_mock_stats_item(ts_start=1_000, ts_stop=2_000))
+
+        exporter.close()
+
+    def test_close_takes_the_io_lock_first(self, tmp_path: Path) -> None:
+        """The same window, with the closeout on the other side of it: a
+        flush could reach the encoder after the trace had been finished."""
+        exporter = self._guarded(tmp_path)
+        exporter.add_process_liveness({proc(DEFAULT_PID)}, 1_000)
+
+        exporter.close()
+
+    def test_an_enqueue_that_does_not_flush_takes_it_too(self, tmp_path: Path) -> None:
+        """The buffer is touched on every call, flush or not, so the order
+        holds on the path that writes nothing."""
+        exporter = PerfettoExporter(output_path=tmp_path / "trace.pftrace", flush_threshold=1_000)
+        exporter._lock = _BufferLockTakenSecond(exporter._io_lock)  # type: ignore[assignment]
+
+        exporter.add_event(proc(DEFAULT_PID), create_mock_stats_item(ts_start=1_000, ts_stop=2_000))
+
+        exporter.close()
+

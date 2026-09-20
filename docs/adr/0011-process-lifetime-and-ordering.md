@@ -163,11 +163,13 @@ missing slice would leave no record that the process was monitored at all.
   drawn.** Both ends are in the file by then, and Perfetto pairs a BEGIN with
   the first matching END, so a second pair would draw the process twice rather
   than widen it. Nothing should arrive: gcmon has let go of the pid, and a
-  record read afterwards belongs to whatever holds it now (ADR-0025). Where a
-  flush races the retirement anyway, the pair is short at whichever end that
-  observation would have moved, since the accumulator is a min/max over both
-  (ADR-0029). It is the cost ADR-0028 already accepts for a control-plane
-  instant arriving after the row is drawn.
+  record read afterwards belongs to whatever holds it now (ADR-0025). An event
+  already queued when a process retires is not late, since the exporter
+  serializes a flush against a retirement and the queued one reaches the
+  accumulator first. One that did arrive late would leave the pair short at
+  whichever end it would have moved, the accumulator being a min/max over both
+  (ADR-0029), which is the cost ADR-0028 accepts for a control-plane instant
+  arriving after the row is drawn.
 - **One `Processes` slice per process gcmon polled**, so a consumer joining
   slices to pids joins many to one and reads `pid_epoch` to tell them apart. A
   process that answered a single poll and never collected gets one; only a pid

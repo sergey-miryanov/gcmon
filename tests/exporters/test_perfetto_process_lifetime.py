@@ -709,9 +709,11 @@ class TestARetiredProcessRowGoesOutEarly:
         BEGIN with the first matching END, so a second pair would draw the
         process twice rather than widen it.
 
-        Nothing should arrive: gcmon has let go of the pid. This pins what a
-        flush racing the retirement costs, at either end, since the
-        accumulator is a min/max over both (ADR-0011, ADR-0029).
+        Nothing should arrive: gcmon has let go of the pid, and the exporter
+        serializes a flush against a retirement so a queued event cannot land
+        after one. This pins what an observation that did arrive late would
+        cost, at either end, the accumulator being a min/max over both
+        (ADR-0011, ADR-0029).
         """
         state, early = self._retire()
 
