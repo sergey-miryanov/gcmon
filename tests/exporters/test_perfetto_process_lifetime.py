@@ -702,9 +702,7 @@ class TestARetiredProcessRowGoesOutEarly:
         ]
 
     @pytest.mark.parametrize(("late_ts", "widened"), [(9_000, (500, 9_000)), (100, (100, 5_000))])
-    def test_an_observation_arriving_after_the_pair_is_not_drawn(
-        self, late_ts: int, widened: tuple[int, int]
-    ) -> None:
+    def test_an_observation_arriving_after_the_pair_is_not_drawn(self, late_ts: int, widened: tuple[int, int]) -> None:
         """Both ends are in the file by the time it lands, and Perfetto pairs a
         BEGIN with the first matching END, so a second pair would draw the
         process twice rather than widen it.
