@@ -52,6 +52,7 @@ one; [RETIRED.md](RETIRED.md) says which.
 | 0025 | The only outage, and the fix is one word |
 | 0050 | Unblocked: 0049 landed, and taking this next edits the help text and the advisory once |
 | 0052 | Silent, and what it produces is indistinguishable from a real measurement |
+| 0071 | `dur` on the `Processes` row is not a duration gcmon observed, and 0070 retires with it |
 | 0030 | |
 | 0035 | 0039 landed, and the nine `Metric` classes it replaces are a module named for the table |
 | 0037 | |
@@ -78,7 +79,6 @@ the position. A blank cell means no recorded reason, so that row can move.
 - **0070** needs one number before anyone can build it: the gap between
   sibling starts in a real fan-out capture, which is what its ε has to exceed.
   0071 removes the clip it works around, and retires it when it lands.
-- **0071** waits on the ADR-0011 rewrite its section 7 asks for first.
 - **0054** was found in CPython's source and not in a run. Nobody should size
   it until the ports have been counted on a Mac.
 
