@@ -164,8 +164,9 @@ missing slice would leave no record that the process was monitored at all.
   the first matching END, so a second pair would draw the process twice rather
   than widen it. Nothing should arrive: gcmon has let go of the pid, and a
   record read afterwards belongs to whatever holds it now (ADR-0025). Where a
-  flush races the retirement anyway, the span is short by the tail rather than
-  wrong at the start, the cost ADR-0028 already accepts for a control-plane
+  flush races the retirement anyway, the pair is short at whichever end that
+  observation would have moved, since the accumulator is a min/max over both
+  (ADR-0029). It is the cost ADR-0028 already accepts for a control-plane
   instant arriving after the row is drawn.
 - **One `Processes` slice per process gcmon polled**, so a consumer joining
   slices to pids joins many to one and reads `pid_epoch` to tell them apart. A

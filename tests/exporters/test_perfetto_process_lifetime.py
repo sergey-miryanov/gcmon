@@ -701,21 +701,24 @@ class TestARetiredProcessRowGoesOutEarly:
             (9_000, TrackEventType.SLICE_END, ""),
         ]
 
-    def test_an_observation_arriving_after_the_pair_is_not_drawn(self) -> None:
+    @pytest.mark.parametrize(("late_ts", "widened"), [(9_000, (500, 9_000)), (100, (100, 5_000))])
+    def test_an_observation_arriving_after_the_pair_is_not_drawn(
+        self, late_ts: int, widened: tuple[int, int]
+    ) -> None:
         """Both ends are in the file by the time it lands, and Perfetto pairs a
         BEGIN with the first matching END, so a second pair would draw the
         process twice rather than widen it.
 
         Nothing should arrive: gcmon has let go of the pid. This pins what a
-        flush racing the retirement costs, which is the tail and not the start
-        (ADR-0011).
+        flush racing the retirement costs, at either end, since the
+        accumulator is a min/max over both (ADR-0011, ADR-0029).
         """
         state, early = self._retire()
 
-        state.update_process_lifetime(self.RETIRED, 9_000)
+        state.update_process_lifetime(self.RETIRED, late_ts)
         closeout = finalize_perfetto_packets(state, sequence_id=1)
 
-        assert state.get_process_lifetime(self.RETIRED) == span(TARGET_PID, 500, 9_000), (
+        assert state.get_process_lifetime(self.RETIRED) == span(TARGET_PID, *widened), (
             "the accumulator still widened; this is about what was already drawn"
         )
         row = processes_row_uuids(state, self.RETIRED)
