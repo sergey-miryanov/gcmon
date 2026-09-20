@@ -62,10 +62,10 @@ this reason (ADR-0029). Add that to the class docstring. No locking, no
 behaviour change.
 
 `PerfettoExporter` holds `_io_lock` across the whole of a flush and has no
-second lock: one lock guards the buffer and the encoder together, which is
-what keeps the order of encoder touches the order the calls arrived in. The
-class docstring carries that, and
-`tests/exporters/test_perfetto_exporter.py::TestOneLockGuardsTheBufferAndTheEncoder`
+second lock: one lock guards the buffer and the encoder together, so a flush
+reads the buffer and writes what it read in one critical section. The class
+docstring carries that, and
+`tests/exporters/test_perfetto_exporter.py::TestOneCriticalSectionPerCall`
 holds it there, so 4.2 documents `PerfettoTrackState` alone.
 
 **4.3: dropped, 2026-08-26.** It asked `BufferedTraceExporter._build_meta` to
