@@ -243,17 +243,17 @@ def emit_retired_process_row(
     state: PerfettoTrackState,
     sequence_id: int,
 ) -> list[bytes]:
-    """Everything *process*'s own row needs, before the end of the run: the
-    root descriptor, its process descriptor and its ``Lifetime`` bar.
+    """Everything *process* draws, before the end of the run: the root
+    descriptor, its process descriptor, its span on the shared ``Processes``
+    row and its ``Lifetime`` bar.
 
     gcmon has let go of the pid, so *process*'s span is final: a record read
     afterwards is filed under whatever holds the pid now (ADR-0025), and
-    liveness and RSS both work off the tick's live set. What a run killed
-    mid-flight loses shrinks to the processes still running. The Perfetto UI
-    hides a row holding no events, so a bar that never reached the file takes
-    its whole row with it, its interpreters' rows and all.
-
-    The span on the shared ``Processes`` row waits for close.
+    liveness and RSS both work off the tick's live set. No span is measured
+    against another, so a final one needs nothing else in hand (ADR-0011).
+    What a run killed mid-flight loses shrinks to the processes still running.
+    The Perfetto UI hides a row holding no events, so a bar that never reached
+    the file takes its whole row with it, its interpreters' rows and all.
 
     Returns nothing for a process gcmon never observed, for one already drawn,
     and for a trace whose closeout has gone out.
@@ -273,7 +273,9 @@ def emit_retired_process_row(
             sibling_order_rank=state.get_process_track_rank(process),
             start_timestamp_ns=span.start_ts,
         ),
+        _emit_process_lifetime_track_descriptor(process, state, sequence_id),
     ]
+    packets.extend(_emit_process_lifetime_slice(span, state, sequence_id))
     packets.extend(_emit_process_row_lifetime_slice(span, state, sequence_id))
     return packets
 
@@ -339,12 +341,15 @@ def finalize_perfetto_packets(
     sequence_id: int,
 ) -> list[bytes]:
     """Emit every descriptor and span packet the end of the trace owes:
-    the root descriptor, then per process a descriptor for its row where it
-    still has none, a descriptor for the track it draws its span on, that
-    span, and its ``Lifetime`` bar on its own row. Call this once, at the
-    end of the trace (typically the encoder's ``close()``).
+    the root descriptor, then per process still held a descriptor for its
+    row where it has none, a descriptor for the track it draws its span on,
+    that span, and its ``Lifetime`` bar on its own row. Call this once, at
+    the end of the trace (typically the encoder's ``close()``).
 
-    Every process with a span gets both, including one the monitor loop
+    A process gcmon retired during the run drew both of its slices then
+    (``emit_retired_process_row``), so this pass skips it.
+
+    Every process still held gets both, including one the monitor loop
     only ever reported as live. Describing that one here is what puts it
     on the timeline at all: no event ever named its track, so no convert
     pass described it, and it reached the file as a slice on the shared
@@ -364,9 +369,14 @@ def finalize_perfetto_packets(
     """
     if state.has_process_lifetime_emitted():
         return []
-    spans = sorted(state.get_process_lifetimes(), key=lambda span: (span.start_ts, span.process))
-    if not spans:
+    recorded = state.get_process_lifetimes()
+    if not recorded:
         return []
+    state.mark_process_lifetime_emitted()
+    spans = sorted(
+        (span for span in recorded if not state.has_process_row_drawn(span.process)),
+        key=lambda span: (span.start_ts, span.process),
+    )
 
     state.rank_processes(span.process for span in spans)
     descriptors = _emit_root_descriptor(state, sequence_id)

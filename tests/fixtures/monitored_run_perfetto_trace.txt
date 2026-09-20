@@ -15349,6 +15349,35 @@ track_event {
   counter_value: 0
 }
 --- packet ---
+trusted_packet_sequence_id: 1
+track_descriptor {
+  uuid: 46
+  name: "Processes"
+}
+--- packet ---
+timestamp: 1002600000
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 46
+  name: "Process 33512"
+}
+--- packet ---
+timestamp: 2802600000
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 46
+}
+--- packet ---
 timestamp: 1002600000
 trusted_packet_sequence_id: 1
 track_event {
@@ -15394,12 +15423,6 @@ track_event {
 --- packet ---
 trusted_packet_sequence_id: 1
 track_descriptor {
-  uuid: 46
-  name: "Processes"
-}
---- packet ---
-trusted_packet_sequence_id: 1
-track_descriptor {
   uuid: 47
   name: "Processes"
 }
@@ -15422,7 +15445,7 @@ track_event {
     name: "pid_epoch"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 46
+  track_uuid: 47
   name: "Process 33328"
 }
 --- packet ---
@@ -15430,7 +15453,7 @@ timestamp: 5802600000
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 46
+  track_uuid: 47
 }
 --- packet ---
 timestamp: 1000000000
@@ -15474,29 +15497,6 @@ trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
   track_uuid: 1
-}
---- packet ---
-timestamp: 1002600000
-trusted_packet_sequence_id: 1
-track_event {
-  debug_annotations {
-    int_value: 33512
-    name: "pid"
-  }
-  debug_annotations {
-    int_value: 1
-    name: "pid_epoch"
-  }
-  type: TYPE_SLICE_BEGIN
-  track_uuid: 47
-  name: "Process 33512"
-}
---- packet ---
-timestamp: 2802600000
-trusted_packet_sequence_id: 1
-track_event {
-  type: TYPE_SLICE_END
-  track_uuid: 47
 }
 --- packet ---
 timestamp: 3497509800

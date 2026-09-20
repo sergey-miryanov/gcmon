@@ -626,12 +626,11 @@ class TestAQuietProcessGetsARow:
 
 
 class TestARetiredProcessRowGoesOutEarly:
-    """gcmon has let go of the pid, so the process's span is final and its row
-    can be drawn without waiting for the end of the run.
+    """gcmon has let go of the pid, so the process's span is final and both of
+    its slices can be drawn without waiting for the end of the run.
 
-    What a run killed mid-flight loses shrinks to the processes still running.
-    The span on the shared ``Processes`` row does not come with it; it waits
-    for close (ADR-0028).
+    What a run killed mid-flight loses shrinks to the processes still running
+    (ADR-0028).
     """
 
     RETIRED = proc(TARGET_PID)
@@ -655,31 +654,61 @@ class TestARetiredProcessRowGoesOutEarly:
             (5_000, TrackEventType.SLICE_END, ""),
         ]
 
-    def test_close_repeats_neither_the_descriptor_nor_the_bar(self) -> None:
+    def test_the_span_on_the_shared_row_goes_out_with_it(self) -> None:
+        """Its own descriptor and its own pair, at the width gcmon observed.
+        This is what a killed run keeps for a process it had let go of."""
+        state, packets = self._retire()
+
+        described = [
+            td.uuid
+            for td in map(parse_track_descriptor, packets)
+            if td is not None and td.name == _PROCESS_LIFETIME_TRACK_NAME
+        ]
+        assert described == [state.get_process_lifetime_track_uuid(self.RETIRED)]
+        assert lifetime_slices(packets, processes_row_uuids(state, self.RETIRED)) == [
+            (500, TrackEventType.SLICE_BEGIN, TARGET_ROW_NAME, {CMDLINE: "python3 -m child", PID: 100, PID_EPOCH: 1}),
+            (5_000, TrackEventType.SLICE_END, "", {}),
+        ]
+
+    def test_close_repeats_none_of_it(self) -> None:
         state, _packets = self._retire()
-        row_uuid = state.get_process_track_uuid(self.RETIRED)
 
         closeout = finalize_perfetto_packets(state, sequence_id=1)
 
         assert _process_descriptors(closeout) == {}
-        assert _row_slices(closeout, row_uuid) == []
+        assert _row_slices(closeout, state.get_process_track_uuid(self.RETIRED)) == []
+        assert lifetime_slices(closeout, processes_row_uuids(state, self.RETIRED)) == []
+        assert [
+            td.uuid
+            for td in map(parse_track_descriptor, closeout)
+            if td is not None and td.name == _PROCESS_LIFETIME_TRACK_NAME
+        ] == []
 
-    def test_close_draws_its_span_at_the_width_it_was_observed_at(self) -> None:
-        """``LATE`` is discovered after ``RETIRED``'s row was drawn and opens a
-        span inside it. Each has a track of its own, so neither loses an end."""
-        state, _packets = self._retire()
+    def test_close_still_draws_a_process_discovered_later(self) -> None:
+        """``LATE`` is discovered after ``RETIRED`` was drawn and opens a span
+        inside it. Each has a track of its own, so the early write costs
+        ``RETIRED`` nothing and ``LATE`` is drawn at close as usual."""
+        state, early = self._retire()
         for ts in (2_000, 9_000):
             state.update_process_lifetime(self.LATE, ts)
 
         closeout = finalize_perfetto_packets(state, sequence_id=1)
 
-        drawn = lifetime_slices(closeout, processes_row_uuids(state, self.RETIRED, self.LATE))
-        assert [(ts, event_type, name) for ts, event_type, name, _ in drawn] == [
+        row = processes_row_uuids(state, self.RETIRED, self.LATE)
+        assert [(ts, event_type, name) for ts, event_type, name, _ in lifetime_slices([*early, *closeout], row)] == [
             (500, TrackEventType.SLICE_BEGIN, TARGET_ROW_NAME),
             (5_000, TrackEventType.SLICE_END, ""),
             (2_000, TrackEventType.SLICE_BEGIN, OTHER_ROW_NAME),
             (9_000, TrackEventType.SLICE_END, ""),
         ]
+
+    def test_close_marks_the_closeout_done_with_every_process_retired(self) -> None:
+        """Nothing is left to draw, so close writes nothing. The flag still
+        goes up, or a retirement racing it would write into a closed trace."""
+        state, _packets = self._retire()
+
+        assert finalize_perfetto_packets(state, sequence_id=1) == []
+        assert state.has_process_lifetime_emitted()
 
     def test_a_process_with_no_span_writes_nothing(self, state: PerfettoTrackState) -> None:
         """gcmon never observed it, so there is nothing to draw."""
