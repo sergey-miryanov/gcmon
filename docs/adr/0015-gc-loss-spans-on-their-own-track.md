@@ -63,10 +63,11 @@ bar around them would still guess at where the missing ones ran. The args
 report how much of the interval survived instead.
 
 **The row is a sequence.** Consecutive intervals meet at a poll instant, so
-windows touch without crossing and the track needs no clipping sweep of the
-kind [ADR-0011](0011-process-lifetime-and-ordering.md) built for process
-lifetimes. Touching puts one window's END on the same timestamp as the next
-one's BEGIN, which makes their emission order load-bearing.
+windows touch without crossing and one track holds every one of them, where a
+process lifetime needs a track to itself
+([ADR-0011](0011-process-lifetime-and-ordering.md)). Touching puts one
+window's END on the same timestamp as the next one's BEGIN, which makes their
+emission order load-bearing.
 
 **The args are the interval's totals, then one group per generation.**
 `observed_count`, `lost_count`, `seen`, `lost_pause` and `lost_pause_ns` sit
@@ -205,11 +206,12 @@ rebuild the windows from a JSONL capture.
   Rejected: one fast burst weakens that floor for the whole session, and it
   errs in the dangerous direction, since a stretch narrower than the floor
   that did hold a record loses it. Loss happens when runs come fast.
-- **Inline on the interpreter's own row**, either with an ADR-0011-style
-  clipping sweep or snapped to the adjacent observed records. Rejected: an
-  interval-width bar beside the pause slices invites the misreading a separate
-  track prevents, clipping shortens windows whose width is the claim being
-  made, and snapping draws the loss as a pause of known extent.
+- **Inline on the interpreter's own row**, either by shortening a window that
+  meets the pause beside it or by snapping it to the adjacent observed
+  records. Rejected: an interval-width bar beside the pause slices invites the
+  misreading a separate track prevents, shortening a window moves the width
+  that is the claim being made, and snapping draws the loss as a pause of
+  known extent.
 - **One track per `(pid, iid, gen)`.** Three rows say what the args say, at
   three times the vertical cost, and a process with several interpreters would
   carry nine.

@@ -53,9 +53,8 @@ operator types it; the sampler converts it once at construction.
 **The sampler reads no clock.** A sample stamped with its own
 `time.monotonic_ns()` spreads a pass across however long `psutil` takes. That
 spread carries no information: the pass walks a `set`, so hash order picks
-which pid gets the earliest timestamp, and on the Perfetto side which
-sibling's lifetime span is clipped. Spans sharing a start nest, so one instant
-per pass removes the effect.
+which pid gets the earliest timestamp, and so where each process's lifetime
+span begins. One instant per pass removes the effect.
 
 **The sampler callback is injectable**, the same pattern as the command-line
 provider `ProcessRegistry` takes
@@ -91,8 +90,9 @@ defaults to 1.0 s, independent of the 0.1 s `--rate`.
   earlier than every GC record from the same tick. The skew is bounded by how
   long the polls take, which on a wide tree exceeds the 0.1 s rate. Accepted:
   RSS moves slowly enough that tens of milliseconds change nothing a reader
-  concludes, while the per-sample read it replaced distorted the `Processes`
-  track by hash order ([ADR-0011](0011-process-lifetime-and-ordering.md)).
+  concludes, while the per-sample read it replaced moved each span's edge on
+  the `Processes` row by hash order
+  ([ADR-0011](0011-process-lifetime-and-ordering.md)).
 - You can unit-test `RssSampler` without `psutil` and without a monitor loop.
 - Missing `psutil`, a dead process, or a permission error each produce no
   sample and no error. `--rss` on a machine without `psutil` is ignored, with

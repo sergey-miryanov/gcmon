@@ -11,7 +11,7 @@
 ## Context
 
 [ADR-0011](0011-process-lifetime-and-ordering.md) draws one span per process
-on the shared `Processes` track, and
+on the shared `Processes` row, and
 [ADR-0028](0028-draw-every-process-a-row-of-its-own.md) a `Lifetime` slice on
 the process's own row. Both need an interval.
 
@@ -36,12 +36,12 @@ pid. The accumulator folds every observation in as a plain min/max.
 when the tick opened. A tick polls its pids in sequence, and a process polled
 second is observed later than one polled first. The report carries the instant
 the tick's last successful read returned. Every process alive in one tick then
-shares an end, which the sweep nests rather than clips (ADR-0011).
-`MonitorLoop` still takes one stamping clock read per tick and hands it in
-([ADR-0019](0019-schedule-tick-starts-on-a-fixed-grid.md)); that instant opens
-the loss window ([ADR-0015](0015-gc-loss-spans-on-their-own-track.md)) and
-stamps a whole RSS pass ([ADR-0013](0013-rss-sampling.md)), and only the
-liveness report carries the later one.
+shares an end. `MonitorLoop` still takes one stamping clock read per tick and
+hands it in ([ADR-0019](0019-schedule-tick-starts-on-a-fixed-grid.md)); that
+instant opens the loss window
+([ADR-0015](0015-gc-loss-spans-on-their-own-track.md)) and stamps a whole RSS
+pass ([ADR-0013](0013-rss-sampling.md)), and only the liveness report carries
+the later one.
 
 **Liveness folds in alongside events rather than replacing them.**
 `get_gc_stats` returns collections that *already happened*, so a freshly

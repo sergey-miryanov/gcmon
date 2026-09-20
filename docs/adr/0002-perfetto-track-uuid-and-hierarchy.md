@@ -11,8 +11,8 @@ Perfetto identifies every track by a 64-bit `uuid`, and
 `TrackDescriptor.parent_uuid` builds the tree the UI renders. gcmon emits a
 process track per monitored process, a group per interpreter holding that
 interpreter's rows ([ADR-0027](0027-group-every-row-an-interpreter-owns.md)),
-counter tracks, and the shared `Processes` lifetime track (see
-[ADR-0011](0011-process-lifetime-and-ordering.md)).
+counter tracks, and a lifetime track per process, which the shared `Processes`
+row merges (see [ADR-0011](0011-process-lifetime-and-ordering.md)).
 
 An early design derived UUIDs arithmetically from the identifiers (process as
 `pid | (1 << 60)`, thread as `(pid << 20) | iid | (1 << 60)`, counters from a
@@ -33,10 +33,12 @@ down below its own counters.
 ## Decision
 
 **UUIDs are allocated sequentially from a per-trace counter starting at 1**,
-lazily, on first use of each track. The state object maps identity (a
-`Process`, a `Track`, a `Track` and a counter's display name) to the allocated
-UUID, so the same track reuses its UUID across flushes. Collision-freedom
-comes from the counter, not from bit arithmetic.
+lazily, on first use of each track. The state object maps identity to the
+allocated UUID, so the same track reuses its UUID across flushes: a `Process`
+twice over, once for its own row and once for the track it draws its lifetime
+on ([ADR-0011](0011-process-lifetime-and-ordering.md)), a `Track`, and a
+`Track` with a counter's display name. Collision-freedom comes from the
+counter, not from bit arithmetic.
 
 **`uuid = 0` is reserved.** Perfetto reads it as the root descriptor, and
 gcmon writes one there to carry the `process_ordering` hint. Nothing parents

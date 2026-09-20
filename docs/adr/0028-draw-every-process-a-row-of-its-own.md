@@ -13,7 +13,7 @@ a `Process` names which holder of it a record came from
 [ADR-0010](0010-process-identity-cmdline-and-start-marker.md) gives a process
 a track and a `Lifetime` slice that keeps it visible, and
 [ADR-0011](0011-process-lifetime-and-ordering.md) draws one span per process
-on the shared `Processes` track. Two processes that held one pid still have to
+on the shared `Processes` row. Two processes that held one pid still have to
 come out as two rows, each with its own start stamp, command line and
 counters.
 
@@ -22,9 +22,9 @@ the track uuid, so descriptors sharing a pid do not reliably draw a row each:
 two descriptors on one pid split, and a third does not. Measured against the
 trace processor the suite pins.
 
-The shared track clips a span that crosses another (ADR-0011), so a reader
-also needs somewhere to find the span as observed, and how much of the process
-gcmon read.
+A span on the shared row says when gcmon watched a process and nothing about
+how much of it gcmon read (ADR-0011), so a reader needs somewhere to find
+that.
 
 ## Decision
 
@@ -55,16 +55,14 @@ no collections from
 row: a `ProcessDescriptor` stamped and ranked from its first observation, its
 command line, and a `Lifetime` slice with nothing under it.
 
-**The process's own row draws the observed pair; the shared row draws the
-clipped one.** Clipping exists because every process shares the `Processes`
-track and slices on a Perfetto track are a stack. A process's own row carries
-one `Lifetime` slice
+**Both rows draw the pair gcmon observed.** A process's own row carries one
+`Lifetime` slice
 ([ADR-0010](0010-process-identity-cmdline-and-start-marker.md)) and the
-workload's `Instant` marks, which nest without closing anything, so nothing on
-that row can cross the slice and nothing needs clipping. The two rows
-therefore disagree for a clipped process, and the row able to draw the
-observed pair draws it. `Lifetime` needs no `real_*` annotations: its own `ts`
-and `dur` are those two numbers.
+workload's `Instant` marks, which nest without closing anything; its span on
+the shared row has a track to itself (ADR-0011). Neither row has to give up an
+end to draw. They agree on the width and on nothing else: this row is the
+process, and the shared one is the run. `Lifetime` needs no `real_*`
+annotations: its own `ts` and `dur` are those two numbers.
 
 **How much of the process gcmon read is counted in the convert pass.** The
 `Lifetime` slice says `sampled_count` against `lost_count`, and the exporter's
