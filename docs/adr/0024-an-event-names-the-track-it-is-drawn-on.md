@@ -53,8 +53,8 @@ implementations.
 
 **The meta dedup race closes by deletion rather than by relocation.** The race
 [ADR-0008](0008-buffered-exporter-and-encoder-protocol.md) records was two
-producers racing on a check-and-add under the buffering exporter's state lock.
-With no producers, dedup lives only in `PerfettoTrackState`, reached through
+producers racing on a check-and-add in the buffering exporter. With no
+producers, dedup lives only in `PerfettoTrackState`, reached through
 `write_events` and the liveness call, both already under the exporter's I/O
 lock.
 
