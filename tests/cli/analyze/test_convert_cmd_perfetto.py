@@ -245,7 +245,7 @@ def _slices_from_trace(tp: TraceProcessor) -> list[_Slice]:
 
     Two slice kinds are dropped, both of them the Perfetto converter's own and
     neither built from a `TraceEvent`: the `Process {pid}` spans on the
-    `Processes` track, and the `Lifetime` bar each process's own row carries
+    `Processes` row, and the `Lifetime` bar each process's own row carries
     over the interval gcmon observed it.
     """
     args_by_set: dict[int, dict[str, object]] = {}

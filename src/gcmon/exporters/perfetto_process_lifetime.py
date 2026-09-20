@@ -193,16 +193,16 @@ def _emit_process_row_lifetime_slice(
     ``dur = 0`` rather than ``-1``.
 
     The caller describes *span*'s process first, so the track uuid this
-    names is one a packet has described.
-
-    Returns nothing for a process whose bar has already gone out, which is
-    every process gcmon retired before the end of the run.
+    names is one a packet has described, and checks that the bar has not
+    already gone out: this is what records that it has, and a second bar on
+    one row would draw the process twice.
     """
     assert state.has_process_descriptor(span.process), (
         "a Lifetime bar needs a described row to draw on; describe the process first"
     )
-    if state.has_process_row_drawn(span.process):
-        return []
+    assert not state.has_process_row_drawn(span.process), (
+        f"{span.process} has already drawn its Lifetime bar; the caller tests that first"
+    )
     state.mark_process_row_drawn(span.process)
     track_uuid = state.get_process_track_uuid(span.process)
     lost_pause_ns = state.get_lost_pause_ns(span.process)
@@ -397,5 +397,4 @@ def finalize_perfetto_packets(
         packets.extend(_emit_process_lifetime_slice(span, state, sequence_id))
         packets.extend(_emit_process_row_lifetime_slice(span, state, sequence_id))
 
-    state.mark_process_lifetime_emitted()
     return [*descriptors, *packets]

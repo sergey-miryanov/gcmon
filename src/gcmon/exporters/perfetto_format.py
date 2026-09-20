@@ -362,8 +362,9 @@ def convert_trace_events_to_perfetto(
     a descriptor goes out only for a process that named a track, which is a
     process the pre-pass has folded in.
 
-    ``Processes``-track slices go out at trace close instead, from
-    ``finalize_perfetto_packets``.
+    A span on the ``Processes`` row goes out with its process's own row, at
+    the flush that retires it or at trace close
+    (``emit_retired_process_row``, ``finalize_perfetto_packets``).
     """
     descriptors: list[bytes] = []
     packets: list[bytes] = []

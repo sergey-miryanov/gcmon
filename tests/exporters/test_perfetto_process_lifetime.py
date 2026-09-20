@@ -702,6 +702,26 @@ class TestARetiredProcessRowGoesOutEarly:
             (9_000, TrackEventType.SLICE_END, ""),
         ]
 
+    def test_an_observation_arriving_after_the_pair_is_not_drawn(self) -> None:
+        """Both ends are in the file by the time it lands, and Perfetto pairs a
+        BEGIN with the first matching END, so a second pair would draw the
+        process twice rather than widen it.
+
+        Nothing should arrive: gcmon has let go of the pid. This pins what a
+        flush racing the retirement costs, which is the tail and not the start
+        (ADR-0011).
+        """
+        state, early = self._retire()
+
+        state.update_process_lifetime(self.RETIRED, 9_000)
+        closeout = finalize_perfetto_packets(state, sequence_id=1)
+
+        assert state.get_process_lifetime(self.RETIRED) == span(TARGET_PID, 500, 9_000), (
+            "the accumulator still widened; this is about what was already drawn"
+        )
+        row = processes_row_uuids(state, self.RETIRED)
+        assert [ts for ts, _type, _name, _ann in lifetime_slices([*early, *closeout], row)] == [500, 5_000]
+
     def test_close_marks_the_closeout_done_with_every_process_retired(self) -> None:
         """Nothing is left to draw, so close writes nothing. The flag still
         goes up, or a retirement racing it would write into a closed trace."""
