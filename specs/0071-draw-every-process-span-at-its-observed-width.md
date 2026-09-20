@@ -19,9 +19,10 @@
     for its track on the shared row. Root parentage stays "`parent_uuid`
     absent".
   - [ADR-0028](../docs/adr/0028-draw-every-process-a-row-of-its-own.md): the
-    `Lifetime` slice draws the observed pair and is untouched. Two clauses are
-    amended: "the shared row draws the clipped one", and the reason the
-    `Processes` slice of a retired process waits for close.
+    `Lifetime` slice draws the observed pair and is untouched. Three clauses
+    are amended: "the shared row draws the clipped one", the reason the
+    `Processes` slice of a retired process waits for close, and what a killed
+    run keeps.
   - [ADR-0029](../docs/adr/0029-report-liveness-and-fold-it-into-the-span.md):
     what an observation is. Its remark that a shared end nests instead of
     clipping loses its subject.
@@ -32,7 +33,8 @@
     ADR-0011's clipping sweep twice as the thing the `GC Loss` track does not
     need. Both citations are reworded, and nothing it decides moves.
   - [ADR-0010](../docs/adr/0010-process-identity-cmdline-and-start-marker.md):
-    the rows a killed run keeps. A retired process's span joins them.
+    a process's row and its `Lifetime` slice. Neither moves; the killed-run
+    argument this work extends is ADR-0028's.
   - [ADR-0014](../docs/adr/0014-perfetto-integration-test-strategy.md): the
     claim is about what the trace processor pairs up and what the UI merges,
     so the trace processor settles it.
@@ -105,7 +107,9 @@ the merge still happens.
 `ClippedSpan` go, and both slice emitters take the `ProcessSpan` the state
 already returns. The `REAL_START_TS`, `REAL_END_TS` and `CLIPPED` annotations
 go with them: each would restate `ts`, `ts + dur` or `false` on every slice
-(rule 8). `pid`, `pid_epoch` and `cmdline` stay.
+(rule 8). `pid`, `pid_epoch` and `cmdline` stay. `clipped` is the only bool
+gcmon writes, so the builder that writes one and the field number it uses go
+too.
 
 **The pair stays adjacent and BEGIN-first, and the END drops its name.** A
 zero-length span written END-first still reads as `dur = -1`. The name on the
@@ -154,8 +158,8 @@ their observed width and names the three annotations that are gone.
   on `error` alone never sees it.
 - **Prior art:** the `order_id` assertions in
   `tests/exporters/perfetto_integration/test_row_contents.py`, the crossing
-  trace in that package's `traces.py`, and the random span generator in
-  `tests/exporters/test_perfetto_emission_order_fuzz.py`.
+  trace in that package's `traces.py`, the killed-run trace beside it, and the
+  random span generator in the exporters' emission-order fuzz module.
 - **Cases:**
   1. The crossing fixture from ADR-0011's Context reads back with every `dur`
      equal to the observed duration and `misplaced_end_event` at 0.
@@ -165,19 +169,26 @@ their observed width and names the three annotations that are gone.
      observed `ts` and `dur`, and none has `dur = -1`. Zero-length spans and
      spans sharing a timestamp are in the set.
   4. Two holders of one pid read back as two slices, `Process <pid>` and
-     `Process <pid>#2`, each at its own width.
+     `Process <pid>#2`, each at its own width. The pid-reuse integration
+     module already asserts this and needs no new case.
   5. A retired process's `Processes` pair is in the packets
      `emit_retired_process_row` returns, and the closeout does not write it
-     again.
+     again. Read through the trace processor as well, on the killed-run trace:
+     the row holds the retired process's span and not the running one's.
   6. The closeout's bytes are the same for two arrival orders of the same
      spans.
   7. A `Processes` BEGIN carries `pid`, `pid_epoch` and `cmdline`, and none of
      `real_start_ts`, `real_end_ts`, `clipped`.
-  8. JSONL output is byte-identical to today's.
+  8. JSONL output is byte-identical to today's. The JSONL suite asserts the
+     lines already and needs no new case; it passing unchanged is the check.
 - **Tests that go:** the direct tests on `_clip_spans_to_laminar`, the
-  differential test on emission order, and the measurement of the 512 limit.
-  Each asserts a property of one shared track. `test_liveness.py` reads a span
-  from `ts` and `dur` where it reads the `real_*` annotations today.
+  differential test on emission order, the measurement of the 512 limit, and
+  the one pinning a named END against the stack. Each asserts a property of
+  one shared track. `test_liveness.py` reads a span from `ts` and `dur` where
+  it reads the `real_*` annotations today. One order claim survives, that the
+  BEGIN goes first, and it keeps a negative control of its own: a zero-length
+  span written END-first reads as `dur = -1`. The fuzz module is named for the
+  emission order it fuzzes, so it is renamed with its subject.
 
 ## 6. Out of scope
 
