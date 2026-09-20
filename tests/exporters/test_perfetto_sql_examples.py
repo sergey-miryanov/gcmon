@@ -62,8 +62,9 @@ SECOND_CMDLINE: tuple[str, ...] = ("python3", "-m", "second_target")
 CROSS_A_PID: int = 1111
 CROSS_B_PID: int = 2222
 
-# A process gcmon only ever saw answer a poll. It draws a `Processes` span and
-# no `process` row, which is what the lifetime example's LEFT JOIN is for.
+# A process gcmon only ever saw answer a poll. It draws a `Processes` span, a
+# row and a `process` entry like any other, and owns no `GC Pauses` row, which
+# is what the lifetime example's LEFT JOINs are for.
 LIVENESS_ONLY_PID: int = 3333
 
 
@@ -147,20 +148,28 @@ class TestTheDocumentedQueries:
 
         assert [(r.name, r.severity, r.value) for r in rows] == []
 
-    def test_the_lifetime_example_keeps_a_process_with_no_process_row(
+    def test_the_lifetime_example_keeps_a_process_that_recorded_no_pause(
         self,
         documented_trace_processor: TraceProcessor,
     ) -> None:
-        """Why that example starts from the span and left-joins the process.
-        Driven from `process` it returns rows for everything that collected,
-        so a row count says nothing; the process gcmon knew from liveness
-        alone is the one that disappears."""
+        """Why that example left-joins rather than joins, checked against the
+        inner-join version of the same query.
+
+        A row count says nothing on its own here: every process that collected
+        comes back either way, and the one gcmon knew from liveness alone is
+        the only row the joins decide.
+        """
         lifetime = next(sql for sql in _examples() if "observed lifetime" in sql)
+        quiet = process_track_name(proc(LIVENESS_ONLY_PID))
 
         names = {row.name for row in documented_trace_processor.query(lifetime)}
+        inner = {row.name for row in documented_trace_processor.query(lifetime.replace("LEFT JOIN", "JOIN"))}
 
-        assert process_track_name(proc(LIVENESS_ONLY_PID)) in names, (
-            f"a process with a span and no `process` row was dropped: {sorted(names)}"
+        assert quiet in names, f"a process that recorded no pause was dropped: {sorted(names)}"
+        assert [row.pauses for row in documented_trace_processor.query(lifetime) if row.name == quiet] == [0]
+        assert quiet not in inner, (
+            "the inner-join version kept it too, so the LEFT JOINs are guarding nothing and "
+            "this test would pass whichever the page carried"
         )
 
     def test_the_statistics_example_leaves_loss_windows_out(

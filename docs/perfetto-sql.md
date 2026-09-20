@@ -222,8 +222,9 @@ own and the row is those tracks merged, so a span keeps its width however many
 others overlap it, and a `track_id` names no one process.
 
 Every monitored process gets one slice, a process that never collected
-included. A process known from liveness alone drew no row of its own and has
-no `process` entry at all, so this track is the only place it appears.
+included. One gcmon only ever saw answer a poll draws a row and a `process`
+entry like any other; what it has none of is a `GC Pauses` row or a pause
+slice, since those come from records it never produced.
 
 **Scope by `upid` or by name.** A reused PID has one entry per process, none
 of them under the operating system's PID. To gather every process that held
@@ -233,8 +234,8 @@ observed at a single instant.
 
 A slice and the process it describes carry **the same name**. That is the
 pairing: `p.pid` is per process, and the epoch reaches no column of its own.
-Start from the span and left-join the process, so one with a span and no entry
-keeps its row:
+Left-join what a process may not own, so one that recorded no pause keeps its
+row and counts zero instead of dropping out:
 
 ```sql
 -- Each process's observed lifetime beside the pauses it recorded
