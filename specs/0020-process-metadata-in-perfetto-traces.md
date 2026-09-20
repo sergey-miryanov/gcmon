@@ -9,7 +9,7 @@
   - [ADR-0010](../docs/adr/0010-process-identity-cmdline-and-start-marker.md):
     cmdline as a debug annotation on the process slice.
   - [ADR-0011](../docs/adr/0011-process-lifetime-and-ordering.md): the
-    `Processes` track and its slices.
+    `Processes` row and the spans on it.
   - [ADR-0021](../docs/adr/0021-write-one-trace-format.md): `--format` takes
     `perfetto`, `jsonl` and `stdout`, and a Perfetto-only feature is allowed
     to be Perfetto-only.
@@ -66,8 +66,8 @@ the same packet and the same mechanism as `cmdline` under ADR-0010, built in
 `perfetto_process_lifetime` via `_build_debug_annotation_string`. Process
 metadata has one home ([0067](RETIRED.md)), so a reader clicking a process's
 row reads everything gcmon knows about it. No new track, no new packet, no
-change to `_emit_process_descriptor`, and nothing added to the `Processes`
-track's slices.
+change to `_emit_process_descriptor`, and nothing added to the spans on the
+`Processes` row.
 
 | Metadata | Annotation | Type | Example |
 |---|---|---|---|
@@ -146,7 +146,7 @@ already behaves.
   3. Neither source available: the trace is valid, the slice carries `cmdline`
      as before, and neither annotation is present.
   4. Regression guard: JSONL and stdout output byte-identical; the `Processes`
-     track's slice count, spans and ordering unchanged.
+     row's span count, widths and ordering unchanged.
 
 ## 6. Out of scope
 

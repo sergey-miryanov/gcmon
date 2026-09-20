@@ -199,8 +199,8 @@ class TestSliceArgs:
 
 class TestCounterTracks:
     """The per-gen counter metrics (collected/uncollectable/candidates/
-    duration) each have a counter track with the expected name, plus a
-    shared `heap_size` track per (pid, tid). No extra counter tracks are
+    duration) each have a counter track with the expected name, plus one
+    `heap_size` track per interpreter (ADR-0027). No extra counter tracks are
     emitted; in particular `increment_size` is not a counter track (it
     lives on the pause slice's args). The set comparison is robust to
     multiple processes emitting the same counter-track names."""

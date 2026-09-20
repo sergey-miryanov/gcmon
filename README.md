@@ -253,7 +253,8 @@ gcmon combine trace1.jsonl trace2.jsonl -o combined.pftrace -n
 *GC monitoring data visualized in Perfetto UI:*
 - *GC Pause slices with sub-step breakdown, and per-gen `G{gen}` counter
   tracks*
-- *A shared `heap_size` counter and a `Processes` lifetime track*
+- *A `heap_size` counter per interpreter, and the `Processes` row holding one
+  span per monitored process*
 - *An `rss` counter track per PID (when `--rss` is enabled)*
 
 See
