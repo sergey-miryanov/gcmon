@@ -84,22 +84,19 @@ reports an interval only when it lost something, so the `observed_count`
 riding there covers lossy intervals alone; a process that lost nothing has no
 slice to sum and would read as one gcmon never sampled.
 
-**A retired process's row goes out at the next flush; the shared slice waits
-for close.** Once gcmon lets go of a pid the process's span is final: a record
-read afterwards is filed under whatever holds the pid now (ADR-0025), and
-liveness and RSS both work off the tick's live set. The `Lifetime` slice needs
-nothing but that one span, so it is drawn as soon as the events queued ahead
-of it have reached the accumulator. The `Processes` slice needs every other
-span in the run: the sweep is global, and a process discovered later can still
-open one inside a retired process's, because a poll returns collections that
-already happened. A slice drawn early could not be clipped against a sibling
-that did not exist yet, and two crossing slices on one track come back at
-widths neither was given with nothing reported.
+**A retired process's row and its span on the shared row both go out at the
+next flush.** Once gcmon lets go of a pid the process's span is final: a
+record read afterwards is filed under whatever holds the pid now (ADR-0025),
+and liveness and RSS both work off the tick's live set. Neither slice needs
+anything but that one span, since no span is measured against another
+(ADR-0011), so both are drawn as soon as the events queued ahead of them have
+reached the accumulator. A process still held when the run stops is drawn at
+close instead.
 
 The Perfetto UI hides a row holding no events, so a `Lifetime` slice that
 never reached the file takes its whole row with it, its interpreters' rows and
-all. A process already retired keeps its row; one still running does not, and
-neither does the minimap.
+all. A process already retired keeps its row and its place on the minimap; one
+still running keeps neither.
 
 The exception is the control plane, which files an instant by timestamp and
 can still name a retired process (ADR-0025). One arriving after the row was
