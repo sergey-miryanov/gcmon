@@ -36,6 +36,7 @@ rows.
 | 0067 | **Landed** 2026-09-02 (enhancement) | M | A process's row carried one point and an empty Args panel, and how long gcmon watched it sat on a shared track, drawn clipped. Each row draws a `Lifetime` bar over the observed interval now, saying what gcmon read and missed. [ADR-0028](../docs/adr/0028-draw-every-process-a-row-of-its-own.md) |
 | 0068 | **Landed** 2026-09-09 (cleanup) | M | `cli` could import every layer, so an offline command could reach into the monitoring one and the layer test would pass. The tree is two subsystems over a shared base now, and the walk fails on the crossing. [ADR-0026](../docs/adr/0026-two-subsystems-over-a-shared-base.md) |
 | 0069 | **Landed** 2026-09-10 (reporting) | L | Each interpreter was drawn as an OS thread that does not exist, and the trace processor merged the per-interpreter `GC Metrics` groups into one row no query could attribute. Every row an interpreter owns sits under an `Interpreter {iid}` group now, and a trace holds no `thread` row of gcmon's. [ADR-0027](../docs/adr/0027-group-every-row-an-interpreter-owns.md) |
+| 0070 | **Superseded** by 0071 | S | Workers forked in one loop each ran for seconds and were drawn microseconds wide on the `Processes` track. It would have snapped near-equal starts together so the fan-out nested instead of clipping, at a cost of ε on each start. 0071 removed the clip the snap worked around, so no start has to move |
 
 ## Gaps
 
