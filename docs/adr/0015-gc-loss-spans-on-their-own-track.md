@@ -63,8 +63,8 @@ bar around them would still guess at where the missing ones ran. The args
 report how much of the interval survived instead.
 
 **The row is a sequence.** Consecutive intervals meet at a poll instant, so
-windows touch without crossing and one track holds every one of them, where a
-process lifetime needs a track to itself
+windows touch without crossing and one track holds them all, where a process
+lifetime needs a track to itself
 ([ADR-0011](0011-process-lifetime-and-ordering.md)). Touching puts one
 window's END on the same timestamp as the next one's BEGIN, which makes their
 emission order load-bearing.

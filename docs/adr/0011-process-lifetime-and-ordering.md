@@ -47,16 +47,15 @@ process gets a top-level track carrying one
 `[first observed, last observed]` for that process;
 [ADR-0029](0029-report-liveness-and-fold-it-into-the-span.md) says what counts
 as an observation. A span never covers a stretch in which the process it names
-did not exist, and it is drawn at the width gcmon observed. Every one of those
-tracks carries the same name, which is what the trace processor merges them
-on: it packs the spans into lanes of one row, and the UI draws that row.
+did not exist. Every one of those tracks carries the same name, which is what
+the trace processor merges them by, packing the spans into lanes of one row
+for the UI to draw.
 
 **A slice is named for its process**, `Process <pid>` for the first to hold
 the pid and `Process <pid>#N` after it, the suffix the `--stats` table prints
 ([ADR-0016](0016-the-ring-is-the-statistics-unit.md)). A process is one holder
-of a pid, so a reused pid gets a track per holder and needs no further rule.
-The END carries no name: its track holds one span, and there is nothing else
-on it for the END to close.
+of a pid, so a reused pid gets a track per holder. The END carries no name:
+its track holds this one span and nothing else it could close.
 
 - Parented to the trace root, so `parent_uuid` is **absent on the wire**, not
   `0`, which is the reserved root descriptor
@@ -98,14 +97,14 @@ on the first tick, where every process is reached at once and sorted together.
 span at the flush that draws its own row: no span is measured against another,
 so one that is complete can be written on its own
 ([ADR-0028](0028-draw-every-process-a-row-of-its-own.md)). A process still
-held when the run stops is drawn at encoder close, with the rest of what the
-closeout owes. The END cannot go out before then for a live process, since
-`PerfettoExporter` flushes in chunks of `flush_threshold` and Perfetto pairs a
-BEGIN with the **first** matching END, orphaning the rest.
+held when the run stops is drawn at encoder close. For a live process the END
+cannot go out earlier, since `PerfettoExporter` flushes in chunks of
+`flush_threshold` and Perfetto pairs a BEGIN with the **first** matching END,
+orphaning the rest.
 
 **Each span is written as an adjacent BEGIN/END pair, BEGIN first.** The trace
 processor sorts by timestamp and breaks ties by position in the sequence, so
-the order matters only between two events sharing one, and the pair of a
+the order matters only where two events share a timestamp. The pair of a
 process observed at a single instant is that case: written END-first it reads
 as `dur = -1`.
 
@@ -120,7 +119,7 @@ The crossing shape from the Context, with a third process inside the second
 ```
 
 All three are drawn at those widths. The row is three lanes tall, because at
-300 three processes are alive.
+250 three processes are alive.
 
 **Every slice carries `pid` and `pid_epoch` debug annotations** on its BEGIN,
 holding which process this is. They go on *every* slice, not only on a reused
@@ -135,9 +134,9 @@ the observed pair, so no annotation restates either.
 
 **A span is identified by its slice name or its annotations, never by
 `track_id`.** The trace processor folds mergeable descriptors as it imports
-them: a span lands on a track of its merge group whose stack is empty, so a
-`track` row belongs to no one process. `track.name = 'Processes'` still
-selects the whole row, and no slice nests on any of those rows.
+them: a span lands on a track of its merge group whose stack is empty, so one
+`track` row holds spans of different processes. `track.name = 'Processes'`
+still selects the whole row, and nothing nests inside a span on it.
 
 **No span is dropped.** A pid observed at a single instant still gets a
 BEGIN/END pair; the trace processor accepts it and reports `dur = 0`. A
@@ -158,16 +157,16 @@ missing slice would leave no record that the process was monitored at all.
   parentage. The tree is readable from `pid` and from the per-process rows
   (ADR-0028).
 - **A killed run keeps the span of every process gcmon had retired**, beside
-  the rows ADR-0010 keeps for them. Only a process still running when the run
-  died loses its span.
+  the row ADR-0028 drew for it at the same flush. Only a process still running
+  when the run died loses its span.
 - **An observation folded in after a retired process's pair went out is not
   drawn.** Both ends are in the file by then, and Perfetto pairs a BEGIN with
   the first matching END, so a second pair would draw the process twice rather
   than widen it. Nothing should arrive: gcmon has let go of the pid, and a
   record read afterwards belongs to whatever holds it now (ADR-0025). Where a
   flush races the retirement anyway, the span is short by the tail rather than
-  wrong at the start, which is the shape ADR-0028 already accepts for a
-  control-plane instant arriving after the row is drawn.
+  wrong at the start, the cost ADR-0028 already accepts for a control-plane
+  instant arriving after the row is drawn.
 - **One `Processes` slice per process gcmon polled**, so a consumer joining
   slices to pids joins many to one and reads `pid_epoch` to tell them apart. A
   process that answered a single poll and never collected gets one; only a pid
@@ -204,8 +203,8 @@ missing slice would leave no record that the process was monitored at all.
 - **A reader that merges nothing draws a row per process**, each span intact.
   Perfetto moved the merge out of the UI and into the trace processor in
   v52.0, and the UI merged by name before that, so a reader from either side
-  of that release draws one row. The oldest reader this record asks for is
-  still the one the root descriptor's ordering hint asks for.
+  of that release draws one row. This raises no minimum version of its own;
+  the root descriptor's ordering hint above already sets one.
 - [ADR-0015](0015-gc-loss-spans-on-their-own-track.md) needs no row of this
   shape: its loss windows are one per poll interval and meet without
   overlapping, so one track per interpreter holds them. Its `GC Loss` track is
@@ -216,14 +215,13 @@ missing slice would leave no record that the process was monitored at all.
 
 - **One shared track, with crossing spans clipped to a laminar set.** Sorted
   by ascending start, a stack sweep pulls each crossed span's end back to one
-  nanosecond before the span that crosses it, which keeps the row one lane
-  tall wherever the spans nest. Rejected: the clip lands at `later.start - 1`,
-  so what a span loses depends on how close the two starts are rather than on
-  how much the spans overlap. Siblings fanning out from a fork loop start
-  microseconds apart, so each keeps microseconds of a lifetime that ran for
-  seconds. `dur` on the row is then not a duration gcmon observed, recovering
-  one takes two annotations on every slice, and a reader has to know to
-  subtract them.
+  nanosecond before the span that crosses it, which expresses every span on
+  one track. Rejected: the clip lands at `later.start - 1`, so what a span
+  loses depends on how close the two starts are rather than on how much the
+  spans overlap. A sibling fanning out from a fork loop keeps the gap between
+  its start and the next one's, not the lifetime it ran for. `dur` on the row
+  is then not a duration gcmon observed, recovering one takes two annotations
+  on every slice, and a reader has to know to subtract them.
 - **`SIBLING_MERGE_BEHAVIOR_NONE`, giving each process a row.** Rejected:
   gcmon runs on captures with hundreds to thousands of processes, and a row
   per process makes the timeline unreadable. A collapsible parent group does
@@ -235,8 +233,8 @@ missing slice would leave no record that the process was monitored at all.
   ([ADR-0001](0001-hand-rolled-perfetto-protobuf-encoder.md)) two fields whose
   only test is that the merge still happens.
 - **Laying the lanes out by the process tree**, each child under its parent.
-  Rejected: it needs a depth computed from the tree and a reader that draws
-  it, and the stock UI offers neither.
+  Rejected: the fold chooses the lane, and neither it nor the stock UI takes a
+  depth gcmon computed.
 - **Dropping the slice of a process observed at a single instant.** Rejected:
   it optimises the rendering at the cost of the record, and the pids it drops
   are the short-lived children a reader is looking for.

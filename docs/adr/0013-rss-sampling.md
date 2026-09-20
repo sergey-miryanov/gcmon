@@ -53,8 +53,8 @@ operator types it; the sampler converts it once at construction.
 **The sampler reads no clock.** A sample stamped with its own
 `time.monotonic_ns()` spreads a pass across however long `psutil` takes. That
 spread carries no information: the pass walks a `set`, so hash order picks
-which pid gets the earliest timestamp, and so where each process's lifetime
-span begins. One instant per pass removes the effect.
+which pid gets the earliest timestamp, and with it where each process's
+lifetime span begins. One instant per pass removes the effect.
 
 **The sampler callback is injectable**, the same pattern as the command-line
 provider `ProcessRegistry` takes

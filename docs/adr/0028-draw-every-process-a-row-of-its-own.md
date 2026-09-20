@@ -60,11 +60,9 @@ command line, and a `Lifetime` slice with nothing under it.
 ([ADR-0010](0010-process-identity-cmdline-and-start-marker.md)) and the
 workload's `Instant` marks, which nest without closing anything; its span on
 the shared row has a track to itself (ADR-0011). Neither row has to give up an
-end to draw. Both carry the command line, the pid and the epoch
-([ADR-0010](0010-process-identity-cmdline-and-start-marker.md)); what each row
-answers differs, this one being the process and the shared one the run.
-`Lifetime` needs no `real_*` annotations: its own `ts` and `dur` are those two
-numbers.
+end to draw, and both carry the command line, the pid and the epoch. The rows
+differ in what they answer: this one is about one process, the shared one
+about the run.
 
 **How much of the process gcmon read is counted in the convert pass.** The
 `Lifetime` slice says `sampled_count` against `lost_count`, and the exporter's
