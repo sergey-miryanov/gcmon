@@ -75,33 +75,20 @@ class PerfettoExporter(EventsExporter):
 
     @override
     def add_process_cmdline(self, process: Process, cmdline: tuple[str, ...] | None) -> None:
-        """Hand the encoder what *process* is running.
-
-        Under ``_io_lock`` for the reason ``add_process_liveness`` gives.
-        """
+        """Hand the encoder what *process* is running."""
         with self._io_lock:
             self._encoder.record_process_cmdline(process, cmdline)
 
     @override
     def add_process_retired(self, process: Process) -> None:
-        """Let the encoder draw *process*'s row from the next flush on.
-
-        Under ``_io_lock`` for the reason ``add_process_liveness`` gives.
-        """
+        """Let the encoder draw *process*'s row from the next flush on."""
         with self._io_lock:
             self._encoder.record_process_retired(process)
 
     @override
     def add_process_liveness(self, processes: Set[Process], ts_ns: int) -> None:
         """Fold one tick's liveness observations into the encoder's span
-        accumulator.
-
-        ``_io_lock`` is not optional: it guards every other touch of the
-        encoder, and both a flush and ``close()`` can run on another
-        thread. Without it a concurrent read-modify-write can drop a
-        min/max update, and a new pid arriving mid-``close()`` can raise
-        ``RuntimeError: dictionary changed size during iteration`` out of
-        ``get_process_lifetimes``.
+        accumulator, under the lock ADR-0029 requires.
         """
         with self._io_lock:
             self._encoder.record_process_liveness(processes, ts_ns)
