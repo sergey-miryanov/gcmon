@@ -1,9 +1,12 @@
 """Tests for Perfetto binary protobuf exporter."""
 
 import threading
+from collections.abc import Iterable
 from collections.abc import Set as AbstractSet
 from pathlib import Path
+from typing import Any
 
+import pytest
 from perfetto.protos.perfetto.trace.perfetto_trace_pb2 import (
     TracePacket,
     TrackEvent,
@@ -11,6 +14,7 @@ from perfetto.protos.perfetto.trace.perfetto_trace_pb2 import (
 
 from gcmon.control.protocol import START_EVENT, STOP_EVENT
 from gcmon.exporters import PerfettoExporter
+from gcmon.exporters.encoder import ProtobufEventEncoder
 from gcmon.exporters.perfetto_format import (
     TrackEventType,
 )
@@ -30,6 +34,7 @@ from gcmon.model.names import (
     phase_slice_name,
 )
 from gcmon.model.process import Process
+from gcmon.model.trace_event import TraceEvent
 from tests.conftest import DEFAULT_PID
 from tests.data_helpers import create_instant_msg
 from tests.exporters.conftest import ExporterFactory
@@ -573,68 +578,129 @@ class TestProcessLivenessRoundTrip:
         exporter.close()
 
 
-class _BufferLockTakenSecond:
-    """The exporter's buffer lock, asserting the I/O lock was taken first.
+class _EncoderUnderTheLock:
+    """A stand-in for the encoder that asserts the exporter's lock is held
+    on the way in."""
 
-    Stands in for `PerfettoExporter._lock`. Both locks are private and there
-    is no other way to read the order they are taken in, which is the whole
-    of what this pins.
+    def __init__(self, encoder: ProtobufEventEncoder, lock: threading.Lock) -> None:
+        self._encoder = encoder
+        self._lock = lock
+        self.touched: list[str] = []
+
+    def __getattr__(self, name: str) -> Any:
+        attribute = getattr(self._encoder, name)
+        if not callable(attribute):
+            return attribute
+
+        def guarded(*args: object, **kwargs: object) -> object:
+            assert self._lock.locked(), f"{name} reached the encoder with the lock free"
+            self.touched.append(name)
+            return attribute(*args, **kwargs)
+
+        return guarded
+
+
+class _BufferUnderTheLock:
+    """A stand-in for the exporter's buffer, asserting the lock is held on
+    every touch: the four operations a flush performs on it.
+
+    This is what tells the one-lock shape from a buffer lock taken outside
+    the one that orders encoder state. The encoder guard above cannot: a
+    flush reading the buffer under its own lock still writes under the
+    other one, so the encoder sees nothing wrong.
     """
 
-    def __init__(self, io_lock: threading.Lock) -> None:
-        self._io_lock = io_lock
-        self._inner = threading.Lock()
+    def __init__(self, lock: threading.Lock) -> None:
+        self._lock = lock
+        self._items: list[TraceEvent] = []
 
-    def __enter__(self) -> None:
-        assert self._io_lock.locked(), (
-            "the buffer lock was taken with the I/O lock free, which leaves a window where one "
-            "thread holds events it has taken out of the buffer and another can reach the encoder"
-        )
-        self._inner.acquire()
+    def _check(self, what: str) -> None:
+        assert self._lock.locked(), f"the buffer was {what} with the lock free"
 
-    def __exit__(self, *_exc: object) -> None:
-        self._inner.release()
+    def extend(self, items: Iterable[TraceEvent]) -> None:
+        self._check("extended")
+        self._items.extend(items)
+
+    def clear(self) -> None:
+        self._check("cleared")
+        self._items.clear()
+
+    def __len__(self) -> int:
+        self._check("measured")
+        return len(self._items)
+
+    def __getitem__(self, index: slice) -> list[TraceEvent]:
+        self._check("copied")
+        return self._items[index]
 
 
-class TestAFlushHoldsTheIoLockThroughout:
-    """`_io_lock` comes before `_lock` and stays held across deciding what
-    to write and writing it.
+class TestOneLockGuardsTheBufferAndTheEncoder:
+    """The order encoder touches happen in is the order the calls arrived
+    in, which holds because one lock covers both reading the buffer and
+    writing what it held.
 
-    Taken the other way round, a retirement arriving between the two is
-    drawn from an accumulator the flusher's events have not reached, and the
-    two slices it writes are short at whichever end those events would have
-    moved (ADR-0011). Nothing observable in the trace distinguishes the two
-    orders, because the window needs a second thread inside it, so the order
-    itself is what is asserted.
+    A second lock for the buffer alone left a window between the two: a
+    flush holding events it had taken out of the buffer, and a retirement
+    free to reach the encoder first and draw a span those events had not
+    reached (ADR-0011).
     """
 
-    def _guarded(self, tmp_path: Path) -> PerfettoExporter:
-        exporter = PerfettoExporter(output_path=tmp_path / "trace.pftrace", flush_threshold=1)
-        exporter._lock = _BufferLockTakenSecond(exporter._io_lock)  # type: ignore[assignment]
-        return exporter
+    def _guarded(
+        self, tmp_path: Path, threshold: int = 1
+    ) -> tuple[PerfettoExporter, _EncoderUnderTheLock, _BufferUnderTheLock]:
+        exporter = PerfettoExporter(output_path=tmp_path / "trace.pftrace", flush_threshold=threshold)
+        encoder = _EncoderUnderTheLock(exporter._encoder, exporter._io_lock)
+        buffer = _BufferUnderTheLock(exporter._io_lock)
+        exporter._encoder = encoder  # type: ignore[assignment]
+        exporter._buffer = buffer  # type: ignore[assignment]
+        return exporter, encoder, buffer
 
-    def test_a_flush_takes_the_io_lock_first(self, tmp_path: Path) -> None:
-        exporter = self._guarded(tmp_path)
+    def test_every_entry_point_holds_it(self, tmp_path: Path) -> None:
+        """Each of these reaches the encoder by its own route: a flush out of
+        the buffer, three that hand it state directly, and the closeout."""
+        exporter, encoder, _buffer = self._guarded(tmp_path)
+        target = proc(DEFAULT_PID)
+
+        exporter.add_process_cmdline(target, ("python3", "-m", "target"))
+        exporter.add_event(target, create_mock_stats_item(ts_start=1_000, ts_stop=2_000))
+        exporter.add_instant_event(target, create_instant_msg(name="mark", ts=2_500))
+        exporter.add_rss_sample(target, 4_096, 2_600)
+        exporter.add_process_liveness({target}, 3_000)
+        exporter.add_process_retired(target)
+        exporter.close()
+
+        assert set(encoder.touched) == {
+            "record_process_cmdline",
+            "write_events",
+            "record_process_liveness",
+            "record_process_retired",
+            "close",
+        }
+
+    def test_an_enqueue_that_does_not_flush_holds_it_too(self, tmp_path: Path) -> None:
+        """The buffer is touched on every call, so the lock is taken whether
+        or not the call writes anything."""
+        exporter, encoder, _buffer = self._guarded(tmp_path, threshold=1_000)
 
         exporter.add_event(proc(DEFAULT_PID), create_mock_stats_item(ts_start=1_000, ts_stop=2_000))
 
+        assert encoder.touched == []
         exporter.close()
+        assert encoder.touched == ["write_events", "close"]
 
-    def test_close_takes_the_io_lock_first(self, tmp_path: Path) -> None:
-        """The same window, with the closeout on the other side of it: a
-        flush could reach the encoder after the trace had been finished."""
-        exporter = self._guarded(tmp_path)
-        exporter.add_process_liveness({proc(DEFAULT_PID)}, 1_000)
+    def test_the_encoder_guard_fires_when_the_lock_is_free(self, tmp_path: Path) -> None:
+        """A guard that never fails would pass whatever the exporter did."""
+        exporter, encoder, _buffer = self._guarded(tmp_path)
 
-        exporter.close()
-
-    def test_an_enqueue_that_does_not_flush_takes_it_too(self, tmp_path: Path) -> None:
-        """The buffer is touched on every call, flush or not, so the order
-        holds on the path that writes nothing."""
-        exporter = PerfettoExporter(output_path=tmp_path / "trace.pftrace", flush_threshold=1_000)
-        exporter._lock = _BufferLockTakenSecond(exporter._io_lock)  # type: ignore[assignment]
-
-        exporter.add_event(proc(DEFAULT_PID), create_mock_stats_item(ts_start=1_000, ts_stop=2_000))
+        with pytest.raises(AssertionError, match="reached the encoder with the lock free"):
+            encoder.close()
 
         exporter.close()
 
+    def test_the_buffer_guard_fires_when_the_lock_is_free(self, tmp_path: Path) -> None:
+        exporter, _encoder, buffer = self._guarded(tmp_path)
+
+        with pytest.raises(AssertionError, match="the buffer was measured with the lock free"):
+            len(buffer)
+
+        exporter.close()
