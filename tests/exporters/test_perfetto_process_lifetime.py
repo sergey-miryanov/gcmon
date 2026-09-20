@@ -402,7 +402,6 @@ class TestProcessLifetimeSlices:
         begin = lifetime_slices(packets, processes_row_uuids(state, target))[0]
         assert list(begin[3]) == [PID, PID_EPOCH]
 
-
     def test_two_crossing_pids_each_keep_their_pair(self, state: PerfettoTrackState) -> None:
         """Pid 100 runs ``[500, 1500]`` and pid 200 ``[1000, 5000]``, so the
         two cross and neither gives anything up. Each BEGIN carries a
@@ -989,9 +988,7 @@ class TestWhatGcmonReadAndMissed:
 
         shared = next(
             annotations
-            for _ts, event_type, _name, annotations in lifetime_slices(
-                closeout, processes_row_uuids(state, self.BUSY)
-            )
+            for _ts, event_type, _name, annotations in lifetime_slices(closeout, processes_row_uuids(state, self.BUSY))
             if event_type == TrackEventType.SLICE_BEGIN
         )
         assert SAMPLED_COUNT not in shared
