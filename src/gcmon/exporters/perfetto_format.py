@@ -12,15 +12,10 @@ importer needs one name.
 from collections.abc import Sequence
 
 from ..model.names import (
-    ALIVE_SIZE,
     CANDIDATES,
-    CLEAR_WEAKREFS_COUNT,
     COLLECTED,
-    DELETED_GARBAGE_COUNT,
     DURATION,
-    FINALIZED_GARBAGE_COUNT,
     HEAP_SIZE,
-    INCREMENT_SIZE,
     UNCOLLECTABLE,
 )
 from ..model.trace_event import (
@@ -124,7 +119,10 @@ _INTERPRETER_ROW_ORDER: tuple[str, ...] = (
 )
 _INTERPRETER_ROW_RANKS: dict[str, int] = {name: rank for rank, name in enumerate(_INTERPRETER_ROW_ORDER)}
 
-# What a `GC Metrics` group holds, ranked the same way. `rss` is absent
+# What a `GC Metrics` group holds, ranked the same way. Only the metrics a
+# record can carry as a counter are listed: every other one reaches a trace
+# as an annotation on the pause slice, and ranking a row nothing draws is an
+# edit paid in advance for a case nobody has (ADR-0005). `rss` is absent
 # because it parents to the process track, which is OS-scoped, and the trace
 # processor discards a rank there (ADR-0003).
 _COUNTER_ORDER: tuple[str, ...] = (
@@ -132,11 +130,6 @@ _COUNTER_ORDER: tuple[str, ...] = (
     UNCOLLECTABLE,
     CANDIDATES,
     DURATION,
-    INCREMENT_SIZE,
-    ALIVE_SIZE,
-    FINALIZED_GARBAGE_COUNT,
-    DELETED_GARBAGE_COUNT,
-    CLEAR_WEAKREFS_COUNT,
 )
 _COUNTER_RANKS: dict[str, int] = {metric: rank for rank, metric in enumerate(_COUNTER_ORDER)}
 

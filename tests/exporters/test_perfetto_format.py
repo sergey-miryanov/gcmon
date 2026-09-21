@@ -416,8 +416,8 @@ class TestConvertItemToPerfettoPackets:
                 break
         assert duration_track_uuid is not None
 
-        # Find the matching TrackDescriptor, and check it ranks where
-        # `_COUNTER_ORDER` puts `duration` under a parent named "GC Metrics".
+        # Find the matching TrackDescriptor and check its parent is named
+        # "GC Metrics".
         descriptors: dict[int, tuple[int, int, str]] = {}
         for p in descriptors_packets:
             packet = TracePacket()
@@ -431,8 +431,7 @@ class TestConvertItemToPerfettoPackets:
                 td.name,
             )
         assert duration_track_uuid in descriptors
-        parent, rank, _ = descriptors[duration_track_uuid]
-        assert rank == _COUNTER_RANKS[DURATION]
+        parent, _, _ = descriptors[duration_track_uuid]
         assert parent != 0
         assert descriptors[parent][2] == _COUNTER_GROUP_NAME
 
@@ -979,6 +978,34 @@ class TestTheRowsInsideAnInterpreterGroupAreRanked:
         group_uuid = state.get_or_create_interpreter_group_track_uuid(proc(TARGET_PID), 0)
         rows = sorted((td for td in parsed if td.parent_uuid == group_uuid), key=lambda td: td.sibling_order_rank)
         assert [td.name for td in rows] == [_PAUSE_TRACK_NAME, _LOSS_TRACK_NAME, HEAP_SIZE, _COUNTER_GROUP_NAME]
+        assert [td.sibling_order_rank for td in rows] == [0, 1, 2, 3], "ranks must be distinct for the order to hold"
+
+
+class TestTheCountersInsideAMetricsGroupAreRanked:
+    """The counters a `GC Metrics` group holds draw in the order
+    ``_COUNTER_ORDER`` sets.
+
+    The order is spelled out below rather than read off that tuple, which
+    would pass whatever it said. Which metric draws where is the record's
+    decision (ADR-0027), so reordering the tuple costs an edit here too.
+    """
+
+    def test_they_draw_collected_uncollectable_candidates_then_duration(
+        self,
+        state: PerfettoTrackState,
+    ) -> None:
+        """One pause with a non-zero `uncollectable` writes all four, so a
+        single item observes the whole order."""
+        item = pause_item(collections=5, collected=7, uncollectable=2, candidates=3, duration=0.42)
+
+        descriptors, _ = convert_item(proc(TARGET_PID), item, state, sequence_id=1)
+
+        parsed = [td for td in map(parse_track_descriptor, descriptors) if td is not None]
+        group_uuid = state.get_or_create_counter_group_track_uuid(interpreter_track(TARGET_PID, 0))
+        rows = sorted((td for td in parsed if td.parent_uuid == group_uuid), key=lambda td: td.sibling_order_rank)
+        assert [td.name for td in rows] == [
+            counter_display_name(0, metric) for metric in (COLLECTED, UNCOLLECTABLE, CANDIDATES, DURATION)
+        ]
         assert [td.sibling_order_rank for td in rows] == [0, 1, 2, 3], "ranks must be distinct for the order to hold"
 
 
