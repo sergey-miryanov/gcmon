@@ -23,13 +23,14 @@ class ProcessSpan(NamedTuple):
 
 
 class PerfettoTrackState:
-    """Not internally thread-safe, and it does not need to be: a lock the
-    caller holds for the whole of a call guards every method here.
+    """Not internally thread-safe, and it does not need to be: the caller
+    serializes every call, holding a lock across the whole of one when it
+    has threads to serialize.
 
     The only caller is ``ProtobufEventEncoder``, and each of its entry
-    points inherits that guarantee from whoever drives the encoder. One
-    serving several monitoring threads is called under a lock; a
-    single-threaded one has nothing to serialize.
+    points inherits that from whoever drives the encoder. One serving
+    several monitoring threads is called under a lock; a single-threaded
+    one has none to take.
 
     Two rules follow. No lock inside this class, and no call to it from
     outside the encoder: a second caller would hand out uuids against
