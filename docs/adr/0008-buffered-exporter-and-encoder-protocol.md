@@ -28,9 +28,9 @@ adding events for a brand-new pid could both pass the check and both emit a
 **`PerfettoExporter` owns the lifecycle:** the lock, the buffer and flush
 threshold, and `add_event` / `add_instant_event` / `close`.
 
-**`ProtobufEventEncoder` owns byte production** through three methods:
-`open(path)`, `write_events(events)`, `close()`. It is a class of its own
-because `combine` drives it with no exporter around it.
+**`ProtobufEventEncoder` owns byte production** through `open(path)`,
+`write_events(events)` and `close()`. It is a class of its own because
+`combine` drives it with no exporter around it.
 
 The exporter constructs its encoder, and its public constructor signature is
 unchanged.
@@ -66,8 +66,8 @@ The split settles further questions:
 
 ## Consequences
 
-- A second output format is a second encoder class with the same three
-  methods. No lifecycle, locking or dedup code to copy.
+- A second output format is a second encoder class with those same methods. No
+  lifecycle, locking or dedup code to copy.
   [ADR-0021](0021-write-one-trace-format.md)'s
   `combine --output-format perfetto` reuses `ProtobufEventEncoder` directly,
   outside any exporter.
