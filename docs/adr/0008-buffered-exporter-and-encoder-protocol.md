@@ -87,8 +87,8 @@ The split settles further questions:
   ([ADR-0021](0021-write-one-trace-format.md)) the base has a fan-out of one.
   Meta building sits in the encoder
   ([ADR-0024](0024-an-event-names-the-track-it-is-drawn-on.md)), with the
-  seen-pid set and the atomic check-and-emit, so what is left to merge is a
-  buffer, a lock and four one-line calls.
+  seen-pid set and the atomic check-and-emit, so what is left to merge is the
+  buffer and the lock around it.
 - **A second lock for the buffer alone.** Rejected: a flush would empty the
   buffer under one lock and write under the other, with a gap between the two.
   A retirement can land in that gap and draw the process's `Lifetime` bar from
