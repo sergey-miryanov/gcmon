@@ -66,11 +66,11 @@ The split settles further questions:
 
 ## Consequences
 
-- A second output format is a second encoder class with those same methods. No
-  lifecycle, locking or dedup code to copy.
-  [ADR-0021](0021-write-one-trace-format.md)'s
-  `combine --output-format perfetto` reuses `ProtobufEventEncoder` directly,
-  outside any exporter.
+- A second trace format is a second encoder class with those same methods. The
+  lifecycle and the locking stay with the exporter, so neither gets copied.
+  The dedup is the encoder's own since
+  [ADR-0024](0024-an-event-names-the-track-it-is-drawn-on.md), so a new
+  encoder writes that part itself.
 - Output bytes were unchanged by the refactor, verified by the existing
   structural tests, which decode the output and assert on each meaningful
   field.
