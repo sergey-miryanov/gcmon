@@ -41,9 +41,8 @@ implementation ([ADR-0021](0021-write-one-trace-format.md)), and both callers,
 defends is the encoder being a separate class that runs with no exporter, no
 buffer and no lock around it, and a class boundary needs no declaration.
 
-**One lock guards the buffer and every touch of encoder state.** It is held
-across deciding what to write and writing it, so encoder state is touched in
-the order the calls arrived in.
+**One lock guards the buffer and every touch of encoder state.** A flush holds
+it across both deciding what to write and writing it.
 
 **Meta building is atomic.** The check and the emit happen inside a single
 critical section under that lock, which is what closes the race between two
