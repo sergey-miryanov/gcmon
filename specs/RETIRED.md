@@ -14,6 +14,7 @@ rows.
 | 0027 | **Landed** 2026-09-09 (reporting) | XS | The main interpreter's `thread.tid` was its process row's pid, so a query reading interpreter ids special-cased it, and a row pid meeting an interpreter id gave two threads one `tid`. Every thread row carries its iid now. The row under a `tid` equal to the pid is what the trace processor calls the main thread, and it is an interpreter's row where an id meets the row pid and a nameless one of its own elsewhere. [ADR-0028](../docs/adr/0028-draw-every-process-a-row-of-its-own.md) |
 | 0028 | **Superseded** by 0055 | XS | `chrome+perfetto` worked only by reading a private attribute off each sub-exporter, with the type checkers told not to look. 0055 deleted the fan-out exporter rather than fixing it |
 | 0029 | **Superseded** by 0036 | M | Three byte-identical copies of the buffer-and-flush logic in `JsonlExporter`. 0036 collapses the interface that produced them, and its section 4.4 carries the JSONL-schema argument forward |
+| 0030 | **Landed** 2026-09-21 (cleanup) | S | A rank table ordered five rows gcmon cannot draw, `PerfettoTrackState` stated no threading contract, and `build_track_event` shadowed `type`. The table holds the four metrics a record carries, named by a test, and the class states the contract |
 | 0031 | **Superseded** by 0055 | XS | The README headed its only trace example "Chrome Trace Output" and captioned it as the Perfetto UI. 0055's documentation pass rewrote it |
 | 0034 | **Superseded** by ADR-0015 | S | Loss windows reached back across a collection gcmon watched start. [ADR-0015](../docs/adr/0015-gc-loss-spans-on-their-own-track.md)'s rewrite moved the edge to the poll instant, and its rejected alternatives hold the argument |
 | 0038 | **Landed** 2026-08-17 (cleanup) | M | Per-pid state had two owners; had they disagreed, gcmon would have reported a loss window that never happened. One tick is one call on `EventsMonitor` now. [ADR-0017](../docs/adr/0017-monitor-owns-the-pid-lifecycle.md), and [ADR-0029](../docs/adr/0029-report-liveness-and-fold-it-into-the-span.md) for the liveness site it moved |
@@ -64,7 +65,7 @@ rather than editing this text:
 
 | Review | Findings already covered |
 |---|---|
-| `src/gcmon` structure, 2026-08-15 | 0028, 0029 (since retired), [0030](0030-exporter-hygiene-batch.md) section 4.2 |
+| `src/gcmon` structure, 2026-08-15 | 0028, 0029 and 0030 (all since retired), the last of them for its section 4.2 |
 
 ## Provenance
 

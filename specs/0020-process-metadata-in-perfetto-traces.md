@@ -76,8 +76,8 @@ change to `_emit_process_descriptor`, and nothing added to the spans on the
 
 `PerfettoTrackState` stores both per process, with getters and setters
 following the ones already there for the descriptor and the command line. It
-is not internally thread-safe and does not need to be; see
-[0030](0030-exporter-hygiene-batch.md) section 4.2 for why.
+is not internally thread-safe and does not need to be; its class docstring
+says why.
 
 **Each value has exactly one trustworthy source, and they are different
 sources.** This is the decision the original spec left open, and getting it

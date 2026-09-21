@@ -131,12 +131,12 @@ relies on.
 field-name strings is not.** This is the strongest objection to the spec and
 it is real. mypy and pyrefly verify today that `item.ts_mark_alive_start`
 exists on the type the guard narrowed to; `getattr(item, phase.start)`
-verifies nothing. The mitigation is the same one
-[0030](0030-exporter-hygiene-batch.md) section 4.1 chose for `_COUNTER_RANKS`:
-a test that asserts every field name in every row exists on
-`data.GCStatsInfo`, checked by name. That converts a typo from a silently
-absent sub-phase into a test failure, which is a better outcome than today's,
-where a *missing* row is not caught by anything at all.
+verifies nothing. The mitigation is the same one the counter rank table takes,
+where `TestTheCountersInsideAMetricsGroupAreRanked` names each metric rather
+than reading `_COUNTER_ORDER` back: a test that asserts every field name in
+every row exists on `data.GCStatsInfo`, checked by name. That converts a typo
+from a silently absent sub-phase into a test failure, which is a better
+outcome than today's, where a *missing* row is not caught by anything at all.
 
 **Rejected: generate the table from `GCStatsInfo` by field-name convention**
 (pair anything matching `ts_<name>_start` with `ts_<name>_stop`). Four of the

@@ -93,7 +93,9 @@ the existing `collected` / `candidates` / `duration` counters, not outside it:
 what is drawn out there is `heap_size` and whatever a `ProcessTrack` owns
 (ADR-0024), both process-wide rather than per-generation. Give all three
 generations the same `y_axis_share_key` (ADR-0005) so they share a scale and
-can be compared by eye.
+can be compared by eye. The lane also needs a row in `_COUNTER_ORDER` and a
+name in `TestTheCountersInsideAMetricsGroupAreRanked`: a metric nobody listed
+draws below every listed one, which is a position and not a decision.
 
 **Note on the research this came from.** The grilling session recommended a
 loss counter as insurance against Perfetto summarising away narrow loss
