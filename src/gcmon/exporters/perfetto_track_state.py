@@ -23,6 +23,19 @@ class ProcessSpan(NamedTuple):
 
 
 class PerfettoTrackState:
+    """Not internally thread-safe, and it does not need to be: a lock the
+    caller holds for the whole of a call guards every method here.
+
+    The only caller is ``ProtobufEventEncoder``, and each of its entry
+    points inherits that guarantee from whoever drives the encoder. One
+    serving several monitoring threads is called under a lock; a
+    single-threaded one has nothing to serialize.
+
+    Two rules follow. No lock inside this class, and no call to it from
+    outside the encoder: a second caller would hand out uuids against
+    state nothing serializes.
+    """
+
     def __init__(self) -> None:
         self._described_processes: set[Process] = set()
         self._tracks: set[Track] = set()
