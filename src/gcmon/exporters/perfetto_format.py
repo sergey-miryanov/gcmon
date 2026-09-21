@@ -412,7 +412,7 @@ def convert_trace_events_to_perfetto(
                     sequence_id,
                     timestamp=event.ts,
                     track_event=build_track_event(
-                        type=TrackEventType.INSTANT,
+                        event_type=TrackEventType.INSTANT,
                         track_uuid=proc_uuid,
                         name=event.name,
                         debug_annotations=_args_to_debug_annotations(event.args),

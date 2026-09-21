@@ -163,7 +163,7 @@ def _emit_process_lifetime_slice(
             sequence_id,
             timestamp=span.start_ts,
             track_event=build_track_event(
-                type=TrackEventType.SLICE_BEGIN,
+                event_type=TrackEventType.SLICE_BEGIN,
                 track_uuid=track_uuid,
                 name=process_track_name(span.process),
                 debug_annotations=debug_annotations,
@@ -173,7 +173,7 @@ def _emit_process_lifetime_slice(
             sequence_id,
             timestamp=span.end_ts,
             track_event=build_track_event(
-                type=TrackEventType.SLICE_END,
+                event_type=TrackEventType.SLICE_END,
                 track_uuid=track_uuid,
             ),
         ),
@@ -221,7 +221,7 @@ def _emit_process_row_lifetime_slice(
             sequence_id,
             timestamp=span.start_ts,
             track_event=build_track_event(
-                type=TrackEventType.SLICE_BEGIN,
+                event_type=TrackEventType.SLICE_BEGIN,
                 track_uuid=track_uuid,
                 name=_PROCESS_ROW_SLICE_NAME,
                 debug_annotations=debug_annotations,
@@ -231,7 +231,7 @@ def _emit_process_row_lifetime_slice(
             sequence_id,
             timestamp=span.end_ts,
             track_event=build_track_event(
-                type=TrackEventType.SLICE_END,
+                event_type=TrackEventType.SLICE_END,
                 track_uuid=track_uuid,
             ),
         ),

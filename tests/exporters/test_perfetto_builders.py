@@ -234,7 +234,7 @@ class TestBuildTracePacket:
 
 class TestBuildTrackEvent:
     def test_slice_begin(self) -> None:
-        data = build_track_event(type=TrackEventType.SLICE_BEGIN, track_uuid=100, name="test")
+        data = build_track_event(event_type=TrackEventType.SLICE_BEGIN, track_uuid=100, name="test")
 
         track_event = TrackEvent()
         track_event.ParseFromString(data)
@@ -243,7 +243,7 @@ class TestBuildTrackEvent:
         assert track_event.name == "test"
 
     def test_slice_end(self) -> None:
-        data = build_track_event(type=TrackEventType.SLICE_END, track_uuid=100)
+        data = build_track_event(event_type=TrackEventType.SLICE_END, track_uuid=100)
 
         track_event = TrackEvent()
         track_event.ParseFromString(data)
@@ -252,7 +252,7 @@ class TestBuildTrackEvent:
         assert not track_event.HasField("name")
 
     def test_instant(self) -> None:
-        data = build_track_event(type=TrackEventType.INSTANT, track_uuid=100, name="marker")
+        data = build_track_event(event_type=TrackEventType.INSTANT, track_uuid=100, name="marker")
 
         track_event = TrackEvent()
         track_event.ParseFromString(data)
@@ -261,7 +261,7 @@ class TestBuildTrackEvent:
         assert track_event.name == "marker"
 
     def test_counter(self) -> None:
-        data = build_track_event(type=TrackEventType.COUNTER, track_uuid=100, counter_value=42)
+        data = build_track_event(event_type=TrackEventType.COUNTER, track_uuid=100, counter_value=42)
 
         track_event = TrackEvent()
         track_event.ParseFromString(data)
@@ -271,7 +271,7 @@ class TestBuildTrackEvent:
 
     def test_with_categories(self) -> None:
         data = build_track_event(
-            type=TrackEventType.SLICE_BEGIN,
+            event_type=TrackEventType.SLICE_BEGIN,
             track_uuid=100,
             name="test",
             categories=["cat1", "cat2"],
@@ -288,7 +288,7 @@ class TestBuildTrackEvent:
         ann2 = b"\x52\x05other\x20\x64"
 
         data = build_track_event(
-            type=TrackEventType.SLICE_BEGIN,
+            event_type=TrackEventType.SLICE_BEGIN,
             track_uuid=100,
             name="test",
             debug_annotations=[ann1, ann2],

@@ -171,7 +171,7 @@ def _build_debug_annotation_dict(name: str, entries: Mapping[str, int | str]) ->
 
 
 def build_track_event(
-    type: TrackEventType,
+    event_type: TrackEventType,
     track_uuid: int,
     name: str | None = None,
     categories: list[str] | None = None,
@@ -179,7 +179,7 @@ def build_track_event(
     double_counter_value: float | None = None,
     debug_annotations: list[bytes] | None = None,
 ) -> bytes:
-    result = encode_varint_field(TrackEventField.TYPE, type)
+    result = encode_varint_field(TrackEventField.TYPE, event_type)
     result += encode_varint_field(TrackEventField.TRACK_UUID, track_uuid)
     if categories:
         for cat in categories:
@@ -213,7 +213,7 @@ def _make_slice_begin(
     annotations: list[bytes],
 ) -> bytes:
     return build_track_event(
-        type=TrackEventType.SLICE_BEGIN,
+        event_type=TrackEventType.SLICE_BEGIN,
         track_uuid=track_uuid,
         name=name,
         categories=categories,
@@ -223,7 +223,7 @@ def _make_slice_begin(
 
 def _make_slice_end(track_uuid: int) -> bytes:
     return build_track_event(
-        type=TrackEventType.SLICE_END,
+        event_type=TrackEventType.SLICE_END,
         track_uuid=track_uuid,
     )
 
@@ -231,12 +231,12 @@ def _make_slice_end(track_uuid: int) -> bytes:
 def _make_counter_event(track_uuid: int, value: int | float) -> bytes:
     if isinstance(value, float):
         return build_track_event(
-            type=TrackEventType.COUNTER,
+            event_type=TrackEventType.COUNTER,
             track_uuid=track_uuid,
             double_counter_value=value,
         )
     return build_track_event(
-        type=TrackEventType.COUNTER,
+        event_type=TrackEventType.COUNTER,
         track_uuid=track_uuid,
         counter_value=value,
     )
