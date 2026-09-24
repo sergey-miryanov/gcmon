@@ -8,18 +8,26 @@ from gcmon.exporters.trace_converter import (
 )
 from gcmon.model.names import (
     ALIVE_SIZE,
+    CANDIDATES,
     CLEAR_WEAKREFS_COUNT,
+    COLLECTED,
+    COLLECTIONS,
+    DELETED_GARBAGE_COUNT,
+    DURATION,
     FINALIZED_GARBAGE_COUNT,
+    GENERATION,
     GENERATIONS,
     HEAP_SIZE,
+    IID,
     INCREMENT_SIZE,
     TS_CLEAR_WEAKREFS_STOP,
     TS_FINALIZE_GARBAGE_STOP,
     TS_HANDLE_RESURRECTED_STOP,
+    UNCOLLECTABLE,
     gc_pause_slice_name,
 )
 from gcmon.model.protocol import TItem
-from gcmon.model.trace_event import Counter, InterpreterTrack, LossTrack, ProcessTrack, Slice
+from gcmon.model.trace_event import Counter, EventArgs, InterpreterTrack, LossTrack, ProcessTrack, Slice
 from tests.data_helpers import create_instant_msg
 from tests.helpers import create_mock_incremental_item, create_mock_loss_item, create_mock_stats_item, proc
 
@@ -134,6 +142,161 @@ class TestTheSizesAPauseCarries:
 
         pause = next(e for e in events if isinstance(e, Slice) and e.name == gc_pause_slice_name(gen_number))
         assert pause.args.keys() & {INCREMENT_SIZE, ALIVE_SIZE} == sizes
+
+
+class TestARecordCarryingEverySubPhase:
+    """Every slice and counter a full gen-1 record draws, spelled out.
+
+    The names and categories are what a reader filters on in PerfettoSQL, so
+    they are written here as literals rather than read off the phase table,
+    which would pass whatever the table said."""
+
+    def test_it_draws_the_pause_then_each_sub_phase_then_the_counters(self) -> None:
+        track = InterpreterTrack(proc(1), 0)
+        tagged: EventArgs = {GENERATION: 1, IID: 0}
+
+        events = convert_item_to_trace_format(proc(1), create_mock_incremental_item(gen=1))
+
+        assert events == [
+            Slice(
+                track,
+                "GC Pause(1)",
+                "gc.pause(gen=1)",
+                1_500_000_000,
+                1_505_000_000,
+                {
+                    **tagged,
+                    COLLECTIONS: 50,
+                    HEAP_SIZE: 52428800,
+                    COLLECTED: 200,
+                    UNCOLLECTABLE: 10,
+                    CANDIDATES: 40,
+                    INCREMENT_SIZE: 1000,
+                    ALIVE_SIZE: 800,
+                    FINALIZED_GARBAGE_COUNT: 42,
+                    CLEAR_WEAKREFS_COUNT: 7,
+                    DELETED_GARBAGE_COUNT: 13,
+                },
+            ),
+            Slice(
+                track,
+                "GC Mark Alive(1)",
+                "gc.mark.alive(gen=1)",
+                1_500_000_000,
+                1_501_000_000,
+                {**tagged, ALIVE_SIZE: 800},
+            ),
+            Slice(
+                track,
+                "GC Fill Increment(1)",
+                "gc.increment(gen=1)",
+                1_501_000_000,
+                1_502_000_000,
+                {**tagged, INCREMENT_SIZE: 1000},
+            ),
+            Slice(
+                track,
+                "GC Deduce Unreachable(1)",
+                "gc.deduce(gen=1)",
+                1_502_000_000,
+                1_503_000_000,
+                {**tagged, CANDIDATES: 40},
+            ),
+            Slice(
+                track,
+                "GC Handle Weakrefs Callbacks(1)",
+                "gc.weakrefs(gen=1)",
+                1_503_000_000,
+                1_504_000_000,
+                tagged,
+            ),
+            Slice(
+                track,
+                "GC Finalize Garbage(1)",
+                "gc.finalize(gen=1)",
+                1_504_000_000,
+                1_505_000_000,
+                {**tagged, FINALIZED_GARBAGE_COUNT: 42},
+            ),
+            Slice(
+                track,
+                "GC Handle Resurrected(1)",
+                "gc.resurrect(gen=1)",
+                1_505_000_000,
+                1_506_000_000,
+                tagged,
+            ),
+            Slice(
+                track,
+                "GC Clear Weakrefs(1)",
+                "gc.clear_weakrefs(gen=1)",
+                1_506_000_000,
+                1_507_000_000,
+                {**tagged, CLEAR_WEAKREFS_COUNT: 7},
+            ),
+            Slice(
+                track,
+                "GC Delete Garbage(1)",
+                "gc.delete(gen=1)",
+                1_508_000_000,
+                1_509_000_000,
+                {**tagged, DELETED_GARBAGE_COUNT: 13},
+            ),
+            Counter(track, COLLECTED, "G1 collected", 1_500_000_000, 200),
+            Counter(track, CANDIDATES, "G1 candidates", 1_500_000_000, 40),
+            Counter(track, DURATION, "G1 duration", 1_500_000_000, 0.005),
+            Counter(track, UNCOLLECTABLE, "G1 uncollectable", 1_500_000_000, 10),
+            Counter(track, HEAP_SIZE, HEAP_SIZE, 1_500_000_000, 52428800),
+        ]
+
+
+class TestARecordCarryingNoSubPhase:
+    def test_it_draws_the_pause_alone_beside_its_counters(self) -> None:
+        events = convert_item_to_trace_format(proc(1), create_mock_stats_item(gen=1))
+
+        assert [e.name for e in events if isinstance(e, Slice)] == ["GC Pause(1)"]
+
+
+class TestAScalarWithoutItsTimestamps:
+    """A build can report a phase's size and not when the phase ran. That
+    phase has nothing to draw, and the rest of the record still converts."""
+
+    @pytest.mark.parametrize(
+        ("field", "phase"),
+        [
+            pytest.param(ALIVE_SIZE, "GC Mark Alive(1)", id="mark alive"),
+            pytest.param(INCREMENT_SIZE, "GC Fill Increment(1)", id="fill increment"),
+        ],
+    )
+    def test_the_phase_draws_no_slice(self, field: str, phase: str) -> None:
+        record = create_mock_stats_item(gen=1, **{field: 800})
+
+        events = convert_item_to_trace_format(proc(1), record)
+
+        assert phase not in {e.name for e in events if isinstance(e, Slice)}
+
+
+class ARecordFromAStockBuild:
+    """Shaped like `_remote_debugging.GCStatsInfo` on a build that reports
+    no sub-phase: the optional fields are absent, not `None`."""
+
+    gen = 1
+    iid = 0
+    ts_start = 1_500_000_000
+    ts_stop = 1_505_000_000
+    heap_size = 52428800
+    collections = 50
+    collected = 200
+    uncollectable = 10
+    candidates = 40
+    duration = 0.005
+
+
+class TestALiveRecordMissingTheOptionalFields:
+    def test_it_draws_the_pause_alone(self) -> None:
+        events = convert_item_to_trace_format(proc(1), ARecordFromAStockBuild())
+
+        assert [e.name for e in events if isinstance(e, Slice)] == ["GC Pause(1)"]
 
 
 class TestAPhaseWhoseStartIsMissing:

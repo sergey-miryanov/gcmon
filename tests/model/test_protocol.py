@@ -53,6 +53,7 @@ from gcmon.model.protocol import (
     has_incremental,
     has_mark_alive,
     has_pause_ts,
+    has_phase_timings,
     is_gc_stats,
     is_instant,
     is_loss,
@@ -106,8 +107,9 @@ class TestHasGuards:
     and a value that field can hold."""
 
     SUB_PHASES = (
-        (has_incremental, INCREMENT_SIZE, 500),
-        (has_mark_alive, ALIVE_SIZE, 300),
+        (has_incremental, TS_FILL_INCREMENT_START, 100),
+        (has_mark_alive, TS_MARK_ALIVE_START, 100),
+        (has_phase_timings, TS_DEDUCE_UNREACHABLE_START, 100),
         (has_deduce_unreachable, TS_DEDUCE_UNREACHABLE_START, 100),
         (has_handle_weakrefs, TS_HANDLE_WEAKREF_CALLBACKS_START, 100),
         (has_finalize_garbage, TS_FINALIZE_GARBAGE_STOP, 100),

@@ -116,6 +116,10 @@ class Phase(NamedTuple):
     `category` is the Perfetto category the slice carries; `stats` has no
     use for it and ignores it.
 
+    `start` and `stop` are the record fields the phase runs between, and
+    `start` may be a field another row names as its `stop`. `args` are the
+    record fields a sub-phase's slice carries.
+
     `slice_names` and `categories` are those two spelled per generation,
     rendered once by `_phase` below. A conversion emits up to nine slices
     per record, so it reads them here rather than formatting them again.
@@ -123,11 +127,22 @@ class Phase(NamedTuple):
 
     label: str
     category: str
+    start: str
+    stop: str
+    stats_key: str
+    args: tuple[str, ...]
     slice_names: Mapping[int, str]
     categories: Mapping[int, str]
 
 
-def _phase(label: str, category: str) -> Phase:
+def _phase(
+    label: str,
+    category: str,
+    start: str,
+    stop: str,
+    stats_key: str,
+    args: tuple[str, ...] = (),
+) -> Phase:
     """One row of the table, with its per-generation names rendered."""
 
     def slice_name(gen: int) -> str:
@@ -136,33 +151,17 @@ def _phase(label: str, category: str) -> Phase:
     def slice_category(gen: int) -> str:
         return f"{category}(gen={gen})"
 
-    return Phase(label, category, _PerGeneration(slice_name), _PerGeneration(slice_category))
+    return Phase(
+        label,
+        category,
+        start,
+        stop,
+        stats_key,
+        args,
+        _PerGeneration(slice_name),
+        _PerGeneration(slice_category),
+    )
 
-
-PAUSE: Final = _phase("GC Pause", "gc.pause")
-MARK_ALIVE: Final = _phase("GC Mark Alive", "gc.mark.alive")
-FILL_INCREMENT: Final = _phase("GC Fill Increment", "gc.increment")
-DEDUCE_UNREACHABLE: Final = _phase("GC Deduce Unreachable", "gc.deduce")
-HANDLE_WEAKREFS: Final = _phase("GC Handle Weakrefs Callbacks", "gc.weakrefs")
-FINALIZE_GARBAGE: Final = _phase("GC Finalize Garbage", "gc.finalize")
-HANDLE_RESURRECTED: Final = _phase("GC Handle Resurrected", "gc.resurrect")
-CLEAR_WEAKREFS: Final = _phase("GC Clear Weakrefs", "gc.clear_weakrefs")
-DELETE_GARBAGE: Final = _phase("GC Delete Garbage", "gc.delete")
-
-# The pause first, then its sub-phases in the order the collector runs them.
-GC_PHASES: Final = (
-    PAUSE,
-    MARK_ALIVE,
-    FILL_INCREMENT,
-    DEDUCE_UNREACHABLE,
-    HANDLE_WEAKREFS,
-    FINALIZE_GARBAGE,
-    HANDLE_RESURRECTED,
-    CLEAR_WEAKREFS,
-    DELETE_GARBAGE,
-)
-
-GC_PAUSE_NAME: Final = PAUSE.label
 
 # What a record carries, spelled once. The same word is the attribute on a
 # record, the field in a JSONL line, and the metric on a counter track or a
@@ -236,8 +235,7 @@ SLICE_ARGS: Final = (
 # the generation of, so no page describes it as a figure worth reading.
 
 # When each sub-phase started and stopped, as an instrumented CPython
-# reports it. A name here is a field on the record and nothing else reads
-# it, so the phase it belongs to is the comment beside it.
+# reports it. The table below pairs each with the phase it bounds.
 TS_MARK_ALIVE_START: Final = "ts_mark_alive_start"
 TS_MARK_ALIVE_STOP: Final = "ts_mark_alive_stop"
 TS_FILL_INCREMENT_START: Final = "ts_fill_increment_start"
@@ -251,6 +249,81 @@ TS_HANDLE_RESURRECTED_STOP: Final = "ts_handle_resurrected_stop"
 TS_CLEAR_WEAKREFS_STOP: Final = "ts_clear_weakrefs_stop"
 TS_DELETE_GARBAGE_START: Final = "ts_delete_garbage_start"
 TS_DELETE_GARBAGE_STOP: Final = "ts_delete_garbage_stop"
+
+PAUSE: Final = _phase("GC Pause", "gc.pause", TS_START, TS_STOP, "pause")
+MARK_ALIVE: Final = _phase(
+    "GC Mark Alive", "gc.mark.alive", TS_MARK_ALIVE_START, TS_MARK_ALIVE_STOP, "mark_alive", (ALIVE_SIZE,)
+)
+FILL_INCREMENT: Final = _phase(
+    "GC Fill Increment",
+    "gc.increment",
+    TS_FILL_INCREMENT_START,
+    TS_FILL_INCREMENT_STOP,
+    "fill_increment",
+    (INCREMENT_SIZE,),
+)
+DEDUCE_UNREACHABLE: Final = _phase(
+    "GC Deduce Unreachable",
+    "gc.deduce",
+    TS_DEDUCE_UNREACHABLE_START,
+    TS_DEDUCE_UNREACHABLE_STOP,
+    "deduce_unreachable",
+    (CANDIDATES,),
+)
+HANDLE_WEAKREFS: Final = _phase(
+    "GC Handle Weakrefs Callbacks",
+    "gc.weakrefs",
+    TS_HANDLE_WEAKREF_CALLBACKS_START,
+    TS_HANDLE_WEAKREF_CALLBACKS_STOP,
+    "handle_weakrefs",
+)
+# The next three begin where the phase before them stopped.
+FINALIZE_GARBAGE: Final = _phase(
+    "GC Finalize Garbage",
+    "gc.finalize",
+    TS_HANDLE_WEAKREF_CALLBACKS_STOP,
+    TS_FINALIZE_GARBAGE_STOP,
+    "finalize_garbage",
+    (FINALIZED_GARBAGE_COUNT,),
+)
+HANDLE_RESURRECTED: Final = _phase(
+    "GC Handle Resurrected",
+    "gc.resurrect",
+    TS_FINALIZE_GARBAGE_STOP,
+    TS_HANDLE_RESURRECTED_STOP,
+    "handle_resurrected",
+)
+CLEAR_WEAKREFS: Final = _phase(
+    "GC Clear Weakrefs",
+    "gc.clear_weakrefs",
+    TS_HANDLE_RESURRECTED_STOP,
+    TS_CLEAR_WEAKREFS_STOP,
+    "clear_weakrefs",
+    (CLEAR_WEAKREFS_COUNT,),
+)
+DELETE_GARBAGE: Final = _phase(
+    "GC Delete Garbage",
+    "gc.delete",
+    TS_DELETE_GARBAGE_START,
+    TS_DELETE_GARBAGE_STOP,
+    "delete_garbage",
+    (DELETED_GARBAGE_COUNT,),
+)
+
+# The pause first, then its sub-phases in the order the collector runs them.
+GC_PHASES: Final = (
+    PAUSE,
+    MARK_ALIVE,
+    FILL_INCREMENT,
+    DEDUCE_UNREACHABLE,
+    HANDLE_WEAKREFS,
+    FINALIZE_GARBAGE,
+    HANDLE_RESURRECTED,
+    CLEAR_WEAKREFS,
+    DELETE_GARBAGE,
+)
+
+GC_PAUSE_NAME: Final = PAUSE.label
 
 GC_LOSS_NAME: Final = "GC Loss"
 

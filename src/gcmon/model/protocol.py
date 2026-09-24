@@ -56,6 +56,7 @@ __all__ = [
     "TLossMsg",
     "TMapping",
     "TMarkAliveInfo",
+    "TPhaseTimingsInfo",
     "TScalar",
     "TValue",
     "has_clear_weakrefs",
@@ -67,6 +68,7 @@ __all__ = [
     "has_incremental",
     "has_mark_alive",
     "has_pause_ts",
+    "has_phase_timings",
     "is_gc_stats",
     "is_instant",
     "is_loss",
@@ -133,6 +135,24 @@ class THandleResurrectedInfo(Protocol):
     ts_handle_resurrected_stop: int
 
 
+class TPhaseTimingsInfo(Protocol):
+    """The six sub-phases from deduce-unreachable on, which a build reports
+    together or not at all."""
+
+    ts_deduce_unreachable_start: int
+    ts_deduce_unreachable_stop: int
+    ts_handle_weakref_callbacks_start: int
+    ts_handle_weakref_callbacks_stop: int
+    ts_finalize_garbage_stop: int
+    finalized_garbage_count: int
+    ts_handle_resurrected_stop: int
+    ts_clear_weakrefs_stop: int
+    clear_weakrefs_count: int
+    ts_delete_garbage_start: int
+    ts_delete_garbage_stop: int
+    deleted_garbage_count: int
+
+
 class TInstantMsg(Protocol):
     type: str
     name: str
@@ -175,11 +195,15 @@ def has_pause_ts(item: object) -> TypeGuard[TGCStatsInfo]:
 
 
 def has_incremental(item: object) -> TypeGuard[TIncrementalInfo]:
-    return getattr(item, INCREMENT_SIZE, None) is not None
+    return getattr(item, TS_FILL_INCREMENT_START, None) is not None
 
 
 def has_mark_alive(item: object) -> TypeGuard[TMarkAliveInfo]:
-    return getattr(item, ALIVE_SIZE, None) is not None
+    return getattr(item, TS_MARK_ALIVE_START, None) is not None
+
+
+def has_phase_timings(item: object) -> TypeGuard[TPhaseTimingsInfo]:
+    return getattr(item, TS_DEDUCE_UNREACHABLE_START, None) is not None
 
 
 def has_deduce_unreachable(item: object) -> TypeGuard[TDeduceUnreachableInfo]:

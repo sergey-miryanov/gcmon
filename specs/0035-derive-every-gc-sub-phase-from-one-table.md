@@ -240,7 +240,11 @@ applies inline today. The collector reports `0` there because the phase does
 not run, and a reading of `0` is worse than no reading. Opt-in, so a field not
 named draws at every generation.
 
-With both, the cleanup writes a trace byte-identical to today's.
+With both, the pause span carries today's annotations in the record's
+declaration order, which moves `heap_size` ahead of `collections` and
+`clear_weakrefs_count` ahead of `deleted_garbage_count`. No field order keeps
+both a capture and a trace byte-identical, and a trace processor reads an arg
+by key, so the trace is the one that gives way.
 
 **4.6: What goes away.** The eight per-phase `Protocol` classes and the nine
 `has_*` guards, including `has_pause_ts`: nothing narrows to `TMarkAliveInfo`
@@ -367,15 +371,17 @@ every field reads a capture.
      both halves of what the attempt in section 1 shipped.
   7. Regression guard: `--stats` byte-identical, a capture byte-identical for
      a fixed record set, `tests/fixtures/monitored_run_perfetto_trace.txt`
-     unchanged, and `tests/benchmarks/test_bench_trace_conversion.py` within
-     its budget. Conversion should get cheaper: one probe per field replaces
-     sixteen guard calls on a full record, each a `getattr`.
+     differing only in the annotation order 4.5 names, and
+     `tests/benchmarks/test_bench_trace_conversion.py` within its budget.
+     Conversion should get cheaper: one probe per field replaces sixteen guard
+     calls on a full record, each a `getattr`.
 
 ## 6. Out of scope
 
 - **Any change to slice names, categories, arg keys or the JSONL schema**,
   beyond the seven fields in 4.7 and the `duration` annotation in section 7.
-  What proves the cleanup broke nothing is that it has no output diff.
+  What proves the cleanup broke nothing is that its one output diff is the
+  annotation order in 4.5.
 - **Dropping loss records from a capture.** All four `GenLoss` numbers
   reconstruct from consecutive GC records, since `duration` is cumulative
   (`RingAccumulator._gen_loss`), but the window's bounds are two poll instants
@@ -403,7 +409,7 @@ fields land second.
 |---|---|---|
 | code | both tables, the phase loop, the `to_mapping` walk, the normalizer's endpoint union, the four-line `data.py` reorder, the guards and `Protocol` classes deleted, `stats/metrics.py` retired and the stats layer's "metric" swept | seven `data.py` lines, the `DOUBLE_VALUE` annotation arm, `EventArgs` widened to admit `float`, `duration` annotated on the pause span |
 | docs | `sub-step` → `sub-phase` in `docs/formats.md` and `docs/perfetto-sql.md`, three `CONTEXT.md` entries, ADR-0007 and ADR-0003/0004/0027 amended, spec 0062's prior-art line repointed | seven `docs/formats.md` rows, one CHANGELOG line |
-| proof | `--stats`, capture and trace all byte-identical; the four completeness tests | the documented-names test passes only once the rows exist |
+| proof | `--stats` and capture byte-identical, the trace differing only in the annotation order of 4.5; the four completeness tests | the documented-names test passes only once the rows exist |
 
 The second change is seven declarations and one encoder gap. `duration` is the
 one `float` on a record, `_build_debug_annotation` has no double arm, and a
