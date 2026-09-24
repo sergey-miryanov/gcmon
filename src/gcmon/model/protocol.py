@@ -1,6 +1,8 @@
 from collections.abc import Mapping, Sequence
 from typing import Protocol, TypeGuard
 
+import msgspec
+
 from .names import (
     ALIVE_SIZE,
     CANDIDATES,
@@ -245,52 +247,16 @@ def to_mapping(item: TItem) -> JsonlRecord:
         }
 
     if is_gc_stats(item):
-        m: JsonlRecord = {
-            GEN: item.gen,
-            IID: item.iid,
-            TS_START: item.ts_start,
-            TS_STOP: item.ts_stop,
-            HEAP_SIZE: item.heap_size,
-            COLLECTIONS: item.collections,
-            COLLECTED: item.collected,
-            UNCOLLECTABLE: item.uncollectable,
-            CANDIDATES: item.candidates,
-            DURATION: item.duration,
-        }
+        def structseq_asdict(obj):
+            d = {name: getattr(obj, name) for name in obj.__match_args__}
+            _, (_seq, extra) = obj.__reduce__()
+            d.update(extra)
+            return d
 
-        if has_incremental(item):
-            m[INCREMENT_SIZE] = item.increment_size
-            m[TS_FILL_INCREMENT_START] = item.ts_fill_increment_start
-            m[TS_FILL_INCREMENT_STOP] = item.ts_fill_increment_stop
-
-        if has_mark_alive(item):
-            m[ALIVE_SIZE] = item.alive_size
-            m[TS_MARK_ALIVE_START] = item.ts_mark_alive_start
-            m[TS_MARK_ALIVE_STOP] = item.ts_mark_alive_stop
-
-        if has_deduce_unreachable(item):
-            m[TS_DEDUCE_UNREACHABLE_START] = item.ts_deduce_unreachable_start
-            m[TS_DEDUCE_UNREACHABLE_STOP] = item.ts_deduce_unreachable_stop
-
-        if has_handle_weakrefs(item):
-            m[TS_HANDLE_WEAKREF_CALLBACKS_START] = item.ts_handle_weakref_callbacks_start
-            m[TS_HANDLE_WEAKREF_CALLBACKS_STOP] = item.ts_handle_weakref_callbacks_stop
-
-        if has_finalize_garbage(item):
-            m[TS_FINALIZE_GARBAGE_STOP] = item.ts_finalize_garbage_stop
-            m[FINALIZED_GARBAGE_COUNT] = item.finalized_garbage_count
-
-        if has_handle_resurrected(item):
-            m[TS_HANDLE_RESURRECTED_STOP] = item.ts_handle_resurrected_stop
-
-        if has_clear_weakrefs(item):
-            m[TS_CLEAR_WEAKREFS_STOP] = item.ts_clear_weakrefs_stop
-            m[CLEAR_WEAKREFS_COUNT] = item.clear_weakrefs_count
-
-        if has_delete_garbage(item):
-            m[TS_DELETE_GARBAGE_START] = item.ts_delete_garbage_start
-            m[TS_DELETE_GARBAGE_STOP] = item.ts_delete_garbage_stop
-            m[DELETED_GARBAGE_COUNT] = item.deleted_garbage_count
+        if hasattr(item, '__match_args__'):
+            m = structseq_asdict(item)
+        else:
+            m = msgspec.structs.asdict(item)
 
         return m
 
