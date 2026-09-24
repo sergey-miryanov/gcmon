@@ -247,13 +247,14 @@ def to_mapping(item: TItem) -> JsonlRecord:
         }
 
     if is_gc_stats(item):
+
         def structseq_asdict(obj):
             d = {name: getattr(obj, name) for name in obj.__match_args__}
             _, (_seq, extra) = obj.__reduce__()
             d.update(extra)
             return d
 
-        if hasattr(item, '__match_args__'):
+        if hasattr(item, "__match_args__"):
             m = structseq_asdict(item)
         else:
             m = msgspec.structs.asdict(item)
