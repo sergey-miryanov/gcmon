@@ -3,27 +3,37 @@
 from collections.abc import Mapping, Sequence
 from typing import Final
 
-from ..model.data import GCStatsInfo
 from ..model.names import (
     ALIVE_SIZE,
     CANDIDATES,
+    CLEAR_WEAKREFS,
+    CLEAR_WEAKREFS_COUNT,
     COLLECTED,
+    COLLECTIONS,
+    DEDUCE_UNREACHABLE,
+    DELETE_GARBAGE,
+    DELETED_GARBAGE_COUNT,
     DURATION,
+    FILL_INCREMENT,
+    FINALIZE_GARBAGE,
+    FINALIZED_GARBAGE_COUNT,
     GC_LOSS_CATEGORY,
-    GC_PHASES,
-    GEN,
     GEN_COUNTER_METRICS,
     GENERATION,
     GENERATIONS,
+    HANDLE_RESURRECTED,
+    HANDLE_WEAKREFS,
     HEAP_SIZE,
     IID,
     INCREMENT_SIZE,
     LOST_COUNT,
     LOST_PAUSE,
     LOST_PAUSE_NS,
+    MARK_ALIVE,
     OBSERVED_COUNT,
     PAUSE,
     UNCOLLECTABLE,
+    Phase,
     gc_loss_slice_name,
 )
 from ..model.process import Process
@@ -32,6 +42,9 @@ from ..model.protocol import (
     TGenLoss,
     TItem,
     TLossMsg,
+    has_incremental,
+    has_mark_alive,
+    has_phase_timings,
     is_gc_stats,
     is_instant,
     is_loss,
@@ -73,44 +86,18 @@ _COUNTER_DISPLAY_NAMES: Final[Mapping[int, Mapping[str, str]]] = {
 }
 
 
-# The endpoints of every phase. The timeline draws them, so no span repeats
-# them as a figure.
-_ENDPOINTS: Final = frozenset(field for phase in GC_PHASES for field in (phase.start, phase.stop))
-
-# What the pause span carries: every other field on the record, in the order
-# the record declares them. `duration` is the one float, and the encoder has
-# no arm for it.
-_PAUSE_FIELDS: Final = tuple(
-    field for field in GCStatsInfo.__struct_fields__ if field not in _ENDPOINTS and field != DURATION
-)
-
-# A field annotated under a name other than its own.
-_ANNOTATION_NAMES: Final[Mapping[str, str]] = {GEN: GENERATION}
-
-# The generations a field is left off the pause at. The collector reports `0`
-# there because the phase does not run, and a reading of `0` is worse than
-# none.
-_DROPPED_AT_GEN: Final[Mapping[str, frozenset[int]]] = {
-    INCREMENT_SIZE: frozenset({2}),
-    ALIVE_SIZE: frozenset({0}),
-}
-
-
-def _pause_annotations(gen: int) -> tuple[tuple[str, str], ...]:
-    """``(field, annotation name)`` for each field a *gen* pause carries."""
-    return tuple(
-        (field, _ANNOTATION_NAMES.get(field, field))
-        for field in _PAUSE_FIELDS
-        if gen not in _DROPPED_AT_GEN.get(field, ())
-    )
-
-
-# Rendered per generation the collector has, like the counter names above.
-_PAUSE_ANNOTATIONS: Final[Mapping[int, tuple[tuple[str, str], ...]]] = {
-    gen: _pause_annotations(gen) for gen in GENERATIONS
-}
-
-_SUB_PHASES: Final = tuple(phase for phase in GC_PHASES if phase is not PAUSE)
+def _append_phase(
+    events: list[TraceEvent],
+    track: InterpreterTrack,
+    phase: Phase,
+    gen: int,
+    start: int,
+    stop: int,
+    args: EventArgs,
+) -> None:
+    """Append *phase*'s slice, unless the collector spent no time in it."""
+    if stop > start:
+        events.append(Slice(track, phase.slice_names[gen], phase.categories[gen], start, stop, args))
 
 
 def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[TraceEvent]:
@@ -119,26 +106,39 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
     track = InterpreterTrack(process, iid)
     ts_start_ns = item.ts_start
     ts_stop_ns = item.ts_stop
+    # Read before a guard narrows the record to a field set without it.
+    candidates = item.candidates
 
-    annotations = _PAUSE_ANNOTATIONS.get(gen)
-    if annotations is None:
-        annotations = _pause_annotations(gen)
-
-    # A live record is CPython's own `GCStatsInfo`, which leaves off a field
-    # its build does not report rather than holding `None` there.
-    pause_data: EventArgs = {}
-    for field, name in annotations:
-        value = getattr(item, field, None)
-        if value is not None:
-            pause_data[name] = value
+    pause_data: EventArgs = {
+        GENERATION: gen,
+        IID: iid,
+        COLLECTIONS: item.collections,
+        HEAP_SIZE: item.heap_size,
+        COLLECTED: item.collected,
+        UNCOLLECTABLE: item.uncollectable,
+        CANDIDATES: candidates,
+    }
 
     counter_data: dict[str, int | float] = {
         COLLECTED: item.collected,
-        CANDIDATES: item.candidates,
+        CANDIDATES: candidates,
         DURATION: item.duration,
     }
     if item.uncollectable:
         counter_data[UNCOLLECTABLE] = item.uncollectable
+
+    # The collector reports `0` for a size whose phase did not run at this
+    # generation, and a reading of `0` is worse than none.
+    if has_incremental(item) and gen < 2:
+        pause_data[INCREMENT_SIZE] = item.increment_size
+
+    if has_mark_alive(item) and gen > 0:
+        pause_data[ALIVE_SIZE] = item.alive_size
+
+    if has_phase_timings(item):
+        pause_data[FINALIZED_GARBAGE_COUNT] = item.finalized_garbage_count
+        pause_data[DELETED_GARBAGE_COUNT] = item.deleted_garbage_count
+        pause_data[CLEAR_WEAKREFS_COUNT] = item.clear_weakrefs_count
 
     events: list[TraceEvent] = []
     # Ahead of the sub-phases nested inside it, so its BEGIN wins the tie
@@ -154,19 +154,84 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
         )
     )
 
-    for phase in _SUB_PHASES:
-        start = getattr(item, phase.start, None)
-        stop = getattr(item, phase.stop, None)
-        if start is None or stop is None or stop <= start:
-            continue
+    if has_mark_alive(item):
+        _append_phase(
+            events,
+            track,
+            MARK_ALIVE,
+            gen,
+            item.ts_mark_alive_start,
+            item.ts_mark_alive_stop,
+            {GENERATION: gen, IID: iid, ALIVE_SIZE: item.alive_size},
+        )
 
-        phase_data: EventArgs = {GENERATION: gen, IID: iid}
-        for field in phase.args:
-            value = getattr(item, field, None)
-            if value is not None:
-                phase_data[field] = value
+    if has_incremental(item):
+        _append_phase(
+            events,
+            track,
+            FILL_INCREMENT,
+            gen,
+            item.ts_fill_increment_start,
+            item.ts_fill_increment_stop,
+            {GENERATION: gen, IID: iid, INCREMENT_SIZE: item.increment_size},
+        )
 
-        events.append(Slice(track, phase.slice_names[gen], phase.categories[gen], start, stop, phase_data))
+    if has_phase_timings(item):
+        _append_phase(
+            events,
+            track,
+            DEDUCE_UNREACHABLE,
+            gen,
+            item.ts_deduce_unreachable_start,
+            item.ts_deduce_unreachable_stop,
+            {GENERATION: gen, IID: iid, CANDIDATES: candidates},
+        )
+        _append_phase(
+            events,
+            track,
+            HANDLE_WEAKREFS,
+            gen,
+            item.ts_handle_weakref_callbacks_start,
+            item.ts_handle_weakref_callbacks_stop,
+            {GENERATION: gen, IID: iid},
+        )
+        # The next three start where the one before them stopped.
+        _append_phase(
+            events,
+            track,
+            FINALIZE_GARBAGE,
+            gen,
+            item.ts_handle_weakref_callbacks_stop,
+            item.ts_finalize_garbage_stop,
+            {GENERATION: gen, IID: iid, FINALIZED_GARBAGE_COUNT: item.finalized_garbage_count},
+        )
+        _append_phase(
+            events,
+            track,
+            HANDLE_RESURRECTED,
+            gen,
+            item.ts_finalize_garbage_stop,
+            item.ts_handle_resurrected_stop,
+            {GENERATION: gen, IID: iid},
+        )
+        _append_phase(
+            events,
+            track,
+            CLEAR_WEAKREFS,
+            gen,
+            item.ts_handle_resurrected_stop,
+            item.ts_clear_weakrefs_stop,
+            {GENERATION: gen, IID: iid, CLEAR_WEAKREFS_COUNT: item.clear_weakrefs_count},
+        )
+        _append_phase(
+            events,
+            track,
+            DELETE_GARBAGE,
+            gen,
+            item.ts_delete_garbage_start,
+            item.ts_delete_garbage_stop,
+            {GENERATION: gen, IID: iid, DELETED_GARBAGE_COUNT: item.deleted_garbage_count},
+        )
 
     # A generation the table does not hold is spelled on the spot: no
     # collector emits one, and a capture that carries one still converts.
