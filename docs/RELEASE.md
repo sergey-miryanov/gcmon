@@ -30,7 +30,8 @@ The release workflow extracts the version's section from `CHANGELOG.md` and
 embeds it as the GitHub Release body. Preview locally before tagging:
 
 ```bash
-python .github/scripts/extract_changelog.py          # uses pyproject.toml version
+python .github/scripts/extract_changelog.py          # WIP section
+python .github/scripts/extract_changelog.py latest   # uses pyproject.toml version
 python .github/scripts/extract_changelog.py v0.2.0   # explicit tag
 ```
 
