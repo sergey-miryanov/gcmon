@@ -27,7 +27,7 @@ coverage:
 
 # Check the layer boundaries
 architecture:
-    poetry run pytest -m architecture
+    poetry run pytest --basetemp=.temp -m architecture
 
 # Run every stress test
 stress: stress-control stress-threads
