@@ -2,6 +2,7 @@
 and what it annotates."""
 
 from collections.abc import Mapping
+from functools import partial
 from typing import Any, ClassVar, Final, Protocol, TypeGuard
 
 from .names import (
@@ -18,9 +19,7 @@ from .names import (
     FILL_INCREMENT,
     FINALIZE_GARBAGE,
     FINALIZED_GARBAGE_COUNT,
-    GEN_COUNTER_METRICS,
     GENERATION,
-    GENERATIONS,
     HANDLE_RESURRECTED,
     HANDLE_WEAKREFS,
     HEAP_SIZE,
@@ -36,6 +35,7 @@ from .names import (
     TS_HANDLE_WEAKREF_CALLBACKS_START,
     TS_START,
     UNCOLLECTABLE,
+    PerGeneration,
     Phase,
     counter_display_name,
 )
@@ -78,19 +78,23 @@ class PhaseRow(Protocol):
     def args(gen: int, item: Any) -> EventArgs: ...
 
 
-# Each counter's track name per generation the collector has. A pause draws
-# three or four counters and each name is the same string every time, so
-# `counters` reads it here rather than building it.
-_COUNTER_NAMES: Final[Mapping[int, Mapping[str, str]]] = {
-    gen: {metric: counter_display_name(gen, metric) for metric in GEN_COUNTER_METRICS} for gen in GENERATIONS
-}
-
-
 class PauseData:
     # The whole record: other modules name it too, so it lives in `protocol`.
     type Info = TGCStatsInfo
 
     phase: ClassVar[Phase] = PAUSE
+
+    # The series a pause draws per generation. `uncollectable` is last
+    # because a run that collected everything omits it rather than writing a
+    # zero.
+    counter_metrics: ClassVar = (COLLECTED, CANDIDATES, DURATION, UNCOLLECTABLE)
+
+    # Each one's track name per generation. A pause draws three or four
+    # counters and each name is the same string every time, so `counters`
+    # reads it here rather than building it.
+    counter_names: ClassVar[Mapping[str, PerGeneration]] = {
+        metric: PerGeneration(partial(counter_display_name, metric=metric)) for metric in counter_metrics
+    }
 
     @staticmethod
     def check(item: object) -> TypeGuard[Info]:
@@ -115,22 +119,17 @@ class PauseData:
         }
 
     # (metric, track name, value) for each counter the pause draws: the
-    # per-generation series, `GEN_COUNTER_METRICS`, then `heap_size`.
-    @staticmethod
-    def counters(gen: int, item: Info) -> list[tuple[str, str, int | float]]:
-        names = _COUNTER_NAMES.get(gen)
-        # No collector emits a generation the table lacks, and a capture that
-        # carries one still converts.
-        if names is None:
-            names = {metric: counter_display_name(gen, metric) for metric in GEN_COUNTER_METRICS}
+    # per-generation series, `counter_metrics`, then `heap_size`.
+    @classmethod
+    def counters(cls, gen: int, item: Info) -> list[tuple[str, str, int | float]]:
+        names = cls.counter_names
         counters: list[tuple[str, str, int | float]] = [
-            (COLLECTED, names[COLLECTED], item.collected),
-            (CANDIDATES, names[CANDIDATES], item.candidates),
-            (DURATION, names[DURATION], item.duration),
+            (COLLECTED, names[COLLECTED][gen], item.collected),
+            (CANDIDATES, names[CANDIDATES][gen], item.candidates),
+            (DURATION, names[DURATION][gen], item.duration),
         ]
-        # A run that collected everything omits it rather than writing a zero.
         if item.uncollectable:
-            counters.append((UNCOLLECTABLE, names[UNCOLLECTABLE], item.uncollectable))
+            counters.append((UNCOLLECTABLE, names[UNCOLLECTABLE][gen], item.uncollectable))
         # Unqualified: it gauges the interpreter rather than a generation
         # (ADR-0004), and its row sits inside the interpreter's own group, so
         # no two share a parent and the name need not tell them apart

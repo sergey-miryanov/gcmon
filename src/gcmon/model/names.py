@@ -40,7 +40,6 @@ __all__ = [
     "GENERATION",
     "GENERATIONS",
     "GENS",
-    "GEN_COUNTER_METRICS",
     "HANDLE_RESURRECTED",
     "HANDLE_WEAKREFS",
     "HEAP_SIZE",
@@ -78,6 +77,7 @@ __all__ = [
     "TS_STOP",
     "TYPE",
     "UNCOLLECTABLE",
+    "PerGeneration",
     "Phase",
     "counter_display_name",
     "gc_loss_slice_name",
@@ -93,7 +93,7 @@ __all__ = [
 GENERATIONS: Final = (0, 1, 2)
 
 
-class _PerGeneration(dict[int, str]):
+class PerGeneration(dict[int, str]):
     """One name, rendered for every generation, as a lookup.
 
     Filled at import for the generations above, which is what a conversion
@@ -137,7 +137,7 @@ def _phase(label: str, category: str) -> Phase:
     def slice_category(gen: int) -> str:
         return f"{category}(gen={gen})"
 
-    return Phase(label, category, _PerGeneration(slice_name), _PerGeneration(slice_category))
+    return Phase(label, category, PerGeneration(slice_name), PerGeneration(slice_category))
 
 
 PAUSE: Final = _phase("GC Pause", "gc.pause")
@@ -179,10 +179,6 @@ ALIVE_SIZE: Final = "alive_size"
 FINALIZED_GARBAGE_COUNT: Final = "finalized_garbage_count"
 DELETED_GARBAGE_COUNT: Final = "deleted_garbage_count"
 CLEAR_WEAKREFS_COUNT: Final = "clear_weakrefs_count"
-
-# The series a pause draws per generation. `uncollectable` is last because a
-# run that collected everything omits it rather than writing a zero.
-GEN_COUNTER_METRICS: Final = (COLLECTED, CANDIDATES, DURATION, UNCOLLECTABLE)
 
 
 def counter_display_name(gen: int, metric: str) -> str:
