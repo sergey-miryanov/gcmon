@@ -75,19 +75,22 @@ class PhaseRow(Protocol):
 
 
 class PauseData:
+    # The whole record: other modules name it too, so it lives in `protocol`.
+    type Info = TGCStatsInfo
+
     phase: ClassVar[Phase] = PAUSE
 
     @staticmethod
-    def check(item: object) -> TypeGuard[TGCStatsInfo]:
+    def check(item: object) -> TypeGuard[Info]:
         # A loss record carries `ts_start` too, and it is no GC record.
         return is_gc_stats(item) and getattr(item, TS_START, None) is not None
 
     @staticmethod
-    def bounds(item: TGCStatsInfo) -> tuple[int, int]:
+    def bounds(item: Info) -> tuple[int, int]:
         return item.ts_start, item.ts_stop
 
     @staticmethod
-    def args(gen: int, item: TGCStatsInfo) -> EventArgs:
+    def args(gen: int, item: Info) -> EventArgs:
         return {
             GENERATION: item.gen,
             IID: item.iid,
@@ -100,188 +103,180 @@ class PauseData:
         }
 
 
-class TMarkAliveInfo(Protocol):
-    alive_size: int
-    ts_mark_alive_start: int
-    ts_mark_alive_stop: int
-
-
 class MarkAliveData:
+    class Info(Protocol):
+        alive_size: int
+        ts_mark_alive_start: int
+        ts_mark_alive_stop: int
+
     phase: ClassVar[Phase] = MARK_ALIVE
 
     @staticmethod
-    def check(item: object) -> TypeGuard[TMarkAliveInfo]:
+    def check(item: object) -> TypeGuard[Info]:
         return getattr(item, ALIVE_SIZE, None) is not None
 
     @staticmethod
-    def bounds(item: TMarkAliveInfo) -> tuple[int, int]:
+    def bounds(item: Info) -> tuple[int, int]:
         return item.ts_mark_alive_start, item.ts_mark_alive_stop
 
     @staticmethod
-    def args(gen: int, item: TMarkAliveInfo) -> EventArgs | None:
+    def args(gen: int, item: Info) -> EventArgs | None:
         return {ALIVE_SIZE: item.alive_size} if gen > 0 else None
 
 
-class TIncrementalInfo(Protocol):
-    increment_size: int
-    ts_fill_increment_start: int
-    ts_fill_increment_stop: int
-
-
 class IncrementalData:
+    class Info(Protocol):
+        increment_size: int
+        ts_fill_increment_start: int
+        ts_fill_increment_stop: int
+
     phase: ClassVar[Phase] = FILL_INCREMENT
 
     @staticmethod
-    def check(item: object) -> TypeGuard[TIncrementalInfo]:
+    def check(item: object) -> TypeGuard[Info]:
         return getattr(item, INCREMENT_SIZE, None) is not None
 
     @staticmethod
-    def bounds(item: TIncrementalInfo) -> tuple[int, int]:
+    def bounds(item: Info) -> tuple[int, int]:
         return item.ts_fill_increment_start, item.ts_fill_increment_stop
 
     @staticmethod
-    def args(gen: int, item: TIncrementalInfo) -> EventArgs | None:
+    def args(gen: int, item: Info) -> EventArgs | None:
         return {INCREMENT_SIZE: item.increment_size} if gen < 2 else None
 
 
-class TDeduceUnreachableInfo(Protocol):
-    candidates: int
-    ts_deduce_unreachable_start: int
-    ts_deduce_unreachable_stop: int
-
-
 class DeduceUnreachableData:
+    class Info(Protocol):
+        candidates: int
+        ts_deduce_unreachable_start: int
+        ts_deduce_unreachable_stop: int
+
     phase: ClassVar[Phase] = DEDUCE_UNREACHABLE
 
     @staticmethod
-    def check(item: object) -> TypeGuard[TDeduceUnreachableInfo]:
+    def check(item: object) -> TypeGuard[Info]:
         return getattr(item, TS_DEDUCE_UNREACHABLE_START, None) is not None
 
     @staticmethod
-    def bounds(item: TDeduceUnreachableInfo) -> tuple[int, int]:
+    def bounds(item: Info) -> tuple[int, int]:
         return item.ts_deduce_unreachable_start, item.ts_deduce_unreachable_stop
 
     @staticmethod
-    def args(gen: int, item: TDeduceUnreachableInfo) -> EventArgs | None:
+    def args(gen: int, item: Info) -> EventArgs | None:
         return {CANDIDATES: item.candidates}
 
 
-class THandleWeakrefsInfo(Protocol):
-    ts_handle_weakref_callbacks_start: int
-    ts_handle_weakref_callbacks_stop: int
-
-
 class HandleWeakrefsData:
+    class Info(Protocol):
+        ts_handle_weakref_callbacks_start: int
+        ts_handle_weakref_callbacks_stop: int
+
     phase: ClassVar[Phase] = HANDLE_WEAKREFS
 
     @staticmethod
-    def check(item: object) -> TypeGuard[THandleWeakrefsInfo]:
+    def check(item: object) -> TypeGuard[Info]:
         return getattr(item, TS_HANDLE_WEAKREF_CALLBACKS_START, None) is not None
 
     @staticmethod
-    def bounds(item: THandleWeakrefsInfo) -> tuple[int, int]:
+    def bounds(item: Info) -> tuple[int, int]:
         return item.ts_handle_weakref_callbacks_start, item.ts_handle_weakref_callbacks_stop
 
     @staticmethod
-    def args(gen: int, item: THandleWeakrefsInfo) -> EventArgs | None:
+    def args(gen: int, item: Info) -> EventArgs | None:
         return {}
 
 
 # The next three start where the phase before them stopped, so each needs
 # that phase's field as well as its own.
-class TFinalizeGarbageInfo(Protocol):
-    finalized_garbage_count: int
-    ts_handle_weakref_callbacks_stop: int
-    ts_finalize_garbage_stop: int
-
-
 class FinalizeGarbageData:
+    class Info(Protocol):
+        finalized_garbage_count: int
+        ts_handle_weakref_callbacks_stop: int
+        ts_finalize_garbage_stop: int
+
     phase: ClassVar[Phase] = FINALIZE_GARBAGE
 
     @staticmethod
-    def check(item: object) -> TypeGuard[TFinalizeGarbageInfo]:
+    def check(item: object) -> TypeGuard[Info]:
         return (
             getattr(item, TS_HANDLE_WEAKREF_CALLBACKS_START, None) is not None
             and getattr(item, TS_FINALIZE_GARBAGE_STOP, None) is not None
         )
 
     @staticmethod
-    def bounds(item: TFinalizeGarbageInfo) -> tuple[int, int]:
+    def bounds(item: Info) -> tuple[int, int]:
         return item.ts_handle_weakref_callbacks_stop, item.ts_finalize_garbage_stop
 
     @staticmethod
-    def args(gen: int, item: TFinalizeGarbageInfo) -> EventArgs | None:
+    def args(gen: int, item: Info) -> EventArgs | None:
         return {FINALIZED_GARBAGE_COUNT: item.finalized_garbage_count}
 
 
-class THandleResurrectedInfo(Protocol):
-    ts_finalize_garbage_stop: int
-    ts_handle_resurrected_stop: int
-
-
 class HandleResurrectedData:
+    class Info(Protocol):
+        ts_finalize_garbage_stop: int
+        ts_handle_resurrected_stop: int
+
     phase: ClassVar[Phase] = HANDLE_RESURRECTED
 
     @staticmethod
-    def check(item: object) -> TypeGuard[THandleResurrectedInfo]:
+    def check(item: object) -> TypeGuard[Info]:
         return (
             getattr(item, TS_FINALIZE_GARBAGE_STOP, None) is not None
             and getattr(item, TS_HANDLE_RESURRECTED_STOP, None) is not None
         )
 
     @staticmethod
-    def bounds(item: THandleResurrectedInfo) -> tuple[int, int]:
+    def bounds(item: Info) -> tuple[int, int]:
         return item.ts_finalize_garbage_stop, item.ts_handle_resurrected_stop
 
     @staticmethod
-    def args(gen: int, item: THandleResurrectedInfo) -> EventArgs | None:
+    def args(gen: int, item: Info) -> EventArgs | None:
         return {}
 
 
-class TClearWeakrefsInfo(Protocol):
-    clear_weakrefs_count: int
-    ts_handle_resurrected_stop: int
-    ts_clear_weakrefs_stop: int
-
-
 class ClearWeakrefsData:
+    class Info(Protocol):
+        clear_weakrefs_count: int
+        ts_handle_resurrected_stop: int
+        ts_clear_weakrefs_stop: int
+
     phase: ClassVar[Phase] = CLEAR_WEAKREFS
 
     @staticmethod
-    def check(item: object) -> TypeGuard[TClearWeakrefsInfo]:
+    def check(item: object) -> TypeGuard[Info]:
         return (
             getattr(item, TS_HANDLE_RESURRECTED_STOP, None) is not None
             and getattr(item, TS_CLEAR_WEAKREFS_STOP, None) is not None
         )
 
     @staticmethod
-    def bounds(item: TClearWeakrefsInfo) -> tuple[int, int]:
+    def bounds(item: Info) -> tuple[int, int]:
         return item.ts_handle_resurrected_stop, item.ts_clear_weakrefs_stop
 
     @staticmethod
-    def args(gen: int, item: TClearWeakrefsInfo) -> EventArgs | None:
+    def args(gen: int, item: Info) -> EventArgs | None:
         return {CLEAR_WEAKREFS_COUNT: item.clear_weakrefs_count}
 
 
-class TDeleteGarbageInfo(Protocol):
-    deleted_garbage_count: int
-    ts_delete_garbage_start: int
-    ts_delete_garbage_stop: int
-
-
 class DeleteGarbageData:
+    class Info(Protocol):
+        deleted_garbage_count: int
+        ts_delete_garbage_start: int
+        ts_delete_garbage_stop: int
+
     phase: ClassVar[Phase] = DELETE_GARBAGE
 
     @staticmethod
-    def check(item: object) -> TypeGuard[TDeleteGarbageInfo]:
+    def check(item: object) -> TypeGuard[Info]:
         return getattr(item, TS_DELETE_GARBAGE_START, None) is not None
 
     @staticmethod
-    def bounds(item: TDeleteGarbageInfo) -> tuple[int, int]:
+    def bounds(item: Info) -> tuple[int, int]:
         return item.ts_delete_garbage_start, item.ts_delete_garbage_stop
 
     @staticmethod
-    def args(gen: int, item: TDeleteGarbageInfo) -> EventArgs | None:
+    def args(gen: int, item: Info) -> EventArgs | None:
         return {DELETED_GARBAGE_COUNT: item.deleted_garbage_count}
 
 
