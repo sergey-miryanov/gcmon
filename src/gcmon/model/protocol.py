@@ -5,16 +5,33 @@ import msgspec
 
 from .names import (
     ALIVE_SIZE,
+    CANDIDATES,
+    CLEAR_WEAKREFS,
+    CLEAR_WEAKREFS_COUNT,
+    COLLECTED,
     COLLECTIONS,
+    DEDUCE_UNREACHABLE,
+    DELETE_GARBAGE,
+    DELETED_GARBAGE_COUNT,
+    DURATION,
+    FILL_INCREMENT,
+    FINALIZE_GARBAGE,
+    FINALIZED_GARBAGE_COUNT,
     GEN,
+    GENERATION,
     GENS,
+    HANDLE_RESURRECTED,
+    HANDLE_WEAKREFS,
+    HEAP_SIZE,
     IID,
     INCREMENT_SIZE,
     LOST_COUNT,
     LOST_FROM,
     LOST_PAUSE_NS,
+    MARK_ALIVE,
     NAME,
     OBSERVED_COUNT,
+    PAUSE,
     TS,
     TS_CLEAR_WEAKREFS_STOP,
     TS_DEDUCE_UNREACHABLE_START,
@@ -25,11 +42,8 @@ from .names import (
     TS_START,
     TS_STOP,
     TYPE,
+    UNCOLLECTABLE,
     Phase,
-    PAUSE,
-    FILL_INCREMENT,
-    MARK_ALIVE,
-    DEDUCE_UNREACHABLE,
 )
 from .trace_event import EventArgs
 
@@ -192,74 +206,148 @@ def has_pause_ts(item: object) -> TypeGuard[TGCStatsInfo]:
 type _EmitResult = tuple[Phase, EventArgs, tuple[int, int]] | None
 
 
+class _Row(Protocol):
+    @staticmethod
+    def emit(gen: int, item: TGCStatsInfo) -> _EmitResult: ...
+
+
 class PauseData:
-    def emit(gen: int, item: TGCStatsInfo) -> _EmitResult:
+    @staticmethod
+    def emit(gen: int, item: TGCStatsInfo) -> tuple[Phase, EventArgs, tuple[int, int]]:
         return (
             PAUSE,
             {
-                "generation": item.gen,
-                "iid": item.iid,
-                "heap_size": item.heap_size,
-                "collections": item.collections,
-                "collected": item.collected,
-                "uncollectable": item.uncollectable,
-                "candidates": item.candidates,
-                "duration": item.duration,
+                GENERATION: item.gen,
+                IID: item.iid,
+                HEAP_SIZE: item.heap_size,
+                COLLECTIONS: item.collections,
+                COLLECTED: item.collected,
+                UNCOLLECTABLE: item.uncollectable,
+                CANDIDATES: item.candidates,
+                DURATION: item.duration,
             },
             (item.ts_start, item.ts_stop),
         )
 
 
+class MarkAliveData:
+    @staticmethod
+    def emit(gen: int, item: object) -> _EmitResult:
+        if has_mark_alive(item) and gen > 0:
+            return (
+                MARK_ALIVE,
+                {ALIVE_SIZE: item.alive_size},
+                (item.ts_mark_alive_start, item.ts_mark_alive_stop),
+            )
+        return None
+
+
 class IncrementalData:
+    @staticmethod
     def emit(gen: int, item: object) -> _EmitResult:
         if has_incremental(item) and gen < 2:
             return (
                 FILL_INCREMENT,
-                {
-                    "increment_size": item.increment_size,
-                },
+                {INCREMENT_SIZE: item.increment_size},
                 (item.ts_fill_increment_start, item.ts_fill_increment_stop),
             )
+        return None
+
+
+class DeduceUnreachableData:
+    @staticmethod
+    def emit(gen: int, item: object) -> _EmitResult:
+        if has_deduce_unreachable(item):
+            return (
+                DEDUCE_UNREACHABLE,
+                {CANDIDATES: item.candidates},
+                (item.ts_deduce_unreachable_start, item.ts_deduce_unreachable_stop),
+            )
+        return None
+
+
+class HandleWeakrefsData:
+    @staticmethod
+    def emit(gen: int, item: object) -> _EmitResult:
+        if has_handle_weakrefs(item):
+            return (
+                HANDLE_WEAKREFS,
+                {},
+                (item.ts_handle_weakref_callbacks_start, item.ts_handle_weakref_callbacks_stop),
+            )
+        return None
+
+
+# The next three start where the phase before them stopped, so each needs
+# that phase's guard as well as its own.
+class FinalizeGarbageData:
+    @staticmethod
+    def emit(gen: int, item: object) -> _EmitResult:
+        if has_handle_weakrefs(item) and has_finalize_garbage(item):
+            return (
+                FINALIZE_GARBAGE,
+                {FINALIZED_GARBAGE_COUNT: item.finalized_garbage_count},
+                (item.ts_handle_weakref_callbacks_stop, item.ts_finalize_garbage_stop),
+            )
+        return None
+
+
+class HandleResurrectedData:
+    @staticmethod
+    def emit(gen: int, item: object) -> _EmitResult:
+        if has_finalize_garbage(item) and has_handle_resurrected(item):
+            return (
+                HANDLE_RESURRECTED,
+                {},
+                (item.ts_finalize_garbage_stop, item.ts_handle_resurrected_stop),
+            )
+        return None
+
+
+class ClearWeakrefsData:
+    @staticmethod
+    def emit(gen: int, item: object) -> _EmitResult:
+        if has_handle_resurrected(item) and has_clear_weakrefs(item):
+            return (
+                CLEAR_WEAKREFS,
+                {CLEAR_WEAKREFS_COUNT: item.clear_weakrefs_count},
+                (item.ts_handle_resurrected_stop, item.ts_clear_weakrefs_stop),
+            )
+        return None
+
+
+class DeleteGarbageData:
+    @staticmethod
+    def emit(gen: int, item: object) -> _EmitResult:
+        if has_delete_garbage(item):
+            return (
+                DELETE_GARBAGE,
+                {DELETED_GARBAGE_COUNT: item.deleted_garbage_count},
+                (item.ts_delete_garbage_start, item.ts_delete_garbage_stop),
+            )
+        return None
+
+
+# The pause first, then its sub-phases in the order the collector runs them.
+Data: list[type[_Row]] = [
+    PauseData,
+    MarkAliveData,
+    IncrementalData,
+    DeduceUnreachableData,
+    HandleWeakrefsData,
+    FinalizeGarbageData,
+    HandleResurrectedData,
+    ClearWeakrefsData,
+    DeleteGarbageData,
+]
 
 
 def has_incremental(item: object) -> TypeGuard[TIncrementalInfo]:
     return getattr(item, INCREMENT_SIZE, None) is not None
 
 
-class MarkAliveData:
-    def emit(gen: int, item: object) -> _EmitResult:
-        if has_mark_alive(item) and gen > 0:
-            return (
-                MARK_ALIVE,
-                {
-                    "alive_size": item.alive_size,
-                },
-                (item.ts_mark_alive_start, item.ts_mark_alive_stop),
-            )
-
-
 def has_mark_alive(item: object) -> TypeGuard[TMarkAliveInfo]:
     return getattr(item, ALIVE_SIZE, None) is not None
-
-
-class DeduceUnreachableData:
-    def emit(gen: int, item: object) -> _EmitResult:
-        if has_deduce_unreachable(item):
-            return (
-                DEDUCE_UNREACHABLE,
-                {
-                    "candidates": item.candidates,
-                },
-                (item.ts_deduce_unreachable_start, item.ts_deduce_unreachable_stop),
-            )
-
-
-Data = [
-    PauseData,
-    MarkAliveData,
-    IncrementalData,
-    DeduceUnreachableData,
-]
 
 
 def has_deduce_unreachable(item: object) -> TypeGuard[TDeduceUnreachableInfo]:
