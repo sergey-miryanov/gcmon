@@ -21,13 +21,16 @@ check: lint typecheck architecture test
 test:
     poetry run pytest -q --basetemp=.temp
 
+test-verbose:
+    poetry run pytest --basetemp=.temp
+
 # Run the test suite with coverage and a JUnit report
 coverage:
     poetry run pytest -q --basetemp=.temp --cov=src/gcmon --cov-report=xml:coverage.xml --cov-report=term-missing --cov-branch --junitxml=reports/tests.xml
 
 # Check the layer boundaries
 architecture:
-    poetry run pytest -m architecture
+    poetry run pytest --basetemp=.temp -m architecture
 
 # Run every stress test
 stress: stress-control stress-threads
@@ -60,11 +63,11 @@ typecheck: typecheck-mypy typecheck-pyrefly
 
 # Type check with mypy
 typecheck-mypy:
-    poetry run mypy src tests
+    poetry run mypy src tests .github/scripts
 
 # Type check with pyrefly
 typecheck-pyrefly:
-    poetry run pyrefly check src tests
+    poetry run pyrefly check src tests .github/scripts
 
 # Build the distribution
 build:

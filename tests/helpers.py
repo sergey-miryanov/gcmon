@@ -1,13 +1,15 @@
 from __future__ import annotations
 
+import _remote_debugging
 import json
 import zlib
 from collections.abc import Callable, Iterator, Sequence, Set
 from contextlib import contextmanager
 from pathlib import Path
 from types import ModuleType
-from typing import Final, override
+from typing import Any, Final, override
 
+import msgspec
 from perfetto.protos.perfetto.trace.perfetto_trace_pb2 import Trace, TracePacket
 from perfetto.trace_processor import TraceProcessor, TraceProcessorConfig
 
@@ -416,6 +418,19 @@ def create_mock_incremental_item(**overrides: int | float | None) -> GCStatsInfo
     # The merged mapping is `int | float | None`; each keyword it lands on
     # is narrower than that, and only the call site knows which.
     return create_mock_stats_item(**{**SUB_PHASES, **overrides})  # type: ignore[arg-type]
+
+
+# The stub declares it a Protocol, which cannot be built or asked for its fields.
+_STRUCTSEQ_GC_STATS: Any = _remote_debugging.GCStatsInfo
+
+
+def as_structseq(record: GCStatsInfo) -> TGCStatsInfo:
+    """*record* as the monitor reads it: CPython's own struct sequence,
+    carrying only the fields this build reports, so a stock build drops
+    every sub-phase."""
+    fields = msgspec.structs.asdict(record)
+    structseq: TGCStatsInfo = _STRUCTSEQ_GC_STATS([fields[name] for name in _STRUCTSEQ_GC_STATS.__match_args__])
+    return structseq
 
 
 def create_jsonl_record(

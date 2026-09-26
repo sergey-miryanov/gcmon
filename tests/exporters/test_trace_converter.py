@@ -1,3 +1,4 @@
+import msgspec
 import pytest
 
 from gcmon.exporters.trace_converter import (
@@ -21,7 +22,13 @@ from gcmon.model.names import (
 from gcmon.model.protocol import TItem
 from gcmon.model.trace_event import Counter, InterpreterTrack, LossTrack, ProcessTrack, Slice
 from tests.data_helpers import create_instant_msg
-from tests.helpers import create_mock_incremental_item, create_mock_loss_item, create_mock_stats_item, proc
+from tests.helpers import (
+    as_structseq,
+    create_mock_incremental_item,
+    create_mock_loss_item,
+    create_mock_stats_item,
+    proc,
+)
 
 
 class TestDurationText:
@@ -134,6 +141,21 @@ class TestTheSizesAPauseCarries:
 
         pause = next(e for e in events if isinstance(e, Slice) and e.name == gc_pause_slice_name(gen_number))
         assert pause.args.keys() & {INCREMENT_SIZE, ALIVE_SIZE} == sizes
+
+
+class TestAStructSequence:
+    """The monitor hands the converter struct sequences, and every other test
+    here hands it msgspec records."""
+
+    @pytest.mark.parametrize("gen_number", [0, 1, 2])
+    def test_it_converts_like_its_msgspec_twin(self, gen_number: int) -> None:
+        """Compared as encoded bytes, so the order of each event's args, which
+        is the order the trace writes them in, counts too."""
+        record = create_mock_stats_item(gen=gen_number)
+
+        twin = convert_item_to_trace_format(proc(1), as_structseq(record))
+
+        assert msgspec.json.encode(twin) == msgspec.json.encode(convert_item_to_trace_format(proc(1), record))
 
 
 class TestAPhaseWhoseStartIsMissing:

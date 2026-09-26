@@ -58,7 +58,7 @@ from gcmon.model.protocol import (
     is_loss,
     to_mapping,
 )
-from tests.helpers import create_mock_stats_item
+from tests.helpers import as_structseq, create_mock_stats_item
 
 
 @pytest.fixture
@@ -136,6 +136,16 @@ class TestHasGuards:
         """A pause record leaves every sub-phase unset, so no guard may
         claim it. One that does draws a slice off a missing timestamp."""
         assert not guard(create_mock_stats_item())
+
+    @pytest.mark.parametrize(("guard", "field", "value"), SUB_PHASES, ids=[f[1] for f in SUB_PHASES])
+    def test_a_guard_passes_over_a_struct_sequence_that_lacks_it(self, guard: Guard, field: str, value: int) -> None:
+        """A build that does not report a field leaves it off the struct
+        sequence rather than holding `None`, so the guard reads a missing
+        attribute, not an unset one."""
+        assert not guard(as_structseq(create_mock_stats_item()))
+
+    def test_a_struct_sequence_carries_the_pause_timestamps(self) -> None:
+        assert has_pause_ts(as_structseq(create_mock_stats_item()))
 
 
 class TestToMappingPartial:
@@ -343,6 +353,14 @@ class TestToMapping:
         assert result[TS_DELETE_GARBAGE_START] == 3_008_000
         assert result[TS_DELETE_GARBAGE_STOP] == 3_009_000
         assert result[DELETED_GARBAGE_COUNT] == 13
+
+    def test_a_struct_sequence_maps_like_its_msgspec_twin(self) -> None:
+        """The monitor hands `to_mapping` struct sequences and the tests
+        above hand it msgspec records. The key order is compared too, since
+        it is the order a capture writes them in."""
+        record = create_mock_stats_item()
+
+        assert list(to_mapping(as_structseq(record)).items()) == list(to_mapping(record).items())
 
     def test_instant_item(self, instant_item: InstantMsg) -> None:
         result = to_mapping(instant_item)

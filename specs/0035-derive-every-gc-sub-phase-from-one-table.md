@@ -142,12 +142,12 @@ collector runs them, extending the `Phase` that module already holds:
 
 ```python
 class Phase(NamedTuple):
-    label: str                      # slice name, and the --stats row
-    category: str                   # "gc.mark.alive"
-    start: str                      # may name ANOTHER row's stop field
+    label: str  # slice name, and the --stats row
+    category: str  # "gc.mark.alive"
+    start: str  # may name ANOTHER row's stop field
     stop: str
-    stats_key: str                  # "mark_alive"
-    args: tuple[str, ...]           # record fields carried onto this slice
+    stats_key: str  # "mark_alive"
+    args: tuple[str, ...]  # record fields carried onto this slice
     slice_names: Mapping[int, str]  # both, rendered per generation
     categories: Mapping[int, str]
 ```
@@ -178,8 +178,8 @@ where:
 
 ```python
 class Series(NamedTuple):
-    metric: str          # the field name; also the y-axis share key
-    scope: Scope         # GENERATION | INTERPRETER
+    metric: str  # the field name; also the y-axis share key
+    scope: Scope  # GENERATION | INTERPRETER
     omit_zero: bool = False
 ```
 
@@ -229,8 +229,8 @@ Two dictionaries carry what the walk cannot derive:
 ```python
 _ANNOTATION_NAMES: Mapping[str, str] = {GEN: GENERATION}
 _DROPPED_AT_GEN: Mapping[str, frozenset[int]] = {
-    INCREMENT_SIZE: frozenset({2}),   # today: annotated for gen < 2
-    ALIVE_SIZE: frozenset({0}),       # today: annotated for gen > 0
+    INCREMENT_SIZE: frozenset({2}),  # today: annotated for gen < 2
+    ALIVE_SIZE: frozenset({0}),  # today: annotated for gen > 0
 }
 ```
 
