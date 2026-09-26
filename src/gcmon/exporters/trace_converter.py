@@ -77,13 +77,13 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
     ts_stop_ns = item.ts_stop
 
     events: list[TraceEvent] = []
-    phase, pause_data, _ = PauseData.emit(gen, item)
+    pause_data = PauseData.args(gen, item)
 
     events.append(
         Slice(
             track,
-            phase.slice_names[gen],
-            phase.categories[gen],
+            PauseData.phase.slice_names[gen],
+            PauseData.phase.categories[gen],
             ts_start_ns,
             ts_stop_ns,
             pause_data,
@@ -91,24 +91,27 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
     )
 
     if ts_stop_ns > ts_start_ns:
-        for data in Data[1:]:
-            d = data.emit(gen, item)
-            if d is not None:
-                phase, args, (ts_start, ts_stop) = d
-                pause_data.update(args)
-                if ts_stop > ts_start:
-                    args[GENERATION] = gen
-                    args[IID] = iid
-                    events.append(
-                        Slice(
-                            track,
-                            phase.slice_names[gen],
-                            phase.categories[gen],
-                            ts_start,
-                            ts_stop,
-                            args,
-                        )
+        for row in Data[1:]:
+            if not row.check(item):
+                continue
+            args = row.args(gen, item)
+            if args is None:
+                continue
+            pause_data.update(args)
+            ts_start, ts_stop = row.bounds(item)
+            if ts_stop > ts_start:
+                args[GENERATION] = gen
+                args[IID] = iid
+                events.append(
+                    Slice(
+                        track,
+                        row.phase.slice_names[gen],
+                        row.phase.categories[gen],
+                        ts_start,
+                        ts_stop,
+                        args,
                     )
+                )
 
     counter_data: dict[str, int | float] = {
         COLLECTED: item.collected,
