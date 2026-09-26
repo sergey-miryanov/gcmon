@@ -132,6 +132,7 @@ def to_mapping(item: TItem) -> JsonlRecord:
 
         # A record read back from a capture, holding None for every field it lacks.
         if isinstance(item, msgspec.Struct):
-            return {name: value for name, value in msgspec.structs.asdict(item).items() if value is not None}
+            fields = zip(item.__struct_fields__, msgspec.structs.astuple(item), strict=True)
+            return {name: value for name, value in fields if value is not None}
 
     raise NotImplementedError(f"Unknown item type: {type(item)}")
