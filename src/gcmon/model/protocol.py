@@ -4,24 +4,16 @@ from typing import Any, Protocol, TypeGuard
 import msgspec
 
 from .names import (
-    ALIVE_SIZE,
     COLLECTIONS,
     GEN,
     GENS,
     IID,
-    INCREMENT_SIZE,
     LOST_COUNT,
     LOST_FROM,
     LOST_PAUSE_NS,
     NAME,
     OBSERVED_COUNT,
     TS,
-    TS_CLEAR_WEAKREFS_STOP,
-    TS_DEDUCE_UNREACHABLE_START,
-    TS_DELETE_GARBAGE_START,
-    TS_FINALIZE_GARBAGE_STOP,
-    TS_HANDLE_RESURRECTED_STOP,
-    TS_HANDLE_WEAKREF_CALLBACKS_START,
     TS_START,
     TS_STOP,
     TYPE,
@@ -45,15 +37,6 @@ __all__ = [
     "TMarkAliveInfo",
     "TScalar",
     "TValue",
-    "has_clear_weakrefs",
-    "has_deduce_unreachable",
-    "has_delete_garbage",
-    "has_finalize_garbage",
-    "has_handle_resurrected",
-    "has_handle_weakrefs",
-    "has_incremental",
-    "has_mark_alive",
-    "has_pause_ts",
     "is_gc_stats",
     "is_instant",
     "is_loss",
@@ -154,43 +137,6 @@ type JsonlRecord = dict[str, TValue]
 
 # What a whole JSONL line decodes to, and what the converters accept.
 type TItem = TGCStatsInfo | TInstantMsg | TLossMsg
-
-
-def has_pause_ts(item: object) -> TypeGuard[TGCStatsInfo]:
-    # A loss record carries `ts_start` too, and it is no GC record.
-    return is_gc_stats(item) and getattr(item, TS_START, None) is not None
-
-
-def has_incremental(item: object) -> TypeGuard[TIncrementalInfo]:
-    return getattr(item, INCREMENT_SIZE, None) is not None
-
-
-def has_mark_alive(item: object) -> TypeGuard[TMarkAliveInfo]:
-    return getattr(item, ALIVE_SIZE, None) is not None
-
-
-def has_deduce_unreachable(item: object) -> TypeGuard[TDeduceUnreachableInfo]:
-    return getattr(item, TS_DEDUCE_UNREACHABLE_START, None) is not None
-
-
-def has_handle_weakrefs(item: object) -> TypeGuard[THandleWeakrefsInfo]:
-    return getattr(item, TS_HANDLE_WEAKREF_CALLBACKS_START, None) is not None
-
-
-def has_finalize_garbage(item: object) -> TypeGuard[TFinalizeGarbageInfo]:
-    return getattr(item, TS_FINALIZE_GARBAGE_STOP, None) is not None
-
-
-def has_handle_resurrected(item: object) -> TypeGuard[THandleResurrectedInfo]:
-    return getattr(item, TS_HANDLE_RESURRECTED_STOP, None) is not None
-
-
-def has_clear_weakrefs(item: object) -> TypeGuard[TClearWeakrefsInfo]:
-    return getattr(item, TS_CLEAR_WEAKREFS_STOP, None) is not None
-
-
-def has_delete_garbage(item: object) -> TypeGuard[TDeleteGarbageInfo]:
-    return getattr(item, TS_DELETE_GARBAGE_START, None) is not None
 
 
 def is_gc_stats(item: object) -> TypeGuard[TGCStatsInfo]:

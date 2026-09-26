@@ -25,6 +25,13 @@ from .names import (
     INCREMENT_SIZE,
     MARK_ALIVE,
     PAUSE,
+    TS_CLEAR_WEAKREFS_STOP,
+    TS_DEDUCE_UNREACHABLE_START,
+    TS_DELETE_GARBAGE_START,
+    TS_FINALIZE_GARBAGE_STOP,
+    TS_HANDLE_RESURRECTED_STOP,
+    TS_HANDLE_WEAKREF_CALLBACKS_START,
+    TS_START,
     UNCOLLECTABLE,
     Phase,
 )
@@ -38,15 +45,7 @@ from .protocol import (
     THandleWeakrefsInfo,
     TIncrementalInfo,
     TMarkAliveInfo,
-    has_clear_weakrefs,
-    has_deduce_unreachable,
-    has_delete_garbage,
-    has_finalize_garbage,
-    has_handle_resurrected,
-    has_handle_weakrefs,
-    has_incremental,
-    has_mark_alive,
-    has_pause_ts,
+    is_gc_stats,
 )
 from .trace_event import EventArgs
 
@@ -88,7 +87,8 @@ class PauseData:
 
     @staticmethod
     def check(item: object) -> TypeGuard[TGCStatsInfo]:
-        return has_pause_ts(item)
+        # A loss record carries `ts_start` too, and it is no GC record.
+        return is_gc_stats(item) and getattr(item, TS_START, None) is not None
 
     @staticmethod
     def bounds(item: TGCStatsInfo) -> tuple[int, int]:
@@ -113,7 +113,7 @@ class MarkAliveData:
 
     @staticmethod
     def check(item: object) -> TypeGuard[TMarkAliveInfo]:
-        return has_mark_alive(item)
+        return getattr(item, ALIVE_SIZE, None) is not None
 
     @staticmethod
     def bounds(item: TMarkAliveInfo) -> tuple[int, int]:
@@ -129,7 +129,7 @@ class IncrementalData:
 
     @staticmethod
     def check(item: object) -> TypeGuard[TIncrementalInfo]:
-        return has_incremental(item)
+        return getattr(item, INCREMENT_SIZE, None) is not None
 
     @staticmethod
     def bounds(item: TIncrementalInfo) -> tuple[int, int]:
@@ -145,7 +145,7 @@ class DeduceUnreachableData:
 
     @staticmethod
     def check(item: object) -> TypeGuard[TDeduceUnreachableInfo]:
-        return has_deduce_unreachable(item)
+        return getattr(item, TS_DEDUCE_UNREACHABLE_START, None) is not None
 
     @staticmethod
     def bounds(item: TDeduceUnreachableInfo) -> tuple[int, int]:
@@ -161,7 +161,7 @@ class HandleWeakrefsData:
 
     @staticmethod
     def check(item: object) -> TypeGuard[THandleWeakrefsInfo]:
-        return has_handle_weakrefs(item)
+        return getattr(item, TS_HANDLE_WEAKREF_CALLBACKS_START, None) is not None
 
     @staticmethod
     def bounds(item: THandleWeakrefsInfo) -> tuple[int, int]:
@@ -173,13 +173,16 @@ class HandleWeakrefsData:
 
 
 # The next three start where the phase before them stopped, so each needs
-# that phase's guard as well as its own.
+# that phase's field as well as its own.
 class FinalizeGarbageData:
     phase: ClassVar[Phase] = FINALIZE_GARBAGE
 
     @staticmethod
     def check(item: object) -> TypeGuard[TFinalizeGarbageInfo]:
-        return has_handle_weakrefs(item) and has_finalize_garbage(item)
+        return (
+            getattr(item, TS_HANDLE_WEAKREF_CALLBACKS_START, None) is not None
+            and getattr(item, TS_FINALIZE_GARBAGE_STOP, None) is not None
+        )
 
     @staticmethod
     def bounds(item: TFinalizeGarbageInfo) -> tuple[int, int]:
@@ -195,7 +198,10 @@ class HandleResurrectedData:
 
     @staticmethod
     def check(item: object) -> TypeGuard[THandleResurrectedInfo]:
-        return has_finalize_garbage(item) and has_handle_resurrected(item)
+        return (
+            getattr(item, TS_FINALIZE_GARBAGE_STOP, None) is not None
+            and getattr(item, TS_HANDLE_RESURRECTED_STOP, None) is not None
+        )
 
     @staticmethod
     def bounds(item: THandleResurrectedInfo) -> tuple[int, int]:
@@ -211,7 +217,10 @@ class ClearWeakrefsData:
 
     @staticmethod
     def check(item: object) -> TypeGuard[TClearWeakrefsInfo]:
-        return has_handle_resurrected(item) and has_clear_weakrefs(item)
+        return (
+            getattr(item, TS_HANDLE_RESURRECTED_STOP, None) is not None
+            and getattr(item, TS_CLEAR_WEAKREFS_STOP, None) is not None
+        )
 
     @staticmethod
     def bounds(item: TClearWeakrefsInfo) -> tuple[int, int]:
@@ -227,7 +236,7 @@ class DeleteGarbageData:
 
     @staticmethod
     def check(item: object) -> TypeGuard[TDeleteGarbageInfo]:
-        return has_delete_garbage(item)
+        return getattr(item, TS_DELETE_GARBAGE_START, None) is not None
 
     @staticmethod
     def bounds(item: TDeleteGarbageInfo) -> tuple[int, int]:

@@ -1,4 +1,4 @@
-from collections.abc import Callable, Mapping
+from collections.abc import Mapping
 from types import SimpleNamespace
 
 import pytest
@@ -43,16 +43,19 @@ from gcmon.model.names import (
     TYPE,
     UNCOLLECTABLE,
 )
+from gcmon.model.phases import (
+    PAUSE_ROW,
+    ClearWeakrefsData,
+    DeduceUnreachableData,
+    DeleteGarbageData,
+    FinalizeGarbageData,
+    HandleResurrectedData,
+    HandleWeakrefsData,
+    IncrementalData,
+    MarkAliveData,
+    PhaseRow,
+)
 from gcmon.model.protocol import (
-    has_clear_weakrefs,
-    has_deduce_unreachable,
-    has_delete_garbage,
-    has_finalize_garbage,
-    has_handle_resurrected,
-    has_handle_weakrefs,
-    has_incremental,
-    has_mark_alive,
-    has_pause_ts,
     is_gc_stats,
     is_instant,
     is_loss,
@@ -72,10 +75,6 @@ def loss_item() -> LossMsg:
             GenLoss(gen=2, observed_count=1),
         ],
     )
-
-
-Guard = Callable[[object], bool]
-"""What every `has_*` and `is_*` function is, once the narrowing is spent."""
 
 
 class TestIsGC:
@@ -100,52 +99,56 @@ class TestIsInstant:
         assert is_instant(incremental_item) is False
 
 
-class TestHasGuards:
-    """Each guard answers for one field, and nine near-identical pairs said
-    so nine times. The table is the statement: a guard, the field it reads,
-    and a value that field can hold."""
+class TestRowChecks:
+    """Each row's `check` answers for the fields that phase needs. The table
+    is the statement: a row, and the fields that make a record carry it. The
+    three phases that start where the one before them stopped need that
+    phase's field as well."""
 
     SUB_PHASES = (
-        (has_incremental, INCREMENT_SIZE, 500),
-        (has_mark_alive, ALIVE_SIZE, 300),
-        (has_deduce_unreachable, TS_DEDUCE_UNREACHABLE_START, 100),
-        (has_handle_weakrefs, TS_HANDLE_WEAKREF_CALLBACKS_START, 100),
-        (has_finalize_garbage, TS_FINALIZE_GARBAGE_STOP, 100),
-        (has_handle_resurrected, TS_HANDLE_RESURRECTED_STOP, 100),
-        (has_clear_weakrefs, TS_CLEAR_WEAKREFS_STOP, 100),
-        (has_delete_garbage, TS_DELETE_GARBAGE_START, 100),
+        (IncrementalData, {INCREMENT_SIZE: 500}),
+        (MarkAliveData, {ALIVE_SIZE: 300}),
+        (DeduceUnreachableData, {TS_DEDUCE_UNREACHABLE_START: 100}),
+        (HandleWeakrefsData, {TS_HANDLE_WEAKREF_CALLBACKS_START: 100}),
+        (FinalizeGarbageData, {TS_HANDLE_WEAKREF_CALLBACKS_START: 100, TS_FINALIZE_GARBAGE_STOP: 100}),
+        (HandleResurrectedData, {TS_FINALIZE_GARBAGE_STOP: 100, TS_HANDLE_RESURRECTED_STOP: 100}),
+        (ClearWeakrefsData, {TS_HANDLE_RESURRECTED_STOP: 100, TS_CLEAR_WEAKREFS_STOP: 100}),
+        (DeleteGarbageData, {TS_DELETE_GARBAGE_START: 100}),
     )
+    IDS = tuple(row.__name__ for row, _ in SUB_PHASES)
 
     def test_a_pause_record_carries_the_pause_timestamps(self) -> None:
-        assert has_pause_ts(create_mock_stats_item())
+        assert PAUSE_ROW.check(create_mock_stats_item())
 
     def test_something_that_is_not_a_record_does_not(self) -> None:
-        assert not has_pause_ts(SimpleNamespace(gen=0))
+        assert not PAUSE_ROW.check(SimpleNamespace(gen=0))
 
     def test_a_loss_record_does_not_either(self, loss_item: LossMsg) -> None:
         """It carries `ts_start` and `ts_stop` as well, between two polls
         rather than round a pause."""
-        assert not has_pause_ts(loss_item)
+        assert not PAUSE_ROW.check(loss_item)
 
-    @pytest.mark.parametrize(("guard", "field", "value"), SUB_PHASES, ids=[f[1] for f in SUB_PHASES])
-    def test_a_guard_sees_the_field_it_names(self, guard: Guard, field: str, value: int) -> None:
-        assert guard(create_mock_stats_item(**{field: value}))
+    @pytest.mark.parametrize(("row", "fields"), SUB_PHASES, ids=IDS)
+    def test_a_row_sees_the_fields_it_needs(self, row: type[PhaseRow], fields: dict[str, int]) -> None:
+        assert row.check(create_mock_stats_item(**fields))
 
-    @pytest.mark.parametrize(("guard", "field", "value"), SUB_PHASES, ids=[f[1] for f in SUB_PHASES])
-    def test_a_guard_passes_over_a_record_that_lacks_it(self, guard: Guard, field: str, value: int) -> None:
-        """A pause record leaves every sub-phase unset, so no guard may
-        claim it. One that does draws a slice off a missing timestamp."""
-        assert not guard(create_mock_stats_item())
+    @pytest.mark.parametrize(("row", "fields"), SUB_PHASES, ids=IDS)
+    def test_a_row_passes_over_a_record_that_lacks_them(self, row: type[PhaseRow], fields: dict[str, int]) -> None:
+        """A pause record leaves every sub-phase unset, so no row may claim
+        it. One that does draws a slice off a missing timestamp."""
+        assert not row.check(create_mock_stats_item())
 
-    @pytest.mark.parametrize(("guard", "field", "value"), SUB_PHASES, ids=[f[1] for f in SUB_PHASES])
-    def test_a_guard_passes_over_a_struct_sequence_that_lacks_it(self, guard: Guard, field: str, value: int) -> None:
+    @pytest.mark.parametrize(("row", "fields"), SUB_PHASES, ids=IDS)
+    def test_a_row_passes_over_a_struct_sequence_that_lacks_them(
+        self, row: type[PhaseRow], fields: dict[str, int]
+    ) -> None:
         """A build that does not report a field leaves it off the struct
-        sequence rather than holding `None`, so the guard reads a missing
+        sequence rather than holding `None`, so the check reads a missing
         attribute, not an unset one."""
-        assert not guard(as_structseq(create_mock_stats_item()))
+        assert not row.check(as_structseq(create_mock_stats_item()))
 
     def test_a_struct_sequence_carries_the_pause_timestamps(self) -> None:
-        assert has_pause_ts(as_structseq(create_mock_stats_item()))
+        assert PAUSE_ROW.check(as_structseq(create_mock_stats_item()))
 
 
 class TestToMappingPartial:

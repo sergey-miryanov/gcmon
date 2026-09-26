@@ -59,7 +59,7 @@ class TestPauseMetric:
         self,
         gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        """Every GC record carries `ts_start`, so `has_pause_ts` holds for all of
+        """Every GC record carries `ts_start`, so the pause row's check holds for all of
         them and the pause has no missing-field case its siblings have."""
         metric = METRICS[PAUSE_KEY]
         item = gc_stats_item_factory(ts_start=0, ts_stop=0)
