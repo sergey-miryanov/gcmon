@@ -20,9 +20,9 @@ from ..model.names import (
     UNCOLLECTABLE,
     gc_loss_slice_name,
 )
+from ..model.phases import PauseData, sub_phase_rows
 from ..model.process import Process
 from ..model.protocol import (
-    PauseData,
     TGCStatsInfo,
     TGenLoss,
     TItem,
@@ -30,7 +30,6 @@ from ..model.protocol import (
     is_gc_stats,
     is_instant,
     is_loss,
-    sub_phase_rows,
 )
 from ..model.trace_event import (
     ArgGroup,
