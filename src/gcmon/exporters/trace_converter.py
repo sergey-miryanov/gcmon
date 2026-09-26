@@ -49,6 +49,7 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
     ts_stop_ns = item.ts_stop
 
     pause_data = PAUSE_ROW.args(gen, item)
+    name, category = PAUSE_ROW.phase.names[gen]
 
     events: list[TraceEvent] = []
     # Ahead of the sub-phases nested inside it, so its BEGIN wins the tie
@@ -57,8 +58,8 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
     events.append(
         Slice(
             track,
-            PAUSE_ROW.phase.slice_names[gen],
-            PAUSE_ROW.phase.categories[gen],
+            name,
+            category,
             ts_start_ns,
             ts_stop_ns,
             pause_data,
@@ -71,12 +72,13 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
             ts_start, ts_stop = row.bounds(item)
             if ts_stop > ts_start:
                 args = row.args(gen, item)
+                name, category = row.phase.names[gen]
                 pause_data.update(args)
                 events.append(
                     Slice(
                         track,
-                        row.phase.slice_names[gen],
-                        row.phase.categories[gen],
+                        name,
+                        category,
                         ts_start,
                         ts_stop,
                         args,

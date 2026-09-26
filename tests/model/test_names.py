@@ -168,15 +168,14 @@ class TestAGenerationTheTableNeverHeld:
         that generation, which is worse than raising."""
         beyond = max(GENERATIONS) + 1
 
-        assert PAUSE.slice_names[beyond] not in PAUSE.slice_names.values()
-        assert PAUSE.categories[beyond] not in PAUSE.categories.values()
+        name, category = PAUSE.names[beyond]
+        assert name not in {held for held, _ in PAUSE.names.values()}
+        assert category not in {held for _, held in PAUSE.names.values()}
 
     def test_rendering_one_does_not_grow_the_table(self) -> None:
         """A capture can name as many generations as it likes, and each one
         kept would be a row it grew the table by."""
         beyond = max(GENERATIONS) + 1
 
-        assert PAUSE.slice_names[beyond]
-        assert PAUSE.categories[beyond]
-        assert set(PAUSE.slice_names) == set(GENERATIONS)
-        assert set(PAUSE.categories) == set(GENERATIONS)
+        assert all(PAUSE.names[beyond])
+        assert set(PAUSE.names) == set(GENERATIONS)

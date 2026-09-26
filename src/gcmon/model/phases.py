@@ -92,7 +92,7 @@ class PauseData:
     # Each one's track name per generation. A pause draws three or four
     # counters and each name is the same string every time, so `counters`
     # reads it here rather than building it.
-    counter_names: ClassVar[Mapping[str, PerGeneration]] = {
+    counter_names: ClassVar[Mapping[str, PerGeneration[str]]] = {
         metric: PerGeneration(partial(counter_display_name, metric=metric)) for metric in counter_metrics
     }
 
