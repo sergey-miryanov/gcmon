@@ -130,9 +130,11 @@ def to_mapping(item: TItem) -> JsonlRecord:
             structseq: Any = type(item)
             return dict(zip(structseq.__match_args__, item, strict=True))
 
-        # A record read back from a capture, holding None for every field it lacks.
+        # A record read back from a capture, holding None for every field it
+        # lacks. `GCStatsInfo` omits its defaults, which are those Nones, so
+        # msgspec drops them itself rather than a comprehension doing it.
         if isinstance(item, msgspec.Struct):
-            fields = zip(item.__struct_fields__, msgspec.structs.astuple(item), strict=True)
-            return {name: value for name, value in fields if value is not None}
+            record: JsonlRecord = msgspec.to_builtins(item)
+            return record
 
     raise NotImplementedError(f"Unknown item type: {type(item)}")

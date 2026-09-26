@@ -4,7 +4,9 @@ from .names import COLLECTIONS, GENS, TYPE
 from .protocol import TMapping
 
 
-class GCStatsInfo(msgspec.Struct):
+# `omit_defaults`: every default is a None standing for a field the record
+# lacks, and `to_mapping` leaves those out of the capture.
+class GCStatsInfo(msgspec.Struct, omit_defaults=True):
     gen: int
     iid: int
     ts_start: int

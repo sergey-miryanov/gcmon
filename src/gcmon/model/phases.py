@@ -3,12 +3,9 @@ and what it annotates."""
 
 from collections.abc import Mapping
 from functools import partial
-from operator import attrgetter, is_not
+from operator import attrgetter
 from typing import Any, ClassVar, Final, Protocol, TypeGuard
 
-import msgspec
-
-from .data import GCStatsInfo
 from .names import (
     ALIVE_SIZE,
     CANDIDATES,
@@ -353,15 +350,23 @@ SUB_PHASE_ROWS: Final[tuple[type[PhaseRow], ...]] = (
 # Per struct-sequence type: the sub-phase rows its records carry.
 _SUB_PHASE_ROWS: dict[type, tuple[type[PhaseRow], ...]] = {}
 
-# The fields a msgspec record may hold as `None`. Every other field is
-# always there, so which of these a record holds decides which rows it
-# carries.
-_OPTIONAL_FIELDS: Final = attrgetter(
-    *(field.name for field in msgspec.structs.fields(GCStatsInfo) if field.default is None)
+# The fields the sub-phase rows' `check`s read. A msgspec record holds
+# `None` for any it lacks, so which of these it holds decides which rows it
+# carries. The other optional fields are partners of these (a phase's stop,
+# its count) and cannot change the answer, so they stay out of the key.
+_CHECKED_FIELDS: Final = attrgetter(
+    ALIVE_SIZE,
+    INCREMENT_SIZE,
+    TS_DEDUCE_UNREACHABLE_START,
+    TS_HANDLE_WEAKREF_CALLBACKS_START,
+    TS_HANDLE_WEAKREF_CALLBACKS_STOP,
+    TS_FINALIZE_GARBAGE_STOP,
+    TS_HANDLE_RESURRECTED_STOP,
+    TS_CLEAR_WEAKREFS_STOP,
+    TS_DELETE_GARBAGE_START,
 )
-_present: Final = partial(is_not, None)
 
-# Per set of present optional fields: the sub-phase rows a msgspec record
+# Per set of checked fields present: the sub-phase rows a msgspec record
 # carries. A capture holds a handful of shapes, however many records.
 _SUB_PHASE_ROWS_BY_FIELDS: dict[tuple[bool, ...], tuple[type[PhaseRow], ...]] = {}
 
@@ -379,7 +384,9 @@ def sub_phase_rows(item: TGCStatsInfo) -> tuple[type[PhaseRow], ...]:
         key: Any = type(item)
     else:
         cache = _SUB_PHASE_ROWS_BY_FIELDS
-        key = tuple(map(_present, _OPTIONAL_FIELDS(item)))
+        # A list comprehension rather than `map(partial(...))`: the key is
+        # built for every record, and the partial's call is most of its cost.
+        key = tuple([value is None for value in _CHECKED_FIELDS(item)])
     rows = cache.get(key)
     if rows is None:
         rows = cache[key] = tuple(row for row in SUB_PHASE_ROWS if row.check(item))

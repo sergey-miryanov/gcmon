@@ -1,6 +1,7 @@
 """Shared conversion from GC stats items to TraceEvent objects."""
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
+from typing import Any
 
 from ..model.names import (
     GC_LOSS_CATEGORY,
@@ -11,7 +12,7 @@ from ..model.names import (
     OBSERVED_COUNT,
     gc_loss_slice_name,
 )
-from ..model.phases import PAUSE_ROW, sub_phase_rows
+from ..model.phases import PAUSE_ROW, PhaseRow, sub_phase_rows
 from ..model.process import Process
 from ..model.protocol import (
     TGCStatsInfo,
@@ -41,6 +42,25 @@ __all__ = [
 ]
 
 
+type _RowParts = tuple[
+    tuple[Callable[[Any], tuple[int, int]], Callable[[int, Any], EventArgs], Mapping[int, tuple[str, str]]], ...
+]
+
+# Per tuple of rows `sub_phase_rows` hands back: each row's `bounds`, `args`
+# and per-generation names, read off once. A record draws up to eight
+# sub-phases, and reaching each through its row (a staticmethod lookup, then
+# `phase.names` through a named tuple) cost as much as a third of converting
+# it. `sub_phase_rows` caches its tuples, so this holds a handful of entries.
+_ROW_PARTS: dict[tuple[type[PhaseRow], ...], _RowParts] = {}
+
+
+def _row_parts(rows: tuple[type[PhaseRow], ...]) -> _RowParts:
+    parts = _ROW_PARTS.get(rows)
+    if parts is None:
+        parts = _ROW_PARTS[rows] = tuple((row.bounds, row.args, row.phase.names) for row in rows)
+    return parts
+
+
 def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[TraceEvent]:
     gen = item.gen
     iid = item.iid
@@ -68,11 +88,11 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
 
     # Every sub-phase runs inside the pause, so a pause of no length holds none.
     if ts_stop_ns > ts_start_ns:
-        for row in sub_phase_rows(item):
-            ts_start, ts_stop = row.bounds(item)
+        for bounds, row_args, names in _row_parts(sub_phase_rows(item)):
+            ts_start, ts_stop = bounds(item)
             if ts_stop > ts_start:
-                args = row.args(gen, item)
-                name, category = row.phase.names[gen]
+                args = row_args(gen, item)
+                name, category = names[gen]
                 pause_data.update(args)
                 events.append(
                     Slice(
