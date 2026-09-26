@@ -57,7 +57,6 @@ __all__ = [
     "is_gc_stats",
     "is_instant",
     "is_loss",
-    "structseq_fields",
     "to_mapping",
 ]
 
@@ -157,18 +156,6 @@ type JsonlRecord = dict[str, TValue]
 type TItem = TGCStatsInfo | TInstantMsg | TLossMsg
 
 
-# Per struct-sequence type: its field names.
-_STRUCTSEQ_FIELDS: dict[type, tuple[str, ...]] = {}
-
-
-def structseq_fields(t: Any) -> tuple[str, ...]:
-    """The field names of struct-sequence type *t*."""
-    fields = _STRUCTSEQ_FIELDS.get(t)
-    if fields is None:
-        fields = _STRUCTSEQ_FIELDS[t] = t.__match_args__
-    return fields
-
-
 def has_pause_ts(item: object) -> TypeGuard[TGCStatsInfo]:
     # A loss record carries `ts_start` too, and it is no GC record.
     return is_gc_stats(item) and getattr(item, TS_START, None) is not None
@@ -247,7 +234,9 @@ def to_mapping(item: TItem) -> JsonlRecord:
     if is_gc_stats(item):
         # A live record: a struct sequence, so a tuple of its fields.
         if isinstance(item, tuple):
-            return dict(zip(structseq_fields(type(item)), item, strict=True))
+            # Any: nothing typed says a struct sequence names its fields.
+            structseq: Any = type(item)
+            return dict(zip(structseq.__match_args__, item, strict=True))
 
         # A record read back from a capture, holding None for every field it lacks.
         if isinstance(item, msgspec.Struct):
