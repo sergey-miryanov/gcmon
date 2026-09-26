@@ -378,32 +378,36 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
     events: list[TraceEvent] = []
     phase, pause_data, _ = Data[0].emit(gen, item)
 
-    events.append(Slice(
-        track,
-        phase.slice_names[gen],
-        phase.categories[gen],
-        ts_start_ns,
-        ts_stop_ns,
-        pause_data,
-    ))
+    events.append(
+        Slice(
+            track,
+            phase.slice_names[gen],
+            phase.categories[gen],
+            ts_start_ns,
+            ts_stop_ns,
+            pause_data,
+        )
+    )
 
     if ts_stop_ns > ts_start_ns:
         for data in Data[1:]:
-            d = data.emit(gen,item)
+            d = data.emit(gen, item)
             if d is not None:
                 phase, args, (ts_start, ts_stop) = d
                 pause_data.update(args)
                 if ts_stop > ts_start:
                     args["gen"] = gen
                     args["iid"] = iid
-                    events.append(Slice(
-                        track,
-                        phase.slice_names[gen],
-                        phase.categories[gen],
-                        ts_start,
-                        ts_stop,
-                        args,
-                    ))
+                    events.append(
+                        Slice(
+                            track,
+                            phase.slice_names[gen],
+                            phase.categories[gen],
+                            ts_start,
+                            ts_stop,
+                            args,
+                        )
+                    )
 
     counter_data: dict[str, int | float] = {
         COLLECTED: item.collected,
