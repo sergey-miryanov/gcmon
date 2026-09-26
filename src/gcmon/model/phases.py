@@ -36,15 +36,7 @@ from .names import (
     Phase,
 )
 from .protocol import (
-    TClearWeakrefsInfo,
-    TDeduceUnreachableInfo,
-    TDeleteGarbageInfo,
-    TFinalizeGarbageInfo,
     TGCStatsInfo,
-    THandleResurrectedInfo,
-    THandleWeakrefsInfo,
-    TIncrementalInfo,
-    TMarkAliveInfo,
     is_gc_stats,
 )
 from .trace_event import EventArgs
@@ -108,6 +100,12 @@ class PauseData:
         }
 
 
+class TMarkAliveInfo(Protocol):
+    alive_size: int
+    ts_mark_alive_start: int
+    ts_mark_alive_stop: int
+
+
 class MarkAliveData:
     phase: ClassVar[Phase] = MARK_ALIVE
 
@@ -122,6 +120,12 @@ class MarkAliveData:
     @staticmethod
     def args(gen: int, item: TMarkAliveInfo) -> EventArgs | None:
         return {ALIVE_SIZE: item.alive_size} if gen > 0 else None
+
+
+class TIncrementalInfo(Protocol):
+    increment_size: int
+    ts_fill_increment_start: int
+    ts_fill_increment_stop: int
 
 
 class IncrementalData:
@@ -140,6 +144,12 @@ class IncrementalData:
         return {INCREMENT_SIZE: item.increment_size} if gen < 2 else None
 
 
+class TDeduceUnreachableInfo(Protocol):
+    candidates: int
+    ts_deduce_unreachable_start: int
+    ts_deduce_unreachable_stop: int
+
+
 class DeduceUnreachableData:
     phase: ClassVar[Phase] = DEDUCE_UNREACHABLE
 
@@ -154,6 +164,11 @@ class DeduceUnreachableData:
     @staticmethod
     def args(gen: int, item: TDeduceUnreachableInfo) -> EventArgs | None:
         return {CANDIDATES: item.candidates}
+
+
+class THandleWeakrefsInfo(Protocol):
+    ts_handle_weakref_callbacks_start: int
+    ts_handle_weakref_callbacks_stop: int
 
 
 class HandleWeakrefsData:
@@ -174,6 +189,12 @@ class HandleWeakrefsData:
 
 # The next three start where the phase before them stopped, so each needs
 # that phase's field as well as its own.
+class TFinalizeGarbageInfo(Protocol):
+    finalized_garbage_count: int
+    ts_handle_weakref_callbacks_stop: int
+    ts_finalize_garbage_stop: int
+
+
 class FinalizeGarbageData:
     phase: ClassVar[Phase] = FINALIZE_GARBAGE
 
@@ -191,6 +212,11 @@ class FinalizeGarbageData:
     @staticmethod
     def args(gen: int, item: TFinalizeGarbageInfo) -> EventArgs | None:
         return {FINALIZED_GARBAGE_COUNT: item.finalized_garbage_count}
+
+
+class THandleResurrectedInfo(Protocol):
+    ts_finalize_garbage_stop: int
+    ts_handle_resurrected_stop: int
 
 
 class HandleResurrectedData:
@@ -212,6 +238,12 @@ class HandleResurrectedData:
         return {}
 
 
+class TClearWeakrefsInfo(Protocol):
+    clear_weakrefs_count: int
+    ts_handle_resurrected_stop: int
+    ts_clear_weakrefs_stop: int
+
+
 class ClearWeakrefsData:
     phase: ClassVar[Phase] = CLEAR_WEAKREFS
 
@@ -229,6 +261,12 @@ class ClearWeakrefsData:
     @staticmethod
     def args(gen: int, item: TClearWeakrefsInfo) -> EventArgs | None:
         return {CLEAR_WEAKREFS_COUNT: item.clear_weakrefs_count}
+
+
+class TDeleteGarbageInfo(Protocol):
+    deleted_garbage_count: int
+    ts_delete_garbage_start: int
+    ts_delete_garbage_stop: int
 
 
 class DeleteGarbageData:

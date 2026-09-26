@@ -21,20 +21,12 @@ from .names import (
 
 __all__ = [
     "JsonlRecord",
-    "TClearWeakrefsInfo",
-    "TDeduceUnreachableInfo",
-    "TDeleteGarbageInfo",
-    "TFinalizeGarbageInfo",
     "TGCStatsInfo",
     "TGenLoss",
-    "THandleResurrectedInfo",
-    "THandleWeakrefsInfo",
-    "TIncrementalInfo",
     "TInstantMsg",
     "TItem",
     "TLossMsg",
     "TMapping",
-    "TMarkAliveInfo",
     "TScalar",
     "TValue",
     "is_gc_stats",
@@ -55,52 +47,6 @@ class TGCStatsInfo(Protocol):
     uncollectable: int
     candidates: int
     duration: float
-
-
-class TIncrementalInfo(Protocol):
-    increment_size: int
-    ts_fill_increment_start: int
-    ts_fill_increment_stop: int
-
-
-class TMarkAliveInfo(Protocol):
-    alive_size: int
-    ts_mark_alive_start: int
-    ts_mark_alive_stop: int
-
-
-class TDeduceUnreachableInfo(Protocol):
-    candidates: int
-    ts_deduce_unreachable_start: int
-    ts_deduce_unreachable_stop: int
-
-
-class TFinalizeGarbageInfo(Protocol):
-    finalized_garbage_count: int
-    ts_handle_weakref_callbacks_stop: int
-    ts_finalize_garbage_stop: int
-
-
-class TDeleteGarbageInfo(Protocol):
-    deleted_garbage_count: int
-    ts_delete_garbage_start: int
-    ts_delete_garbage_stop: int
-
-
-class THandleWeakrefsInfo(Protocol):
-    ts_handle_weakref_callbacks_start: int
-    ts_handle_weakref_callbacks_stop: int
-
-
-class TClearWeakrefsInfo(Protocol):
-    clear_weakrefs_count: int
-    ts_handle_resurrected_stop: int
-    ts_clear_weakrefs_stop: int
-
-
-class THandleResurrectedInfo(Protocol):
-    ts_finalize_garbage_stop: int
-    ts_handle_resurrected_stop: int
 
 
 class TInstantMsg(Protocol):
