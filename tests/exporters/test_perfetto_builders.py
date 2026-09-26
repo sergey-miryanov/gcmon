@@ -18,8 +18,7 @@ from gcmon.exporters.perfetto_builders import (
     build_track_event,
 )
 from gcmon.exporters.perfetto_proto import TrackEventType
-from gcmon.exporters.trace_converter import counter_display_name
-from gcmon.model.names import COLLECTED, DURATION
+from gcmon.model.names import COLLECTED, DURATION, counter_display_name
 
 
 # The builders take a name and write it down. What the name says is the

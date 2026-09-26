@@ -1,8 +1,7 @@
 """Tests for ``PerfettoTrackState`` uuid allocation and bookkeeping."""
 
 from gcmon.exporters.perfetto_track_state import PerfettoTrackState
-from gcmon.exporters.trace_converter import counter_display_name
-from gcmon.model.names import COLLECTED, HEAP_SIZE
+from gcmon.model.names import COLLECTED, HEAP_SIZE, counter_display_name
 from gcmon.model.process import Process
 from tests.conftest import DEFAULT_PID
 from tests.exporters.perfetto_helpers import span

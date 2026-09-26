@@ -29,7 +29,6 @@ from gcmon.exporters.perfetto_track_state import PerfettoTrackState
 from gcmon.exporters.trace_converter import (
     convert_item_to_trace_format,
     convert_loss_to_trace_format,
-    counter_display_name,
 )
 from gcmon.model.data import GCStatsInfo, LossMsg
 from gcmon.model.names import (
@@ -60,6 +59,7 @@ from gcmon.model.names import (
     PID_EPOCH,
     RSS,
     UNCOLLECTABLE,
+    counter_display_name,
     gc_pause_slice_name,
     phase_slice_name,
 )

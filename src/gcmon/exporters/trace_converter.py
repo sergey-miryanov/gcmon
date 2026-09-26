@@ -1,14 +1,10 @@
 """Shared conversion from GC stats items to TraceEvent objects."""
 
 from collections.abc import Mapping, Sequence
-from typing import Final
 
 from ..model.names import (
     GC_LOSS_CATEGORY,
-    GEN_COUNTER_METRICS,
     GENERATION,
-    GENERATIONS,
-    HEAP_SIZE,
     IID,
     LOST_COUNT,
     LOST_PAUSE,
@@ -43,25 +39,7 @@ __all__ = [
     "convert_item_to_trace_format",
     "convert_loss_to_trace_format",
     "convert_to_trace_format",
-    "counter_display_name",
 ]
-
-
-def counter_display_name(gen: int, metric: str) -> str:
-    """What a per-generation counter track is called.
-
-    The generation is in the name because the tracks sit side by side
-    under one group and the metric alone would repeat (ADR-0027).
-    """
-    return f"G{gen} {metric}"
-
-
-# The same names, rendered once per generation the collector has. A pause
-# writes three or four of these counters, and the name is the same string
-# every time, so the conversion reads the row rather than building it.
-_COUNTER_DISPLAY_NAMES: Final[Mapping[int, Mapping[str, str]]] = {
-    gen: {metric: counter_display_name(gen, metric) for metric in GEN_COUNTER_METRICS} for gen in GENERATIONS
-}
 
 
 def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[TraceEvent]:
@@ -106,23 +84,8 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
                     )
                 )
 
-    counter_data = PAUSE_ROW.counters(item)
-
-    # A generation the table does not hold is spelled on the spot: no
-    # collector emits one, and a capture that carries one still converts.
-    counter_names = _COUNTER_DISPLAY_NAMES.get(gen)
-    if counter_names is None:
-        counter_names = {metric: counter_display_name(gen, metric) for metric in counter_data}
-
     events.extend(
-        Counter(track, metric, counter_names[metric], ts_start_ns, value) for metric, value in counter_data.items()
-    )
-
-    events.append(
-        # Unqualified: the row sits inside the interpreter's own group, so no
-        # two of them share a parent and the name does not have to tell them
-        # apart (ADR-0027).
-        Counter(track, HEAP_SIZE, HEAP_SIZE, ts_start_ns, item.heap_size)
+        Counter(track, metric, name, ts_start_ns, value) for metric, name, value in PAUSE_ROW.counters(gen, item)
     )
 
     return events

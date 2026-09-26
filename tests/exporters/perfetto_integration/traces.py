@@ -13,7 +13,6 @@ from typing import NamedTuple
 from gcmon.exporters import PerfettoExporter
 from gcmon.exporters.perfetto_format import _interpreter_group_name
 from gcmon.exporters.perfetto_process_lifetime import process_track_name
-from gcmon.exporters.trace_converter import counter_display_name
 from gcmon.model.names import (
     CANDIDATES,
     COLLECTED,
@@ -23,6 +22,7 @@ from gcmon.model.names import (
     HEAP_SIZE,
     IID,
     UNCOLLECTABLE,
+    counter_display_name,
     gc_pause_slice_name,
 )
 from gcmon.model.process import Process

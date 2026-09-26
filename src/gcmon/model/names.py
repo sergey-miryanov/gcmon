@@ -79,6 +79,7 @@ __all__ = [
     "TYPE",
     "UNCOLLECTABLE",
     "Phase",
+    "counter_display_name",
     "gc_loss_slice_name",
     "gc_pause_slice_name",
     "phase_category",
@@ -182,6 +183,16 @@ CLEAR_WEAKREFS_COUNT: Final = "clear_weakrefs_count"
 # The series a pause draws per generation. `uncollectable` is last because a
 # run that collected everything omits it rather than writing a zero.
 GEN_COUNTER_METRICS: Final = (COLLECTED, CANDIDATES, DURATION, UNCOLLECTABLE)
+
+
+def counter_display_name(gen: int, metric: str) -> str:
+    """What a per-generation counter track is called.
+
+    The generation is in the name because the tracks sit side by side
+    under one group and the metric alone would repeat (ADR-0027).
+    """
+    return f"G{gen} {metric}"
+
 
 # The rest of what a JSONL line carries (docs/formats.md). `gcmon combine`
 # reads back what the monitor wrote, so the two halves have to agree on

@@ -23,8 +23,14 @@ from gcmon.exporters import PerfettoExporter
 from gcmon.exporters.encoder import _CODEC, _DEFLATE, Codec, _resolve_codec
 from gcmon.exporters.perfetto_proto import TraceField, TracePacketField
 from gcmon.exporters.protobuf_encoder import encode_bytes_field
-from gcmon.exporters.trace_converter import counter_display_name
-from gcmon.model.names import COLLECTED, GC_LOSS_CATEGORY, PAUSE, gc_pause_slice_name, phase_category
+from gcmon.model.names import (
+    COLLECTED,
+    GC_LOSS_CATEGORY,
+    PAUSE,
+    counter_display_name,
+    gc_pause_slice_name,
+    phase_category,
+)
 from tests.helpers import (
     HAS_LIBZSTD,
     assert_valid_perfetto_trace,
