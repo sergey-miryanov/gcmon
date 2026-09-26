@@ -3,7 +3,8 @@ and what it annotates."""
 
 from collections.abc import Mapping
 from functools import partial
-from typing import Any, ClassVar, Final, Protocol, TypeGuard
+from operator import attrgetter, is_not
+from typing import Any, ClassVar, Final, Protocol, TypeGuard, get_protocol_members
 
 from .names import (
     ALIVE_SIZE,
@@ -348,19 +349,39 @@ SUB_PHASE_ROWS: Final[tuple[type[PhaseRow], ...]] = (
 # Per struct-sequence type: the sub-phase rows its records carry.
 _SUB_PHASE_ROWS: dict[type, tuple[type[PhaseRow], ...]] = {}
 
+# The fields a sub-phase row reads that a msgspec record may hold as `None`.
+# Every field a `check` reads is one some row's `Info` declares, so which of
+# these are present decides which rows a record carries. `PhaseRow` does not
+# declare `Info`, since a nested class and a `type` alias each fail to match
+# the declaration in one checker or the other, so it is read through `vars`.
+_OPTIONAL_FIELDS: Final = attrgetter(
+    *sorted(
+        set[str]().union(*(get_protocol_members(vars(row)["Info"]) for row in SUB_PHASE_ROWS))
+        - get_protocol_members(TGCStatsInfo)
+    )
+)
+_present: Final = partial(is_not, None)
+
+# Per set of present optional fields: the sub-phase rows a msgspec record
+# carries. A capture holds a handful of shapes, however many records.
+_SUB_PHASE_ROWS_BY_FIELDS: dict[tuple[bool, ...], tuple[type[PhaseRow], ...]] = {}
+
 
 def sub_phase_rows(item: TGCStatsInfo) -> tuple[type[PhaseRow], ...]:
     """The sub-phase rows whose `check` accepts *item*.
 
     A struct sequence's fields are fixed by its type, so the checks run on
     the first record of each type. A msgspec record holds `None` for a field
-    it lacks, and its type says nothing about which, so it is checked every
-    time.
+    it lacks and its type says nothing about which, so its rows are cached
+    on which optional fields it holds.
     """
-    t = type(item)
-    rows = _SUB_PHASE_ROWS.get(t)
+    if isinstance(item, tuple):
+        cache: dict[Any, tuple[type[PhaseRow], ...]] = _SUB_PHASE_ROWS
+        key: Any = type(item)
+    else:
+        cache = _SUB_PHASE_ROWS_BY_FIELDS
+        key = tuple(map(_present, _OPTIONAL_FIELDS(item)))
+    rows = cache.get(key)
     if rows is None:
-        rows = tuple(row for row in SUB_PHASE_ROWS if row.check(item))
-        if isinstance(item, tuple):
-            _SUB_PHASE_ROWS[t] = rows
+        rows = cache[key] = tuple(row for row in SUB_PHASE_ROWS if row.check(item))
     return rows
