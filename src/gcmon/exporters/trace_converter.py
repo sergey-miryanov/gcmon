@@ -20,7 +20,7 @@ from ..model.names import (
     UNCOLLECTABLE,
     gc_loss_slice_name,
 )
-from ..model.phases import PauseData, sub_phase_rows
+from ..model.phases import PAUSE_ROW, sub_phase_rows
 from ..model.process import Process
 from ..model.protocol import (
     TGCStatsInfo,
@@ -75,20 +75,24 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
     ts_start_ns = item.ts_start
     ts_stop_ns = item.ts_stop
 
-    events: list[TraceEvent] = []
-    pause_data = PauseData.args(gen, item)
+    pause_data = PAUSE_ROW.args(gen, item)
 
+    events: list[TraceEvent] = []
+    # Ahead of the sub-phases nested inside it, so its BEGIN wins the tie
+    # against a sub-phase starting where the pause does. The slice holds
+    # `pause_data` itself, so a sub-phase adding to it below still reaches it.
     events.append(
         Slice(
             track,
-            PauseData.phase.slice_names[gen],
-            PauseData.phase.categories[gen],
+            PAUSE_ROW.phase.slice_names[gen],
+            PAUSE_ROW.phase.categories[gen],
             ts_start_ns,
             ts_stop_ns,
             pause_data,
         )
     )
 
+    # Every sub-phase runs inside the pause, so a pause of no length holds none.
     if ts_stop_ns > ts_start_ns:
         for row in sub_phase_rows(item):
             args = row.args(gen, item)
@@ -97,8 +101,6 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
             pause_data.update(args)
             ts_start, ts_stop = row.bounds(item)
             if ts_stop > ts_start:
-                args[GENERATION] = gen
-                args[IID] = iid
                 events.append(
                     Slice(
                         track,
@@ -106,7 +108,7 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
                         row.phase.categories[gen],
                         ts_start,
                         ts_stop,
-                        args,
+                        {GENERATION: gen, IID: iid, **args},
                     )
                 )
 

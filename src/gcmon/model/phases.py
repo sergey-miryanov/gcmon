@@ -1,7 +1,7 @@
 """The phases of a collection: which records carry each, where it runs,
 and what it annotates."""
 
-from typing import Any, ClassVar, Protocol, TypeGuard
+from typing import Any, ClassVar, Final, Protocol, TypeGuard
 
 from .names import (
     ALIVE_SIZE,
@@ -51,8 +51,8 @@ from .protocol import (
 from .trace_event import EventArgs
 
 __all__ = [
-    "Data",
-    "PauseData",
+    "PAUSE_ROW",
+    "SUB_PHASE_ROWS",
     "PhaseRow",
     "sub_phase_rows",
 ]
@@ -230,9 +230,10 @@ class DeleteGarbageData:
         return {DELETED_GARBAGE_COUNT: item.deleted_garbage_count}
 
 
-# The pause first, then its sub-phases in the order the collector runs them.
-Data: list[type[PhaseRow]] = [
-    PauseData,
+PAUSE_ROW: Final = PauseData
+
+# In the order the collector runs them, which is the order they are drawn in.
+SUB_PHASE_ROWS: Final[tuple[type[PhaseRow], ...]] = (
     MarkAliveData,
     IncrementalData,
     DeduceUnreachableData,
@@ -241,7 +242,7 @@ Data: list[type[PhaseRow]] = [
     HandleResurrectedData,
     ClearWeakrefsData,
     DeleteGarbageData,
-]
+)
 
 # Per struct-sequence type: the sub-phase rows its records carry.
 _SUB_PHASE_ROWS: dict[type, tuple[type[PhaseRow], ...]] = {}
@@ -258,7 +259,7 @@ def sub_phase_rows(item: TGCStatsInfo) -> tuple[type[PhaseRow], ...]:
     t = type(item)
     rows = _SUB_PHASE_ROWS.get(t)
     if rows is None:
-        rows = tuple(row for row in Data[1:] if row.check(item))
+        rows = tuple(row for row in SUB_PHASE_ROWS if row.check(item))
         if isinstance(item, tuple):
             _SUB_PHASE_ROWS[t] = rows
     return rows
