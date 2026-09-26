@@ -78,7 +78,7 @@ project-excludes = [
 ]
 # TODO: remove after 3.15 native support:
 search-path = ["./stubs", "."]
-project-includes = ["src", "tests"]
+project-includes = ["src", "tests", ".github/scripts"]
 
 [tool.mypy]
 python_version = "3.15"

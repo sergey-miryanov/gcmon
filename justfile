@@ -63,11 +63,11 @@ typecheck: typecheck-mypy typecheck-pyrefly
 
 # Type check with mypy
 typecheck-mypy:
-    poetry run mypy src tests
+    poetry run mypy src tests .github/scripts
 
 # Type check with pyrefly
 typecheck-pyrefly:
-    poetry run pyrefly check src tests
+    poetry run pyrefly check src tests .github/scripts
 
 # Build the distribution
 build:
