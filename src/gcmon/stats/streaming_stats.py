@@ -9,7 +9,7 @@ import msgspec
 from ..model.process import Process
 from ..model.protocol import TGCStatsInfo
 from ..support.time_units import secs_to_ns
-from .metrics import METRICS, PAUSE_KEY, phase_bounds
+from .metrics import METRICS, PAUSE_KEY, phase_spans
 from .stats import Stats, get_quantile_value
 
 logger = logging.getLogger(__name__)
@@ -157,13 +157,11 @@ class RingStats(msgspec.Struct):
         return PauseTotals(sampled.count(), sampled.sum(), lost.count, lost.pause_ns)
 
 
-def _record(stats: TStatsData, item: TGCStatsInfo, metric_name: str) -> None:
-    """Record a phase duration in nanoseconds, the unit every metric keeps."""
-    ts_start, ts_stop = phase_bounds(METRICS[metric_name], item)
-    gen = item.gen
-
-    if ts_start != ts_stop:
-        stats[metric_name][gen].update(ts_stop - ts_start)
+def _record(stats: TStatsData, gen: int, spans: list[tuple[str, int, int]]) -> None:
+    """Record phase durations in nanoseconds, the unit every metric keeps."""
+    for metric_name, ts_start, ts_stop in spans:
+        if ts_start != ts_stop:
+            stats[metric_name][gen].update(ts_stop - ts_start)
 
 
 class StreamingStats:
@@ -213,8 +211,8 @@ class StreamingStats:
 
         self._count += 1
 
-        for metric in METRICS:
-            _record(self.metrics, item, metric)
+        spans = phase_spans(item)
+        _record(self.metrics, item.gen, spans)
 
         self._open_processes.add(process)
         # Process-wide and one integer per process, so it is kept whether or
@@ -226,8 +224,7 @@ class StreamingStats:
         if metrics is None:
             return
 
-        for metric in METRICS:
-            _record(metrics, item, metric)
+        _record(metrics, item.gen, spans)
 
     def _open_ring(self, process: Process, iid: int) -> RingStats:
         """The ring the records arriving now belong to, opened if new.
