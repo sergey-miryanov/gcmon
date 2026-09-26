@@ -9,7 +9,7 @@ import msgspec
 from ..model.process import Process
 from ..model.protocol import TGCStatsInfo
 from ..support.time_units import secs_to_ns
-from .metrics import METRICS, PAUSE_KEY
+from .metrics import METRICS, PAUSE_KEY, phase_bounds
 from .stats import Stats, get_quantile_value
 
 logger = logging.getLogger(__name__)
@@ -159,8 +159,7 @@ class RingStats(msgspec.Struct):
 
 def _record(stats: TStatsData, item: TGCStatsInfo, metric_name: str) -> None:
     """Record a phase duration in nanoseconds, the unit every metric keeps."""
-    metric = METRICS[metric_name]
-    ts_start, ts_stop = metric.get_values(item)
+    ts_start, ts_stop = phase_bounds(METRICS[metric_name], item)
     gen = item.gen
 
     if ts_start != ts_stop:

@@ -53,6 +53,14 @@ from .trace_event import EventArgs
 __all__ = [
     "PAUSE_ROW",
     "SUB_PHASE_ROWS",
+    "ClearWeakrefsData",
+    "DeduceUnreachableData",
+    "DeleteGarbageData",
+    "FinalizeGarbageData",
+    "HandleResurrectedData",
+    "HandleWeakrefsData",
+    "IncrementalData",
+    "MarkAliveData",
     "PhaseRow",
     "sub_phase_rows",
 ]
