@@ -110,6 +110,24 @@ class TestStreamingStatsUpdate:
         assert streaming_stats.metrics["clear_weakrefs"][1].count() == 1
         assert streaming_stats.metrics["delete_garbage"][1].count() == 1
 
+    @pytest.mark.parametrize(
+        ("gen_number", "key"),
+        [pytest.param(0, "mark_alive", id="mark alive"), pytest.param(2, "fill_increment", id="fill increment")],
+    )
+    def test_update_leaves_out_a_phase_the_generation_skips(
+        self,
+        streaming_stats: StreamingStats,
+        incremental_gc_stats_item_factory: Callable[..., GCStatsInfo],
+        gen_number: int,
+        key: str,
+    ) -> None:
+        """Mark Alive does not run at generation 0, nor Fill Increment at 2.
+        The record here carries a span of 1 ms for each all the same."""
+        streaming_stats.update(proc(DEFAULT_PID), incremental_gc_stats_item_factory(gen=gen_number))
+
+        assert streaming_stats.metrics[key][gen_number].count() == 0
+        assert streaming_stats.metrics["deduce_unreachable"][gen_number].count() == 1
+
     def test_update_skips_zero_duration(
         self,
         streaming_stats: StreamingStats,
