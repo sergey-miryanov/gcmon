@@ -296,8 +296,9 @@ class TestPerfettoExporter:
         ]
 
     def test_incremental_item_emits_subphases(self, perfetto_exporter: ExporterFactory) -> None:
+        """Generation 1, the one every sub-phase runs at."""
         exporter, path = perfetto_exporter()
-        item = create_mock_incremental_item()
+        item = create_mock_incremental_item(gen=1)
 
         exporter.add_event(proc(DEFAULT_PID), item)
         exporter.close()
@@ -311,15 +312,15 @@ class TestPerfettoExporter:
                 if name:
                     begin_names.add(name)
         expected = {
-            gc_pause_slice_name(0),
-            phase_slice_name(MARK_ALIVE, 0),
-            phase_slice_name(FILL_INCREMENT, 0),
-            phase_slice_name(DEDUCE_UNREACHABLE, 0),
-            phase_slice_name(HANDLE_WEAKREFS, 0),
-            phase_slice_name(FINALIZE_GARBAGE, 0),
-            phase_slice_name(HANDLE_RESURRECTED, 0),
-            phase_slice_name(CLEAR_WEAKREFS, 0),
-            phase_slice_name(DELETE_GARBAGE, 0),
+            gc_pause_slice_name(1),
+            phase_slice_name(MARK_ALIVE, 1),
+            phase_slice_name(FILL_INCREMENT, 1),
+            phase_slice_name(DEDUCE_UNREACHABLE, 1),
+            phase_slice_name(HANDLE_WEAKREFS, 1),
+            phase_slice_name(FINALIZE_GARBAGE, 1),
+            phase_slice_name(HANDLE_RESURRECTED, 1),
+            phase_slice_name(CLEAR_WEAKREFS, 1),
+            phase_slice_name(DELETE_GARBAGE, 1),
         }
         assert expected.issubset(begin_names)
 

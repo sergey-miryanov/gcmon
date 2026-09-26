@@ -344,8 +344,9 @@ class TestConvertJsonlToTraceFormat:
         assert events == []
 
     def test_incremental_record_creates_sub_events(self, tmp_path: Path) -> None:
+        """Generation 1, the one every sub-phase runs at."""
         path = tmp_path / "inc.jsonl"
-        record = make_inc_jsonl_record(pid=1, ts_start=1000, ts_stop=5000)
+        record = make_inc_jsonl_record(pid=1, gen=1, ts_start=1000, ts_stop=5000)
         path.write_bytes(msgspec.json.encode(record) + b"\n")
 
         events = convert_jsonl_to_trace_format(path)
