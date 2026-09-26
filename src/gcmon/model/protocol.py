@@ -27,7 +27,9 @@ from .names import (
     TYPE,
     Phase,
     PAUSE,
-    FILL_INCREMENT,MARK_ALIVE,DEDUCE_UNREACHABLE
+    FILL_INCREMENT,
+    MARK_ALIVE,
+    DEDUCE_UNREACHABLE,
 )
 from .trace_event import EventArgs
 
@@ -187,7 +189,7 @@ def has_pause_ts(item: object) -> TypeGuard[TGCStatsInfo]:
     return is_gc_stats(item) and getattr(item, TS_START, None) is not None
 
 
-type _EmitResult = tuple[Phase,EventArgs, tuple[int,int]] | None
+type _EmitResult = tuple[Phase, EventArgs, tuple[int, int]] | None
 
 
 class PauseData:
@@ -207,13 +209,16 @@ class PauseData:
             (item.ts_start, item.ts_stop),
         )
 
+
 class IncrementalData:
     def emit(gen: int, item: object) -> _EmitResult:
         if has_incremental(item) and gen < 2:
             return (
                 FILL_INCREMENT,
-                {"increment_size": item.increment_size,},
-                (item.ts_fill_increment_start, item.ts_fill_increment_stop)
+                {
+                    "increment_size": item.increment_size,
+                },
+                (item.ts_fill_increment_start, item.ts_fill_increment_stop),
             )
 
 
@@ -226,7 +231,9 @@ class MarkAliveData:
         if has_mark_alive(item) and gen > 0:
             return (
                 MARK_ALIVE,
-                {"alive_size": item.alive_size,},
+                {
+                    "alive_size": item.alive_size,
+                },
                 (item.ts_mark_alive_start, item.ts_mark_alive_stop),
             )
 
@@ -236,13 +243,16 @@ def has_mark_alive(item: object) -> TypeGuard[TMarkAliveInfo]:
 
 
 class DeduceUnreachableData:
-    def emit(gen: int, item:object) -> _EmitResult:
+    def emit(gen: int, item: object) -> _EmitResult:
         if has_deduce_unreachable(item):
             return (
                 DEDUCE_UNREACHABLE,
-                {"candidates": item.candidates,},
+                {
+                    "candidates": item.candidates,
+                },
                 (item.ts_deduce_unreachable_start, item.ts_deduce_unreachable_stop),
             )
+
 
 Data = [
     PauseData,
@@ -250,6 +260,7 @@ Data = [
     IncrementalData,
     DeduceUnreachableData,
 ]
+
 
 def has_deduce_unreachable(item: object) -> TypeGuard[TDeduceUnreachableInfo]:
     return getattr(item, TS_DEDUCE_UNREACHABLE_START, None) is not None
