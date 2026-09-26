@@ -4,7 +4,6 @@ from collections.abc import Mapping, Sequence
 
 from ..model.names import (
     GC_LOSS_CATEGORY,
-    GENERATION,
     IID,
     LOST_COUNT,
     LOST_PAUSE,
@@ -80,7 +79,7 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
                         row.phase.categories[gen],
                         ts_start,
                         ts_stop,
-                        {GENERATION: gen, IID: iid, **args},
+                        args,
                     )
                 )
 

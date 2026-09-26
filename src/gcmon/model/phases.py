@@ -141,6 +141,7 @@ class PauseData:
 class MarkAliveData:
     class Info(Protocol):
         gen: int
+        iid: int
         alive_size: int
         ts_mark_alive_start: int
         ts_mark_alive_stop: int
@@ -160,12 +161,13 @@ class MarkAliveData:
 
     @staticmethod
     def args(gen: int, item: Info) -> EventArgs:
-        return {ALIVE_SIZE: item.alive_size}
+        return {GENERATION: gen, IID: item.iid, ALIVE_SIZE: item.alive_size}
 
 
 class IncrementalData:
     class Info(Protocol):
         gen: int
+        iid: int
         increment_size: int
         ts_fill_increment_start: int
         ts_fill_increment_stop: int
@@ -185,11 +187,12 @@ class IncrementalData:
 
     @staticmethod
     def args(gen: int, item: Info) -> EventArgs:
-        return {INCREMENT_SIZE: item.increment_size}
+        return {GENERATION: gen, IID: item.iid, INCREMENT_SIZE: item.increment_size}
 
 
 class DeduceUnreachableData:
     class Info(Protocol):
+        iid: int
         candidates: int
         ts_deduce_unreachable_start: int
         ts_deduce_unreachable_stop: int
@@ -206,11 +209,12 @@ class DeduceUnreachableData:
 
     @staticmethod
     def args(gen: int, item: Info) -> EventArgs:
-        return {CANDIDATES: item.candidates}
+        return {GENERATION: gen, IID: item.iid, CANDIDATES: item.candidates}
 
 
 class HandleWeakrefsData:
     class Info(Protocol):
+        iid: int
         ts_handle_weakref_callbacks_start: int
         ts_handle_weakref_callbacks_stop: int
 
@@ -226,13 +230,14 @@ class HandleWeakrefsData:
 
     @staticmethod
     def args(gen: int, item: Info) -> EventArgs:
-        return {}
+        return {GENERATION: gen, IID: item.iid}
 
 
 # The next three start where the phase before them stopped, so each needs
 # that phase's field as well as its own.
 class FinalizeGarbageData:
     class Info(Protocol):
+        iid: int
         finalized_garbage_count: int
         ts_handle_weakref_callbacks_stop: int
         ts_finalize_garbage_stop: int
@@ -252,11 +257,12 @@ class FinalizeGarbageData:
 
     @staticmethod
     def args(gen: int, item: Info) -> EventArgs:
-        return {FINALIZED_GARBAGE_COUNT: item.finalized_garbage_count}
+        return {GENERATION: gen, IID: item.iid, FINALIZED_GARBAGE_COUNT: item.finalized_garbage_count}
 
 
 class HandleResurrectedData:
     class Info(Protocol):
+        iid: int
         ts_finalize_garbage_stop: int
         ts_handle_resurrected_stop: int
 
@@ -275,11 +281,12 @@ class HandleResurrectedData:
 
     @staticmethod
     def args(gen: int, item: Info) -> EventArgs:
-        return {}
+        return {GENERATION: gen, IID: item.iid}
 
 
 class ClearWeakrefsData:
     class Info(Protocol):
+        iid: int
         clear_weakrefs_count: int
         ts_handle_resurrected_stop: int
         ts_clear_weakrefs_stop: int
@@ -299,11 +306,12 @@ class ClearWeakrefsData:
 
     @staticmethod
     def args(gen: int, item: Info) -> EventArgs:
-        return {CLEAR_WEAKREFS_COUNT: item.clear_weakrefs_count}
+        return {GENERATION: gen, IID: item.iid, CLEAR_WEAKREFS_COUNT: item.clear_weakrefs_count}
 
 
 class DeleteGarbageData:
     class Info(Protocol):
+        iid: int
         deleted_garbage_count: int
         ts_delete_garbage_start: int
         ts_delete_garbage_stop: int
@@ -320,7 +328,7 @@ class DeleteGarbageData:
 
     @staticmethod
     def args(gen: int, item: Info) -> EventArgs:
-        return {DELETED_GARBAGE_COUNT: item.deleted_garbage_count}
+        return {GENERATION: gen, IID: item.iid, DELETED_GARBAGE_COUNT: item.deleted_garbage_count}
 
 
 PAUSE_ROW: Final = PauseData
