@@ -18,14 +18,19 @@ VERSION_HEADER_RE = re.compile(r"^## Version (?P<version>\S+)", re.MULTILINE)
 def resolve_version(tag: str | None) -> str:
     if tag and tag.startswith("v"):
         return tag[1:]
-    with PYPROJECT_PATH.open("rb") as f:
-        version: str = tomllib.load(f)["tool"]["poetry"]["version"]
-    return version
+    elif tag == "latest":
+        with PYPROJECT_PATH.open("rb") as f:
+            version: str = tomllib.load(f)["tool"]["poetry"]["version"]
+        return version
+    return None
 
 
 def extract(version: str) -> str:
     text = CHANGELOG_PATH.read_text(encoding="utf-8")
-    pattern = rf"## Version {re.escape(version)}(?=\s|$).*?\n(.*?)(?=\n## |\Z)"
+    if version:
+        pattern = rf"## Version {re.escape(version)}(?=\s|$).*?\n(.*?)(?=\n## |\Z)"
+    else:
+        pattern = r"## WIP(?=\s|$).*?\n(.*?)(?=\n## |\Z)"
     match = re.search(pattern, text, re.DOTALL)
     if match:
         return match.group(1).strip()
