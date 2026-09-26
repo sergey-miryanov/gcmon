@@ -4,9 +4,6 @@ from collections.abc import Mapping, Sequence
 from typing import Final
 
 from ..model.names import (
-    CANDIDATES,
-    COLLECTED,
-    DURATION,
     GC_LOSS_CATEGORY,
     GEN_COUNTER_METRICS,
     GENERATION,
@@ -17,7 +14,6 @@ from ..model.names import (
     LOST_PAUSE,
     LOST_PAUSE_NS,
     OBSERVED_COUNT,
-    UNCOLLECTABLE,
     gc_loss_slice_name,
 )
 from ..model.phases import PAUSE_ROW, sub_phase_rows
@@ -110,13 +106,7 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
                     )
                 )
 
-    counter_data: dict[str, int | float] = {
-        COLLECTED: item.collected,
-        CANDIDATES: item.candidates,
-        DURATION: item.duration,
-    }
-    if item.uncollectable:
-        counter_data[UNCOLLECTABLE] = item.uncollectable
+    counter_data = PAUSE_ROW.counters(item)
 
     # A generation the table does not hold is spelled on the spot: no
     # collector emits one, and a capture that carries one still converts.

@@ -102,6 +102,19 @@ class PauseData:
             DURATION: item.duration,
         }
 
+    # The per-generation series, `GEN_COUNTER_METRICS`. A run that collected
+    # everything omits `uncollectable` rather than writing a zero.
+    @staticmethod
+    def counters(item: Info) -> dict[str, int | float]:
+        counters: dict[str, int | float] = {
+            COLLECTED: item.collected,
+            CANDIDATES: item.candidates,
+            DURATION: item.duration,
+        }
+        if item.uncollectable:
+            counters[UNCOLLECTABLE] = item.uncollectable
+        return counters
+
 
 class MarkAliveData:
     class Info(Protocol):
