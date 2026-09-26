@@ -14,13 +14,13 @@ from gcmon.exporters.perfetto_process_lifetime import (
     _PROCESS_ROW_SLICE_NAME,
     process_track_name,
 )
-from gcmon.exporters.trace_converter import counter_display_name
 from gcmon.model.names import (
     CMDLINE,
     COLLECTED,
     GC_LOSS_NAME,
     LOST_COUNT,
     PID,
+    counter_display_name,
 )
 from tests.exporters.perfetto_integration.traces import (
     _DEFAULT_ROW_NAME,

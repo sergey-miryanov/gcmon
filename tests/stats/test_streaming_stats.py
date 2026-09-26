@@ -96,18 +96,37 @@ class TestStreamingStatsUpdate:
     def test_update_records_incremental_metrics(
         self,
         streaming_stats: StreamingStats,
-        incremental_gc_stats_item: GCStatsInfo,
+        incremental_gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        streaming_stats.update(proc(DEFAULT_PID), incremental_gc_stats_item)
+        # Generation 1 runs every phase.
+        streaming_stats.update(proc(DEFAULT_PID), incremental_gc_stats_item_factory(gen=1))
 
-        assert streaming_stats.metrics["mark_alive"][0].count() == 1
-        assert streaming_stats.metrics["fill_increment"][0].count() == 1
-        assert streaming_stats.metrics["deduce_unreachable"][0].count() == 1
-        assert streaming_stats.metrics["handle_weakrefs"][0].count() == 1
-        assert streaming_stats.metrics["finalize_garbage"][0].count() == 1
-        assert streaming_stats.metrics["handle_resurrected"][0].count() == 1
-        assert streaming_stats.metrics["clear_weakrefs"][0].count() == 1
-        assert streaming_stats.metrics["delete_garbage"][0].count() == 1
+        assert streaming_stats.metrics["mark_alive"][1].count() == 1
+        assert streaming_stats.metrics["fill_increment"][1].count() == 1
+        assert streaming_stats.metrics["deduce_unreachable"][1].count() == 1
+        assert streaming_stats.metrics["handle_weakrefs"][1].count() == 1
+        assert streaming_stats.metrics["finalize_garbage"][1].count() == 1
+        assert streaming_stats.metrics["handle_resurrected"][1].count() == 1
+        assert streaming_stats.metrics["clear_weakrefs"][1].count() == 1
+        assert streaming_stats.metrics["delete_garbage"][1].count() == 1
+
+    @pytest.mark.parametrize(
+        ("gen_number", "key"),
+        [pytest.param(0, "mark_alive", id="mark alive"), pytest.param(2, "fill_increment", id="fill increment")],
+    )
+    def test_update_leaves_out_a_phase_the_generation_skips(
+        self,
+        streaming_stats: StreamingStats,
+        incremental_gc_stats_item_factory: Callable[..., GCStatsInfo],
+        gen_number: int,
+        key: str,
+    ) -> None:
+        """Mark Alive does not run at generation 0, nor Fill Increment at 2.
+        The record here carries a span of 1 ms for each all the same."""
+        streaming_stats.update(proc(DEFAULT_PID), incremental_gc_stats_item_factory(gen=gen_number))
+
+        assert streaming_stats.metrics[key][gen_number].count() == 0
+        assert streaming_stats.metrics["deduce_unreachable"][gen_number].count() == 1
 
     def test_update_skips_zero_duration(
         self,
@@ -239,14 +258,14 @@ class TestStreamingStatsRingTracking:
     ) -> None:
         """The sub-phase metrics ride the same key as `pause`, and nothing
         else reads them per ring. Two interpreters, so each ring holds one
-        record and the pair adds up to the run."""
-        streaming_stats.update(proc(DEFAULT_PID), incremental_gc_stats_item_factory(iid=0))
-        streaming_stats.update(proc(DEFAULT_PID), incremental_gc_stats_item_factory(iid=1))
+        record and the pair adds up to the run. Generation 1 runs every phase."""
+        streaming_stats.update(proc(DEFAULT_PID), incremental_gc_stats_item_factory(gen=1, iid=0))
+        streaming_stats.update(proc(DEFAULT_PID), incremental_gc_stats_item_factory(gen=1, iid=1))
 
         first = streaming_stats.get_ring_stats(proc(DEFAULT_PID), 0)
         second = streaming_stats.get_ring_stats(proc(DEFAULT_PID), 1)
         assert first is not None and second is not None
-        counts = {key: (first[key][0].count(), second[key][0].count()) for key in METRICS}
+        counts = {key: (first[key][1].count(), second[key][1].count()) for key in METRICS}
         assert counts == dict.fromkeys(METRICS, (1, 1))
         for metric_key, gen_stats in streaming_stats.metrics.items():
             for gen, total in gen_stats.items():

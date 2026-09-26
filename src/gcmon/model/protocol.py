@@ -1,72 +1,34 @@
 from collections.abc import Mapping, Sequence
-from typing import Protocol, TypeGuard
+from typing import Any, Protocol, TypeGuard
+
+import msgspec
 
 from .names import (
-    ALIVE_SIZE,
-    CANDIDATES,
-    CLEAR_WEAKREFS_COUNT,
-    COLLECTED,
     COLLECTIONS,
-    DELETED_GARBAGE_COUNT,
-    DURATION,
-    FINALIZED_GARBAGE_COUNT,
     GEN,
     GENS,
-    HEAP_SIZE,
     IID,
-    INCREMENT_SIZE,
     LOST_COUNT,
     LOST_FROM,
     LOST_PAUSE_NS,
     NAME,
     OBSERVED_COUNT,
     TS,
-    TS_CLEAR_WEAKREFS_STOP,
-    TS_DEDUCE_UNREACHABLE_START,
-    TS_DEDUCE_UNREACHABLE_STOP,
-    TS_DELETE_GARBAGE_START,
-    TS_DELETE_GARBAGE_STOP,
-    TS_FILL_INCREMENT_START,
-    TS_FILL_INCREMENT_STOP,
-    TS_FINALIZE_GARBAGE_STOP,
-    TS_HANDLE_RESURRECTED_STOP,
-    TS_HANDLE_WEAKREF_CALLBACKS_START,
-    TS_HANDLE_WEAKREF_CALLBACKS_STOP,
-    TS_MARK_ALIVE_START,
-    TS_MARK_ALIVE_STOP,
     TS_START,
     TS_STOP,
     TYPE,
-    UNCOLLECTABLE,
 )
 
 __all__ = [
     "JsonlRecord",
-    "TClearWeakrefsInfo",
-    "TDeduceUnreachableInfo",
-    "TDeleteGarbageInfo",
-    "TFinalizeGarbageInfo",
     "TGCStatsInfo",
     "TGenLoss",
-    "THandleResurrectedInfo",
-    "THandleWeakrefsInfo",
-    "TIncrementalInfo",
     "TInstantMsg",
     "TItem",
     "TLossMsg",
     "TMapping",
-    "TMarkAliveInfo",
     "TScalar",
     "TValue",
-    "has_clear_weakrefs",
-    "has_deduce_unreachable",
-    "has_delete_garbage",
-    "has_finalize_garbage",
-    "has_handle_resurrected",
-    "has_handle_weakrefs",
-    "has_incremental",
-    "has_mark_alive",
-    "has_pause_ts",
     "is_gc_stats",
     "is_instant",
     "is_loss",
@@ -79,58 +41,12 @@ class TGCStatsInfo(Protocol):
     iid: int
     ts_start: int
     ts_stop: int
-    heap_size: int
     collections: int
     collected: int
     uncollectable: int
     candidates: int
+    heap_size: int
     duration: float
-
-
-class TIncrementalInfo(Protocol):
-    increment_size: int
-    ts_fill_increment_start: int
-    ts_fill_increment_stop: int
-
-
-class TMarkAliveInfo(Protocol):
-    alive_size: int
-    ts_mark_alive_start: int
-    ts_mark_alive_stop: int
-
-
-class TDeduceUnreachableInfo(Protocol):
-    candidates: int
-    ts_deduce_unreachable_start: int
-    ts_deduce_unreachable_stop: int
-
-
-class TFinalizeGarbageInfo(Protocol):
-    finalized_garbage_count: int
-    ts_handle_weakref_callbacks_stop: int
-    ts_finalize_garbage_stop: int
-
-
-class TDeleteGarbageInfo(Protocol):
-    deleted_garbage_count: int
-    ts_delete_garbage_start: int
-    ts_delete_garbage_stop: int
-
-
-class THandleWeakrefsInfo(Protocol):
-    ts_handle_weakref_callbacks_start: int
-    ts_handle_weakref_callbacks_stop: int
-
-
-class TClearWeakrefsInfo(Protocol):
-    clear_weakrefs_count: int
-    ts_handle_resurrected_stop: int
-    ts_clear_weakrefs_stop: int
-
-
-class THandleResurrectedInfo(Protocol):
-    ts_finalize_garbage_stop: int
-    ts_handle_resurrected_stop: int
 
 
 class TInstantMsg(Protocol):
@@ -167,43 +83,6 @@ type JsonlRecord = dict[str, TValue]
 
 # What a whole JSONL line decodes to, and what the converters accept.
 type TItem = TGCStatsInfo | TInstantMsg | TLossMsg
-
-
-def has_pause_ts(item: object) -> TypeGuard[TGCStatsInfo]:
-    # A loss record carries `ts_start` too, and it is no GC record.
-    return is_gc_stats(item) and getattr(item, TS_START, None) is not None
-
-
-def has_incremental(item: object) -> TypeGuard[TIncrementalInfo]:
-    return getattr(item, INCREMENT_SIZE, None) is not None
-
-
-def has_mark_alive(item: object) -> TypeGuard[TMarkAliveInfo]:
-    return getattr(item, ALIVE_SIZE, None) is not None
-
-
-def has_deduce_unreachable(item: object) -> TypeGuard[TDeduceUnreachableInfo]:
-    return getattr(item, TS_DEDUCE_UNREACHABLE_START, None) is not None
-
-
-def has_handle_weakrefs(item: object) -> TypeGuard[THandleWeakrefsInfo]:
-    return getattr(item, TS_HANDLE_WEAKREF_CALLBACKS_START, None) is not None
-
-
-def has_finalize_garbage(item: object) -> TypeGuard[TFinalizeGarbageInfo]:
-    return getattr(item, TS_FINALIZE_GARBAGE_STOP, None) is not None
-
-
-def has_handle_resurrected(item: object) -> TypeGuard[THandleResurrectedInfo]:
-    return getattr(item, TS_HANDLE_RESURRECTED_STOP, None) is not None
-
-
-def has_clear_weakrefs(item: object) -> TypeGuard[TClearWeakrefsInfo]:
-    return getattr(item, TS_CLEAR_WEAKREFS_STOP, None) is not None
-
-
-def has_delete_garbage(item: object) -> TypeGuard[TDeleteGarbageInfo]:
-    return getattr(item, TS_DELETE_GARBAGE_START, None) is not None
 
 
 def is_gc_stats(item: object) -> TypeGuard[TGCStatsInfo]:
@@ -245,53 +124,17 @@ def to_mapping(item: TItem) -> JsonlRecord:
         }
 
     if is_gc_stats(item):
-        m: JsonlRecord = {
-            GEN: item.gen,
-            IID: item.iid,
-            TS_START: item.ts_start,
-            TS_STOP: item.ts_stop,
-            HEAP_SIZE: item.heap_size,
-            COLLECTIONS: item.collections,
-            COLLECTED: item.collected,
-            UNCOLLECTABLE: item.uncollectable,
-            CANDIDATES: item.candidates,
-            DURATION: item.duration,
-        }
+        # A live record: a struct sequence, so a tuple of its fields.
+        if isinstance(item, tuple):
+            # Any: nothing typed says a struct sequence names its fields.
+            structseq: Any = type(item)
+            return dict(zip(structseq.__match_args__, item, strict=True))
 
-        if has_incremental(item):
-            m[INCREMENT_SIZE] = item.increment_size
-            m[TS_FILL_INCREMENT_START] = item.ts_fill_increment_start
-            m[TS_FILL_INCREMENT_STOP] = item.ts_fill_increment_stop
-
-        if has_mark_alive(item):
-            m[ALIVE_SIZE] = item.alive_size
-            m[TS_MARK_ALIVE_START] = item.ts_mark_alive_start
-            m[TS_MARK_ALIVE_STOP] = item.ts_mark_alive_stop
-
-        if has_deduce_unreachable(item):
-            m[TS_DEDUCE_UNREACHABLE_START] = item.ts_deduce_unreachable_start
-            m[TS_DEDUCE_UNREACHABLE_STOP] = item.ts_deduce_unreachable_stop
-
-        if has_handle_weakrefs(item):
-            m[TS_HANDLE_WEAKREF_CALLBACKS_START] = item.ts_handle_weakref_callbacks_start
-            m[TS_HANDLE_WEAKREF_CALLBACKS_STOP] = item.ts_handle_weakref_callbacks_stop
-
-        if has_finalize_garbage(item):
-            m[TS_FINALIZE_GARBAGE_STOP] = item.ts_finalize_garbage_stop
-            m[FINALIZED_GARBAGE_COUNT] = item.finalized_garbage_count
-
-        if has_handle_resurrected(item):
-            m[TS_HANDLE_RESURRECTED_STOP] = item.ts_handle_resurrected_stop
-
-        if has_clear_weakrefs(item):
-            m[TS_CLEAR_WEAKREFS_STOP] = item.ts_clear_weakrefs_stop
-            m[CLEAR_WEAKREFS_COUNT] = item.clear_weakrefs_count
-
-        if has_delete_garbage(item):
-            m[TS_DELETE_GARBAGE_START] = item.ts_delete_garbage_start
-            m[TS_DELETE_GARBAGE_STOP] = item.ts_delete_garbage_stop
-            m[DELETED_GARBAGE_COUNT] = item.deleted_garbage_count
-
-        return m
+        # A record read back from a capture, holding None for every field it
+        # lacks. `GCStatsInfo` omits its defaults, which are those Nones, so
+        # msgspec drops them itself rather than a comprehension doing it.
+        if isinstance(item, msgspec.Struct):
+            record: JsonlRecord = msgspec.to_builtins(item)
+            return record
 
     raise NotImplementedError(f"Unknown item type: {type(item)}")

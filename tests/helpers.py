@@ -14,7 +14,6 @@ from perfetto.protos.perfetto.trace.perfetto_trace_pb2 import Trace, TracePacket
 from perfetto.trace_processor import TraceProcessor, TraceProcessorConfig
 
 from gcmon.exporters.exporter import EventsExporter
-from gcmon.exporters.trace_converter import counter_display_name
 from gcmon.model.data import GCStatsInfo, GenLoss, LossMsg
 from gcmon.model.names import (
     ALIVE_SIZE,
@@ -47,6 +46,7 @@ from gcmon.model.names import (
     TS_STOP,
     TYPE,
     UNCOLLECTABLE,
+    counter_display_name,
 )
 from gcmon.model.process import Process
 from gcmon.model.protocol import TGCStatsInfo, TInstantMsg, TLossMsg

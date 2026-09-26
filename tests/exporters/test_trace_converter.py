@@ -10,14 +10,19 @@ from gcmon.exporters.trace_converter import (
 from gcmon.model.names import (
     ALIVE_SIZE,
     CLEAR_WEAKREFS_COUNT,
+    DEDUCE_UNREACHABLE,
+    FILL_INCREMENT,
     FINALIZED_GARBAGE_COUNT,
     GENERATIONS,
     HEAP_SIZE,
     INCREMENT_SIZE,
+    MARK_ALIVE,
     TS_CLEAR_WEAKREFS_STOP,
     TS_FINALIZE_GARBAGE_STOP,
     TS_HANDLE_RESURRECTED_STOP,
+    Phase,
     gc_pause_slice_name,
+    phase_slice_name,
 )
 from gcmon.model.protocol import TItem
 from gcmon.model.trace_event import Counter, InterpreterTrack, LossTrack, ProcessTrack, Slice
@@ -141,6 +146,23 @@ class TestTheSizesAPauseCarries:
 
         pause = next(e for e in events if isinstance(e, Slice) and e.name == gc_pause_slice_name(gen_number))
         assert pause.args.keys() & {INCREMENT_SIZE, ALIVE_SIZE} == sizes
+
+
+class TestAPhaseTheGenerationSkips:
+    """Mark Alive does not run at generation 0, nor Fill Increment at 2. A
+    record carrying a span for one there still draws no slice for it."""
+
+    @pytest.mark.parametrize(
+        ("gen_number", "phase"),
+        [pytest.param(0, MARK_ALIVE, id="mark alive"), pytest.param(2, FILL_INCREMENT, id="fill increment")],
+    )
+    def test_it_draws_no_slice(self, gen_number: int, phase: Phase) -> None:
+        events = convert_item_to_trace_format(proc(1), create_mock_incremental_item(gen=gen_number))
+
+        names = {e.name for e in events if isinstance(e, Slice)}
+        assert phase_slice_name(phase, gen_number) not in names
+        # The rest of the record is still drawn.
+        assert phase_slice_name(DEDUCE_UNREACHABLE, gen_number) in names
 
 
 class TestAStructSequence:

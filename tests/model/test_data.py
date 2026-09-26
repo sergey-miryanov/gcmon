@@ -11,11 +11,9 @@ from gcmon.model.data import (
     instant_msg,
 )
 from gcmon.model.names import GEN, GENS, IID, LOST_COUNT, OBSERVED_COUNT, PID, TS_START, TS_STOP
+from gcmon.model.phases import DeduceUnreachableData, IncrementalData, MarkAliveData
 from gcmon.model.protocol import (
     TMapping,
-    has_deduce_unreachable,
-    has_incremental,
-    has_mark_alive,
     is_gc_stats,
     is_instant,
     to_mapping,
@@ -37,7 +35,7 @@ class TestFromMapping:
         result = from_mapping(gc_stats_dict)
 
         assert isinstance(result, GCStatsInfo)
-        assert not has_incremental(result)
+        assert not IncrementalData.check(result)
         assert result.gen == 0
         assert result.iid == 1
         assert result.ts_start == 1_000_000
@@ -68,17 +66,17 @@ class TestFromMapping:
         assert result.clear_weakrefs_count == 7
         assert result.deleted_garbage_count == 13
         # Incremental fields
-        assert has_incremental(result)
+        assert IncrementalData.check(result)
         assert result.increment_size == 500
         assert result.ts_fill_increment_start == 3_001_500
         assert result.ts_fill_increment_stop == 3_002_000
         # Mark-alive fields
-        assert has_mark_alive(result)
+        assert MarkAliveData.check(result)
         assert result.alive_size == 300
         assert result.ts_mark_alive_start == 3_000_500
         assert result.ts_mark_alive_stop == 3_001_000
         # Deduce-unreachable fields
-        assert has_deduce_unreachable(result)
+        assert DeduceUnreachableData.check(result)
         assert result.ts_deduce_unreachable_start == 3_002_500
         assert result.ts_deduce_unreachable_stop == 3_003_000
 

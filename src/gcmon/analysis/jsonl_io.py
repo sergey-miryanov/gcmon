@@ -2,24 +2,17 @@
 
 from collections.abc import Mapping, Sequence
 from pathlib import Path
+from typing import Final
 
 import msgspec
 
 from ..exporters.trace_converter import convert_to_trace_format
-from ..model.data import from_mapping
+from ..model.data import GCStatsInfo, from_mapping
 from ..model.names import PID
 from ..model.protocol import (
     JsonlRecord,
     TItem,
     TMapping,
-    has_clear_weakrefs,
-    has_deduce_unreachable,
-    has_delete_garbage,
-    has_finalize_garbage,
-    has_handle_resurrected,
-    has_handle_weakrefs,
-    has_incremental,
-    has_mark_alive,
     is_gc_stats,
     is_instant,
     is_loss,
@@ -94,6 +87,11 @@ def write_jsonl(filename: Path, items: Mapping[int, Sequence[TItem]]) -> None:
             f.flush()
 
 
+# Every field of a GC record that holds a timestamp: the pause's two, and
+# the sub-phases'.
+_TIMESTAMP_FIELDS: Final = tuple(name for name in GCStatsInfo.__struct_fields__ if name.startswith("ts_"))
+
+
 def normalize_jsonl_timestamps(items: Mapping[int, Sequence[TItem]]) -> None:
     for pid_items in items.values():
         timestamps: list[int] = []
@@ -116,26 +114,9 @@ def normalize_jsonl_timestamps(items: Mapping[int, Sequence[TItem]]) -> None:
                 item.ts_stop -= min_ts
             else:
                 assert is_gc_stats(item)
-                item.ts_start -= min_ts
-                item.ts_stop -= min_ts
-                if has_mark_alive(item):
-                    item.ts_mark_alive_start -= min_ts
-                    item.ts_mark_alive_stop -= min_ts
-                if has_incremental(item):
-                    item.ts_fill_increment_start -= min_ts
-                    item.ts_fill_increment_stop -= min_ts
-                if has_deduce_unreachable(item):
-                    item.ts_deduce_unreachable_start -= min_ts
-                    item.ts_deduce_unreachable_stop -= min_ts
-                if has_handle_weakrefs(item):
-                    item.ts_handle_weakref_callbacks_start -= min_ts
-                    item.ts_handle_weakref_callbacks_stop -= min_ts
-                if has_finalize_garbage(item):
-                    item.ts_finalize_garbage_stop -= min_ts
-                if has_handle_resurrected(item):
-                    item.ts_handle_resurrected_stop -= min_ts
-                if has_clear_weakrefs(item):
-                    item.ts_clear_weakrefs_stop -= min_ts
-                if has_delete_garbage(item):
-                    item.ts_delete_garbage_start -= min_ts
-                    item.ts_delete_garbage_stop -= min_ts
+                # A record read back from a capture, holding None for every
+                # timestamp it lacks.
+                for name in _TIMESTAMP_FIELDS:
+                    ts = getattr(item, name, None)
+                    if ts is not None:
+                        setattr(item, name, ts - min_ts)

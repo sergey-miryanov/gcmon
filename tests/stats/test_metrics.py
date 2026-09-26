@@ -1,4 +1,4 @@
-"""Tests for metric classes."""
+"""Tests for the phases `--stats` measures."""
 
 from __future__ import annotations
 
@@ -16,38 +16,41 @@ from gcmon.model.names import (
     HANDLE_WEAKREFS,
     MARK_ALIVE,
 )
+from gcmon.model.phases import (
+    PAUSE_ROW,
+    ClearWeakrefsData,
+    DeduceUnreachableData,
+    DeleteGarbageData,
+    FinalizeGarbageData,
+    HandleResurrectedData,
+    HandleWeakrefsData,
+    IncrementalData,
+    MarkAliveData,
+)
 from gcmon.stats.metrics import (
     METRICS,
     PAUSE_KEY,
-    ClearWeakrefsMetric,
-    DeduceUnreachableMetric,
-    DeleteGarbageMetric,
-    FillIncrementMetric,
-    FinalizeGarbageMetric,
-    HandleResurrectedMetric,
-    HandleWeakrefsMetric,
-    MarkAliveMetric,
-    PauseMetric,
+    phase_bounds,
 )
 from tests.data_helpers import create_instant_msg
 
 
 class TestPauseMetric:
-    """Tests for PauseMetric class."""
+    """Tests for the Pause metric."""
 
     def test_name(self) -> None:
-        metric = PauseMetric()
+        metric = METRICS[PAUSE_KEY]
 
-        assert metric.name == GC_PAUSE_NAME
+        assert metric.phase.label == GC_PAUSE_NAME
 
     def test_get_values(
         self,
         gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        metric = PauseMetric()
+        metric = METRICS[PAUSE_KEY]
         item = gc_stats_item_factory(ts_start=1000, ts_stop=5000)
 
-        ts_start, ts_stop = metric.get_values(item)
+        ts_start, ts_stop = phase_bounds(metric, item)
 
         assert ts_start == 1000
         assert ts_stop == 5000
@@ -56,44 +59,45 @@ class TestPauseMetric:
         self,
         gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        """Every GC record carries `ts_start`, so `has_pause_ts` holds for all of
-        them and `PauseMetric` has no missing-field case its siblings have."""
-        metric = PauseMetric()
+        """Every GC record carries `ts_start`, so the pause row's check holds for all of
+        them and the pause has no missing-field case its siblings have."""
+        metric = METRICS[PAUSE_KEY]
         item = gc_stats_item_factory(ts_start=0, ts_stop=0)
 
-        ts_start, ts_stop = metric.get_values(item)
+        ts_start, ts_stop = phase_bounds(metric, item)
 
         assert ts_start == 0
         assert ts_stop == 0
 
     def test_an_item_that_is_no_collection_reads_as_zero(self) -> None:
         """An instant carries `ts` and no `ts_start`, so it has no pause."""
-        metric = PauseMetric()
+        metric = METRICS[PAUSE_KEY]
 
-        values = metric.get_values(create_instant_msg(ts=5_000))
+        values = phase_bounds(metric, create_instant_msg(ts=5_000))
 
         assert values == (0, 0)
 
 
 class TestMarkAliveMetric:
-    """Tests for MarkAliveMetric class."""
+    """Tests for the MarkAlive metric."""
 
     def test_name(self) -> None:
-        metric = MarkAliveMetric()
+        metric = METRICS["mark_alive"]
 
-        assert metric.name == MARK_ALIVE.label
+        assert metric.phase.label == MARK_ALIVE.label
 
     def test_get_values(
         self,
         incremental_gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        metric = MarkAliveMetric()
+        metric = METRICS["mark_alive"]
         item = incremental_gc_stats_item_factory(
+            gen=1,
             ts_mark_alive_start=2000,
             ts_mark_alive_stop=4000,
         )
 
-        ts_start, ts_stop = metric.get_values(item)
+        ts_start, ts_stop = phase_bounds(metric, item)
 
         assert ts_start == 2000
         assert ts_stop == 4000
@@ -102,34 +106,34 @@ class TestMarkAliveMetric:
         self,
         gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        metric = MarkAliveMetric()
+        metric = METRICS["mark_alive"]
         item = gc_stats_item_factory()
 
-        ts1, ts2 = metric.get_values(item)
+        ts1, ts2 = phase_bounds(metric, item)
 
         assert ts1 == 0
         assert ts2 == 0
 
 
 class TestFillIncrementMetric:
-    """Tests for FillIncrementMetric class."""
+    """Tests for the FillIncrement metric."""
 
     def test_name(self) -> None:
-        metric = FillIncrementMetric()
+        metric = METRICS["fill_increment"]
 
-        assert metric.name == FILL_INCREMENT.label
+        assert metric.phase.label == FILL_INCREMENT.label
 
     def test_get_values(
         self,
         incremental_gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        metric = FillIncrementMetric()
+        metric = METRICS["fill_increment"]
         item = incremental_gc_stats_item_factory(
             ts_fill_increment_start=3000,
             ts_fill_increment_stop=5000,
         )
 
-        ts_start, ts_stop = metric.get_values(item)
+        ts_start, ts_stop = phase_bounds(metric, item)
 
         assert ts_start == 3000
         assert ts_stop == 5000
@@ -138,34 +142,34 @@ class TestFillIncrementMetric:
         self,
         gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        metric = FillIncrementMetric()
+        metric = METRICS["fill_increment"]
         item = gc_stats_item_factory()
 
-        ts1, ts2 = metric.get_values(item)
+        ts1, ts2 = phase_bounds(metric, item)
 
         assert ts1 == 0
         assert ts2 == 0
 
 
 class TestDeduceUnreachableMetric:
-    """Tests for DeduceUnreachableMetric class."""
+    """Tests for the DeduceUnreachable metric."""
 
     def test_name(self) -> None:
-        metric = DeduceUnreachableMetric()
+        metric = METRICS["deduce_unreachable"]
 
-        assert metric.name == DEDUCE_UNREACHABLE.label
+        assert metric.phase.label == DEDUCE_UNREACHABLE.label
 
     def test_get_values(
         self,
         incremental_gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        metric = DeduceUnreachableMetric()
+        metric = METRICS["deduce_unreachable"]
         item = incremental_gc_stats_item_factory(
             ts_deduce_unreachable_start=7000,
             ts_deduce_unreachable_stop=9000,
         )
 
-        ts_start, ts_stop = metric.get_values(item)
+        ts_start, ts_stop = phase_bounds(metric, item)
 
         assert ts_start == 7000
         assert ts_stop == 9000
@@ -174,34 +178,34 @@ class TestDeduceUnreachableMetric:
         self,
         gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        metric = DeduceUnreachableMetric()
+        metric = METRICS["deduce_unreachable"]
         item = gc_stats_item_factory()
 
-        ts1, ts2 = metric.get_values(item)
+        ts1, ts2 = phase_bounds(metric, item)
 
         assert ts1 == 0
         assert ts2 == 0
 
 
 class TestHandleWeakrefsMetric:
-    """Tests for HandleWeakrefsMetric class."""
+    """Tests for the HandleWeakrefs metric."""
 
     def test_name(self) -> None:
-        metric = HandleWeakrefsMetric()
+        metric = METRICS["handle_weakrefs"]
 
-        assert metric.name == HANDLE_WEAKREFS.label
+        assert metric.phase.label == HANDLE_WEAKREFS.label
 
     def test_get_values(
         self,
         incremental_gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        metric = HandleWeakrefsMetric()
+        metric = METRICS["handle_weakrefs"]
         item = incremental_gc_stats_item_factory(
             ts_handle_weakref_callbacks_start=7000,
             ts_handle_weakref_callbacks_stop=9000,
         )
 
-        ts_start, ts_stop = metric.get_values(item)
+        ts_start, ts_stop = phase_bounds(metric, item)
 
         assert ts_start == 7000
         assert ts_stop == 9000
@@ -210,34 +214,34 @@ class TestHandleWeakrefsMetric:
         self,
         gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        metric = HandleWeakrefsMetric()
+        metric = METRICS["handle_weakrefs"]
         item = gc_stats_item_factory()
 
-        ts1, ts2 = metric.get_values(item)
+        ts1, ts2 = phase_bounds(metric, item)
 
         assert ts1 == 0
         assert ts2 == 0
 
 
 class TestFinalizeGarbageMetric:
-    """Tests for FinalizeGarbageMetric class."""
+    """Tests for the FinalizeGarbage metric."""
 
     def test_name(self) -> None:
-        metric = FinalizeGarbageMetric()
+        metric = METRICS["finalize_garbage"]
 
-        assert metric.name == FINALIZE_GARBAGE.label
+        assert metric.phase.label == FINALIZE_GARBAGE.label
 
     def test_get_values(
         self,
         incremental_gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        metric = FinalizeGarbageMetric()
+        metric = METRICS["finalize_garbage"]
         item = incremental_gc_stats_item_factory(
             ts_handle_weakref_callbacks_stop=8000,
             ts_finalize_garbage_stop=9000,
         )
 
-        ts_start, ts_stop = metric.get_values(item)
+        ts_start, ts_stop = phase_bounds(metric, item)
 
         assert ts_start == 8000
         assert ts_stop == 9000
@@ -246,34 +250,34 @@ class TestFinalizeGarbageMetric:
         self,
         gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        metric = FinalizeGarbageMetric()
+        metric = METRICS["finalize_garbage"]
         item = gc_stats_item_factory(ts_finalize_garbage_stop=9000, finalized_garbage_count=1)
 
-        ts1, ts2 = metric.get_values(item)
+        ts1, ts2 = phase_bounds(metric, item)
 
         assert ts1 == 0
         assert ts2 == 0
 
 
 class TestHandleResurrectedMetric:
-    """Tests for HandleResurrectedMetric class."""
+    """Tests for the HandleResurrected metric."""
 
     def test_name(self) -> None:
-        metric = HandleResurrectedMetric()
+        metric = METRICS["handle_resurrected"]
 
-        assert metric.name == HANDLE_RESURRECTED.label
+        assert metric.phase.label == HANDLE_RESURRECTED.label
 
     def test_get_values(
         self,
         incremental_gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        metric = HandleResurrectedMetric()
+        metric = METRICS["handle_resurrected"]
         item = incremental_gc_stats_item_factory(
             ts_finalize_garbage_stop=8000,
             ts_handle_resurrected_stop=9000,
         )
 
-        ts_start, ts_stop = metric.get_values(item)
+        ts_start, ts_stop = phase_bounds(metric, item)
 
         assert ts_start == 8000
         assert ts_stop == 9000
@@ -282,34 +286,34 @@ class TestHandleResurrectedMetric:
         self,
         gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        metric = HandleResurrectedMetric()
+        metric = METRICS["handle_resurrected"]
         item = gc_stats_item_factory(ts_handle_resurrected_stop=9000)
 
-        ts1, ts2 = metric.get_values(item)
+        ts1, ts2 = phase_bounds(metric, item)
 
         assert ts1 == 0
         assert ts2 == 0
 
 
 class TestClearWeakrefsMetric:
-    """Tests for ClearWeakrefsMetric class."""
+    """Tests for the ClearWeakrefs metric."""
 
     def test_name(self) -> None:
-        metric = ClearWeakrefsMetric()
+        metric = METRICS["clear_weakrefs"]
 
-        assert metric.name == CLEAR_WEAKREFS.label
+        assert metric.phase.label == CLEAR_WEAKREFS.label
 
     def test_get_values(
         self,
         incremental_gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        metric = ClearWeakrefsMetric()
+        metric = METRICS["clear_weakrefs"]
         item = incremental_gc_stats_item_factory(
             ts_handle_resurrected_stop=8000,
             ts_clear_weakrefs_stop=9000,
         )
 
-        ts_start, ts_stop = metric.get_values(item)
+        ts_start, ts_stop = phase_bounds(metric, item)
 
         assert ts_start == 8000
         assert ts_stop == 9000
@@ -318,34 +322,34 @@ class TestClearWeakrefsMetric:
         self,
         gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        metric = ClearWeakrefsMetric()
+        metric = METRICS["clear_weakrefs"]
         item = gc_stats_item_factory(ts_clear_weakrefs_stop=9000, clear_weakrefs_count=1)
 
-        ts1, ts2 = metric.get_values(item)
+        ts1, ts2 = phase_bounds(metric, item)
 
         assert ts1 == 0
         assert ts2 == 0
 
 
 class TestDeleteGarbageMetric:
-    """Tests for DeleteGarbageMetric class."""
+    """Tests for the DeleteGarbage metric."""
 
     def test_name(self) -> None:
-        metric = DeleteGarbageMetric()
+        metric = METRICS["delete_garbage"]
 
-        assert metric.name == DELETE_GARBAGE.label
+        assert metric.phase.label == DELETE_GARBAGE.label
 
     def test_get_values(
         self,
         incremental_gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        metric = DeleteGarbageMetric()
+        metric = METRICS["delete_garbage"]
         item = incremental_gc_stats_item_factory(
             ts_delete_garbage_start=7000,
             ts_delete_garbage_stop=9000,
         )
 
-        ts_start, ts_stop = metric.get_values(item)
+        ts_start, ts_stop = phase_bounds(metric, item)
 
         assert ts_start == 7000
         assert ts_stop == 9000
@@ -354,10 +358,10 @@ class TestDeleteGarbageMetric:
         self,
         gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        metric = DeleteGarbageMetric()
+        metric = METRICS["delete_garbage"]
         item = gc_stats_item_factory()
 
-        ts1, ts2 = metric.get_values(item)
+        ts1, ts2 = phase_bounds(metric, item)
 
         assert ts1 == 0
         assert ts2 == 0
@@ -382,15 +386,15 @@ class TestMetricDictionaries:
         assert set(METRICS) == expected_keys
 
     def test_metrics_instances(self) -> None:
-        assert isinstance(METRICS[PAUSE_KEY], PauseMetric)
-        assert isinstance(METRICS["mark_alive"], MarkAliveMetric)
-        assert isinstance(METRICS["fill_increment"], FillIncrementMetric)
-        assert isinstance(METRICS["deduce_unreachable"], DeduceUnreachableMetric)
-        assert isinstance(METRICS["handle_weakrefs"], HandleWeakrefsMetric)
-        assert isinstance(METRICS["finalize_garbage"], FinalizeGarbageMetric)
-        assert isinstance(METRICS["handle_resurrected"], HandleResurrectedMetric)
-        assert isinstance(METRICS["clear_weakrefs"], ClearWeakrefsMetric)
-        assert isinstance(METRICS["delete_garbage"], DeleteGarbageMetric)
+        assert METRICS[PAUSE_KEY] is PAUSE_ROW
+        assert METRICS["mark_alive"] is MarkAliveData
+        assert METRICS["fill_increment"] is IncrementalData
+        assert METRICS["deduce_unreachable"] is DeduceUnreachableData
+        assert METRICS["handle_weakrefs"] is HandleWeakrefsData
+        assert METRICS["finalize_garbage"] is FinalizeGarbageData
+        assert METRICS["handle_resurrected"] is HandleResurrectedData
+        assert METRICS["clear_weakrefs"] is ClearWeakrefsData
+        assert METRICS["delete_garbage"] is DeleteGarbageData
 
     def test_metrics_count(self) -> None:
         assert len(METRICS) == 9

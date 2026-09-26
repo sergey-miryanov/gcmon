@@ -40,7 +40,6 @@ __all__ = [
     "GENERATION",
     "GENERATIONS",
     "GENS",
-    "GEN_COUNTER_METRICS",
     "HANDLE_RESURRECTED",
     "HANDLE_WEAKREFS",
     "HEAP_SIZE",
@@ -78,7 +77,9 @@ __all__ = [
     "TS_STOP",
     "TYPE",
     "UNCOLLECTABLE",
+    "PerGeneration",
     "Phase",
+    "counter_display_name",
     "gc_loss_slice_name",
     "gc_pause_slice_name",
     "phase_category",
@@ -92,7 +93,7 @@ __all__ = [
 GENERATIONS: Final = (0, 1, 2)
 
 
-class _PerGeneration(dict[int, str]):
+class PerGeneration[T](dict[int, T]):
     """One name, rendered for every generation, as a lookup.
 
     Filled at import for the generations above, which is what a conversion
@@ -101,11 +102,11 @@ class _PerGeneration(dict[int, str]):
     there, so caching it would let a malformed capture grow the table.
     """
 
-    def __init__(self, render: Callable[[int], str]) -> None:
+    def __init__(self, render: Callable[[int], T]) -> None:
         super().__init__((gen, render(gen)) for gen in GENERATIONS)
         self._render = render
 
-    def __missing__(self, gen: int) -> str:
+    def __missing__(self, gen: int) -> T:
         return self._render(gen)
 
 
@@ -116,27 +117,24 @@ class Phase(NamedTuple):
     `category` is the Perfetto category the slice carries; `stats` has no
     use for it and ignores it.
 
-    `slice_names` and `categories` are those two spelled per generation,
-    rendered once by `_phase` below. A conversion emits up to nine slices
-    per record, so it reads them here rather than formatting them again.
+    `names` holds the slice name and category spelled per generation,
+    rendered once by `_phase` below, as one pair so that a slice costs one
+    lookup. A conversion emits up to nine slices per record, so it reads
+    them here rather than formatting them again.
     """
 
     label: str
     category: str
-    slice_names: Mapping[int, str]
-    categories: Mapping[int, str]
+    names: Mapping[int, tuple[str, str]]
 
 
 def _phase(label: str, category: str) -> Phase:
     """One row of the table, with its per-generation names rendered."""
 
-    def slice_name(gen: int) -> str:
-        return f"{label}({gen})"
+    def names(gen: int) -> tuple[str, str]:
+        return f"{label}({gen})", f"{category}(gen={gen})"
 
-    def slice_category(gen: int) -> str:
-        return f"{category}(gen={gen})"
-
-    return Phase(label, category, _PerGeneration(slice_name), _PerGeneration(slice_category))
+    return Phase(label, category, PerGeneration(names))
 
 
 PAUSE: Final = _phase("GC Pause", "gc.pause")
@@ -179,9 +177,15 @@ FINALIZED_GARBAGE_COUNT: Final = "finalized_garbage_count"
 DELETED_GARBAGE_COUNT: Final = "deleted_garbage_count"
 CLEAR_WEAKREFS_COUNT: Final = "clear_weakrefs_count"
 
-# The series a pause draws per generation. `uncollectable` is last because a
-# run that collected everything omits it rather than writing a zero.
-GEN_COUNTER_METRICS: Final = (COLLECTED, CANDIDATES, DURATION, UNCOLLECTABLE)
+
+def counter_display_name(gen: int, metric: str) -> str:
+    """What a per-generation counter track is called.
+
+    The generation is in the name because the tracks sit side by side
+    under one group and the metric alone would repeat (ADR-0027).
+    """
+    return f"G{gen} {metric}"
+
 
 # The rest of what a JSONL line carries (docs/formats.md). `gcmon combine`
 # reads back what the monitor wrote, so the two halves have to agree on
@@ -263,10 +267,10 @@ def phase_slice_name(phase: Phase, gen: int) -> str:
     """The slice one generation's *phase* is drawn as.
 
     A reading of the table `_phase` rendered. The conversion loop indexes
-    `phase.slice_names` directly, since a call per slice is what this
-    spelling used to cost it; everything colder reads it through here.
+    `phase.names` directly, since a call per slice is what this spelling
+    used to cost it; everything colder reads it through here.
     """
-    return phase.slice_names[gen]
+    return phase.names[gen][0]
 
 
 def phase_category(phase: Phase, gen: int) -> str:
@@ -275,7 +279,7 @@ def phase_category(phase: Phase, gen: int) -> str:
     Filtering on the prefix reaches every generation, on the exact string
     reaches one.
     """
-    return phase.categories[gen]
+    return phase.names[gen][1]
 
 
 def gc_pause_slice_name(gen: int) -> str:

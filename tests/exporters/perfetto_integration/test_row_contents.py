@@ -24,7 +24,6 @@ from gcmon.exporters.perfetto_process_lifetime import (
     _PROCESS_ROW_PREFIX,
     process_track_name,
 )
-from gcmon.exporters.trace_converter import counter_display_name
 from gcmon.model.names import (
     ALIVE_SIZE,
     CANDIDATES,
@@ -45,6 +44,7 @@ from gcmon.model.names import (
     MARK_ALIVE,
     RSS,
     UNCOLLECTABLE,
+    counter_display_name,
     gc_pause_slice_name,
     phase_slice_name,
 )

@@ -14,7 +14,6 @@ from gcmon.analysis.jsonl_io import (
     read_jsonl,
     write_jsonl,
 )
-from gcmon.exporters.trace_converter import counter_display_name
 from gcmon.model.data import LossMsg
 from gcmon.model.names import (
     ALIVE_SIZE,
@@ -38,6 +37,7 @@ from gcmon.model.names import (
     TS_START,
     TS_STOP,
     UNCOLLECTABLE,
+    counter_display_name,
     gc_loss_slice_name,
     gc_pause_slice_name,
 )

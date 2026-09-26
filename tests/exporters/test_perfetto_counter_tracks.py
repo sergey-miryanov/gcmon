@@ -4,8 +4,7 @@ import pytest
 
 from gcmon.exporters.perfetto_format import convert_trace_events_to_perfetto
 from gcmon.exporters.perfetto_track_state import PerfettoTrackState
-from gcmon.exporters.trace_converter import counter_display_name
-from gcmon.model.names import CANDIDATES, COLLECTED, DURATION, HEAP_SIZE, RSS, UNCOLLECTABLE
+from gcmon.model.names import CANDIDATES, COLLECTED, DURATION, HEAP_SIZE, RSS, UNCOLLECTABLE, counter_display_name
 from gcmon.model.trace_event import Counter, TraceEvent
 from tests.exporters.perfetto_helpers import (
     parse_track_descriptor,

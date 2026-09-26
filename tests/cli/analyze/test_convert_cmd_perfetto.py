@@ -28,7 +28,7 @@ from gcmon.exporters.perfetto_process_lifetime import (
     _PROCESS_ROW_SLICE_NAME,
     process_track_name,
 )
-from gcmon.exporters.trace_converter import convert_to_trace_format, counter_display_name
+from gcmon.exporters.trace_converter import convert_to_trace_format
 from gcmon.model.data import GCStatsInfo
 from gcmon.model.names import (
     CANDIDATES,
@@ -50,6 +50,7 @@ from gcmon.model.names import (
     NAME,
     SAMPLED_COUNT,
     UNCOLLECTABLE,
+    counter_display_name,
     gc_pause_slice_name,
     phase_slice_name,
 )

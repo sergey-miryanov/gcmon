@@ -69,12 +69,12 @@ from gcmon.model.names import (
     GC_LOSS_CATEGORY,
     GC_LOSS_NAME,
     GC_PHASES,
-    GEN_COUNTER_METRICS,
     HEAP_SIZE,
     JSONL_FIELDS,
     RSS,
     SLICE_ARGS,
 )
+from gcmon.model.phases import PAUSE_ROW
 from gcmon.support.vocabulary import ENCODING
 
 DOCS = Path(__file__).resolve().parents[2] / "docs"
@@ -99,7 +99,7 @@ DOCUMENTED: tuple[tuple[str, Path], ...] = (
             START_EVENT,
             STOP_EVENT,
             *(phase.label for phase in GC_PHASES),
-            *GEN_COUNTER_METRICS,
+            *PAUSE_ROW.counter_metrics,
             *JSONL_FIELDS,
             *SLICE_ARGS,
         )

@@ -63,7 +63,7 @@ type ArgGroup = dict[str, int | str]
 
 # Perfetto and the trace processor flatten a group's names onto the slice's
 # own, so a second level of nesting reads as noise.
-type EventArgs = dict[str, int | str | ArgGroup]
+type EventArgs = dict[str, int | float | str | ArgGroup]
 
 
 class Slice(msgspec.Struct):

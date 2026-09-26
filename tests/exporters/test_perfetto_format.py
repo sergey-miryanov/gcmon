@@ -29,7 +29,6 @@ from gcmon.exporters.perfetto_track_state import PerfettoTrackState
 from gcmon.exporters.trace_converter import (
     convert_item_to_trace_format,
     convert_loss_to_trace_format,
-    counter_display_name,
 )
 from gcmon.model.data import GCStatsInfo, LossMsg
 from gcmon.model.names import (
@@ -60,6 +59,7 @@ from gcmon.model.names import (
     PID_EPOCH,
     RSS,
     UNCOLLECTABLE,
+    counter_display_name,
     gc_pause_slice_name,
     phase_slice_name,
 )
@@ -544,7 +544,7 @@ class TestConvertItemToPerfettoPackets:
         first_packet = begin_packet
         assert first_packet is not None
         anns = first_packet.track_event.debug_annotations
-        assert len(anns) == 7
+        assert len(anns) == 8
         for ann in anns:
             assert not ann.HasField("name_iid"), (
                 "field 1 of DebugAnnotation is `name_iid` (uint64); the annotation name must not be written there"
@@ -574,7 +574,7 @@ class TestConvertItemToPerfettoPackets:
         first_packet = TracePacket()
         first_packet.ParseFromString(begin_packet)
         anns = first_packet.track_event.debug_annotations
-        assert len(anns) == 7
+        assert len(anns) == 8
         ann_values: list[tuple[str | None, int | None]] = []
         for ann in anns:
             name = ann.name or None
@@ -587,6 +587,8 @@ class TestConvertItemToPerfettoPackets:
         assert (COLLECTED, 10) in ann_values
         assert (UNCOLLECTABLE, 2) in ann_values
         assert (CANDIDATES, 3) in ann_values
+        # The one annotation that is not an integer.
+        assert [ann.double_value for ann in anns if ann.name == DURATION] == [item.duration]
 
 
 class TestConvertInstantToPerfettoPacket:
