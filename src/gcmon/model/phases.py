@@ -94,12 +94,12 @@ class PauseData:
         return {
             GENERATION: item.gen,
             IID: item.iid,
-            HEAP_SIZE: item.heap_size,
             COLLECTIONS: item.collections,
             COLLECTED: item.collected,
             UNCOLLECTABLE: item.uncollectable,
             CANDIDATES: item.candidates,
             DURATION: item.duration,
+            HEAP_SIZE: item.heap_size,
         }
 
 
