@@ -20,6 +20,7 @@ from gcmon.analysis.jsonl_io import (
 )
 from gcmon.model.data import from_mapping
 from gcmon.model.protocol import TGCStatsInfo, TInstantMsg, to_mapping
+from tests.helpers import as_structseq
 
 from .conftest import make_gc_event, make_jsonl_record
 
@@ -43,6 +44,22 @@ def test_from_mapping_decode(benchmark: BenchmarkFixture) -> None:
 @pytest.mark.benchmark
 def test_to_mapping_encode(benchmark: BenchmarkFixture) -> None:
     events = [make_gc_event(i, gen=i % 3) for i in range(EVENT_COUNT)]
+
+    def run() -> int:
+        count = 0
+        for event in events:
+            to_mapping(event)
+            count += 1
+        return count
+
+    assert benchmark(run) == EVENT_COUNT
+
+
+@pytest.mark.benchmark
+def test_to_mapping_encode_structseq(benchmark: BenchmarkFixture) -> None:
+    """:func:`test_to_mapping_encode` on the records the monitor reads, which
+    are struct sequences rather than msgspec structs."""
+    events = [as_structseq(make_gc_event(i, gen=i % 3)) for i in range(EVENT_COUNT)]
 
     def run() -> int:
         count = 0

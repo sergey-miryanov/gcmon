@@ -16,7 +16,7 @@ from gcmon.exporters.trace_converter import (
 )
 from gcmon.model.protocol import TGCStatsInfo, TInstantMsg
 from tests.conftest import DEFAULT_PID
-from tests.helpers import proc
+from tests.helpers import as_structseq, proc
 
 from .conftest import make_gc_event
 
@@ -46,6 +46,21 @@ def test_convert_item_to_trace_format_batch(benchmark: BenchmarkFixture) -> None
         return count
 
     assert benchmark(run) > ITEM_BATCH
+
+
+@pytest.mark.benchmark
+def test_convert_structseq_item_to_trace_format_batch(benchmark: BenchmarkFixture) -> None:
+    """:func:`test_convert_item_to_trace_format_batch` on the records the
+    monitor reads, which are struct sequences rather than msgspec structs."""
+    events = [as_structseq(make_gc_event(i, gen=i % 3)) for i in range(ITEM_BATCH)]
+
+    def run() -> int:
+        count = 0
+        for event in events:
+            count += len(convert_item_to_trace_format(proc(DEFAULT_PID), event))
+        return count
+
+    assert benchmark(run) >= ITEM_BATCH
 
 
 @pytest.mark.benchmark
