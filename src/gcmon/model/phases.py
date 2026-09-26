@@ -37,6 +37,7 @@ from .names import (
     TS_FINALIZE_GARBAGE_STOP,
     TS_HANDLE_RESURRECTED_STOP,
     TS_HANDLE_WEAKREF_CALLBACKS_START,
+    TS_HANDLE_WEAKREF_CALLBACKS_STOP,
     TS_START,
     UNCOLLECTABLE,
     PerGeneration,
@@ -251,7 +252,7 @@ class FinalizeGarbageData:
     @staticmethod
     def check(item: object) -> TypeGuard[Info]:
         return (
-            getattr(item, TS_HANDLE_WEAKREF_CALLBACKS_START, None) is not None
+            getattr(item, TS_HANDLE_WEAKREF_CALLBACKS_STOP, None) is not None
             and getattr(item, TS_FINALIZE_GARBAGE_STOP, None) is not None
         )
 

@@ -110,7 +110,7 @@ class TestRowChecks:
         (MarkAliveData, {ALIVE_SIZE: 300}),
         (DeduceUnreachableData, {TS_DEDUCE_UNREACHABLE_START: 100}),
         (HandleWeakrefsData, {TS_HANDLE_WEAKREF_CALLBACKS_START: 100}),
-        (FinalizeGarbageData, {TS_HANDLE_WEAKREF_CALLBACKS_START: 100, TS_FINALIZE_GARBAGE_STOP: 100}),
+        (FinalizeGarbageData, {TS_HANDLE_WEAKREF_CALLBACKS_STOP: 100, TS_FINALIZE_GARBAGE_STOP: 100}),
         (HandleResurrectedData, {TS_FINALIZE_GARBAGE_STOP: 100, TS_HANDLE_RESURRECTED_STOP: 100}),
         (ClearWeakrefsData, {TS_HANDLE_RESURRECTED_STOP: 100, TS_CLEAR_WEAKREFS_STOP: 100}),
         (DeleteGarbageData, {TS_DELETE_GARBAGE_START: 100}),
