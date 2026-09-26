@@ -22,7 +22,6 @@ from ..model.names import (
 )
 from ..model.process import Process
 from ..model.protocol import (
-    Data,
     PauseData,
     TGCStatsInfo,
     TGenLoss,
@@ -31,6 +30,7 @@ from ..model.protocol import (
     is_gc_stats,
     is_instant,
     is_loss,
+    sub_phase_rows,
 )
 from ..model.trace_event import (
     ArgGroup,
@@ -91,9 +91,7 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
     )
 
     if ts_stop_ns > ts_start_ns:
-        for row in Data[1:]:
-            if not row.check(item):
-                continue
+        for row in sub_phase_rows(item):
             args = row.args(gen, item)
             if args is None:
                 continue

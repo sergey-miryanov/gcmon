@@ -388,6 +388,26 @@ Data: list[type[_Row]] = [
     DeleteGarbageData,
 ]
 
+# Per struct-sequence type: the sub-phase rows its records carry.
+_SUB_PHASE_ROWS: dict[type, tuple[type[_Row], ...]] = {}
+
+
+def sub_phase_rows(item: TGCStatsInfo) -> tuple[type[_Row], ...]:
+    """The sub-phase rows whose `check` accepts *item*.
+
+    A struct sequence's fields are fixed by its type, so the checks run on
+    the first record of each type. A msgspec record holds `None` for a field
+    it lacks, and its type says nothing about which, so it is checked every
+    time.
+    """
+    t = type(item)
+    rows = _SUB_PHASE_ROWS.get(t)
+    if rows is None:
+        rows = tuple(row for row in Data[1:] if row.check(item))
+        if isinstance(item, tuple):
+            _SUB_PHASE_ROWS[t] = rows
+    return rows
+
 
 def has_incremental(item: object) -> TypeGuard[TIncrementalInfo]:
     return getattr(item, INCREMENT_SIZE, None) is not None
