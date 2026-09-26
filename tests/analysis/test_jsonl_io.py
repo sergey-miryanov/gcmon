@@ -18,6 +18,7 @@ from gcmon.model.data import GCStatsInfo, LossMsg
 from gcmon.model.names import (
     ALIVE_SIZE,
     CLEAR_WEAKREFS,
+    COLLECTIONS,
     DEDUCE_UNREACHABLE,
     DELETE_GARBAGE,
     FILL_INCREMENT,
@@ -26,7 +27,6 @@ from gcmon.model.names import (
     GENS,
     HANDLE_RESURRECTED,
     HANDLE_WEAKREFS,
-    HEAP_SIZE,
     IID,
     INCREMENT_SIZE,
     LOST_COUNT,
@@ -459,4 +459,4 @@ class TestAnOldFormatLossRecord:
         with pytest.raises(msgspec.ValidationError) as excinfo:
             json_to_item(line)
 
-        assert HEAP_SIZE in str(excinfo.value)
+        assert COLLECTIONS in str(excinfo.value)

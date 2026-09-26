@@ -9,11 +9,11 @@ class GCStatsInfo(msgspec.Struct):
     iid: int
     ts_start: int
     ts_stop: int
-    heap_size: int
     collections: int
     collected: int
     uncollectable: int
     candidates: int
+    heap_size: int
     duration: float
     increment_size: int | None = None
     alive_size: int | None = None
