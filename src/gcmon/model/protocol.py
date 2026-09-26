@@ -1,20 +1,13 @@
 from collections.abc import Mapping, Sequence
-from typing import Protocol, TypeGuard
+from typing import Any, Protocol, TypeGuard
 
 import msgspec
 
 from .names import (
     ALIVE_SIZE,
-    CANDIDATES,
-    CLEAR_WEAKREFS_COUNT,
-    COLLECTED,
     COLLECTIONS,
-    DELETED_GARBAGE_COUNT,
-    DURATION,
-    FINALIZED_GARBAGE_COUNT,
     GEN,
     GENS,
-    HEAP_SIZE,
     IID,
     INCREMENT_SIZE,
     LOST_COUNT,
@@ -25,22 +18,18 @@ from .names import (
     TS,
     TS_CLEAR_WEAKREFS_STOP,
     TS_DEDUCE_UNREACHABLE_START,
-    TS_DEDUCE_UNREACHABLE_STOP,
     TS_DELETE_GARBAGE_START,
-    TS_DELETE_GARBAGE_STOP,
-    TS_FILL_INCREMENT_START,
-    TS_FILL_INCREMENT_STOP,
     TS_FINALIZE_GARBAGE_STOP,
     TS_HANDLE_RESURRECTED_STOP,
     TS_HANDLE_WEAKREF_CALLBACKS_START,
-    TS_HANDLE_WEAKREF_CALLBACKS_STOP,
-    TS_MARK_ALIVE_START,
-    TS_MARK_ALIVE_STOP,
     TS_START,
     TS_STOP,
     TYPE,
-    UNCOLLECTABLE,
+    Phase,
+    PAUSE,
+    FILL_INCREMENT,MARK_ALIVE,DEDUCE_UNREACHABLE
 )
+from .trace_event import EventArgs
 
 __all__ = [
     "JsonlRecord",
@@ -72,6 +61,8 @@ __all__ = [
     "is_gc_stats",
     "is_instant",
     "is_loss",
+    "structseq_fields",
+    "structseq_hidden",
     "to_mapping",
 ]
 
@@ -171,18 +162,94 @@ type JsonlRecord = dict[str, TValue]
 type TItem = TGCStatsInfo | TInstantMsg | TLossMsg
 
 
+# Per struct-sequence type: its visible field names, and whether it has
+# hidden ones, which only `__reduce__` returns.
+_STRUCTSEQ_FIELDS: dict[type, tuple[tuple[str, ...], bool]] = {}
+
+
+def structseq_fields(t: Any) -> tuple[tuple[str, ...], bool]:
+    """The visible field names of struct-sequence type *t*, and whether it
+    has hidden fields as well."""
+    fields = _STRUCTSEQ_FIELDS.get(t)
+    if fields is None:
+        fields = _STRUCTSEQ_FIELDS[t] = (t.__match_args__, t.n_fields > t.n_sequence_fields)
+    return fields
+
+
+def structseq_hidden(item: Any) -> dict[str, Any]:
+    """The hidden fields of struct sequence *item*, by name."""
+    hidden: dict[str, Any] = item.__reduce__()[1][1]
+    return hidden
+
+
 def has_pause_ts(item: object) -> TypeGuard[TGCStatsInfo]:
     # A loss record carries `ts_start` too, and it is no GC record.
     return is_gc_stats(item) and getattr(item, TS_START, None) is not None
+
+
+type _EmitResult = tuple[Phase,EventArgs, tuple[int,int]] | None
+
+
+class PauseData:
+    def emit(gen: int, item: TGCStatsInfo) -> _EmitResult:
+        return (
+            PAUSE,
+            {
+                "generation": item.gen,
+                "iid": item.iid,
+                "heap_size": item.heap_size,
+                "collections": item.collections,
+                "collected": item.collected,
+                "uncollectable": item.uncollectable,
+                "candidates": item.candidates,
+                "duration": item.duration,
+            },
+            (item.ts_start, item.ts_stop),
+        )
+
+class IncrementalData:
+    def emit(gen: int, item: object) -> _EmitResult:
+        if has_incremental(item) and gen < 2:
+            return (
+                FILL_INCREMENT,
+                {"increment_size": item.increment_size,},
+                (item.ts_fill_increment_start, item.ts_fill_increment_stop)
+            )
 
 
 def has_incremental(item: object) -> TypeGuard[TIncrementalInfo]:
     return getattr(item, INCREMENT_SIZE, None) is not None
 
 
+class MarkAliveData:
+    def emit(gen: int, item: object) -> _EmitResult:
+        if has_mark_alive(item) and gen > 0:
+            return (
+                MARK_ALIVE,
+                {"alive_size": item.alive_size,},
+                (item.ts_mark_alive_start, item.ts_mark_alive_stop),
+            )
+
+
 def has_mark_alive(item: object) -> TypeGuard[TMarkAliveInfo]:
     return getattr(item, ALIVE_SIZE, None) is not None
 
+
+class DeduceUnreachableData:
+    def emit(gen: int, item:object) -> _EmitResult:
+        if has_deduce_unreachable(item):
+            return (
+                DEDUCE_UNREACHABLE,
+                {"candidates": item.candidates,},
+                (item.ts_deduce_unreachable_start, item.ts_deduce_unreachable_stop),
+            )
+
+Data = [
+    PauseData,
+    MarkAliveData,
+    IncrementalData,
+    DeduceUnreachableData,
+]
 
 def has_deduce_unreachable(item: object) -> TypeGuard[TDeduceUnreachableInfo]:
     return getattr(item, TS_DEDUCE_UNREACHABLE_START, None) is not None
@@ -247,17 +314,16 @@ def to_mapping(item: TItem) -> JsonlRecord:
         }
 
     if is_gc_stats(item):
-        def structseq_asdict(obj):
-            d = {name: getattr(obj, name) for name in obj.__match_args__}
-            _, (_seq, extra) = obj.__reduce__()
-            d.update(extra)
-            return d
+        # A live record: a struct sequence, so a tuple of its visible fields.
+        if isinstance(item, tuple):
+            names, hidden = structseq_fields(type(item))
+            m: JsonlRecord = dict(zip(names, item, strict=True))
+            if hidden:
+                m.update((name, value) for name, value in structseq_hidden(item).items() if value is not None)
+            return m
 
-        if hasattr(item, '__match_args__'):
-            m = structseq_asdict(item)
-        else:
-            m = msgspec.structs.asdict(item)
-
-        return m
+        # A record read back from a capture, holding None for every field it lacks.
+        if isinstance(item, msgspec.Struct):
+            return {name: value for name, value in msgspec.structs.asdict(item).items() if value is not None}
 
     raise NotImplementedError(f"Unknown item type: {type(item)}")

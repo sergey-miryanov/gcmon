@@ -146,6 +146,12 @@ def _build_debug_annotation_int(name: str, value: int) -> bytes:
     return result
 
 
+def _build_debug_annotation_double(name: str, value: float) -> bytes:
+    result = encode_string_field(DebugAnnotationField.NAME, name)
+    result += encode_double_field(DebugAnnotationField.DOUBLE_VALUE, value)
+    return result
+
+
 def _build_debug_annotation_string(name: str, value: str) -> bytes:
     result = encode_string_field(DebugAnnotationField.NAME, name)
     result += encode_string_field(DebugAnnotationField.STRING_VALUE, value)
@@ -242,13 +248,15 @@ def _make_counter_event(track_uuid: int, value: int | float) -> bytes:
     )
 
 
-def _args_to_debug_annotations(args: Mapping[str, int | str | dict[str, int | str]]) -> list[bytes]:
+def _args_to_debug_annotations(args: Mapping[str, int | float | str | dict[str, int | str]]) -> list[bytes]:
     return [_build_debug_annotation(k, v) for k, v in args.items()]
 
 
-def _build_debug_annotation(name: str, value: int | str | Mapping[str, int | str]) -> bytes:
+def _build_debug_annotation(name: str, value: int | float | str | Mapping[str, int | str]) -> bytes:
     if isinstance(value, str):
         return _build_debug_annotation_string(name, value)
+    if isinstance(value, float):
+        return _build_debug_annotation_double(name, value)
     if isinstance(value, Mapping):
         return _build_debug_annotation_dict(name, value)
     return _build_debug_annotation_int(name, value)

@@ -1,7 +1,10 @@
 """Shared conversion from GC stats items to TraceEvent objects."""
 
-from collections.abc import Mapping, Sequence
-from typing import Final
+from collections.abc import Callable, Mapping, Sequence
+from operator import itemgetter
+from typing import Any, Final, NamedTuple, TypeGuard
+
+import msgspec
 
 from ..model.names import (
     ALIVE_SIZE,
@@ -9,7 +12,6 @@ from ..model.names import (
     CLEAR_WEAKREFS,
     CLEAR_WEAKREFS_COUNT,
     COLLECTED,
-    COLLECTIONS,
     DEDUCE_UNREACHABLE,
     DELETE_GARBAGE,
     DELETED_GARBAGE_COUNT,
@@ -18,6 +20,7 @@ from ..model.names import (
     FINALIZE_GARBAGE,
     FINALIZED_GARBAGE_COUNT,
     GC_LOSS_CATEGORY,
+    GEN,
     GEN_COUNTER_METRICS,
     GENERATION,
     GENERATIONS,
@@ -33,14 +36,23 @@ from ..model.names import (
     OBSERVED_COUNT,
     PAUSE,
     UNCOLLECTABLE,
+    Phase,
     gc_loss_slice_name,
 )
 from ..model.process import Process
 from ..model.protocol import (
+    TClearWeakrefsInfo,
+    TDeduceUnreachableInfo,
+    TDeleteGarbageInfo,
+    TFinalizeGarbageInfo,
     TGCStatsInfo,
     TGenLoss,
+    THandleResurrectedInfo,
+    THandleWeakrefsInfo,
+    TIncrementalInfo,
     TItem,
     TLossMsg,
+    TMarkAliveInfo,
     has_clear_weakrefs,
     has_deduce_unreachable,
     has_delete_garbage,
@@ -52,6 +64,9 @@ from ..model.protocol import (
     is_gc_stats,
     is_instant,
     is_loss,
+    structseq_fields,
+    structseq_hidden,
+    Data,
 )
 from ..model.trace_event import (
     ArgGroup,
@@ -90,6 +105,269 @@ _COUNTER_DISPLAY_NAMES: Final[Mapping[int, Mapping[str, str]]] = {
 }
 
 
+# A field the pause span carries under a name other than its own.
+_ANNOTATION_NAMES: Final[Mapping[str, str]] = {GEN: GENERATION}
+
+# The fields no span carries: the timeline draws them.
+_TIMESTAMP_PREFIX: Final = "ts_"
+
+
+class _StructseqPause(NamedTuple):
+    """How to read a pause's args off one struct-sequence type."""
+
+    names: tuple[str, ...]
+    read: itemgetter[tuple[Any, ...]]
+    hidden: bool
+
+
+_STRUCTSEQ_PAUSES: dict[type, _StructseqPause] = {}
+
+
+def _structseq_pause(t: type) -> _StructseqPause:
+    names, hidden = structseq_fields(t)
+    kept = [index for index, name in enumerate(names) if not name.startswith(_TIMESTAMP_PREFIX)]
+    pause = _STRUCTSEQ_PAUSES[t] = _StructseqPause(
+        tuple(_ANNOTATION_NAMES.get(names[index], names[index]) for index in kept),
+        itemgetter(*kept),
+        hidden,
+    )
+    return pause
+
+
+def _pause_args(item: TGCStatsInfo) -> EventArgs:
+    """Every field *item* carries except its timestamps."""
+    # A live record: a struct sequence, so a tuple of its visible fields.
+    if isinstance(item, tuple):
+        t = type(item)
+        pause = _STRUCTSEQ_PAUSES.get(t) or _structseq_pause(t)
+        args: EventArgs = dict(zip(pause.names, pause.read(item), strict=True))
+        if pause.hidden:
+            for name, value in structseq_hidden(item).items():
+                if value is not None and not name.startswith(_TIMESTAMP_PREFIX):
+                    args[_ANNOTATION_NAMES.get(name, name)] = value
+        return args
+
+    # A record read back from a capture, holding None for every field it lacks.
+    if isinstance(item, msgspec.Struct):
+        return {
+            _ANNOTATION_NAMES.get(name, name): value
+            for name, value in msgspec.structs.asdict(item).items()
+            if value is not None and not name.startswith(_TIMESTAMP_PREFIX)
+        }
+
+    raise NotImplementedError(f"Unknown record type: {type(item)}")
+
+
+def _append_phase(
+    events: list[TraceEvent],
+    track: InterpreterTrack,
+    phase: Phase,
+    gen: int,
+    start: int,
+    stop: int,
+    args: EventArgs,
+) -> None:
+    """Append *phase*'s slice, unless the collector spent no time in it."""
+    if stop > start:
+        events.append(Slice(track, phase.slice_names[gen], phase.categories[gen], start, stop, args))
+
+
+type _Emit[T] = Callable[[T, EventArgs, list[TraceEvent], InterpreterTrack, int, int], None]
+
+
+class _SubPhase[T](NamedTuple):
+    """One sub-phase: the guard that says a record carries it, and what
+    drawing it adds to the events and takes off the pause's args."""
+
+    check: Callable[[object], TypeGuard[T]]
+    emit: _Emit[T]
+
+
+# The collector reports `0` for a size whose phase does not run at a
+# generation, and a reading of `0` is worse than none, so the pause drops it.
+def _emit_mark_alive(
+    item: TMarkAliveInfo,
+    pause_data: EventArgs,
+    events: list[TraceEvent],
+    track: InterpreterTrack,
+    gen: int,
+    iid: int,
+) -> None:
+    if gen == 0:
+        pause_data.pop(ALIVE_SIZE, None)
+    _append_phase(
+        events,
+        track,
+        MARK_ALIVE,
+        gen,
+        item.ts_mark_alive_start,
+        item.ts_mark_alive_stop,
+        {GENERATION: gen, IID: iid, ALIVE_SIZE: item.alive_size},
+    )
+
+
+def _emit_fill_increment(
+    item: TIncrementalInfo,
+    pause_data: EventArgs,
+    events: list[TraceEvent],
+    track: InterpreterTrack,
+    gen: int,
+    iid: int,
+) -> None:
+    if gen >= 2:
+        pause_data.pop(INCREMENT_SIZE, None)
+    _append_phase(
+        events,
+        track,
+        FILL_INCREMENT,
+        gen,
+        item.ts_fill_increment_start,
+        item.ts_fill_increment_stop,
+        {GENERATION: gen, IID: iid, INCREMENT_SIZE: item.increment_size},
+    )
+
+
+def _emit_deduce_unreachable(
+    item: TDeduceUnreachableInfo,
+    pause_data: EventArgs,
+    events: list[TraceEvent],
+    track: InterpreterTrack,
+    gen: int,
+    iid: int,
+) -> None:
+    _append_phase(
+        events,
+        track,
+        DEDUCE_UNREACHABLE,
+        gen,
+        item.ts_deduce_unreachable_start,
+        item.ts_deduce_unreachable_stop,
+        {GENERATION: gen, IID: iid, CANDIDATES: item.candidates},
+    )
+
+
+def _emit_handle_weakrefs(
+    item: THandleWeakrefsInfo,
+    pause_data: EventArgs,
+    events: list[TraceEvent],
+    track: InterpreterTrack,
+    gen: int,
+    iid: int,
+) -> None:
+    _append_phase(
+        events,
+        track,
+        HANDLE_WEAKREFS,
+        gen,
+        item.ts_handle_weakref_callbacks_start,
+        item.ts_handle_weakref_callbacks_stop,
+        {GENERATION: gen, IID: iid},
+    )
+
+
+# The next three start where the phase before them stopped, so each is drawn
+# only when the record carries both.
+def _has_finalize_garbage(item: object) -> TypeGuard[TFinalizeGarbageInfo]:
+    return has_handle_weakrefs(item) and has_finalize_garbage(item)
+
+
+def _has_handle_resurrected(item: object) -> TypeGuard[THandleResurrectedInfo]:
+    return has_finalize_garbage(item) and has_handle_resurrected(item)
+
+
+def _has_clear_weakrefs(item: object) -> TypeGuard[TClearWeakrefsInfo]:
+    return has_handle_resurrected(item) and has_clear_weakrefs(item)
+
+
+def _emit_finalize_garbage(
+    item: TFinalizeGarbageInfo,
+    pause_data: EventArgs,
+    events: list[TraceEvent],
+    track: InterpreterTrack,
+    gen: int,
+    iid: int,
+) -> None:
+    _append_phase(
+        events,
+        track,
+        FINALIZE_GARBAGE,
+        gen,
+        item.ts_handle_weakref_callbacks_stop,
+        item.ts_finalize_garbage_stop,
+        {GENERATION: gen, IID: iid, FINALIZED_GARBAGE_COUNT: item.finalized_garbage_count},
+    )
+
+
+def _emit_handle_resurrected(
+    item: THandleResurrectedInfo,
+    pause_data: EventArgs,
+    events: list[TraceEvent],
+    track: InterpreterTrack,
+    gen: int,
+    iid: int,
+) -> None:
+    _append_phase(
+        events,
+        track,
+        HANDLE_RESURRECTED,
+        gen,
+        item.ts_finalize_garbage_stop,
+        item.ts_handle_resurrected_stop,
+        {GENERATION: gen, IID: iid},
+    )
+
+
+def _emit_clear_weakrefs(
+    item: TClearWeakrefsInfo,
+    pause_data: EventArgs,
+    events: list[TraceEvent],
+    track: InterpreterTrack,
+    gen: int,
+    iid: int,
+) -> None:
+    _append_phase(
+        events,
+        track,
+        CLEAR_WEAKREFS,
+        gen,
+        item.ts_handle_resurrected_stop,
+        item.ts_clear_weakrefs_stop,
+        {GENERATION: gen, IID: iid, CLEAR_WEAKREFS_COUNT: item.clear_weakrefs_count},
+    )
+
+
+def _emit_delete_garbage(
+    item: TDeleteGarbageInfo,
+    pause_data: EventArgs,
+    events: list[TraceEvent],
+    track: InterpreterTrack,
+    gen: int,
+    iid: int,
+) -> None:
+    _append_phase(
+        events,
+        track,
+        DELETE_GARBAGE,
+        gen,
+        item.ts_delete_garbage_start,
+        item.ts_delete_garbage_stop,
+        {GENERATION: gen, IID: iid, DELETED_GARBAGE_COUNT: item.deleted_garbage_count},
+    )
+
+
+# In the order the collector runs them, which is the order they are drawn in.
+_SUB_PHASES: Final[tuple[_SubPhase[Any], ...]] = (
+    _SubPhase(has_mark_alive, _emit_mark_alive),
+    _SubPhase(has_incremental, _emit_fill_increment),
+    _SubPhase(has_deduce_unreachable, _emit_deduce_unreachable),
+    _SubPhase(has_handle_weakrefs, _emit_handle_weakrefs),
+    _SubPhase(_has_finalize_garbage, _emit_finalize_garbage),
+    _SubPhase(_has_handle_resurrected, _emit_handle_resurrected),
+    _SubPhase(_has_clear_weakrefs, _emit_clear_weakrefs),
+    _SubPhase(has_delete_garbage, _emit_delete_garbage),
+)
+
+
 def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[TraceEvent]:
     gen = item.gen
     iid = item.iid
@@ -97,15 +375,35 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
     ts_start_ns = item.ts_start
     ts_stop_ns = item.ts_stop
 
-    pause_data: EventArgs = {
-        GENERATION: gen,
-        IID: iid,
-        COLLECTIONS: item.collections,
-        HEAP_SIZE: item.heap_size,
-        COLLECTED: item.collected,
-        UNCOLLECTABLE: item.uncollectable,
-        CANDIDATES: item.candidates,
-    }
+    events: list[TraceEvent] = []
+    phase, pause_data, _ = Data[0].emit(gen, item)
+
+    events.append(Slice(
+        track,
+        phase.slice_names[gen],
+        phase.categories[gen],
+        ts_start_ns,
+        ts_stop_ns,
+        pause_data,
+    ))
+
+    if ts_stop_ns > ts_start_ns:
+        for data in Data[1:]:
+            d = data.emit(gen,item)
+            if d is not None:
+                phase, args, (ts_start, ts_stop) = d
+                pause_data.update(args)
+                if ts_stop > ts_start:
+                    args["gen"] = gen
+                    args["iid"] = iid
+                    events.append(Slice(
+                        track,
+                        phase.slice_names[gen],
+                        phase.categories[gen],
+                        ts_start,
+                        ts_stop,
+                        args,
+                    ))
 
     counter_data: dict[str, int | float] = {
         COLLECTED: item.collected,
@@ -115,152 +413,25 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
     if item.uncollectable:
         counter_data[UNCOLLECTABLE] = item.uncollectable
 
-    if has_incremental(item) and gen < 2:
-        pause_data[INCREMENT_SIZE] = item.increment_size
+    # # Ahead of the sub-phases nested inside it, so its BEGIN wins the tie
+    # # against a sub-phase starting where the pause does. The slice holds
+    # # `pause_data` itself, so a sub-phase trimming it below still reaches it.
+    # events.append(
+    #     Slice(
+    #         track,
+    #         PAUSE.slice_names[gen],
+    #         PAUSE.categories[gen],
+    #         ts_start_ns,
+    #         ts_stop_ns,
+    #         pause_data,
+    #     )
+    # )
 
-    if has_mark_alive(item) and gen > 0:
-        pause_data[ALIVE_SIZE] = item.alive_size
-
-    if has_finalize_garbage(item):
-        pause_data[FINALIZED_GARBAGE_COUNT] = item.finalized_garbage_count
-
-    if has_delete_garbage(item):
-        pause_data[DELETED_GARBAGE_COUNT] = item.deleted_garbage_count
-
-    if has_clear_weakrefs(item):
-        pause_data[CLEAR_WEAKREFS_COUNT] = item.clear_weakrefs_count
-
-    events: list[TraceEvent] = []
-    # Ahead of the sub-phases nested inside it, so its BEGIN wins the tie
-    # against a sub-phase starting where the pause does.
-    events.append(
-        Slice(
-            track,
-            PAUSE.slice_names[gen],
-            PAUSE.categories[gen],
-            ts_start_ns,
-            ts_stop_ns,
-            pause_data,
-        )
-    )
-
-    if has_mark_alive(item) and item.ts_mark_alive_stop - item.ts_mark_alive_start > 0:
-        inc_data: EventArgs = {GENERATION: gen, IID: iid, ALIVE_SIZE: item.alive_size}
-        events.append(
-            Slice(
-                track,
-                MARK_ALIVE.slice_names[gen],
-                MARK_ALIVE.categories[gen],
-                item.ts_mark_alive_start,
-                item.ts_mark_alive_stop,
-                inc_data,
-            )
-        )
-
-    if has_incremental(item) and item.ts_fill_increment_stop - item.ts_fill_increment_start > 0:
-        inc_data = {GENERATION: gen, IID: iid, INCREMENT_SIZE: item.increment_size}
-        events.append(
-            Slice(
-                track,
-                FILL_INCREMENT.slice_names[gen],
-                FILL_INCREMENT.categories[gen],
-                item.ts_fill_increment_start,
-                item.ts_fill_increment_stop,
-                inc_data,
-            )
-        )
-
-    if has_deduce_unreachable(item) and item.ts_deduce_unreachable_stop - item.ts_deduce_unreachable_start > 0:
-        inc_data = {GENERATION: gen, IID: iid, CANDIDATES: item.candidates}
-        events.append(
-            Slice(
-                track,
-                DEDUCE_UNREACHABLE.slice_names[gen],
-                DEDUCE_UNREACHABLE.categories[gen],
-                item.ts_deduce_unreachable_start,
-                item.ts_deduce_unreachable_stop,
-                inc_data,
-            )
-        )
-
-    if has_handle_weakrefs(item) and item.ts_handle_weakref_callbacks_stop - item.ts_handle_weakref_callbacks_start > 0:
-        inc_data = {GENERATION: gen, IID: iid}
-        events.append(
-            Slice(
-                track,
-                HANDLE_WEAKREFS.slice_names[gen],
-                HANDLE_WEAKREFS.categories[gen],
-                item.ts_handle_weakref_callbacks_start,
-                item.ts_handle_weakref_callbacks_stop,
-                inc_data,
-            )
-        )
-
-    # The three phases below start where the one before them stopped, so each
-    # needs that record's guard as well as its own.
-    if (
-        has_handle_weakrefs(item)
-        and has_finalize_garbage(item)
-        and item.ts_finalize_garbage_stop - item.ts_handle_weakref_callbacks_stop > 0
-    ):
-        inc_data = {GENERATION: gen, IID: iid, FINALIZED_GARBAGE_COUNT: item.finalized_garbage_count}
-        events.append(
-            Slice(
-                track,
-                FINALIZE_GARBAGE.slice_names[gen],
-                FINALIZE_GARBAGE.categories[gen],
-                item.ts_handle_weakref_callbacks_stop,
-                item.ts_finalize_garbage_stop,
-                inc_data,
-            )
-        )
-
-    if (
-        has_finalize_garbage(item)
-        and has_handle_resurrected(item)
-        and item.ts_handle_resurrected_stop - item.ts_finalize_garbage_stop > 0
-    ):
-        inc_data = {GENERATION: gen, IID: iid}
-        events.append(
-            Slice(
-                track,
-                HANDLE_RESURRECTED.slice_names[gen],
-                HANDLE_RESURRECTED.categories[gen],
-                item.ts_finalize_garbage_stop,
-                item.ts_handle_resurrected_stop,
-                inc_data,
-            )
-        )
-
-    if (
-        has_handle_resurrected(item)
-        and has_clear_weakrefs(item)
-        and item.ts_clear_weakrefs_stop - item.ts_handle_resurrected_stop > 0
-    ):
-        inc_data = {GENERATION: gen, IID: iid, CLEAR_WEAKREFS_COUNT: item.clear_weakrefs_count}
-        events.append(
-            Slice(
-                track,
-                CLEAR_WEAKREFS.slice_names[gen],
-                CLEAR_WEAKREFS.categories[gen],
-                item.ts_handle_resurrected_stop,
-                item.ts_clear_weakrefs_stop,
-                inc_data,
-            )
-        )
-
-    if has_delete_garbage(item) and item.ts_delete_garbage_stop - item.ts_delete_garbage_start > 0:
-        inc_data = {GENERATION: gen, IID: iid, DELETED_GARBAGE_COUNT: item.deleted_garbage_count}
-        events.append(
-            Slice(
-                track,
-                DELETE_GARBAGE.slice_names[gen],
-                DELETE_GARBAGE.categories[gen],
-                item.ts_delete_garbage_start,
-                item.ts_delete_garbage_stop,
-                inc_data,
-            )
-        )
+    # # Every sub-phase runs inside the pause, so a pause of no length holds none.
+    # if ts_stop_ns > ts_start_ns:
+    #     for sub_phase in _SUB_PHASES:
+    #         if sub_phase.check(item):
+    #             sub_phase.emit(item, pause_data, events, track, gen, iid)
 
     # A generation the table does not hold is spelled on the spot: no
     # collector emits one, and a capture that carries one still converts.
