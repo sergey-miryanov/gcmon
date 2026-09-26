@@ -58,7 +58,6 @@ __all__ = [
     "is_instant",
     "is_loss",
     "structseq_fields",
-    "structseq_hidden",
     "to_mapping",
 ]
 
@@ -158,24 +157,16 @@ type JsonlRecord = dict[str, TValue]
 type TItem = TGCStatsInfo | TInstantMsg | TLossMsg
 
 
-# Per struct-sequence type: its visible field names, and whether it has
-# hidden ones, which only `__reduce__` returns.
-_STRUCTSEQ_FIELDS: dict[type, tuple[tuple[str, ...], bool]] = {}
+# Per struct-sequence type: its field names.
+_STRUCTSEQ_FIELDS: dict[type, tuple[str, ...]] = {}
 
 
-def structseq_fields(t: Any) -> tuple[tuple[str, ...], bool]:
-    """The visible field names of struct-sequence type *t*, and whether it
-    has hidden fields as well."""
+def structseq_fields(t: Any) -> tuple[str, ...]:
+    """The field names of struct-sequence type *t*."""
     fields = _STRUCTSEQ_FIELDS.get(t)
     if fields is None:
-        fields = _STRUCTSEQ_FIELDS[t] = (t.__match_args__, t.n_fields > t.n_sequence_fields)
+        fields = _STRUCTSEQ_FIELDS[t] = t.__match_args__
     return fields
-
-
-def structseq_hidden(item: Any) -> dict[str, Any]:
-    """The hidden fields of struct sequence *item*, by name."""
-    hidden: dict[str, Any] = item.__reduce__()[1][1]
-    return hidden
 
 
 def has_pause_ts(item: object) -> TypeGuard[TGCStatsInfo]:
@@ -254,13 +245,9 @@ def to_mapping(item: TItem) -> JsonlRecord:
         }
 
     if is_gc_stats(item):
-        # A live record: a struct sequence, so a tuple of its visible fields.
+        # A live record: a struct sequence, so a tuple of its fields.
         if isinstance(item, tuple):
-            names, hidden = structseq_fields(type(item))
-            m: JsonlRecord = dict(zip(names, item, strict=True))
-            if hidden:
-                m.update((name, value) for name, value in structseq_hidden(item).items() if value is not None)
-            return m
+            return dict(zip(structseq_fields(type(item)), item, strict=True))
 
         # A record read back from a capture, holding None for every field it lacks.
         if isinstance(item, msgspec.Struct):
