@@ -41,11 +41,11 @@ class TGCStatsInfo(Protocol):
     iid: int
     ts_start: int
     ts_stop: int
-    heap_size: int
     collections: int
     collected: int
     uncollectable: int
     candidates: int
+    heap_size: int
     duration: float
 
 

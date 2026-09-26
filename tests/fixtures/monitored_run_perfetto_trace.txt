@@ -492,12 +492,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.0001077
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0001077
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -657,12 +657,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.0002805
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0002805
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -737,12 +737,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.0083717
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0083717
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -817,12 +817,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.014553899999999998
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.014553899999999998
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -897,12 +897,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.020219499999999998
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.020219499999999998
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -977,12 +977,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.0258283
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0258283
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -1057,12 +1057,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.0320734
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0320734
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -1137,12 +1137,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.0384264
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0384264
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -1217,12 +1217,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.044214
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.044214
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -1297,12 +1297,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.0062064
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0062064
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -1377,12 +1377,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.050235
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.050235
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -1457,12 +1457,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.0558256
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0558256
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -1537,12 +1537,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.0624559
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0624559
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -1617,12 +1617,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.0678636
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0678636
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -1697,12 +1697,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.0002805
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0002805
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 20
@@ -1777,12 +1777,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.0008007
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0008007
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 20
@@ -1857,12 +1857,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.00097720000000000012
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.00097720000000000012
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 20
@@ -1937,12 +1937,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.0027968000000000003
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0027968000000000003
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 20
@@ -2017,12 +2017,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.0083717
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0083717
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 20
@@ -2097,12 +2097,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.014553899999999998
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.014553899999999998
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 20
@@ -2177,12 +2177,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.020219499999999998
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.020219499999999998
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 20
@@ -2257,12 +2257,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.0258283
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0258283
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 20
@@ -2337,12 +2337,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.0320734
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0320734
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 20
@@ -2417,12 +2417,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.0384264
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0384264
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 20
@@ -2497,12 +2497,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.044214
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.044214
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 20
@@ -2577,12 +2577,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.0062064
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0062064
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 20
@@ -2657,12 +2657,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.050235
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.050235
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 20
@@ -2811,12 +2811,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.0851385
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0851385
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -2891,12 +2891,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.090856100000000009
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.090856100000000009
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -2971,12 +2971,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.0962872
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0962872
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -3051,12 +3051,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.10237550000000001
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.10237550000000001
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -3131,12 +3131,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.1097061
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.1097061
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -3211,12 +3211,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.012124
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.012124
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -3291,12 +3291,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.1159636
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.1159636
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -3371,12 +3371,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.1221513
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.1221513
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -3451,12 +3451,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.1280379
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.1280379
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -3531,12 +3531,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.13395900000000002
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.13395900000000002
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -3611,12 +3611,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.13999830000000002
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.13999830000000002
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -3691,12 +3691,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.1458491
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.1458491
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -3845,12 +3845,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.0624559
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0624559
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 20
@@ -3925,12 +3925,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.0678636
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0678636
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 20
@@ -4005,12 +4005,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.0734224
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0734224
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 20
@@ -4085,12 +4085,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.0789127
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0789127
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 20
@@ -4165,12 +4165,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.0851385
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0851385
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 20
@@ -4245,12 +4245,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.090856100000000009
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.090856100000000009
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 20
@@ -4325,12 +4325,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.0962872
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0962872
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 20
@@ -4405,12 +4405,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.10237550000000001
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.10237550000000001
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 20
@@ -4485,12 +4485,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.1097061
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.1097061
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 20
@@ -4565,12 +4565,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.012124
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.012124
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 20
@@ -4645,12 +4645,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.1159636
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.1159636
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 20
@@ -4725,12 +4725,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.1221513
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.1221513
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 20
@@ -4879,12 +4879,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.164045
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.164045
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -4959,12 +4959,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.1704689
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.1704689
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -5039,12 +5039,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.1761189
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.1761189
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -5119,12 +5119,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.0179904
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0179904
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -5199,12 +5199,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.1820678
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.1820678
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -5279,12 +5279,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.18792
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.18792
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -5359,12 +5359,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.1940675
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.1940675
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -5439,12 +5439,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.1999132
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.1999132
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -5519,12 +5519,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.2054998
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.2054998
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -5599,12 +5599,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.21155090000000001
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.21155090000000001
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -5679,12 +5679,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.21727700000000003
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.21727700000000003
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -5759,12 +5759,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.22260840000000004
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.22260840000000004
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -5913,12 +5913,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.13999830000000002
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.13999830000000002
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 20
@@ -5993,12 +5993,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.1458491
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.1458491
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 20
@@ -6073,12 +6073,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.15152200000000002
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.15152200000000002
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 20
@@ -6153,12 +6153,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.1573063
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.1573063
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 20
@@ -6233,12 +6233,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.164045
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.164045
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 20
@@ -6313,12 +6313,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.1704689
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.1704689
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 20
@@ -6393,12 +6393,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.1761189
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.1761189
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 20
@@ -6473,12 +6473,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.0179904
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0179904
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 20
@@ -6553,12 +6553,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.1820678
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.1820678
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 20
@@ -6633,12 +6633,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.18792
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.18792
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 20
@@ -6713,12 +6713,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.1940675
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.1940675
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 20
@@ -6793,12 +6793,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.1999132
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.1999132
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 20
@@ -6947,12 +6947,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.23436780000000004
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.23436780000000004
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -7027,12 +7027,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.24010720000000005
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.24010720000000005
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -7107,12 +7107,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.0255738
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0255738
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -7187,12 +7187,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.24632700000000005
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.24632700000000005
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -7267,12 +7267,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.25200800000000007
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.25200800000000007
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -7347,12 +7347,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.25754670000000007
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.25754670000000007
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -7427,12 +7427,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.26360600000000006
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.26360600000000006
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -7507,12 +7507,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.26940230000000004
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.26940230000000004
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -7587,12 +7587,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.27554180000000006
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.27554180000000006
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -7667,12 +7667,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.28112420000000005
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.28112420000000005
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -7747,12 +7747,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.28850250000000005
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.28850250000000005
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -7827,12 +7827,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.29439040000000005
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.29439040000000005
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -7981,12 +7981,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.0314256
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0314256
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -8061,12 +8061,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.31200340000000004
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.31200340000000004
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -8141,12 +8141,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.3182147
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.3182147
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -8221,12 +8221,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.32385630000000004
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.32385630000000004
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -8301,12 +8301,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.32953780000000005
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.32953780000000005
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -8381,12 +8381,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.33559450000000007
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.33559450000000007
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -8461,12 +8461,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.34156840000000005
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.34156840000000005
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -8541,12 +8541,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.34765100000000004
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.34765100000000004
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -8621,12 +8621,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.35415150000000006
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.35415150000000006
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -8701,12 +8701,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.36196680000000009
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.36196680000000009
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -8781,12 +8781,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.36779060000000008
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.36779060000000008
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -8861,12 +8861,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.3735479000000001
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.3735479000000001
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -8941,12 +8941,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.29439040000000005
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.29439040000000005
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 36
@@ -9021,12 +9021,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.29991120000000004
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.29991120000000004
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 36
@@ -9101,12 +9101,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.30611350000000004
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.30611350000000004
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 36
@@ -9181,12 +9181,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.0314256
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0314256
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 36
@@ -9261,12 +9261,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.31200340000000004
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.31200340000000004
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 36
@@ -9341,12 +9341,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.3182147
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.3182147
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 36
@@ -9421,12 +9421,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.32385630000000004
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.32385630000000004
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 36
@@ -9501,12 +9501,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.32953780000000005
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.32953780000000005
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 36
@@ -9581,12 +9581,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.33559450000000007
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.33559450000000007
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 36
@@ -9661,12 +9661,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.34156840000000005
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.34156840000000005
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 36
@@ -9741,12 +9741,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.34765100000000004
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.34765100000000004
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 36
@@ -9821,12 +9821,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.35415150000000006
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.35415150000000006
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 36
@@ -9901,12 +9901,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.037427499999999995
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.037427499999999995
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -9981,12 +9981,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.37963490000000011
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.37963490000000011
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -10061,12 +10061,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.38570680000000013
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.38570680000000013
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -10141,12 +10141,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.39167070000000015
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.39167070000000015
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -10221,12 +10221,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.39728260000000015
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.39728260000000015
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -10301,12 +10301,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.40298060000000013
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.40298060000000013
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -10381,12 +10381,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.40857850000000012
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.40857850000000012
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -10461,12 +10461,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.41435990000000011
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.41435990000000011
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -10541,12 +10541,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.42051400000000011
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.42051400000000011
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -10621,12 +10621,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.42665110000000012
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.42665110000000012
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -10701,12 +10701,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.43235520000000011
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.43235520000000011
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -10781,12 +10781,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.43813140000000012
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.43813140000000012
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -10861,12 +10861,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.043161
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.043161
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -11015,12 +11015,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.3735479000000001
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.3735479000000001
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 36
@@ -11095,12 +11095,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.037427499999999995
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.037427499999999995
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 36
@@ -11175,12 +11175,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.37963490000000011
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.37963490000000011
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 36
@@ -11255,12 +11255,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.38570680000000013
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.38570680000000013
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 36
@@ -11335,12 +11335,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.39167070000000015
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.39167070000000015
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 36
@@ -11415,12 +11415,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.39728260000000015
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.39728260000000015
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 36
@@ -11495,12 +11495,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.40298060000000013
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.40298060000000013
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 36
@@ -11575,12 +11575,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.40857850000000012
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.40857850000000012
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 36
@@ -11655,12 +11655,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.41435990000000011
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.41435990000000011
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 36
@@ -11735,12 +11735,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.42051400000000011
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.42051400000000011
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 36
@@ -11815,12 +11815,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.42665110000000012
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.42665110000000012
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 36
@@ -11895,12 +11895,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.43235520000000011
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.43235520000000011
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 36
@@ -12049,12 +12049,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.45197580000000015
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.45197580000000015
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -12129,12 +12129,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.45982860000000014
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.45982860000000014
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -12209,12 +12209,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.46641950000000015
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.46641950000000015
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -12289,12 +12289,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.47244430000000015
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.47244430000000015
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -12369,12 +12369,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.47856210000000016
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.47856210000000016
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -12449,12 +12449,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.48505140000000013
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.48505140000000013
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -12529,12 +12529,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.49093910000000013
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.49093910000000013
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -12609,12 +12609,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.49713530000000011
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.49713530000000011
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -12689,12 +12689,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.50319960000000008
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.50319960000000008
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -12769,12 +12769,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.50955780000000006
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.50955780000000006
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -12849,12 +12849,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.0493759
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0493759
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -12929,12 +12929,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.515379
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.515379
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -13009,12 +13009,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.43813140000000012
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.43813140000000012
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 36
@@ -13089,12 +13089,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.043161
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.043161
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 36
@@ -13169,12 +13169,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.44607180000000013
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.44607180000000013
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 36
@@ -13249,12 +13249,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.45197580000000015
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.45197580000000015
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 36
@@ -13329,12 +13329,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.45982860000000014
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.45982860000000014
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 36
@@ -13409,12 +13409,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.46641950000000015
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.46641950000000015
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 36
@@ -13489,12 +13489,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.47244430000000015
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.47244430000000015
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 36
@@ -13569,12 +13569,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.47856210000000016
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.47856210000000016
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 36
@@ -13649,12 +13649,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.48505140000000013
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.48505140000000013
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 36
@@ -13729,12 +13729,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.49093910000000013
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.49093910000000013
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 36
@@ -13809,12 +13809,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.49713530000000011
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.49713530000000011
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 36
@@ -13889,12 +13889,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.50319960000000008
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.50319960000000008
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 36
@@ -14043,12 +14043,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.5337176
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.5337176
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -14123,12 +14123,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.5402344
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.5402344
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -14203,12 +14203,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.5461852
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.5461852
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -14283,12 +14283,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.5521407
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.5521407
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -14363,12 +14363,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.5582032
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.5582032
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -14443,12 +14443,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.564294
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.564294
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -14523,12 +14523,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.571519
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.571519
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -14603,12 +14603,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.5780171
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.5780171
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -14683,12 +14683,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.0552476
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0552476
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -14763,12 +14763,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.5837178999999999
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.5837178999999999
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -14843,12 +14843,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.5899895
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.5899895
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -14923,12 +14923,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.59617049999999994
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.59617049999999994
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 4
@@ -15077,12 +15077,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.0493759
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0493759
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 36
@@ -15157,12 +15157,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.515379
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.515379
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 36
@@ -15237,12 +15237,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.5219059
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.5219059
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 36
@@ -15317,12 +15317,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.527956
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.527956
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 36
@@ -15397,12 +15397,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.5337176
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.5337176
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 36
@@ -15477,12 +15477,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.5402344
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.5402344
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 36
@@ -15557,12 +15557,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.5461852
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.5461852
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 36
@@ -15637,12 +15637,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.5521407
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.5521407
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 36
@@ -15717,12 +15717,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.5582032
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.5582032
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 36
@@ -15797,12 +15797,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.564294
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.564294
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 36
@@ -15877,12 +15877,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.571519
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.571519
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 36
@@ -15957,12 +15957,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.5780171
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.5780171
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 36
@@ -16037,12 +16037,12 @@ track_event {
     name: "candidates"
   }
   debug_annotations {
-    double_value: 0.0552476
-    name: "duration"
-  }
-  debug_annotations {
     int_value: 0
     name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0552476
+    name: "duration"
   }
   type: TYPE_SLICE_BEGIN
   track_uuid: 36

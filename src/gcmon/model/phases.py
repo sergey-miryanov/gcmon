@@ -98,8 +98,8 @@ class PauseData:
             COLLECTED: item.collected,
             UNCOLLECTABLE: item.uncollectable,
             CANDIDATES: item.candidates,
-            DURATION: item.duration,
             HEAP_SIZE: item.heap_size,
+            DURATION: item.duration,
         }
 
 
