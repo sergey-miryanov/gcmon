@@ -4,8 +4,11 @@ and what it annotates."""
 from collections.abc import Mapping
 from functools import partial
 from operator import attrgetter, is_not
-from typing import Any, ClassVar, Final, Protocol, TypeGuard, get_protocol_members
+from typing import Any, ClassVar, Final, Protocol, TypeGuard
 
+import msgspec
+
+from .data import GCStatsInfo
 from .names import (
     ALIVE_SIZE,
     CANDIDATES,
@@ -349,16 +352,11 @@ SUB_PHASE_ROWS: Final[tuple[type[PhaseRow], ...]] = (
 # Per struct-sequence type: the sub-phase rows its records carry.
 _SUB_PHASE_ROWS: dict[type, tuple[type[PhaseRow], ...]] = {}
 
-# The fields a sub-phase row reads that a msgspec record may hold as `None`.
-# Every field a `check` reads is one some row's `Info` declares, so which of
-# these are present decides which rows a record carries. `PhaseRow` does not
-# declare `Info`, since a nested class and a `type` alias each fail to match
-# the declaration in one checker or the other, so it is read through `vars`.
+# The fields a msgspec record may hold as `None`. Every other field is
+# always there, so which of these a record holds decides which rows it
+# carries.
 _OPTIONAL_FIELDS: Final = attrgetter(
-    *sorted(
-        set[str]().union(*(get_protocol_members(vars(row)["Info"]) for row in SUB_PHASE_ROWS))
-        - get_protocol_members(TGCStatsInfo)
-    )
+    *(field.name for field in msgspec.structs.fields(GCStatsInfo) if field.default is None)
 )
 _present: Final = partial(is_not, None)
 
