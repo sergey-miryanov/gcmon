@@ -282,7 +282,8 @@ class TestPrintStatsEdgeCases:
         incremental_gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
         stats = StreamingStats()
-        stats.update(proc(DEFAULT_PID), incremental_gc_stats_item_factory())
+        # Generation 1 runs every phase, so each has a row.
+        stats.update(proc(DEFAULT_PID), incremental_gc_stats_item_factory(gen=1))
 
         print_stats(stats, StatsView.TOTAL)
 
@@ -296,6 +297,7 @@ class TestPrintStatsEdgeCases:
     ) -> None:
         stats = StreamingStats()
         item = incremental_gc_stats_item_factory(
+            gen=1,
             ts_mark_alive_stop=5000,
             ts_fill_increment_start=5000,
             ts_fill_increment_stop=7000,
@@ -551,7 +553,7 @@ class TestLossColumns:
         print_stats(stats, StatsView.TOTAL)
 
         rows = {row[1]: row for row in table_rows(capsys.readouterr().out)}
-        assert rows[phase_slice_name(MARK_ALIVE, 0)][2:4] == ["3/~10", "3.000/~17.000"]
+        assert rows[phase_slice_name(FILL_INCREMENT, 0)][2:4] == ["3/~10", "3.000/~17.000"]
         assert rows[gc_pause_slice_name(0)][2:4] == ["3/10", "3.000/17.000"]
 
     def test_cov_and_f_are_columns(self, capsys: pytest.CaptureFixture[str]) -> None:

@@ -92,6 +92,7 @@ class TestMarkAliveMetric:
     ) -> None:
         metric = METRICS["mark_alive"]
         item = incremental_gc_stats_item_factory(
+            gen=1,
             ts_mark_alive_start=2000,
             ts_mark_alive_stop=4000,
         )

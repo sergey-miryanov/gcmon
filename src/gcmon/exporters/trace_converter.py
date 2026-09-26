@@ -95,12 +95,10 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
     # Every sub-phase runs inside the pause, so a pause of no length holds none.
     if ts_stop_ns > ts_start_ns:
         for row in sub_phase_rows(item):
-            args = row.args(gen, item)
-            if args is None:
-                continue
-            pause_data.update(args)
             ts_start, ts_stop = row.bounds(item)
             if ts_stop > ts_start:
+                args = row.args(gen, item)
+                pause_data.update(args)
                 events.append(
                     Slice(
                         track,

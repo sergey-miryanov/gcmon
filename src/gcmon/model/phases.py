@@ -66,12 +66,12 @@ class PhaseRow(Protocol):
     @staticmethod
     def check(item: object) -> bool: ...
 
+    # Empty when the phase does not run at the record's generation.
     @staticmethod
     def bounds(item: Any) -> tuple[int, int]: ...
 
-    # None when the phase does not run at generation *gen*.
     @staticmethod
-    def args(gen: int, item: Any) -> EventArgs | None: ...
+    def args(gen: int, item: Any) -> EventArgs: ...
 
 
 class PauseData:
@@ -105,6 +105,7 @@ class PauseData:
 
 class MarkAliveData:
     class Info(Protocol):
+        gen: int
         alive_size: int
         ts_mark_alive_start: int
         ts_mark_alive_stop: int
@@ -117,15 +118,19 @@ class MarkAliveData:
 
     @staticmethod
     def bounds(item: Info) -> tuple[int, int]:
+        # Mark Alive does not run at generation 0.
+        if item.gen == 0:
+            return 0, 0
         return item.ts_mark_alive_start, item.ts_mark_alive_stop
 
     @staticmethod
-    def args(gen: int, item: Info) -> EventArgs | None:
-        return {ALIVE_SIZE: item.alive_size} if gen > 0 else None
+    def args(gen: int, item: Info) -> EventArgs:
+        return {ALIVE_SIZE: item.alive_size}
 
 
 class IncrementalData:
     class Info(Protocol):
+        gen: int
         increment_size: int
         ts_fill_increment_start: int
         ts_fill_increment_stop: int
@@ -138,11 +143,14 @@ class IncrementalData:
 
     @staticmethod
     def bounds(item: Info) -> tuple[int, int]:
+        # Fill Increment does not run at generation 2.
+        if item.gen == 2:
+            return 0, 0
         return item.ts_fill_increment_start, item.ts_fill_increment_stop
 
     @staticmethod
-    def args(gen: int, item: Info) -> EventArgs | None:
-        return {INCREMENT_SIZE: item.increment_size} if gen < 2 else None
+    def args(gen: int, item: Info) -> EventArgs:
+        return {INCREMENT_SIZE: item.increment_size}
 
 
 class DeduceUnreachableData:
@@ -162,7 +170,7 @@ class DeduceUnreachableData:
         return item.ts_deduce_unreachable_start, item.ts_deduce_unreachable_stop
 
     @staticmethod
-    def args(gen: int, item: Info) -> EventArgs | None:
+    def args(gen: int, item: Info) -> EventArgs:
         return {CANDIDATES: item.candidates}
 
 
@@ -182,7 +190,7 @@ class HandleWeakrefsData:
         return item.ts_handle_weakref_callbacks_start, item.ts_handle_weakref_callbacks_stop
 
     @staticmethod
-    def args(gen: int, item: Info) -> EventArgs | None:
+    def args(gen: int, item: Info) -> EventArgs:
         return {}
 
 
@@ -208,7 +216,7 @@ class FinalizeGarbageData:
         return item.ts_handle_weakref_callbacks_stop, item.ts_finalize_garbage_stop
 
     @staticmethod
-    def args(gen: int, item: Info) -> EventArgs | None:
+    def args(gen: int, item: Info) -> EventArgs:
         return {FINALIZED_GARBAGE_COUNT: item.finalized_garbage_count}
 
 
@@ -231,7 +239,7 @@ class HandleResurrectedData:
         return item.ts_finalize_garbage_stop, item.ts_handle_resurrected_stop
 
     @staticmethod
-    def args(gen: int, item: Info) -> EventArgs | None:
+    def args(gen: int, item: Info) -> EventArgs:
         return {}
 
 
@@ -255,7 +263,7 @@ class ClearWeakrefsData:
         return item.ts_handle_resurrected_stop, item.ts_clear_weakrefs_stop
 
     @staticmethod
-    def args(gen: int, item: Info) -> EventArgs | None:
+    def args(gen: int, item: Info) -> EventArgs:
         return {CLEAR_WEAKREFS_COUNT: item.clear_weakrefs_count}
 
 
@@ -276,7 +284,7 @@ class DeleteGarbageData:
         return item.ts_delete_garbage_start, item.ts_delete_garbage_stop
 
     @staticmethod
-    def args(gen: int, item: Info) -> EventArgs | None:
+    def args(gen: int, item: Info) -> EventArgs:
         return {DELETED_GARBAGE_COUNT: item.deleted_garbage_count}
 
 
