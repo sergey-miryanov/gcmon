@@ -4,7 +4,7 @@
 - **Date:** 2026-06-27
 - **Amended by:** [ADR-0011](0011-process-lifetime-and-ordering.md),
   [ADR-0027](0027-group-every-row-an-interpreter-owns.md)
-- **Modules:** exporters
+- **Modules:** exporters, model
 
 ## Context
 
@@ -49,11 +49,13 @@ Because the group is a plain custom track, the trace processor honors
 now carry a non-NULL `parent_id` pointing at the `GC Metrics` row, and the
 ranking takes effect *inside* the group.
 
-Ranks come from a single ordered table covering each metric: `collected`,
-`uncollectable` (emitted only when non-zero), `candidates`, `duration`, and
-the rest. `rss` has no entry, because a `ProcessTrack` draws it where a rank
-is discarded ([ADR-0004](0004-toplevel-shared-counters.md)); `heap_size` has
-none either, because its interpreter's group ranks it
+Ranks come from the order the pause's phase row lists the counters it draws,
+`PauseData.counter_metrics`: `collected`, `candidates`, `duration`, then
+`uncollectable`, which is emitted only when non-zero. A metric that list does
+not name ranks below all of them. `rss` has no entry, because a `ProcessTrack`
+draws it where a rank is discarded
+([ADR-0004](0004-toplevel-shared-counters.md)); `heap_size` has none either,
+because its interpreter's group ranks it
 ([ADR-0027](0027-group-every-row-an-interpreter-owns.md)). Inserting a metric
 shifts the ranks below it, which is fine: only the relative order matters.
 

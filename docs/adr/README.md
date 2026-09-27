@@ -79,11 +79,11 @@ module is neither.
 |---|---|---|---|
 | [0001](0001-hand-rolled-perfetto-protobuf-encoder.md) | Hand-roll the Perfetto protobuf encoder; keep `perfetto` out of the runtime dependency tree | Accepted | exporters |
 | [0002](0002-perfetto-track-uuid-and-hierarchy.md) | Allocate track UUIDs sequentially and parent every track explicitly | Accepted | exporters |
-| [0003](0003-gc-metrics-group-track.md) | Parent per-generation counters to a non-OS-scoped `GC Metrics` group track | Accepted | exporters |
+| [0003](0003-gc-metrics-group-track.md) | Parent per-generation counters to a non-OS-scoped `GC Metrics` group track | Accepted | exporters, model |
 | [0004](0004-toplevel-shared-counters.md) | Emit `heap_size` and `rss` as single top-level counters, outside the `GC Metrics` group | Superseded by 0024 | exporters |
 | [0005](0005-counter-y-axis-share-key.md) | Use the metric name itself as `CounterDescriptor.y_axis_share_key` | Accepted | exporters |
 | [0006](0006-begin-end-slice-pairs.md) | Represent durations as Begin/End pairs in both backends | Superseded by 0024 | exporters, model |
-| [0007](0007-shared-trace-converter-pipeline.md) | Convert GC stats to `TraceEvent` once, in a shared pipeline | Accepted | exporters, model, monitoring |
+| [0007](0007-shared-trace-converter-pipeline.md) | Convert GC stats to `TraceEvent` once, in a shared pipeline | Accepted | exporters, model, monitoring, stats |
 | [0008](0008-buffered-exporter-and-encoder-protocol.md) | Split the exporter's lifecycle from the encoder that writes the bytes | Accepted | exporters |
 | [0009](0009-nanoseconds-canonical-time-unit.md) | Store `TraceEvent.ts` in nanoseconds; convert at the encoder | Accepted | exporters, model, support |
 | [0010](0010-process-identity-cmdline-and-start-marker.md) | Duplicate the process cmdline per consumer, and force the process track to render | Accepted | exporters, monitoring |

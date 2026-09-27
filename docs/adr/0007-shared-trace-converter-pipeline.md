@@ -3,17 +3,15 @@
 - **Status:** Accepted
 - **Date:** 2026-06-14
 - **Amended by:** [ADR-0024](0024-an-event-names-the-track-it-is-drawn-on.md)
-- **Modules:** exporters, model, monitoring
+- **Modules:** exporters, model, monitoring, stats
 
 ## Context
 
 The Chrome and Perfetto format modules each independently turned a
-`TGCStatsInfo` into output. Both re-implemented the same GC sub-phase
-discovery (the `has_*` guards for mark-alive, fill-increment,
-deduce-unreachable, handle-weakrefs, finalize-garbage, handle-resurrected,
-clear-weakrefs, delete-garbage), the same name and category strings for each
-sub-phase, and the same counter-metric collection. Only the `has_*` TypeGuards
-had been factored out.
+`TGCStatsInfo` into output. Both re-implemented the same test for which
+sub-phases a record carries, the same bounds and annotations for each, the
+same name and category strings, and the same counter-metric collection.
+`--stats` measured the same phases from a third copy.
 
 Adding a sub-phase meant editing both files identically. Getting one of them
 wrong produced two traces of the same run that disagreed, which is a slow,
@@ -25,8 +23,13 @@ conversion.
 
 ## Decision
 
-A single pipeline `TGCStatsInfo → list[TraceEvent]` lives in `exporters`. It
-owns the only copy of the sub-phase logic and the naming strings.
+A single pipeline `TGCStatsInfo → list[TraceEvent]` lives in `exporters`. What
+it knows about a phase comes from the phase rows in `model`: one row per
+phase, saying which records carry it, its start and stop, what it annotates
+and the key `--stats` totals it under. The rows are the only copy, and every
+consumer reads them: the pipeline, and `stats`, which sits in the same layer
+as `exporters` rather than above it
+([ADR-0026](0026-two-subsystems-over-a-shared-base.md)).
 
 `TraceEvent`, the union in `model`, is the contract between the converter and
 the backends. It is `Slice | Instant | Counter`: an event names the `Track` it
@@ -58,7 +61,8 @@ writes `0` there and publishes the record unmarked
 
 ## Consequences
 
-- A new sub-phase or metric is added in one place.
+- A new sub-phase is one phase row, and the trace and `--stats` both draw it
+  from there. A new counter is added on the pause's row.
 - Every output format carries the same events by construction. While there
   were two, that equivalence was asserted by comparing one against the other;
   with one format left, the trace is asserted against the `list[TraceEvent]`
@@ -72,10 +76,10 @@ writes `0` there and publishes the record unmarked
 
 ## Alternatives considered
 
-- **Share only the `has_*` guards, keep two converters.** That was the status
-  quo, and it was insufficient: the guards were the small part. The naming
-  strings, the categories and the metric collection were where the two copies
-  drifted.
+- **Share only the sub-phase checks, keep two converters.** That was the
+  status quo, and it was insufficient: the checks were the small part. The
+  naming strings, the categories and the metric collection were where the two
+  copies drifted.
 - **Make Perfetto consume the Chrome JSON structures.** Rejected: it would
   make the Chrome format the internal model, so a Perfetto-only concept
   (nested slice hierarchy, counter descriptors) would have no place to live,
