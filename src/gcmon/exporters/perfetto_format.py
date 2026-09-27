@@ -11,13 +11,8 @@ importer needs one name.
 
 from collections.abc import Sequence
 
-from ..model.names import (
-    CANDIDATES,
-    COLLECTED,
-    DURATION,
-    HEAP_SIZE,
-    UNCOLLECTABLE,
-)
+from ..model.names import HEAP_SIZE
+from ..model.phases import PAUSE_ROW
 from ..model.trace_event import (
     Counter,
     Instant,
@@ -119,23 +114,15 @@ _INTERPRETER_ROW_ORDER: tuple[str, ...] = (
 )
 _INTERPRETER_ROW_RANKS: dict[str, int] = {name: rank for rank, name in enumerate(_INTERPRETER_ROW_ORDER)}
 
-# What a `GC Metrics` group holds, ranked the same way. A metric that reaches
-# a trace as an annotation on the pause slice is not here: ranking a row
-# nothing draws is an edit paid in advance for a case nobody has (ADR-0005).
-# Nor is either counter drawn elsewhere: `heap_size` ranks among its
-# interpreter's own rows through `_INTERPRETER_ROW_RANKS`, and `rss` parents
-# to the process track, which is OS-scoped, and the trace processor discards
-# a rank there (ADR-0003).
-_COUNTER_ORDER: tuple[str, ...] = (
-    COLLECTED,
-    UNCOLLECTABLE,
-    CANDIDATES,
-    DURATION,
-)
-_COUNTER_RANKS: dict[str, int] = {metric: rank for rank, metric in enumerate(_COUNTER_ORDER)}
+# What a `GC Metrics` group holds, ranked the same way. Neither counter drawn
+# elsewhere is here: `heap_size` ranks among its interpreter's own rows
+# through `_INTERPRETER_ROW_RANKS`, and `rss` parents to the process track,
+# which is OS-scoped, and the trace processor discards a rank there
+# (ADR-0003).
+_COUNTER_RANKS: dict[str, int] = {metric: rank for rank, metric in enumerate(PAUSE_ROW.counter_metrics)}
 
 # A metric this module has never heard of draws below every one it has.
-_UNLISTED_COUNTER_RANK: int = len(_COUNTER_ORDER)
+_UNLISTED_COUNTER_RANK: int = len(_COUNTER_RANKS)
 
 
 def _emit_interpreter_group_descriptors(

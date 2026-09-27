@@ -41,3 +41,13 @@ def test_every_field_no_row_reads_annotates_the_pause() -> None:
     rest = {field for field in _RECORD_FIELDS if not field.startswith("ts_")} - _INFO_FIELDS
 
     assert rest <= set(pause_args)
+
+
+def test_a_pause_emits_its_counters_in_the_order_they_draw() -> None:
+    """The `GC Metrics` group ranks its counters by `counter_metrics`, and
+    `counters` is written out by hand beside it."""
+    counters = PAUSE_ROW.counters(0, create_mock_stats_item(uncollectable=2))
+
+    assert [metric for metric, _, _ in counters if metric in PAUSE_ROW.counter_metrics] == list(
+        PAUSE_ROW.counter_metrics
+    )

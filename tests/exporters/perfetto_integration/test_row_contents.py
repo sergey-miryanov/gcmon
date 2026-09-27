@@ -388,7 +388,7 @@ class TestTheOrderRowsAreDrawnIn:
             every_row_trace_processor, _INTERPRETER_LIST_NAME, _interpreter_group_name(0), _COUNTER_GROUP_NAME
         )
 
-        assert drawn == [counter_display_name(0, metric) for metric in (COLLECTED, UNCOLLECTABLE, CANDIDATES, DURATION)]
+        assert drawn == [counter_display_name(0, metric) for metric in (COLLECTED, CANDIDATES, DURATION, UNCOLLECTABLE)]
 
     def test_the_top_level_rows_come_out_by_name(self, every_row_trace_processor: TraceProcessor) -> None:
         """No rank reaches these: a process track is OS-scoped and the trace
