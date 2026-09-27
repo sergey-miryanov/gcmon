@@ -186,10 +186,11 @@ for how to read a low-coverage table.
 
 gcmon reports when each GC run happened, how long it took, and how large the
 heap was, plus a per-phase breakdown on a custom CPython build with enhanced
-GC instrumentation (see [above](#sub-phase-breakdown-requires-a-custom-build)).
-It cannot tell you which code triggered the run, because the GC records carry
-no stack information. A sampler answers that question, so the two pair well:
-see [Alternatives Comparison](#alternatives-comparison).
+GC instrumentation (see
+[above](#sub-phase-breakdown-requires-a-custom-build)). It cannot tell you
+which code triggered the run, because the GC records carry no stack
+information. A sampler answers that question, so the two pair well: see
+[Alternatives Comparison](#alternatives-comparison).
 
 ### No OS-level memory pressure
 
