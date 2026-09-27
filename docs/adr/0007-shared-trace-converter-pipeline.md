@@ -25,11 +25,10 @@ conversion.
 
 A single pipeline `TGCStatsInfo → list[TraceEvent]` lives in `exporters`. What
 it knows about a phase comes from the phase rows in `model`: one row per
-phase, saying which records carry it, its start and stop, what it annotates
-and the key `--stats` totals it under. The rows are the only copy, and every
-consumer reads them: the pipeline, and `stats`, which sits in the same layer
-as `exporters` rather than above it
-([ADR-0026](0026-two-subsystems-over-a-shared-base.md)).
+phase, saying which records carry it, its start and stop, and what it
+annotates. The rows are the only copy, and every consumer reads them: the
+pipeline, and `stats`, which sits in the same layer as `exporters` rather than
+above it ([ADR-0026](0026-two-subsystems-over-a-shared-base.md)).
 
 `TraceEvent`, the union in `model`, is the contract between the converter and
 the backends. It is `Slice | Instant | Counter`: an event names the `Track` it

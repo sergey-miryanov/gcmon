@@ -67,11 +67,9 @@ __all__ = [
 
 class PhaseRow(Protocol):
     """One phase: which records carry it, where it runs, and what it
-    annotates. *item* in `bounds` and `args` is one `check` accepted.
-    `key` is what a `--stats` table holds the phase under."""
+    annotates. *item* in `bounds` and `args` is one `check` accepted."""
 
     phase: ClassVar[Phase]
-    key: ClassVar[str]
 
     @staticmethod
     def check(item: object) -> bool: ...
@@ -94,7 +92,6 @@ class PauseData:
     type Info = TGCStatsInfo
 
     phase: ClassVar[Phase] = PAUSE
-    key: ClassVar[str] = "pause"
 
     counter_metrics: ClassVar = (COLLECTED, CANDIDATES, DURATION, UNCOLLECTABLE)
     counter_names: ClassVar[Mapping[str, PerGeneration[str]]] = {
@@ -147,7 +144,6 @@ class MarkAliveData:
 
     Info: ClassVar[type] = _Info
     phase: ClassVar[Phase] = MARK_ALIVE
-    key: ClassVar[str] = "mark_alive"
 
     @staticmethod
     def check(item: object) -> TypeGuard[_Info]:
@@ -175,7 +171,6 @@ class IncrementalData:
 
     Info: ClassVar[type] = _Info
     phase: ClassVar[Phase] = FILL_INCREMENT
-    key: ClassVar[str] = "fill_increment"
 
     @staticmethod
     def check(item: object) -> TypeGuard[_Info]:
@@ -202,7 +197,6 @@ class DeduceUnreachableData:
 
     Info: ClassVar[type] = _Info
     phase: ClassVar[Phase] = DEDUCE_UNREACHABLE
-    key: ClassVar[str] = "deduce_unreachable"
 
     @staticmethod
     def check(item: object) -> TypeGuard[_Info]:
@@ -225,7 +219,6 @@ class HandleWeakrefsData:
 
     Info: ClassVar[type] = _Info
     phase: ClassVar[Phase] = HANDLE_WEAKREFS
-    key: ClassVar[str] = "handle_weakrefs"
 
     @staticmethod
     def check(item: object) -> TypeGuard[_Info]:
@@ -249,7 +242,6 @@ class FinalizeGarbageData:
 
     Info: ClassVar[type] = _Info
     phase: ClassVar[Phase] = FINALIZE_GARBAGE
-    key: ClassVar[str] = "finalize_garbage"
 
     @staticmethod
     def check(item: object) -> TypeGuard[_Info]:
@@ -275,7 +267,6 @@ class HandleResurrectedData:
 
     Info: ClassVar[type] = _Info
     phase: ClassVar[Phase] = HANDLE_RESURRECTED
-    key: ClassVar[str] = "handle_resurrected"
 
     @staticmethod
     def check(item: object) -> TypeGuard[_Info]:
@@ -302,7 +293,6 @@ class ClearWeakrefsData:
 
     Info: ClassVar[type] = _Info
     phase: ClassVar[Phase] = CLEAR_WEAKREFS
-    key: ClassVar[str] = "clear_weakrefs"
 
     @staticmethod
     def check(item: object) -> TypeGuard[_Info]:
@@ -329,7 +319,6 @@ class DeleteGarbageData:
 
     Info: ClassVar[type] = _Info
     phase: ClassVar[Phase] = DELETE_GARBAGE
-    key: ClassVar[str] = "delete_garbage"
 
     @staticmethod
     def check(item: object) -> TypeGuard[_Info]:

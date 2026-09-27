@@ -18,7 +18,6 @@ from gcmon.model.names import (
 )
 from gcmon.model.phases import (
     PAUSE_ROW,
-    PHASE_ROWS,
     ClearWeakrefsData,
     DeduceUnreachableData,
     DeleteGarbageData,
@@ -362,19 +361,3 @@ class TestDeleteGarbagePhase:
 
         assert ts1 == 0
         assert ts2 == 0
-
-
-def test_every_row_carries_the_key_its_tables_use() -> None:
-    """The keys are what a `--stats` table and a ring hold a phase under, in
-    the order the table prints them."""
-    assert [row.key for row in PHASE_ROWS] == [
-        "pause",
-        "mark_alive",
-        "fill_increment",
-        "deduce_unreachable",
-        "handle_weakrefs",
-        "finalize_garbage",
-        "handle_resurrected",
-        "clear_weakrefs",
-        "delete_garbage",
-    ]

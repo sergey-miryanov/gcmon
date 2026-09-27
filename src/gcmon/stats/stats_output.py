@@ -216,7 +216,7 @@ def print_stats(stats: StreamingStats, view: StatsView, table_format: TableForma
     first = True
     has_rows = False
     for phase_row in PHASE_ROWS:
-        rows = _build_rows(stats.phases[phase_row.key], phase_row.phase.label, totals, phase_row is PAUSE_ROW)
+        rows = _build_rows(stats.phases[phase_row], phase_row.phase.label, totals, phase_row is PAUSE_ROW)
         if rows:
             if has_rows:
                 all_rows.append(_SEP_PHASE)
@@ -232,9 +232,7 @@ def print_stats(stats: StreamingStats, view: StatsView, table_format: TableForma
         first = True
         has_rows = False
         for phase_row in PHASE_ROWS:
-            rows = _build_rows(
-                ring_data.get(phase_row.key, {}), phase_row.phase.label, ring_totals, phase_row is PAUSE_ROW
-            )
+            rows = _build_rows(ring_data.get(phase_row, {}), phase_row.phase.label, ring_totals, phase_row is PAUSE_ROW)
             if rows:
                 if has_rows:
                     all_rows.append(_SEP_PHASE)

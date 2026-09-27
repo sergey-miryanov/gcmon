@@ -15,7 +15,7 @@ from .stats import Stats, get_quantile_value
 logger = logging.getLogger(__name__)
 
 
-TPhaseStats = dict[str, dict[int, Stats]]
+TPhaseStats = dict[type[PhaseRow], dict[int, Stats]]
 
 
 def phase_bounds(row: type[PhaseRow], item: object) -> tuple[int, int]:
@@ -24,11 +24,11 @@ def phase_bounds(row: type[PhaseRow], item: object) -> tuple[int, int]:
     return row.bounds(item) if row.check(item) else (0, 0)
 
 
-def phase_spans(item: TGCStatsInfo) -> list[tuple[str, int, int]]:
-    """The key, start and stop of the pause and of every sub-phase *item*
+def phase_spans(item: TGCStatsInfo) -> list[tuple[type[PhaseRow], int, int]]:
+    """The row, start and stop of the pause and of every sub-phase *item*
     carries."""
-    spans = [(PAUSE_ROW.key, *phase_bounds(PAUSE_ROW, item))]
-    spans.extend((row.key, *row.bounds(item)) for row in sub_phase_rows(item))
+    spans: list[tuple[type[PhaseRow], int, int]] = [(PAUSE_ROW, *phase_bounds(PAUSE_ROW, item))]
+    spans.extend((row, *row.bounds(item)) for row in sub_phase_rows(item))
     return spans
 
 
@@ -163,7 +163,7 @@ class RingStats(msgspec.Struct):
         """The pause durations gcmon read for one generation of this ring."""
         if self.phases is None:
             return Stats()
-        return self.phases[PAUSE_ROW.key][gen]
+        return self.phases[PAUSE_ROW][gen]
 
     def pause_totals(self, gen: int) -> PauseTotals:
         """One generation, sampled and lost together."""
@@ -172,11 +172,11 @@ class RingStats(msgspec.Struct):
         return PauseTotals(sampled.count(), sampled.sum(), lost.count, lost.pause_ns)
 
 
-def _record(stats: TPhaseStats, gen: int, spans: list[tuple[str, int, int]]) -> None:
+def _record(stats: TPhaseStats, gen: int, spans: list[tuple[type[PhaseRow], int, int]]) -> None:
     """Record phase durations in nanoseconds, the unit every phase keeps."""
-    for phase_key, ts_start, ts_stop in spans:
+    for row, ts_start, ts_stop in spans:
         if ts_start != ts_stop:
-            stats[phase_key][gen].update(ts_stop - ts_start)
+            stats[row][gen].update(ts_stop - ts_start)
 
 
 class StreamingStats:
@@ -194,7 +194,7 @@ class StreamingStats:
     def __init__(self) -> None:
         self._count: int = 0
         # Phase durations in nanoseconds, per phase and generation.
-        self.phases: TPhaseStats = {row.key: {gen: Stats() for gen in self.GENS} for row in PHASE_ROWS}
+        self.phases: TPhaseStats = {row: {gen: Stats() for gen in self.GENS} for row in PHASE_ROWS}
         # The rings of the processes running now. An entry leaves on the exit
         # that settles it.
         self._running_rings: dict[RingKey, RingStats] = {}
@@ -278,7 +278,7 @@ class StreamingStats:
             self._decline(ring, key)
             return None
 
-        ring.phases = {row.key: {gen: Stats() for gen in self.GENS} for row in PHASE_ROWS}
+        ring.phases = {row: {gen: Stats() for gen in self.GENS} for row in PHASE_ROWS}
         self._admitted_rings += 1
         return ring.phases
 
@@ -414,7 +414,7 @@ class StreamingStats:
             for gen, loss in ring.loss.items():
                 lost.setdefault(gen, LossTotals()).add(loss.count, loss.pause_ns)
 
-        pause = self.phases[PAUSE_ROW.key]
+        pause = self.phases[PAUSE_ROW]
         by_gen = {}
         for gen in self.GENS:
             sampled = pause[gen]

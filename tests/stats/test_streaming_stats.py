@@ -6,7 +6,19 @@ import numpy as np
 import pytest
 
 from gcmon.model.data import GCStatsInfo
-from gcmon.model.phases import PAUSE_ROW, PHASE_ROWS
+from gcmon.model.phases import (
+    PAUSE_ROW,
+    PHASE_ROWS,
+    ClearWeakrefsData,
+    DeduceUnreachableData,
+    DeleteGarbageData,
+    FinalizeGarbageData,
+    HandleResurrectedData,
+    HandleWeakrefsData,
+    IncrementalData,
+    MarkAliveData,
+    PhaseRow,
+)
 from gcmon.model.protocol import TGCStatsInfo
 from gcmon.stats.stats import get_quantile_value
 from gcmon.stats.streaming_stats import StreamingStats
@@ -91,7 +103,7 @@ class TestStreamingStatsUpdate:
     ) -> None:
         streaming_stats.update(proc(DEFAULT_PID), mock_stats_item)
 
-        assert streaming_stats.phases[PAUSE_ROW.key][0].count() == 1
+        assert streaming_stats.phases[PAUSE_ROW][0].count() == 1
 
     def test_update_records_every_sub_phase(
         self,
@@ -101,32 +113,32 @@ class TestStreamingStatsUpdate:
         # Generation 1 runs every phase.
         streaming_stats.update(proc(DEFAULT_PID), incremental_gc_stats_item_factory(gen=1))
 
-        assert streaming_stats.phases["mark_alive"][1].count() == 1
-        assert streaming_stats.phases["fill_increment"][1].count() == 1
-        assert streaming_stats.phases["deduce_unreachable"][1].count() == 1
-        assert streaming_stats.phases["handle_weakrefs"][1].count() == 1
-        assert streaming_stats.phases["finalize_garbage"][1].count() == 1
-        assert streaming_stats.phases["handle_resurrected"][1].count() == 1
-        assert streaming_stats.phases["clear_weakrefs"][1].count() == 1
-        assert streaming_stats.phases["delete_garbage"][1].count() == 1
+        assert streaming_stats.phases[MarkAliveData][1].count() == 1
+        assert streaming_stats.phases[IncrementalData][1].count() == 1
+        assert streaming_stats.phases[DeduceUnreachableData][1].count() == 1
+        assert streaming_stats.phases[HandleWeakrefsData][1].count() == 1
+        assert streaming_stats.phases[FinalizeGarbageData][1].count() == 1
+        assert streaming_stats.phases[HandleResurrectedData][1].count() == 1
+        assert streaming_stats.phases[ClearWeakrefsData][1].count() == 1
+        assert streaming_stats.phases[DeleteGarbageData][1].count() == 1
 
     @pytest.mark.parametrize(
-        ("gen_number", "key"),
-        [pytest.param(0, "mark_alive", id="mark alive"), pytest.param(2, "fill_increment", id="fill increment")],
+        ("gen_number", "row"),
+        [pytest.param(0, MarkAliveData, id="mark alive"), pytest.param(2, IncrementalData, id="fill increment")],
     )
     def test_update_leaves_out_a_phase_the_generation_skips(
         self,
         streaming_stats: StreamingStats,
         incremental_gc_stats_item_factory: Callable[..., GCStatsInfo],
         gen_number: int,
-        key: str,
+        row: type[PhaseRow],
     ) -> None:
         """Mark Alive does not run at generation 0, nor Fill Increment at 2.
         The record here carries a span of 1 ms for each all the same."""
         streaming_stats.update(proc(DEFAULT_PID), incremental_gc_stats_item_factory(gen=gen_number))
 
-        assert streaming_stats.phases[key][gen_number].count() == 0
-        assert streaming_stats.phases["deduce_unreachable"][gen_number].count() == 1
+        assert streaming_stats.phases[row][gen_number].count() == 0
+        assert streaming_stats.phases[DeduceUnreachableData][gen_number].count() == 1
 
     def test_update_skips_zero_duration(
         self,
@@ -137,7 +149,7 @@ class TestStreamingStatsUpdate:
 
         streaming_stats.update(proc(DEFAULT_PID), item)
 
-        assert streaming_stats.phases[PAUSE_ROW.key][0].count() == 0
+        assert streaming_stats.phases[PAUSE_ROW][0].count() == 0
 
     def test_update_keeps_sub_microsecond_duration(
         self,
@@ -150,8 +162,8 @@ class TestStreamingStatsUpdate:
 
         streaming_stats.update(proc(DEFAULT_PID), item)
 
-        assert streaming_stats.phases[PAUSE_ROW.key][0].count() == 1
-        assert streaming_stats.phases[PAUSE_ROW.key][0].sum() == 750
+        assert streaming_stats.phases[PAUSE_ROW][0].count() == 1
+        assert streaming_stats.phases[PAUSE_ROW][0].sum() == 750
 
     def test_update_tracks_heap_size(
         self,
@@ -192,7 +204,7 @@ class TestStreamingStatsRingTracking:
         ring_stats = streaming_stats_with_pids.get_ring_stats(proc(11111), 0)
 
         assert ring_stats is not None
-        assert PAUSE_ROW.key in ring_stats
+        assert PAUSE_ROW in ring_stats
 
     def test_get_ring_stats_returns_settled(
         self,
@@ -230,10 +242,10 @@ class TestStreamingStatsRingTracking:
 
         ring_stats = streaming_stats.get_ring_stats(proc(DEFAULT_PID), 0)
         assert ring_stats is not None
-        assert ring_stats[PAUSE_ROW.key][0].count() == 1
-        assert ring_stats[PAUSE_ROW.key][0].sum() == 5_000
-        assert ring_stats[PAUSE_ROW.key][0].count() == streaming_stats.phases[PAUSE_ROW.key][0].count()
-        assert ring_stats[PAUSE_ROW.key][0].sum() == streaming_stats.phases[PAUSE_ROW.key][0].sum()
+        assert ring_stats[PAUSE_ROW][0].count() == 1
+        assert ring_stats[PAUSE_ROW][0].sum() == 5_000
+        assert ring_stats[PAUSE_ROW][0].count() == streaming_stats.phases[PAUSE_ROW][0].count()
+        assert ring_stats[PAUSE_ROW][0].sum() == streaming_stats.phases[PAUSE_ROW][0].sum()
 
     def test_per_ring_phases_match_totals_for_a_single_ring(
         self,
@@ -246,10 +258,10 @@ class TestStreamingStatsRingTracking:
 
         ring_stats = streaming_stats.get_ring_stats(proc(DEFAULT_PID), 0)
         assert ring_stats is not None
-        for phase_key, gen_stats in streaming_stats.phases.items():
+        for row, gen_stats in streaming_stats.phases.items():
             for gen, total in gen_stats.items():
-                assert ring_stats[phase_key][gen].count() == total.count(), phase_key
-                assert ring_stats[phase_key][gen].sum() == total.sum(), phase_key
+                assert ring_stats[row][gen].count() == total.count(), row
+                assert ring_stats[row][gen].sum() == total.sum(), row
 
     def test_every_phase_splits_between_two_interpreters(
         self,
@@ -265,13 +277,13 @@ class TestStreamingStatsRingTracking:
         first = streaming_stats.get_ring_stats(proc(DEFAULT_PID), 0)
         second = streaming_stats.get_ring_stats(proc(DEFAULT_PID), 1)
         assert first is not None and second is not None
-        counts = {key: (first[key][1].count(), second[key][1].count()) for key in (row.key for row in PHASE_ROWS)}
-        assert counts == dict.fromkeys((row.key for row in PHASE_ROWS), (1, 1))
-        for phase_key, gen_stats in streaming_stats.phases.items():
+        counts = {row: (first[row][1].count(), second[row][1].count()) for row in PHASE_ROWS}
+        assert counts == dict.fromkeys(PHASE_ROWS, (1, 1))
+        for row, gen_stats in streaming_stats.phases.items():
             for gen, total in gen_stats.items():
-                one, other = first[phase_key][gen], second[phase_key][gen]
-                assert one.count() + other.count() == total.count(), phase_key
-                assert one.sum() + other.sum() == total.sum(), phase_key
+                one, other = first[row][gen], second[row][gen]
+                assert one.count() + other.count() == total.count(), row
+                assert one.sum() + other.sum() == total.sum(), row
 
 
 class TestStreamingStatsRingBound:
@@ -338,4 +350,4 @@ class TestStreamingStatsReadTime:
         assert streaming_stats.count() == 1
         assert streaming_stats.read_time.count() == 1
         assert streaming_stats.read_time.sum() == 42_000
-        assert streaming_stats.phases[PAUSE_ROW.key][0].sum() == 1_000_000
+        assert streaming_stats.phases[PAUSE_ROW][0].sum() == 1_000_000
