@@ -155,7 +155,7 @@ behavior or crashes.
 In practice, run both processes from the same virtualenv, container image, or
 `pyenv`/`uv` environment so they share a single Python binary.
 
-### Sub-step breakdown requires a custom build
+### Sub-phase breakdown requires a custom build
 
 The per-phase GC breakdown visible in the screenshot below (Mark Alive, Fill
 increment, Deduce Unreachable, and the fields that accompany it) is only
@@ -186,7 +186,7 @@ for how to read a low-coverage table.
 
 gcmon reports when each GC run happened, how long it took, and how large the
 heap was, plus a per-phase breakdown on a custom CPython build with enhanced
-GC instrumentation (see [above](#sub-step-breakdown-requires-a-custom-build)).
+GC instrumentation (see [above](#sub-phase-breakdown-requires-a-custom-build)).
 It cannot tell you which code triggered the run, because the GC records carry
 no stack information. A sampler answers that question, so the two pair well:
 see [Alternatives Comparison](#alternatives-comparison).
@@ -251,7 +251,7 @@ gcmon combine trace1.jsonl trace2.jsonl -o combined.pftrace -n
 <img src="https://raw.githubusercontent.com/sergey-miryanov/gcmon/main/docs/images/chrome-trace-example.png" alt="Perfetto Trace Example" width="800">
 
 *GC monitoring data visualized in Perfetto UI:*
-- *GC Pause slices with sub-step breakdown, and per-gen `G{gen}` counter
+- *GC Pause slices with sub-phase breakdown, and per-gen `G{gen}` counter
   tracks*
 - *A `heap_size` counter per interpreter, and the `Processes` row holding one
   span per monitored process*

@@ -76,7 +76,7 @@ def _write_trace(path: Path) -> None:
     exporter.add_process_cmdline(first, FIRST_CMDLINE)
     exporter.add_process_cmdline(second, SECOND_CMDLINE)
     for process, ts_start, rss in ((first, 100_000_000, 100_000_000), (second, 300_000_000, 900_000_000)):
-        # An incremental item rather than a plain one: it draws the sub-step
+        # An incremental item rather than a plain one: it draws the sub-phase
         # slices the statistics example groups beside the pause.
         exporter.add_event(
             process,

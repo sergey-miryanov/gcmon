@@ -461,28 +461,28 @@ class TestConvertItemToPerfettoPackets:
             return out
         raise AssertionError(f"slice {slice_name!r} not found in packets")
 
-    def test_finalize_garbage_substep_has_count_annotation(self, state: PerfettoTrackState) -> None:
+    def test_finalize_garbage_sub_phase_has_count_annotation(self, state: PerfettoTrackState) -> None:
         _, packets = convert_item(proc(TARGET_PID), full_subphase_item(), state, sequence_id=1)
 
         anns = self._annotations_for_slice(packets, phase_slice_name(FINALIZE_GARBAGE, 1))
         assert (FINALIZED_GARBAGE_COUNT, 42) in anns
         assert all(name not in (DELETED_GARBAGE_COUNT, CLEAR_WEAKREFS_COUNT) for name, _ in anns)
 
-    def test_clear_weakrefs_substep_has_count_annotation(self, state: PerfettoTrackState) -> None:
+    def test_clear_weakrefs_sub_phase_has_count_annotation(self, state: PerfettoTrackState) -> None:
         _, packets = convert_item(proc(TARGET_PID), full_subphase_item(), state, sequence_id=1)
 
         anns = self._annotations_for_slice(packets, phase_slice_name(CLEAR_WEAKREFS, 1))
         assert (CLEAR_WEAKREFS_COUNT, 7) in anns
         assert all(name not in (FINALIZED_GARBAGE_COUNT, DELETED_GARBAGE_COUNT) for name, _ in anns)
 
-    def test_delete_garbage_substep_has_count_annotation(self, state: PerfettoTrackState) -> None:
+    def test_delete_garbage_sub_phase_has_count_annotation(self, state: PerfettoTrackState) -> None:
         _, packets = convert_item(proc(TARGET_PID), full_subphase_item(), state, sequence_id=1)
 
         anns = self._annotations_for_slice(packets, phase_slice_name(DELETE_GARBAGE, 1))
         assert (DELETED_GARBAGE_COUNT, 13) in anns
         assert all(name not in (FINALIZED_GARBAGE_COUNT, CLEAR_WEAKREFS_COUNT) for name, _ in anns)
 
-    def test_deduce_unreachable_substep_has_candidates_annotation(self, state: PerfettoTrackState) -> None:
+    def test_deduce_unreachable_sub_phase_has_candidates_annotation(self, state: PerfettoTrackState) -> None:
         item = full_subphase_item()
 
         _, packets = convert_item(proc(TARGET_PID), item, state, sequence_id=1)
