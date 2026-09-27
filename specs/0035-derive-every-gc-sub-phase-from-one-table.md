@@ -1,6 +1,6 @@
 # 0035: Derive every GC sub-phase from one table
 
-- **Status:** Not started
+- **Status:** Landed 2026-09-27
 - **Kind:** feature (cleanup)
 - **Effort:** S
 - **Origin:** code structure review of `src/gcmon`, 2026-08-15. Rewritten
@@ -122,11 +122,12 @@ and `SLICE_ARGS` leave `model/names.py`. The tests that read them,
 `tests/model/test_names.py`, take a line's fields from the `__struct_fields__`
 of `GCStatsInfo`, `LossMsg`, `GenLoss` and `InstantMsg`, and name `pid`, which
 the writer adds. `InstantMsg` is in no list today, and `docs/formats.md` names
-its `type` but not `name` or `ts`, so the page gains both. `SLICE_ARGS` moves
-as it is: its names are annotations the exporters write, not fields of a
-record. The move deletes a copy rather than adding a test. The
-documented-names test then reads every field a record can carry, so a field
-`docs/formats.md` does not name fails it.
+its `type` but not `name` or `ts`, so the page gains both. The derived list
+also turns up the sub-phase timestamps, which the page did not name either,
+and it gains a row per phase for them. `SLICE_ARGS` moves as it is: its names
+are annotations the exporters write, not fields of a record. The move deletes
+a copy rather than adding a test. The documented-names test then reads every
+field a record can carry, so a field `docs/formats.md` does not name fails it.
 
 `test_every_jsonl_field_is_one_a_written_line_carries` then has to write a
 record carrying every sub-phase, and an instant event. `GCStatsInfo` omits a
@@ -137,7 +138,9 @@ record carrying every sub-phase, and an instant event. `GCStatsInfo` omits a
 `phase_bounds` and `phase_spans` move to `stats/streaming_stats.py`, their one
 caller. `METRICS`, `ring_metrics()`, `metric_key`, `TStatsData` and
 `StreamingStats.metrics` are renamed for phases in the same change as the
-`CONTEXT.md` entry.
+`CONTEXT.md` entry. `PHASE_ROWS` holds the pause and its sub-phases in the
+order the table prints them. The `--stats` table's `Metric` column keeps its
+header: it is output, and this work changes none but the counter order.
 
 **Rule 8, on `PauseData.args` naming fields `GCStatsInfo` also declares.**
 Deriving the pause span's args from the struct means walking its fields on
@@ -232,16 +235,16 @@ every field reads a capture.
 | | |
 |---|---|
 | code | `Info` readable through `SubPhaseRow`, `_COUNTER_ORDER` deleted, `JSONL_FIELDS` and `SLICE_ARGS` moved to the tests, `stats/metrics.py` retired and the stats layer's "metric" swept, the `model/names.py` docstring that still counts six lists |
-| docs | `sub-step` → `sub-phase` in `docs/formats.md` and `docs/perfetto-sql.md`, three `CONTEXT.md` entries, ADR-0003 and ADR-0007 amended, spec 0062's prior-art line repointed from `METRICS` |
+| docs | the sub-phase timestamps and an instant event's fields in `docs/formats.md`, `sub-step` → `sub-phase` in `docs/`, the README and the test names, three `CONTEXT.md` entries, ADR-0003 and ADR-0007 amended, spec 0062's prior-art line repointed from `METRICS` |
 | proof | cases 1 to 4 in section 5 |
 
 **Vocabulary this settles**, in `CONTEXT.md`: a **phase** is one named
 interval of a collection, drawn as a slice and totalled as a `--stats` row.
 The whole pause is one, the eight inside it are **sub-phases**, and `sub-step`
 is not a spelling gcmon uses. A **metric** is a figure drawn as a counter
-series, and after 4.4 the word means nothing else. A **field** is one
-attribute a record carries, spelled the same as a JSONL key and a span
-annotation.
+series, and after 4.4 no identifier uses it for anything else; the `--stats`
+column header keeps `Metric`. A **field** is one attribute a record carries,
+spelled the same as a JSONL key and a span annotation.
 
 **On convention rule 10.** This spec amends ADR-0003 and ADR-0007. The
 amendments are taken in the records themselves, in the same change, alongside
