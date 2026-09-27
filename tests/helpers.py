@@ -14,11 +14,12 @@ from perfetto.protos.perfetto.trace.perfetto_trace_pb2 import Trace, TracePacket
 from perfetto.trace_processor import TraceProcessor, TraceProcessorConfig
 
 from gcmon.exporters.exporter import EventsExporter
-from gcmon.model.data import GCStatsInfo, GenLoss, LossMsg
+from gcmon.model.data import GCStatsInfo, GenLoss, InstantMsg, LossMsg
 from gcmon.model.names import (
     ALIVE_SIZE,
     CANDIDATES,
     CLEAR_WEAKREFS_COUNT,
+    CMDLINE,
     COLLECTED,
     COLLECTIONS,
     DELETED_GARBAGE_COUNT,
@@ -28,7 +29,10 @@ from gcmon.model.names import (
     HEAP_SIZE,
     IID,
     INCREMENT_SIZE,
+    LOST_PAUSE,
     PID,
+    PID_EPOCH,
+    SAMPLED_COUNT,
     TS_CLEAR_WEAKREFS_STOP,
     TS_DEDUCE_UNREACHABLE_START,
     TS_DEDUCE_UNREACHABLE_STOP,
@@ -71,11 +75,37 @@ _JsonValue = int | float | str
 JsonlRecord = dict[str, _JsonValue]
 DefaultsValue = Path | float | None | int | str | bool | TableFormat
 
+# What a JSONL line carries: every field of every record, and `pid`, which
+# the writer adds.
+JSONL_FIELDS: Final = tuple(
+    dict.fromkeys(
+        (
+            PID,
+            *GCStatsInfo.__struct_fields__,
+            *LossMsg.__struct_fields__,
+            *GenLoss.__struct_fields__,
+            *InstantMsg.__struct_fields__,
+        )
+    )
+)
+
+# What a slice carries beyond a record's fields. `generation` is absent: it
+# repeats on the slice the name already carries the generation of, so no page
+# describes it as a figure worth reading.
+SLICE_ARGS: Final = (
+    CMDLINE,
+    PID_EPOCH,
+    SAMPLED_COUNT,
+    LOST_PAUSE,
+)
+
 # What one poll of one pid answers. Takes the pid, because a test driving a
 # process tree answers differently per child.
 ReadFn = Callable[..., Sequence[TGCStatsInfo]]
 
 __all__ = [
+    "JSONL_FIELDS",
+    "SLICE_ARGS",
     "DefaultsValue",
     "FakeEventsReader",
     "JsonlRecord",

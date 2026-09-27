@@ -70,12 +70,11 @@ from gcmon.model.names import (
     GC_LOSS_NAME,
     GC_PHASES,
     HEAP_SIZE,
-    JSONL_FIELDS,
     RSS,
-    SLICE_ARGS,
 )
 from gcmon.model.phases import PAUSE_ROW
 from gcmon.support.vocabulary import ENCODING
+from tests.helpers import JSONL_FIELDS, SLICE_ARGS
 
 DOCS = Path(__file__).resolve().parents[2] / "docs"
 FORMATS = DOCS / "formats.md"

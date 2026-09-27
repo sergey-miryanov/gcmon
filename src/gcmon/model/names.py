@@ -6,10 +6,6 @@ A collection phase is spelled the same way on a Perfetto slice and in a
 (ADR-0026), so the words live in the base they share rather than once per
 package.
 
-`GC_PHASES` is two of the six hand-written sub-phase lists spec 0035 sets
-out to collapse; the rest of that work is the JSONL fields, the normalizer
-and the predicates, which this table does not reach.
-
 The track names stay in `exporters`. `GC Pauses` is a row and `GC Pause(0)`
 is a slice on it: two names, not one name in two spellings.
 """
@@ -45,7 +41,6 @@ __all__ = [
     "HEAP_SIZE",
     "IID",
     "INCREMENT_SIZE",
-    "JSONL_FIELDS",
     "LOST_COUNT",
     "LOST_FROM",
     "LOST_PAUSE",
@@ -58,7 +53,6 @@ __all__ = [
     "PID_EPOCH",
     "RSS",
     "SAMPLED_COUNT",
-    "SLICE_ARGS",
     "TS",
     "TS_CLEAR_WEAKREFS_STOP",
     "TS_DEDUCE_UNREACHABLE_START",
@@ -212,32 +206,6 @@ LOST_COUNT: Final = "lost_count"
 LOST_FROM: Final = "lost_from"
 LOST_PAUSE_NS: Final = "lost_pause_ns"
 LOST_PAUSE: Final = "lost_pause"
-
-# What a JSONL line carries, and what a slice carries, each as a page
-# documents it. `tests/exporters/test_track_names_are_documented.py` reads
-# these, so adding a name here fails until `docs/formats.md` describes it.
-JSONL_FIELDS: Final = (
-    PID,
-    GEN,
-    IID,
-    TS_START,
-    TS_STOP,
-    COLLECTIONS,
-    LOST_FROM,
-    OBSERVED_COUNT,
-    LOST_COUNT,
-    LOST_PAUSE_NS,
-)
-
-SLICE_ARGS: Final = (
-    CMDLINE,
-    PID_EPOCH,
-    SAMPLED_COUNT,
-    LOST_PAUSE,
-)
-
-# `generation` is absent: it repeats on the slice the name already carries
-# the generation of, so no page describes it as a figure worth reading.
 
 # When each sub-phase started and stopped, as an instrumented CPython
 # reports it. A name here is a field on the record and nothing else reads

@@ -31,15 +31,21 @@ from gcmon.model.names import (
     GC_PHASES,
     GENERATIONS,
     HEAP_SIZE,
-    JSONL_FIELDS,
     PAUSE,
-    SLICE_ARGS,
     gc_loss_slice_name,
 )
 from gcmon.model.phases import PAUSE_ROW
 from gcmon.model.trace_event import Counter
 from gcmon.support.vocabulary import ENCODING
-from tests.helpers import create_mock_loss_item, create_mock_stats_item, proc
+from tests.data_helpers import create_instant_msg
+from tests.helpers import (
+    JSONL_FIELDS,
+    SLICE_ARGS,
+    create_mock_incremental_item,
+    create_mock_loss_item,
+    create_mock_stats_item,
+    proc,
+)
 
 
 def _keys(records: Iterable[Any]) -> set[str]:
@@ -86,10 +92,10 @@ class TestEveryPhaseIsShapedLikeThePhasesBesideIt:
 
 
 class TestTheTableAgreesWithWhatAConversionWrites:
-    """Both halves are hand-written and nothing makes them agree. A name in
-    the table that no conversion emits is a row the pages promise and the
-    trace never draws; one a conversion emits and the table omits escapes
-    every check that reads the table."""
+    """Each half is written apart from the other and nothing else makes them
+    agree. A name in the table that no conversion emits is a row the pages
+    promise and the trace never draws; one a conversion emits and the table
+    omits escapes every check that reads the table."""
 
     def _counters(self) -> set[str]:
         events = convert_item_to_trace_format(proc(1), create_mock_stats_item(uncollectable=2))
@@ -108,8 +114,8 @@ class TestTheTableAgreesWithWhatAConversionWrites:
         assert [m for m in PAUSE_ROW.counter_metrics if m not in GCStatsInfo.__annotations__] == []
 
     def test_every_jsonl_field_is_one_a_written_line_carries(self, tmp_path: Path) -> None:
-        """`gcmon combine` reads these back, so a field named here and never
-        written is one the reader waits for and never sees.
+        """`gcmon combine` reads these back, so a field a record declares and
+        a line never carries is one the reader waits for and never sees.
 
         Written out and read back rather than taken off `to_mapping`: `pid`
         is the writer's, and the loss figures sit one level down inside
@@ -117,7 +123,7 @@ class TestTheTableAgreesWithWhatAConversionWrites:
         """
         path = tmp_path / "written.jsonl"
 
-        write_jsonl(path, {1: [create_mock_stats_item(), create_mock_loss_item()]})
+        write_jsonl(path, {1: [create_mock_incremental_item(gen=1), create_mock_loss_item(), create_instant_msg()]})
 
         written = _keys(json.loads(line) for line in path.read_text(encoding=ENCODING).splitlines())
         assert [f for f in JSONL_FIELDS if f not in written] == []

@@ -215,6 +215,14 @@ terminal), each line is a JSON object holding one GC record:
 | `finalized_garbage_count` | Objects this run finalized | Custom build |
 | `deleted_garbage_count` | Objects this run deleted | Custom build |
 | `clear_weakrefs_count` | Weakrefs this run cleared | Custom build |
+| `ts_mark_alive_start`, `ts_mark_alive_stop` | When `GC Mark Alive` started and stopped | Custom build |
+| `ts_fill_increment_start`, `ts_fill_increment_stop` | When `GC Fill Increment` started and stopped | Custom build |
+| `ts_deduce_unreachable_start`, `ts_deduce_unreachable_stop` | When `GC Deduce Unreachable` started and stopped | Custom build |
+| `ts_handle_weakref_callbacks_start`, `ts_handle_weakref_callbacks_stop` | When `GC Handle Weakrefs Callbacks` started and stopped | Custom build |
+| `ts_finalize_garbage_stop` | When `GC Finalize Garbage` stopped; it starts at `ts_handle_weakref_callbacks_stop` | Custom build |
+| `ts_handle_resurrected_stop` | When `GC Handle Resurrected` stopped; it starts at `ts_finalize_garbage_stop` | Custom build |
+| `ts_clear_weakrefs_stop` | When `GC Clear Weakrefs` stopped; it starts at `ts_handle_resurrected_stop` | Custom build |
+| `ts_delete_garbage_start`, `ts_delete_garbage_stop` | When `GC Delete Garbage` started and stopped | Custom build |
 
 > **Note:** fields marked **Custom build** need the instrumented CPython
 > build, as the [sub-step slices](#perfetto-output) do.
@@ -255,6 +263,21 @@ on the slice, because a slice is read by eye:
 | `gen` | the group's own name, `gen0`, `gen1`, `gen2` |
 | `lost_from` with `lost_count` | `lost_collections`, one field, both ends included |
 | `lost_pause_ns` | `lost_pause` beside it, the same total as text |
+
+### Instant events
+
+A program driving gcmon through the [control plane](control-plane.md) leaves
+one line per [control instant](#perfetto-output):
+
+```jsonl
+{"pid": 12345, "type": "i", "name": "start GC monitor", "ts": 1700000000500000}
+```
+
+| Field | Description |
+|-------|-------------|
+| `type` | Always `i` |
+| `name` | The instant's name, as the trace draws it |
+| `ts` | When it happened (nanoseconds) |
 
 Tell the record types apart by field presence: a GC record has `collections`,
 a loss record has `gens`, an instant event has `type`. Line order carries no
