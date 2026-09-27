@@ -28,7 +28,7 @@
 ## 1. Problem statement
 
 This is maintenance cost, and nothing an operator sees is wrong. Each phase is
-one row in `model/phases.py`, and every consumer reads the rows. Three facts
+one row in `model/phases.py`, and every consumer reads the rows. Some facts
 beside them are still written out by hand:
 
 | Fact | Where it is written | Kept agreeing by |
