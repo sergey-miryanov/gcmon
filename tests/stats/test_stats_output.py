@@ -174,7 +174,7 @@ class TestPrintTable:
     def test_a_wide_cell_widens_its_column_on_every_line(self, capsys: pytest.CaptureFixture[str]) -> None:
         rows = [
             ["12345", "0", "100", "1000.000", "10.000", "20.000", "30.000", "40.000", "50.000", "1.00", "1.00"],
-            ["1", "a metric wider than its header", "1", "1", "1", "1", "1", "1", "1", "1", "1"],
+            ["1", "a phase wider than its header", "1", "1", "1", "1", "1", "1", "1", "1", "1"],
         ]
 
         _print_table(rows)
@@ -276,7 +276,7 @@ class TestPrintStatsEdgeCases:
         labels = [row[0] for row in table_rows(capsys.readouterr().out)[1:] if ":" in row[0]]
         assert labels == ["11111:0", "22222:0", "33333:0"]
 
-    def test_total_label_first_metric(
+    def test_total_label_first_phase(
         self,
         capsys: pytest.CaptureFixture[str],
         incremental_gc_stats_item_factory: Callable[..., GCStatsInfo],
@@ -290,7 +290,7 @@ class TestPrintStatsEdgeCases:
         _header, *block = table_rows(capsys.readouterr().out)
         assert [row[0] for row in block] == [TOTAL_LABEL] + [""] * 8
 
-    def test_incremental_metrics_output(
+    def test_every_sub_phase_output(
         self,
         capsys: pytest.CaptureFixture[str],
         incremental_gc_stats_item_factory: Callable[..., GCStatsInfo],

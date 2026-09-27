@@ -21,8 +21,8 @@ A trace carries these:
 - **`GC Pauses` track**: one row per interpreter, under that interpreter's
   group, holding one **`GC Pause(gen)` slice** per GC run gcmon read, carrying
   that run's counters as args.
-- **Sub-step slices** nested inside a pause, each named for its generation the
-  way the pause is: `GC Mark Alive`, `GC Fill Increment`,
+- **Sub-phase slices** nested inside a pause, each named for its generation
+  the way the pause is: `GC Mark Alive`, `GC Fill Increment`,
   `GC Deduce Unreachable`, `GC Handle Weakrefs Callbacks`,
   `GC Finalize Garbage`, `GC Handle Resurrected`, `GC Clear Weakrefs`,
   `GC Delete Garbage`. A `--stats` row carries the same name.
@@ -63,7 +63,7 @@ A trace carries these:
   read; see [The `Lifetime` slice](#the-lifetime-slice). It covers the same
   interval as that process's slice on the `Processes` row.
 
-> **Note:** sub-step slices (`GC Mark Alive`, `GC Fill Increment`,
+> **Note:** sub-phase slices (`GC Mark Alive`, `GC Fill Increment`,
 > `GC Deduce Unreachable`, …) need a CPython build carrying the extra GC
 > instrumentation. A standard build gives the top-level `GC Pause` slices and
 > the counters.
@@ -225,7 +225,7 @@ terminal), each line is a JSON object holding one GC record:
 | `ts_delete_garbage_start`, `ts_delete_garbage_stop` | When `GC Delete Garbage` started and stopped | Custom build |
 
 > **Note:** fields marked **Custom build** need the instrumented CPython
-> build, as the [sub-step slices](#perfetto-output) do.
+> build, as the [sub-phase slices](#perfetto-output) do.
 
 ### Loss records
 

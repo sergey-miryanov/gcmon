@@ -763,8 +763,8 @@ class TestAFanOutThatDeparts:
             {
                 key: (
                     ring.declined,
-                    ring.metrics is not None,
-                    None if ring.metrics is None else ring.metrics[PAUSE_ROW.key][0].percentiles,
+                    ring.phases is not None,
+                    None if ring.phases is None else ring.phases[PAUSE_ROW.key][0].percentiles,
                     {gen: (loss.count, loss.pause_ns) for gen, loss in ring.loss.items()},
                     {gen: (totals.collections, totals.duration_s) for gen, totals in ring.cumulative.items()},
                 )

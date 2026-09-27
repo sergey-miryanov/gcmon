@@ -84,16 +84,16 @@ class TestStreamingStatsUpdate:
 
         assert streaming_stats.count() == 2
 
-    def test_update_records_pause_metric(
+    def test_update_records_pause_phase(
         self,
         streaming_stats: StreamingStats,
         mock_stats_item: TGCStatsInfo,
     ) -> None:
         streaming_stats.update(proc(DEFAULT_PID), mock_stats_item)
 
-        assert streaming_stats.metrics[PAUSE_ROW.key][0].count() == 1
+        assert streaming_stats.phases[PAUSE_ROW.key][0].count() == 1
 
-    def test_update_records_incremental_metrics(
+    def test_update_records_every_sub_phase(
         self,
         streaming_stats: StreamingStats,
         incremental_gc_stats_item_factory: Callable[..., GCStatsInfo],
@@ -101,14 +101,14 @@ class TestStreamingStatsUpdate:
         # Generation 1 runs every phase.
         streaming_stats.update(proc(DEFAULT_PID), incremental_gc_stats_item_factory(gen=1))
 
-        assert streaming_stats.metrics["mark_alive"][1].count() == 1
-        assert streaming_stats.metrics["fill_increment"][1].count() == 1
-        assert streaming_stats.metrics["deduce_unreachable"][1].count() == 1
-        assert streaming_stats.metrics["handle_weakrefs"][1].count() == 1
-        assert streaming_stats.metrics["finalize_garbage"][1].count() == 1
-        assert streaming_stats.metrics["handle_resurrected"][1].count() == 1
-        assert streaming_stats.metrics["clear_weakrefs"][1].count() == 1
-        assert streaming_stats.metrics["delete_garbage"][1].count() == 1
+        assert streaming_stats.phases["mark_alive"][1].count() == 1
+        assert streaming_stats.phases["fill_increment"][1].count() == 1
+        assert streaming_stats.phases["deduce_unreachable"][1].count() == 1
+        assert streaming_stats.phases["handle_weakrefs"][1].count() == 1
+        assert streaming_stats.phases["finalize_garbage"][1].count() == 1
+        assert streaming_stats.phases["handle_resurrected"][1].count() == 1
+        assert streaming_stats.phases["clear_weakrefs"][1].count() == 1
+        assert streaming_stats.phases["delete_garbage"][1].count() == 1
 
     @pytest.mark.parametrize(
         ("gen_number", "key"),
@@ -125,8 +125,8 @@ class TestStreamingStatsUpdate:
         The record here carries a span of 1 ms for each all the same."""
         streaming_stats.update(proc(DEFAULT_PID), incremental_gc_stats_item_factory(gen=gen_number))
 
-        assert streaming_stats.metrics[key][gen_number].count() == 0
-        assert streaming_stats.metrics["deduce_unreachable"][gen_number].count() == 1
+        assert streaming_stats.phases[key][gen_number].count() == 0
+        assert streaming_stats.phases["deduce_unreachable"][gen_number].count() == 1
 
     def test_update_skips_zero_duration(
         self,
@@ -137,7 +137,7 @@ class TestStreamingStatsUpdate:
 
         streaming_stats.update(proc(DEFAULT_PID), item)
 
-        assert streaming_stats.metrics[PAUSE_ROW.key][0].count() == 0
+        assert streaming_stats.phases[PAUSE_ROW.key][0].count() == 0
 
     def test_update_keeps_sub_microsecond_duration(
         self,
@@ -150,8 +150,8 @@ class TestStreamingStatsUpdate:
 
         streaming_stats.update(proc(DEFAULT_PID), item)
 
-        assert streaming_stats.metrics[PAUSE_ROW.key][0].count() == 1
-        assert streaming_stats.metrics[PAUSE_ROW.key][0].sum() == 750
+        assert streaming_stats.phases[PAUSE_ROW.key][0].count() == 1
+        assert streaming_stats.phases[PAUSE_ROW.key][0].sum() == 750
 
     def test_update_tracks_heap_size(
         self,
@@ -223,7 +223,7 @@ class TestStreamingStatsRingTracking:
         streaming_stats: StreamingStats,
         gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        """The per-ring 'pause' metric is recorded once per event, matching the
+        """The per-ring 'pause' phase is recorded once per event, matching the
         global total. It used to be recorded twice, doubling Count/Sum/Avg in
         the per-ring rows of the --stats table."""
         streaming_stats.update(proc(DEFAULT_PID), gc_stats_item_factory(ts_start=1_000, ts_stop=6_000))
@@ -232,31 +232,31 @@ class TestStreamingStatsRingTracking:
         assert ring_stats is not None
         assert ring_stats[PAUSE_ROW.key][0].count() == 1
         assert ring_stats[PAUSE_ROW.key][0].sum() == 5_000
-        assert ring_stats[PAUSE_ROW.key][0].count() == streaming_stats.metrics[PAUSE_ROW.key][0].count()
-        assert ring_stats[PAUSE_ROW.key][0].sum() == streaming_stats.metrics[PAUSE_ROW.key][0].sum()
+        assert ring_stats[PAUSE_ROW.key][0].count() == streaming_stats.phases[PAUSE_ROW.key][0].count()
+        assert ring_stats[PAUSE_ROW.key][0].sum() == streaming_stats.phases[PAUSE_ROW.key][0].sum()
 
-    def test_per_ring_metrics_match_totals_for_a_single_ring(
+    def test_per_ring_phases_match_totals_for_a_single_ring(
         self,
         streaming_stats: StreamingStats,
         incremental_gc_stats_item: GCStatsInfo,
     ) -> None:
-        """With one interpreter of one PID, every per-ring metric equals the
+        """With one interpreter of one PID, every per-ring phase equals the
         global total."""
         streaming_stats.update(proc(DEFAULT_PID), incremental_gc_stats_item)
 
         ring_stats = streaming_stats.get_ring_stats(proc(DEFAULT_PID), 0)
         assert ring_stats is not None
-        for metric_key, gen_stats in streaming_stats.metrics.items():
+        for phase_key, gen_stats in streaming_stats.phases.items():
             for gen, total in gen_stats.items():
-                assert ring_stats[metric_key][gen].count() == total.count(), metric_key
-                assert ring_stats[metric_key][gen].sum() == total.sum(), metric_key
+                assert ring_stats[phase_key][gen].count() == total.count(), phase_key
+                assert ring_stats[phase_key][gen].sum() == total.sum(), phase_key
 
-    def test_every_metric_splits_between_two_interpreters(
+    def test_every_phase_splits_between_two_interpreters(
         self,
         streaming_stats: StreamingStats,
         incremental_gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        """The sub-phase metrics ride the same key as `pause`, and nothing
+        """The sub-phases ride the same key as `pause`, and nothing
         else reads them per ring. Two interpreters, so each ring holds one
         record and the pair adds up to the run. Generation 1 runs every phase."""
         streaming_stats.update(proc(DEFAULT_PID), incremental_gc_stats_item_factory(gen=1, iid=0))
@@ -267,11 +267,11 @@ class TestStreamingStatsRingTracking:
         assert first is not None and second is not None
         counts = {key: (first[key][1].count(), second[key][1].count()) for key in (row.key for row in PHASE_ROWS)}
         assert counts == dict.fromkeys((row.key for row in PHASE_ROWS), (1, 1))
-        for metric_key, gen_stats in streaming_stats.metrics.items():
+        for phase_key, gen_stats in streaming_stats.phases.items():
             for gen, total in gen_stats.items():
-                one, other = first[metric_key][gen], second[metric_key][gen]
-                assert one.count() + other.count() == total.count(), metric_key
-                assert one.sum() + other.sum() == total.sum(), metric_key
+                one, other = first[phase_key][gen], second[phase_key][gen]
+                assert one.count() + other.count() == total.count(), phase_key
+                assert one.sum() + other.sum() == total.sum(), phase_key
 
 
 class TestStreamingStatsRingBound:
@@ -327,7 +327,7 @@ class TestStreamingStatsReadTime:
         assert streaming_stats.read_time.count() == 1
         assert streaming_stats.read_time.sum() == 0
 
-    def test_read_time_independent_of_pause_metrics(
+    def test_read_time_independent_of_the_pause_phase(
         self,
         streaming_stats: StreamingStats,
         gc_stats_item_factory: Callable[..., GCStatsInfo],
@@ -338,4 +338,4 @@ class TestStreamingStatsReadTime:
         assert streaming_stats.count() == 1
         assert streaming_stats.read_time.count() == 1
         assert streaming_stats.read_time.sum() == 42_000
-        assert streaming_stats.metrics[PAUSE_ROW.key][0].sum() == 1_000_000
+        assert streaming_stats.phases[PAUSE_ROW.key][0].sum() == 1_000_000

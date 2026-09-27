@@ -27,20 +27,20 @@ def _print_table(rows: list[list[str] | Any], table_format: TableFormat = TableF
     headers = ["PID:IID", "Metric", "Count", "Sum", "Avg", "P50", "P90", "P95", "P99", "Cov", "F"]
     data = [r for r in rows if r is not _SEP_GROUP and r is not _SEP_PHASE]
     w_type = max(len(h) for h in [headers[0]] + [r[0] for r in data])
-    w_metric = max(len(h) for h in [headers[1]] + [r[1] for r in data])
+    w_phase = max(len(h) for h in [headers[1]] + [r[1] for r in data])
     w_count = max(len(h) for h in [headers[2]] + [r[2] for r in data])
     w_sum = max(len(h) for h in [headers[3]] + [r[3] for r in data])
     w_pct = max(len(v) for h in headers[4:9] for v in [h] + [r[i] for r in data for i in range(4, 9)])
     w_cov = max(len(v) for h in headers[9:] for v in [h] + [r[i] for r in data for i in range(9, 11)])
 
-    widths = [w_type + 2, w_metric + 2, w_count + 2, w_sum + 2, *[w_pct + 2] * 5, *[w_cov + 2] * 2]
+    widths = [w_type + 2, w_phase + 2, w_count + 2, w_sum + 2, *[w_pct + 2] * 5, *[w_cov + 2] * 2]
     sep_full = "|" + "|".join("-" * w for w in widths) + "|"
     sep_phase = "|" + " " * widths[0] + "|" + "|".join("-" * w for w in widths[1:]) + "|"
     sep_blank = "|" + "|".join(" " * w for w in widths) + "|"
     use_markdown = table_format == TableFormat.MARKDOWN
     print("")
     print(
-        f"| {headers[0]:<{w_type}} | {headers[1]:<{w_metric}} | {headers[2]:>{w_count}} | {headers[3]:>{w_sum}} "
+        f"| {headers[0]:<{w_type}} | {headers[1]:<{w_phase}} | {headers[2]:>{w_count}} | {headers[3]:>{w_sum}} "
         f"| {headers[4]:>{w_pct}} | {headers[5]:>{w_pct}} | {headers[6]:>{w_pct}} "
         f"| {headers[7]:>{w_pct}} | {headers[8]:>{w_pct}} "
         f"| {headers[9]:>{w_cov}} | {headers[10]:>{w_cov}} |"
@@ -54,7 +54,7 @@ def _print_table(rows: list[list[str] | Any], table_format: TableFormat = TableF
             print(sep_blank if use_markdown else sep_phase)
             continue
         print(
-            f"| {r[0]:<{w_type}} | {r[1]:<{w_metric}} | {r[2]:>{w_count}} | {r[3]:>{w_sum}} "
+            f"| {r[0]:<{w_type}} | {r[1]:<{w_phase}} | {r[2]:>{w_count}} | {r[3]:>{w_sum}} "
             f"| {r[4]:>{w_pct}} | {r[5]:>{w_pct}} | {r[6]:>{w_pct}} "
             f"| {r[7]:>{w_pct}} | {r[8]:>{w_pct}} "
             f"| {r[9]:>{w_cov}} | {r[10]:>{w_cov}} |"
@@ -99,8 +99,8 @@ def _build_rows(
     """One row per generation that recorded anything.
 
     *pause_totals* covers whichever scope the block is for, read once by the
-    caller. All nine metrics lean on the same per-generation numbers, so
-    looking them up here would repeat the work per metric.
+    caller. All nine phases lean on the same per-generation numbers, so
+    looking them up here would repeat the work per phase.
 
     *exact* separates the `GC Pause` rows, whose companion numbers come from
     the target's own counters, from the sub-phase rows, whose companions are
@@ -215,8 +215,8 @@ def print_stats(stats: StreamingStats, view: StatsView, table_format: TableForma
     totals = stats.pause_totals_by_gen()
     first = True
     has_rows = False
-    for metric in PHASE_ROWS:
-        rows = _build_rows(stats.metrics[metric.key], metric.phase.label, totals, metric is PAUSE_ROW)
+    for phase_row in PHASE_ROWS:
+        rows = _build_rows(stats.phases[phase_row.key], phase_row.phase.label, totals, phase_row is PAUSE_ROW)
         if rows:
             if has_rows:
                 all_rows.append(_SEP_PHASE)
@@ -225,14 +225,16 @@ def print_stats(stats: StreamingStats, view: StatsView, table_format: TableForma
                 first = False
             has_rows = True
 
-    rings = stats.ring_metrics() if view is StatsView.FULL else []
+    rings = stats.ring_phases() if view is StatsView.FULL else []
     for (process, iid), ring_data in rings:
         all_rows.append(_SEP_GROUP)
         ring_totals = {gen: stats.pause_totals(process, iid, gen) for gen in stats.GENS}
         first = True
         has_rows = False
-        for metric in PHASE_ROWS:
-            rows = _build_rows(ring_data.get(metric.key, {}), metric.phase.label, ring_totals, metric is PAUSE_ROW)
+        for phase_row in PHASE_ROWS:
+            rows = _build_rows(
+                ring_data.get(phase_row.key, {}), phase_row.phase.label, ring_totals, phase_row is PAUSE_ROW
+            )
             if rows:
                 if has_rows:
                     all_rows.append(_SEP_PHASE)

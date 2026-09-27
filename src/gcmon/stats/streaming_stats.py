@@ -15,7 +15,7 @@ from .stats import Stats, get_quantile_value
 logger = logging.getLogger(__name__)
 
 
-TStatsData = dict[str, dict[int, Stats]]
+TPhaseStats = dict[str, dict[int, Stats]]
 
 
 def phase_bounds(row: type[PhaseRow], item: object) -> tuple[int, int]:
@@ -32,8 +32,8 @@ def phase_spans(item: TGCStatsInfo) -> list[tuple[str, int, int]]:
     return spans
 
 
-# (process, iid). One interpreter's sampled metrics, a generation dict per
-# metric. One ring's durations are one of those generations. Keyed on the
+# (process, iid). One interpreter's sampled phase durations, a generation
+# dict per phase. One ring's durations are one of those generations. Keyed on the
 # process, so a successor on a reused pid opens rings of its own. Named for
 # the process and not for a ring index, which in CPython is the write cursor
 # into the ring.
@@ -139,31 +139,31 @@ class RingStats(msgspec.Struct):
     One entry per key, so a ring's three kinds of number settle together on
     the exit that ends them and are read together afterwards.
 
-    `metrics` is ``None`` until the ring is admitted, and stays ``None`` if
+    `phases` is ``None`` until the ring is admitted, and stays ``None`` if
     the bound declined it. The bound caps sample buffers alone: they hold a
-    thousand values per generation per metric, where `loss` and `cumulative`
+    thousand values per generation per phase, where `loss` and `cumulative`
     hold two numbers per generation each. A declined ring goes on counting,
     so the run totals and the coverage figures stay whole.
     """
 
-    metrics: TStatsData | None = None
+    phases: TPhaseStats | None = None
     declined: bool = False
     loss: dict[int, LossTotals] = msgspec.field(default_factory=dict)
     cumulative: dict[int, CumulativeCounters] = msgspec.field(default_factory=dict)
 
     def settle(self) -> None:
         """Fix the percentiles and give the sample buffers back."""
-        if self.metrics is None:
+        if self.phases is None:
             return
-        for phase_stats in self.metrics.values():
+        for phase_stats in self.phases.values():
             for stats in phase_stats.values():
                 stats.materialize()
 
     def sampled(self, gen: int) -> Stats:
         """The pause durations gcmon read for one generation of this ring."""
-        if self.metrics is None:
+        if self.phases is None:
             return Stats()
-        return self.metrics[PAUSE_ROW.key][gen]
+        return self.phases[PAUSE_ROW.key][gen]
 
     def pause_totals(self, gen: int) -> PauseTotals:
         """One generation, sampled and lost together."""
@@ -172,11 +172,11 @@ class RingStats(msgspec.Struct):
         return PauseTotals(sampled.count(), sampled.sum(), lost.count, lost.pause_ns)
 
 
-def _record(stats: TStatsData, gen: int, spans: list[tuple[str, int, int]]) -> None:
-    """Record phase durations in nanoseconds, the unit every metric keeps."""
-    for metric_name, ts_start, ts_stop in spans:
+def _record(stats: TPhaseStats, gen: int, spans: list[tuple[str, int, int]]) -> None:
+    """Record phase durations in nanoseconds, the unit every phase keeps."""
+    for phase_key, ts_start, ts_stop in spans:
         if ts_start != ts_stop:
-            stats[metric_name][gen].update(ts_stop - ts_start)
+            stats[phase_key][gen].update(ts_stop - ts_start)
 
 
 class StreamingStats:
@@ -193,8 +193,8 @@ class StreamingStats:
 
     def __init__(self) -> None:
         self._count: int = 0
-        # Phase durations in nanoseconds, per metric and generation.
-        self.metrics: TStatsData = {row.key: {gen: Stats() for gen in self.GENS} for row in PHASE_ROWS}
+        # Phase durations in nanoseconds, per phase and generation.
+        self.phases: TPhaseStats = {row.key: {gen: Stats() for gen in self.GENS} for row in PHASE_ROWS}
         # The rings of the processes running now. An entry leaves on the exit
         # that settles it.
         self._running_rings: dict[RingKey, RingStats] = {}
@@ -227,7 +227,7 @@ class StreamingStats:
         self._count += 1
 
         spans = phase_spans(item)
-        _record(self.metrics, item.gen, spans)
+        _record(self.phases, item.gen, spans)
 
         self._open_processes.add(process)
         # Process-wide and one integer per process, so it is kept whether or
@@ -235,11 +235,11 @@ class StreamingStats:
         self._heap_size[process] = max(self._heap_size.get(process, 0), item.heap_size)
 
         ring = self._open_ring(process, item.iid)
-        metrics = ring.metrics or self._admit(ring, (process, item.iid))
-        if metrics is None:
+        phases = ring.phases or self._admit(ring, (process, item.iid))
+        if phases is None:
             return
 
-        _record(metrics, item.gen, spans)
+        _record(phases, item.gen, spans)
 
     def _open_ring(self, process: Process, iid: int) -> RingStats:
         """The ring the records arriving now belong to, opened if new.
@@ -254,7 +254,7 @@ class StreamingStats:
             self._running_rings[key] = ring
         return ring
 
-    def _admit(self, ring: RingStats, key: RingKey) -> TStatsData | None:
+    def _admit(self, ring: RingStats, key: RingKey) -> TPhaseStats | None:
         """Give *ring* its sample buffers, or ``None`` where none are free.
 
         A ring gets them on its first record and keeps them until its process
@@ -278,12 +278,12 @@ class StreamingStats:
             self._decline(ring, key)
             return None
 
-        ring.metrics = {row.key: {gen: Stats() for gen in self.GENS} for row in PHASE_ROWS}
+        ring.phases = {row.key: {gen: Stats() for gen in self.GENS} for row in PHASE_ROWS}
         self._admitted_rings += 1
-        return ring.metrics
+        return ring.phases
 
     def _decline(self, ring: RingStats, key: RingKey) -> None:
-        """Note that this ring keeps no sampled metrics, saying why the first
+        """Note that this ring keeps no sampled phase durations, saying why the first
         time."""
         ring.declined = True
         if self._bound_warned:
@@ -317,7 +317,7 @@ class StreamingStats:
 
         for key in keys:
             settled = self._running_rings.pop(key)
-            if settled.metrics is not None:
+            if settled.phases is not None:
                 self._admitted_rings -= 1
             settled.settle()
             self._settled_rings[key] = settled
@@ -414,7 +414,7 @@ class StreamingStats:
             for gen, loss in ring.loss.items():
                 lost.setdefault(gen, LossTotals()).add(loss.count, loss.pause_ns)
 
-        pause = self.metrics[PAUSE_ROW.key]
+        pause = self.phases[PAUSE_ROW.key]
         by_gen = {}
         for gen in self.GENS:
             sampled = pause[gen]
@@ -467,28 +467,28 @@ class StreamingStats:
         yield from self._running_rings.items()
         yield from self._settled_rings.items()
 
-    def get_ring_stats(self, process: Process, iid: int) -> TStatsData | None:
-        """One interpreter's sampled metrics, still filling or settled.
+    def get_ring_stats(self, process: Process, iid: int) -> TPhaseStats | None:
+        """One interpreter's sampled phase durations, still filling or settled.
 
         ``None`` where the ring has none, which is a key gcmon never read or a
         ring the bound declined.
         """
         ring = self._find_ring(process, iid)
-        return ring.metrics if ring is not None else None
+        return ring.phases if ring is not None else None
 
     def rings(self) -> list[RingKey]:
-        """Every ring holding sampled metrics, by pid, then epoch, then
+        """Every ring holding sampled phase durations, by pid, then epoch, then
         interpreter.
 
         A ring the bound declined holds none and is absent;
         :meth:`untracked_rings` counts those.
         """
-        return [key for key, _ in self.ring_metrics()]
+        return [key for key, _ in self.ring_phases()]
 
-    def ring_metrics(self) -> list[tuple[RingKey, TStatsData]]:
-        """The same rings in the same order, each with the metrics it holds."""
+    def ring_phases(self) -> list[tuple[RingKey, TPhaseStats]]:
+        """The same rings in the same order, each with the phase durations it holds."""
         return sorted(
-            ((key, ring.metrics) for key, ring in self._keyed_rings() if ring.metrics is not None),
+            ((key, ring.phases) for key, ring in self._keyed_rings() if ring.phases is not None),
             key=lambda entry: (entry[0][0].pid, entry[0][0].pid_epoch, entry[0][1]),
         )
 

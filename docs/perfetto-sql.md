@@ -52,7 +52,7 @@ gcmon traces use the standard Perfetto schema:
   out of the `ProcessDescriptor`. gcmon writes none of its own
   - `utid`, its own key; `upid`, the process it belongs to; `tid`, equal to
     the row's `pid`
-- **`slice`**: GC pauses and sub-steps
+- **`slice`**: GC pauses and sub-phases
   - `name` (`"GC Pause(0)"`), `ts` and `dur` in nanoseconds, `arg_set_id`
 - **`counter`**: counter samples
   - `track_id`, `ts`, `value`

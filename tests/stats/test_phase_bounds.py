@@ -32,22 +32,22 @@ from gcmon.stats.streaming_stats import phase_bounds
 from tests.data_helpers import create_instant_msg
 
 
-class TestPauseMetric:
-    """Tests for the Pause metric."""
+class TestPausePhase:
+    """Tests for the Pause phase."""
 
     def test_name(self) -> None:
-        metric = PAUSE_ROW
+        row = PAUSE_ROW
 
-        assert metric.phase.label == GC_PAUSE_NAME
+        assert row.phase.label == GC_PAUSE_NAME
 
     def test_get_values(
         self,
         gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        metric = PAUSE_ROW
+        row = PAUSE_ROW
         item = gc_stats_item_factory(ts_start=1000, ts_stop=5000)
 
-        ts_start, ts_stop = phase_bounds(metric, item)
+        ts_start, ts_stop = phase_bounds(row, item)
 
         assert ts_start == 1000
         assert ts_stop == 5000
@@ -58,43 +58,43 @@ class TestPauseMetric:
     ) -> None:
         """Every GC record carries `ts_start`, so the pause row's check holds for all of
         them and the pause has no missing-field case its siblings have."""
-        metric = PAUSE_ROW
+        row = PAUSE_ROW
         item = gc_stats_item_factory(ts_start=0, ts_stop=0)
 
-        ts_start, ts_stop = phase_bounds(metric, item)
+        ts_start, ts_stop = phase_bounds(row, item)
 
         assert ts_start == 0
         assert ts_stop == 0
 
     def test_an_item_that_is_no_collection_reads_as_zero(self) -> None:
         """An instant carries `ts` and no `ts_start`, so it has no pause."""
-        metric = PAUSE_ROW
+        row = PAUSE_ROW
 
-        values = phase_bounds(metric, create_instant_msg(ts=5_000))
+        values = phase_bounds(row, create_instant_msg(ts=5_000))
 
         assert values == (0, 0)
 
 
-class TestMarkAliveMetric:
-    """Tests for the MarkAlive metric."""
+class TestMarkAlivePhase:
+    """Tests for the MarkAlive phase."""
 
     def test_name(self) -> None:
-        metric = MarkAliveData
+        row = MarkAliveData
 
-        assert metric.phase.label == MARK_ALIVE.label
+        assert row.phase.label == MARK_ALIVE.label
 
     def test_get_values(
         self,
         incremental_gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        metric = MarkAliveData
+        row = MarkAliveData
         item = incremental_gc_stats_item_factory(
             gen=1,
             ts_mark_alive_start=2000,
             ts_mark_alive_stop=4000,
         )
 
-        ts_start, ts_stop = phase_bounds(metric, item)
+        ts_start, ts_stop = phase_bounds(row, item)
 
         assert ts_start == 2000
         assert ts_stop == 4000
@@ -103,34 +103,34 @@ class TestMarkAliveMetric:
         self,
         gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        metric = MarkAliveData
+        row = MarkAliveData
         item = gc_stats_item_factory()
 
-        ts1, ts2 = phase_bounds(metric, item)
+        ts1, ts2 = phase_bounds(row, item)
 
         assert ts1 == 0
         assert ts2 == 0
 
 
-class TestFillIncrementMetric:
-    """Tests for the FillIncrement metric."""
+class TestFillIncrementPhase:
+    """Tests for the FillIncrement phase."""
 
     def test_name(self) -> None:
-        metric = IncrementalData
+        row = IncrementalData
 
-        assert metric.phase.label == FILL_INCREMENT.label
+        assert row.phase.label == FILL_INCREMENT.label
 
     def test_get_values(
         self,
         incremental_gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        metric = IncrementalData
+        row = IncrementalData
         item = incremental_gc_stats_item_factory(
             ts_fill_increment_start=3000,
             ts_fill_increment_stop=5000,
         )
 
-        ts_start, ts_stop = phase_bounds(metric, item)
+        ts_start, ts_stop = phase_bounds(row, item)
 
         assert ts_start == 3000
         assert ts_stop == 5000
@@ -139,34 +139,34 @@ class TestFillIncrementMetric:
         self,
         gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        metric = IncrementalData
+        row = IncrementalData
         item = gc_stats_item_factory()
 
-        ts1, ts2 = phase_bounds(metric, item)
+        ts1, ts2 = phase_bounds(row, item)
 
         assert ts1 == 0
         assert ts2 == 0
 
 
-class TestDeduceUnreachableMetric:
-    """Tests for the DeduceUnreachable metric."""
+class TestDeduceUnreachablePhase:
+    """Tests for the DeduceUnreachable phase."""
 
     def test_name(self) -> None:
-        metric = DeduceUnreachableData
+        row = DeduceUnreachableData
 
-        assert metric.phase.label == DEDUCE_UNREACHABLE.label
+        assert row.phase.label == DEDUCE_UNREACHABLE.label
 
     def test_get_values(
         self,
         incremental_gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        metric = DeduceUnreachableData
+        row = DeduceUnreachableData
         item = incremental_gc_stats_item_factory(
             ts_deduce_unreachable_start=7000,
             ts_deduce_unreachable_stop=9000,
         )
 
-        ts_start, ts_stop = phase_bounds(metric, item)
+        ts_start, ts_stop = phase_bounds(row, item)
 
         assert ts_start == 7000
         assert ts_stop == 9000
@@ -175,34 +175,34 @@ class TestDeduceUnreachableMetric:
         self,
         gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        metric = DeduceUnreachableData
+        row = DeduceUnreachableData
         item = gc_stats_item_factory()
 
-        ts1, ts2 = phase_bounds(metric, item)
+        ts1, ts2 = phase_bounds(row, item)
 
         assert ts1 == 0
         assert ts2 == 0
 
 
-class TestHandleWeakrefsMetric:
-    """Tests for the HandleWeakrefs metric."""
+class TestHandleWeakrefsPhase:
+    """Tests for the HandleWeakrefs phase."""
 
     def test_name(self) -> None:
-        metric = HandleWeakrefsData
+        row = HandleWeakrefsData
 
-        assert metric.phase.label == HANDLE_WEAKREFS.label
+        assert row.phase.label == HANDLE_WEAKREFS.label
 
     def test_get_values(
         self,
         incremental_gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        metric = HandleWeakrefsData
+        row = HandleWeakrefsData
         item = incremental_gc_stats_item_factory(
             ts_handle_weakref_callbacks_start=7000,
             ts_handle_weakref_callbacks_stop=9000,
         )
 
-        ts_start, ts_stop = phase_bounds(metric, item)
+        ts_start, ts_stop = phase_bounds(row, item)
 
         assert ts_start == 7000
         assert ts_stop == 9000
@@ -211,34 +211,34 @@ class TestHandleWeakrefsMetric:
         self,
         gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        metric = HandleWeakrefsData
+        row = HandleWeakrefsData
         item = gc_stats_item_factory()
 
-        ts1, ts2 = phase_bounds(metric, item)
+        ts1, ts2 = phase_bounds(row, item)
 
         assert ts1 == 0
         assert ts2 == 0
 
 
-class TestFinalizeGarbageMetric:
-    """Tests for the FinalizeGarbage metric."""
+class TestFinalizeGarbagePhase:
+    """Tests for the FinalizeGarbage phase."""
 
     def test_name(self) -> None:
-        metric = FinalizeGarbageData
+        row = FinalizeGarbageData
 
-        assert metric.phase.label == FINALIZE_GARBAGE.label
+        assert row.phase.label == FINALIZE_GARBAGE.label
 
     def test_get_values(
         self,
         incremental_gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        metric = FinalizeGarbageData
+        row = FinalizeGarbageData
         item = incremental_gc_stats_item_factory(
             ts_handle_weakref_callbacks_stop=8000,
             ts_finalize_garbage_stop=9000,
         )
 
-        ts_start, ts_stop = phase_bounds(metric, item)
+        ts_start, ts_stop = phase_bounds(row, item)
 
         assert ts_start == 8000
         assert ts_stop == 9000
@@ -247,34 +247,34 @@ class TestFinalizeGarbageMetric:
         self,
         gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        metric = FinalizeGarbageData
+        row = FinalizeGarbageData
         item = gc_stats_item_factory(ts_finalize_garbage_stop=9000, finalized_garbage_count=1)
 
-        ts1, ts2 = phase_bounds(metric, item)
+        ts1, ts2 = phase_bounds(row, item)
 
         assert ts1 == 0
         assert ts2 == 0
 
 
-class TestHandleResurrectedMetric:
-    """Tests for the HandleResurrected metric."""
+class TestHandleResurrectedPhase:
+    """Tests for the HandleResurrected phase."""
 
     def test_name(self) -> None:
-        metric = HandleResurrectedData
+        row = HandleResurrectedData
 
-        assert metric.phase.label == HANDLE_RESURRECTED.label
+        assert row.phase.label == HANDLE_RESURRECTED.label
 
     def test_get_values(
         self,
         incremental_gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        metric = HandleResurrectedData
+        row = HandleResurrectedData
         item = incremental_gc_stats_item_factory(
             ts_finalize_garbage_stop=8000,
             ts_handle_resurrected_stop=9000,
         )
 
-        ts_start, ts_stop = phase_bounds(metric, item)
+        ts_start, ts_stop = phase_bounds(row, item)
 
         assert ts_start == 8000
         assert ts_stop == 9000
@@ -283,34 +283,34 @@ class TestHandleResurrectedMetric:
         self,
         gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        metric = HandleResurrectedData
+        row = HandleResurrectedData
         item = gc_stats_item_factory(ts_handle_resurrected_stop=9000)
 
-        ts1, ts2 = phase_bounds(metric, item)
+        ts1, ts2 = phase_bounds(row, item)
 
         assert ts1 == 0
         assert ts2 == 0
 
 
-class TestClearWeakrefsMetric:
-    """Tests for the ClearWeakrefs metric."""
+class TestClearWeakrefsPhase:
+    """Tests for the ClearWeakrefs phase."""
 
     def test_name(self) -> None:
-        metric = ClearWeakrefsData
+        row = ClearWeakrefsData
 
-        assert metric.phase.label == CLEAR_WEAKREFS.label
+        assert row.phase.label == CLEAR_WEAKREFS.label
 
     def test_get_values(
         self,
         incremental_gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        metric = ClearWeakrefsData
+        row = ClearWeakrefsData
         item = incremental_gc_stats_item_factory(
             ts_handle_resurrected_stop=8000,
             ts_clear_weakrefs_stop=9000,
         )
 
-        ts_start, ts_stop = phase_bounds(metric, item)
+        ts_start, ts_stop = phase_bounds(row, item)
 
         assert ts_start == 8000
         assert ts_stop == 9000
@@ -319,34 +319,34 @@ class TestClearWeakrefsMetric:
         self,
         gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        metric = ClearWeakrefsData
+        row = ClearWeakrefsData
         item = gc_stats_item_factory(ts_clear_weakrefs_stop=9000, clear_weakrefs_count=1)
 
-        ts1, ts2 = phase_bounds(metric, item)
+        ts1, ts2 = phase_bounds(row, item)
 
         assert ts1 == 0
         assert ts2 == 0
 
 
-class TestDeleteGarbageMetric:
-    """Tests for the DeleteGarbage metric."""
+class TestDeleteGarbagePhase:
+    """Tests for the DeleteGarbage phase."""
 
     def test_name(self) -> None:
-        metric = DeleteGarbageData
+        row = DeleteGarbageData
 
-        assert metric.phase.label == DELETE_GARBAGE.label
+        assert row.phase.label == DELETE_GARBAGE.label
 
     def test_get_values(
         self,
         incremental_gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        metric = DeleteGarbageData
+        row = DeleteGarbageData
         item = incremental_gc_stats_item_factory(
             ts_delete_garbage_start=7000,
             ts_delete_garbage_stop=9000,
         )
 
-        ts_start, ts_stop = phase_bounds(metric, item)
+        ts_start, ts_stop = phase_bounds(row, item)
 
         assert ts_start == 7000
         assert ts_stop == 9000
@@ -355,10 +355,10 @@ class TestDeleteGarbageMetric:
         self,
         gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        metric = DeleteGarbageData
+        row = DeleteGarbageData
         item = gc_stats_item_factory()
 
-        ts1, ts2 = phase_bounds(metric, item)
+        ts1, ts2 = phase_bounds(row, item)
 
         assert ts1 == 0
         assert ts2 == 0

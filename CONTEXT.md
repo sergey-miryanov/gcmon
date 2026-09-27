@@ -58,6 +58,16 @@ One entry gcmon read out of the target's ring buffer, describing one finished
 GC run.
 _Avoid_: sample, entry, datapoint
 
+**Phase**:
+One named interval of a GC run, drawn as a slice and totalled as a `--stats`
+row. The whole pause is one, and the eight inside it are its **sub-phases**.
+_Avoid_: sub-step, step, stage, metric (that is a counter series)
+
+**Field**:
+One attribute a **record** carries, spelled the same as its key in a
+**capture** and as the annotation a slice carries it under.
+_Avoid_: key, column, property
+
 **Event**:
 One thing gcmon wrote into a trace. A record becomes one or more events.
 _Avoid_: record (for the trace side), slice (that is one shape of event)
@@ -122,6 +132,12 @@ The `GC Metrics` row a process's per-generation counters hang under, one per
 interpreter, itself under that interpreter's group.
 _Avoid_: metrics track, group (unqualified), counter track (that is one
 counter's own row)
+
+**Metric**:
+A figure drawn as a counter series, and nothing else: `collected`,
+`candidates`, `duration` and `uncollectable` per generation in a **counter
+group**, `heap_size` beside it, and `rss` on the **process track**.
+_Avoid_: phase (a `--stats` row totals a phase, not a metric), stat
 
 **Capture**:
 The JSONL file gcmon writes: one JSON object per line, holding the records
