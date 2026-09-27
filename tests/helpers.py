@@ -433,6 +433,32 @@ def as_structseq(record: GCStatsInfo) -> TGCStatsInfo:
     return structseq
 
 
+class _InstrumentedGCStatsInfo(tuple[Any, ...]):
+    """An instrumented build's struct sequence, which reports every
+    sub-phase: a tuple whose `__match_args__` name its fields and whose
+    attributes read them, which is all gcmon reads of one."""
+
+    __match_args__ = GCStatsInfo.__struct_fields__
+
+    def __getattr__(self, name: str) -> Any:
+        try:
+            return self[self.__match_args__.index(name)]
+        except ValueError:
+            raise AttributeError(name) from None
+
+
+# Reached through `Any`, like `_STRUCTSEQ_GC_STATS`: its attributes come from
+# `__getattr__`, which no checker matches against `TGCStatsInfo`.
+_INSTRUMENTED_GC_STATS: Any = _InstrumentedGCStatsInfo
+
+
+def as_instrumented_structseq(record: GCStatsInfo) -> TGCStatsInfo:
+    """*record* as an instrumented build's monitor reads it: every field it
+    has, sub-phases included, in a struct sequence."""
+    structseq: TGCStatsInfo = _INSTRUMENTED_GC_STATS(msgspec.structs.astuple(record))
+    return structseq
+
+
 def create_jsonl_record(
     pid: int = 123,
     gen: int = 0,

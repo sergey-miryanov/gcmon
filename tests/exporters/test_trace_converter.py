@@ -24,10 +24,12 @@ from gcmon.model.names import (
     gc_pause_slice_name,
     phase_slice_name,
 )
+from gcmon.model.phases import SUB_PHASE_ROWS
 from gcmon.model.protocol import TItem
 from gcmon.model.trace_event import Counter, InterpreterTrack, LossTrack, ProcessTrack, Slice
 from tests.data_helpers import create_instant_msg
 from tests.helpers import (
+    as_instrumented_structseq,
     as_structseq,
     create_mock_incremental_item,
     create_mock_loss_item,
@@ -178,6 +180,31 @@ class TestAStructSequence:
         twin = convert_item_to_trace_format(proc(1), as_structseq(record))
 
         assert msgspec.json.encode(twin) == msgspec.json.encode(convert_item_to_trace_format(proc(1), record))
+
+
+class TestAStructSequenceWithSubPhases:
+    """A stock build's struct sequence carries no sub-phase, so the test
+    above draws the pause alone. An instrumented build's carries them all,
+    and its rows are worked out once per type."""
+
+    def test_every_record_of_the_type_converts_like_its_msgspec_twin(self) -> None:
+        """One type across all three generations, so the rows cached on the
+        first record have to serve the two whose generation skips a phase."""
+        for gen_number in (1, 0, 2):
+            record = create_mock_incremental_item(gen=gen_number)
+
+            twin = convert_item_to_trace_format(proc(1), as_instrumented_structseq(record))
+
+            assert msgspec.json.encode(twin) == msgspec.json.encode(convert_item_to_trace_format(proc(1), record))
+
+    def test_it_draws_every_sub_phase(self) -> None:
+        """Guards the test above from passing on two records that both
+        draw the pause alone."""
+        record = as_instrumented_structseq(create_mock_incremental_item(gen=1))
+
+        slices = [e for e in convert_item_to_trace_format(proc(1), record) if isinstance(e, Slice)]
+
+        assert len(slices) == 1 + len(SUB_PHASE_ROWS)
 
 
 class TestAPhaseWhoseStartIsMissing:
