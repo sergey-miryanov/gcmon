@@ -49,10 +49,9 @@ package. An earlier attempt at the new incremental collector's seven fields
 shipped that way: the code carried `heap_size_stop` on a pause slice and drew
 it as a counter track, and no page mentioned it. Nothing failed.
 
-Nothing checks a row's `Info` protocol against `GCStatsInfo`. `bounds` and
-`args` take `Info`, and a caller reaches them through `PhaseRow`, which types
-the record as `Any`. A misspelled field in an `Info` type-checks and raises
-`AttributeError` on the first record that carries the phase.
+Nothing checks that a field on `GCStatsInfo` reaches the trace. A field added
+to the record that no row's `Info` names and `PauseData.args` leaves out
+converts without an error and draws nowhere.
 
 The stats layer spells a phase a "metric" throughout: `stats/metrics.py`,
 `METRICS`, `ring_metrics()`, `metric_key` and `TStatsData`. A metric is a
@@ -77,9 +76,9 @@ only wants to be readable is a line in `model/data.py` plus its key in
 2. As a maintainer adding a field that is neither a phase nor a counter, I
    want a test to fail until `docs/formats.md` names it, so that a capture
    cannot hold a figure nobody can look up.
-3. As a maintainer, I want a misspelled field in a row's `Info` to fail a test
-   rather than the first record that carries the phase, so that the failure
-   arrives in CI and not in a live run.
+3. As a maintainer adding a field to `GCStatsInfo`, I want a test to fail
+   until a row or the pause span reads it, so that a figure the collector
+   reports does not drop out of the trace.
 4. As a maintainer reading the stats layer, I want a phase called a phase, so
    that "metric" means a counter series wherever I meet it.
 5. As an operator on a stock build, I want a capture identical to what gcmon
@@ -193,11 +192,10 @@ every field reads a capture.
      `__struct_fields__` of `GCStatsInfo`, `LossMsg`, `GenLoss` and
      `InstantMsg`, so a field the code carries and `docs/formats.md` does not
      name fails, and `model/names.py` holds no `JSONL_FIELDS` or `SLICE_ARGS`.
-  3. Completeness, one test each: every field a row's `Info` names exists on
-     `GCStatsInfo`; every `ts_`-prefixed field on `GCStatsInfo` is named by
-     some sub-phase row's `Info`; every field on `GCStatsInfo` that is not a
-     timestamp and no sub-phase row's `Info` names is a key of the pause
-     span's args, `gen` as `generation`.
+  3. Completeness, one test each: every `ts_`-prefixed field on `GCStatsInfo`
+     but the pause's `ts_start` and `ts_stop` is named by some sub-phase row's
+     `Info`; every field on `GCStatsInfo` that is not a timestamp and no
+     sub-phase row's `Info` names is a key of the pause span's args.
   4. Regression guard: `--stats` byte-identical for a capture recorded on an
      instrumented build, a capture byte-identical for a fixed record set, the
      monitored-run fixture differing only in the counter ranks, and

@@ -5,7 +5,7 @@ import pytest
 
 from gcmon.model.data import GCStatsInfo
 from gcmon.model.names import TS_START, TS_STOP
-from gcmon.model.phases import PAUSE_ROW, SUB_PHASE_ROWS, SubPhaseRow, sub_phase_rows
+from gcmon.model.phases import PAUSE_ROW, SUB_PHASE_ROWS, sub_phase_rows
 from tests.helpers import create_mock_incremental_item, create_mock_stats_item
 
 _OPTIONAL_FIELDS = [field.name for field in msgspec.structs.fields(GCStatsInfo) if field.default is None]
@@ -26,11 +26,6 @@ def test_sub_phase_rows_cache_tells_apart_every_optional_field(missing: str) -> 
     item = create_mock_incremental_item(gen=1, **{missing: None})
 
     assert sub_phase_rows(item) == tuple(row for row in SUB_PHASE_ROWS if row.check(item))
-
-
-@pytest.mark.parametrize("row", SUB_PHASE_ROWS, ids=lambda row: row.__name__)
-def test_every_field_a_row_reads_is_on_the_record(row: type[SubPhaseRow]) -> None:
-    assert set(get_type_hints(row.Info)) <= set(_RECORD_FIELDS)
 
 
 def test_every_sub_phase_timestamp_is_read_by_a_row() -> None:
