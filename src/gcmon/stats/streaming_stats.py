@@ -18,17 +18,13 @@ logger = logging.getLogger(__name__)
 TPhaseStats = dict[type[Phase], dict[int, Stats]]
 
 
-def phase_bounds(phase: type[Phase], item: object) -> tuple[int, int]:
-    """Where *phase* ran in *item*, or `(0, 0)` when *item* does not carry
-    it."""
-    return phase.bounds(item) if phase.check(item) else (0, 0)
-
-
 def phase_spans(item: TGCStatsInfo) -> list[tuple[type[Phase], int, int]]:
     """The phase, start and stop of the pause and of every sub-phase *item*
     carries."""
-    spans: list[tuple[type[Phase], int, int]] = [(PausePhase, *phase_bounds(PausePhase, item))]
-    spans.extend((phase, *phase.bounds(item)) for phase in sub_phases(item))
+    gen = item.gen
+    ts_start, ts_stop = PausePhase.bounds(gen, item) if PausePhase.check(item) else (0, 0)
+    spans: list[tuple[type[Phase], int, int]] = [(PausePhase, ts_start, ts_stop)]
+    spans.extend((phase, *phase.bounds(gen, item)) for phase in sub_phases(item))
     return spans
 
 

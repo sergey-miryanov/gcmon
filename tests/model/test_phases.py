@@ -4,7 +4,7 @@ import msgspec
 import pytest
 
 from gcmon.model.data import GCStatsInfo
-from gcmon.model.names import TS_START, TS_STOP
+from gcmon.model.names import GEN, GENERATION, IID, TS_START, TS_STOP
 from gcmon.model.phases import PAUSE_FIELDS, SUB_PHASES, PausePhase, sub_phases_and_fields
 from tests.helpers import create_mock_incremental_item, create_mock_stats_item
 
@@ -44,10 +44,12 @@ def test_every_sub_phase_timestamp_bounds_a_sub_phase() -> None:
 
 
 def test_every_field_nothing_else_reads_annotates_the_pause() -> None:
-    pause_args = PausePhase.args(0, create_mock_stats_item())
-    rest = {field for field in _RECORD_FIELDS if not field.startswith("ts_")} - _INFO_FIELDS
+    pause_args = PausePhase.args(0, 0, create_mock_stats_item())
+    # `gen` and `iid` reach every phase as parameters rather than through its
+    # `Info`, and the pause annotates `gen` as `generation`.
+    rest = {field for field in _RECORD_FIELDS if not field.startswith("ts_")} - _INFO_FIELDS - {GEN, IID}
 
-    assert rest <= set(pause_args)
+    assert rest | {GENERATION, IID} <= set(pause_args)
 
 
 def test_a_pause_emits_its_counters_in_the_order_they_draw() -> None:

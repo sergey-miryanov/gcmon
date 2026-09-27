@@ -27,8 +27,8 @@ from gcmon.model.phases import (
     MarkAliveSubPhase,
     PausePhase,
 )
-from gcmon.stats.streaming_stats import phase_bounds
 from tests.data_helpers import create_instant_msg
+from tests.helpers import phase_bounds
 
 
 class TestPausePhase:

@@ -80,10 +80,10 @@ class Phase(Protocol):
     def check(item: object) -> bool: ...
 
     @staticmethod
-    def bounds(item: Any) -> tuple[int, int]: ...
+    def bounds(gen: int, item: Any) -> tuple[int, int]: ...
 
     @staticmethod
-    def args(gen: int, item: Any) -> EventArgs: ...
+    def args(gen: int, iid: int, item: Any) -> EventArgs: ...
 
 
 class SubPhase(Phase, Protocol):
@@ -103,7 +103,7 @@ class PauseField(Protocol):
     def check(item: object) -> bool: ...
 
     @staticmethod
-    def args(gen: int, item: Any) -> EventArgs: ...
+    def args(gen: int, iid: int, item: Any) -> EventArgs: ...
 
 
 class PausePhase:
@@ -122,14 +122,14 @@ class PausePhase:
         return is_gc_stats(item) and getattr(item, TS_START, None) is not None
 
     @staticmethod
-    def bounds(item: Info) -> tuple[int, int]:
+    def bounds(gen: int, item: Info) -> tuple[int, int]:
         return item.ts_start, item.ts_stop
 
     @staticmethod
-    def args(gen: int, item: Info) -> EventArgs:
+    def args(gen: int, iid: int, item: Info) -> EventArgs:
         return {
-            GENERATION: item.gen,
-            IID: item.iid,
+            GENERATION: gen,
+            IID: iid,
             COLLECTIONS: item.collections,
             COLLECTED: item.collected,
             UNCOLLECTABLE: item.uncollectable,
@@ -154,8 +154,6 @@ class PausePhase:
 
 class MarkAliveSubPhase:
     class _Info(Protocol):
-        gen: int
-        iid: int
         alive_size: int
         ts_mark_alive_start: int
         ts_mark_alive_stop: int
@@ -168,22 +166,21 @@ class MarkAliveSubPhase:
         return getattr(item, ALIVE_SIZE, None) is not None
 
     @staticmethod
-    def bounds(item: _Info) -> tuple[int, int]:
+    def bounds(gen: int, item: _Info) -> tuple[int, int]:
         # Mark Alive does not run at generation 0.
-        if item.gen == 0:
+        if gen == 0:
             return 0, 0
         return item.ts_mark_alive_start, item.ts_mark_alive_stop
 
     @staticmethod
-    def args(gen: int, item: _Info) -> EventArgs:
-        return {GENERATION: gen, IID: item.iid, ALIVE_SIZE: item.alive_size}
+    def args(gen: int, iid: int, item: _Info) -> EventArgs:
+        return {GENERATION: gen, IID: iid, ALIVE_SIZE: item.alive_size}
 
 
 class IncrementSizeField:
     """The size of the increment Fill Increment fills."""
 
     class _Info(Protocol):
-        iid: int
         increment_size: int
 
     Info: ClassVar[type] = _Info
@@ -193,16 +190,15 @@ class IncrementSizeField:
         return getattr(item, INCREMENT_SIZE, None) is not None
 
     @staticmethod
-    def args(gen: int, item: _Info) -> EventArgs:
+    def args(gen: int, iid: int, item: _Info) -> EventArgs:
         # Generation 2 fills no increment.
         if gen == 2:
             return {}
-        return {GENERATION: gen, IID: item.iid, INCREMENT_SIZE: item.increment_size}
+        return {GENERATION: gen, IID: iid, INCREMENT_SIZE: item.increment_size}
 
 
 class FillIncrementSubPhase:
     class _Info(Protocol):
-        gen: int
         ts_fill_increment_start: int
         ts_fill_increment_stop: int
 
@@ -214,20 +210,19 @@ class FillIncrementSubPhase:
         return getattr(item, TS_FILL_INCREMENT_START, None) is not None
 
     @staticmethod
-    def bounds(item: _Info) -> tuple[int, int]:
+    def bounds(gen: int, item: _Info) -> tuple[int, int]:
         # Fill Increment does not run at generation 2.
-        if item.gen == 2:
+        if gen == 2:
             return 0, 0
         return item.ts_fill_increment_start, item.ts_fill_increment_stop
 
     @staticmethod
-    def args(gen: int, item: _Info) -> EventArgs:
-        return {}
+    def args(gen: int, iid: int, item: _Info) -> EventArgs:
+        return {GENERATION: gen, IID: iid}
 
 
 class DeduceUnreachableSubPhase:
     class _Info(Protocol):
-        iid: int
         candidates: int
         ts_deduce_unreachable_start: int
         ts_deduce_unreachable_stop: int
@@ -240,17 +235,16 @@ class DeduceUnreachableSubPhase:
         return getattr(item, TS_DEDUCE_UNREACHABLE_START, None) is not None
 
     @staticmethod
-    def bounds(item: _Info) -> tuple[int, int]:
+    def bounds(gen: int, item: _Info) -> tuple[int, int]:
         return item.ts_deduce_unreachable_start, item.ts_deduce_unreachable_stop
 
     @staticmethod
-    def args(gen: int, item: _Info) -> EventArgs:
-        return {GENERATION: gen, IID: item.iid, CANDIDATES: item.candidates}
+    def args(gen: int, iid: int, item: _Info) -> EventArgs:
+        return {GENERATION: gen, IID: iid, CANDIDATES: item.candidates}
 
 
 class HandleWeakrefsSubPhase:
     class _Info(Protocol):
-        iid: int
         ts_handle_weakref_callbacks_start: int
         ts_handle_weakref_callbacks_stop: int
 
@@ -262,17 +256,16 @@ class HandleWeakrefsSubPhase:
         return getattr(item, TS_HANDLE_WEAKREF_CALLBACKS_START, None) is not None
 
     @staticmethod
-    def bounds(item: _Info) -> tuple[int, int]:
+    def bounds(gen: int, item: _Info) -> tuple[int, int]:
         return item.ts_handle_weakref_callbacks_start, item.ts_handle_weakref_callbacks_stop
 
     @staticmethod
-    def args(gen: int, item: _Info) -> EventArgs:
-        return {GENERATION: gen, IID: item.iid}
+    def args(gen: int, iid: int, item: _Info) -> EventArgs:
+        return {GENERATION: gen, IID: iid}
 
 
 class FinalizeGarbageSubPhase:
     class _Info(Protocol):
-        iid: int
         finalized_garbage_count: int
         ts_handle_weakref_callbacks_stop: int
         ts_finalize_garbage_stop: int
@@ -288,17 +281,16 @@ class FinalizeGarbageSubPhase:
         )
 
     @staticmethod
-    def bounds(item: _Info) -> tuple[int, int]:
+    def bounds(gen: int, item: _Info) -> tuple[int, int]:
         return item.ts_handle_weakref_callbacks_stop, item.ts_finalize_garbage_stop
 
     @staticmethod
-    def args(gen: int, item: _Info) -> EventArgs:
-        return {GENERATION: gen, IID: item.iid, FINALIZED_GARBAGE_COUNT: item.finalized_garbage_count}
+    def args(gen: int, iid: int, item: _Info) -> EventArgs:
+        return {GENERATION: gen, IID: iid, FINALIZED_GARBAGE_COUNT: item.finalized_garbage_count}
 
 
 class HandleResurrectedSubPhase:
     class _Info(Protocol):
-        iid: int
         ts_finalize_garbage_stop: int
         ts_handle_resurrected_stop: int
 
@@ -313,17 +305,16 @@ class HandleResurrectedSubPhase:
         )
 
     @staticmethod
-    def bounds(item: _Info) -> tuple[int, int]:
+    def bounds(gen: int, item: _Info) -> tuple[int, int]:
         return item.ts_finalize_garbage_stop, item.ts_handle_resurrected_stop
 
     @staticmethod
-    def args(gen: int, item: _Info) -> EventArgs:
-        return {GENERATION: gen, IID: item.iid}
+    def args(gen: int, iid: int, item: _Info) -> EventArgs:
+        return {GENERATION: gen, IID: iid}
 
 
 class ClearWeakrefsSubPhase:
     class _Info(Protocol):
-        iid: int
         clear_weakrefs_count: int
         ts_handle_resurrected_stop: int
         ts_clear_weakrefs_stop: int
@@ -339,17 +330,16 @@ class ClearWeakrefsSubPhase:
         )
 
     @staticmethod
-    def bounds(item: _Info) -> tuple[int, int]:
+    def bounds(gen: int, item: _Info) -> tuple[int, int]:
         return item.ts_handle_resurrected_stop, item.ts_clear_weakrefs_stop
 
     @staticmethod
-    def args(gen: int, item: _Info) -> EventArgs:
-        return {GENERATION: gen, IID: item.iid, CLEAR_WEAKREFS_COUNT: item.clear_weakrefs_count}
+    def args(gen: int, iid: int, item: _Info) -> EventArgs:
+        return {GENERATION: gen, IID: iid, CLEAR_WEAKREFS_COUNT: item.clear_weakrefs_count}
 
 
 class DeleteGarbageSubPhase:
     class _Info(Protocol):
-        iid: int
         deleted_garbage_count: int
         ts_delete_garbage_start: int
         ts_delete_garbage_stop: int
@@ -362,12 +352,12 @@ class DeleteGarbageSubPhase:
         return getattr(item, TS_DELETE_GARBAGE_START, None) is not None
 
     @staticmethod
-    def bounds(item: _Info) -> tuple[int, int]:
+    def bounds(gen: int, item: _Info) -> tuple[int, int]:
         return item.ts_delete_garbage_start, item.ts_delete_garbage_stop
 
     @staticmethod
-    def args(gen: int, item: _Info) -> EventArgs:
-        return {GENERATION: gen, IID: item.iid, DELETED_GARBAGE_COUNT: item.deleted_garbage_count}
+    def args(gen: int, iid: int, item: _Info) -> EventArgs:
+        return {GENERATION: gen, IID: iid, DELETED_GARBAGE_COUNT: item.deleted_garbage_count}
 
 
 # In the order the collector runs them, which is the order they are drawn in.

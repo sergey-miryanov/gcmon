@@ -52,8 +52,9 @@ from gcmon.model.names import (
     UNCOLLECTABLE,
     counter_display_name,
 )
+from gcmon.model.phases import Phase
 from gcmon.model.process import Process
-from gcmon.model.protocol import TGCStatsInfo, TInstantMsg, TLossMsg
+from gcmon.model.protocol import TGCStatsInfo, TInstantMsg, TLossMsg, is_gc_stats
 from gcmon.model.trace_event import Counter, InterpreterTrack, LossTrack, ProcessTrack, Track
 from gcmon.monitoring.events_reader import EventsReader
 from gcmon.monitoring.monitor import EventsMonitor
@@ -621,3 +622,11 @@ def assert_is_instant_msg(msg: JsonlRecord, **expected: str | int) -> None:
 
     for key, value in expected.items():
         assert msg[key] == value
+
+
+def phase_bounds(phase: type[Phase], item: object) -> tuple[int, int]:
+    """Where *phase* ran in *item*, or `(0, 0)` when *item* does not carry
+    it."""
+    if is_gc_stats(item) and phase.check(item):
+        return phase.bounds(item.gen, item)
+    return 0, 0

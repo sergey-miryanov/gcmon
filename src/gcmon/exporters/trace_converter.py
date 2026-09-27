@@ -43,7 +43,8 @@ __all__ = [
 
 
 type _PhaseParts = tuple[
-    tuple[Callable[[Any], tuple[int, int]], Callable[[int, Any], EventArgs], Mapping[int, tuple[str, str]]], ...
+    tuple[Callable[[int, Any], tuple[int, int]], Callable[[int, int, Any], EventArgs], Mapping[int, tuple[str, str]]],
+    ...,
 ]
 
 # Per tuple of sub-phases `sub_phases_and_fields` hands back: each one's
@@ -69,7 +70,7 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
     ts_start_ns = item.ts_start
     ts_stop_ns = item.ts_stop
 
-    pause_data = PausePhase.args(gen, item)
+    pause_data = PausePhase.args(gen, iid, item)
     name, category = PausePhase.name.names[gen]
 
     events: list[TraceEvent] = []
@@ -87,9 +88,9 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
     sub_phases, fields = sub_phases_and_fields(item)
     if ts_stop_ns > ts_start_ns:
         for bounds, phase_args, names in _phase_parts(sub_phases):
-            ts_start, ts_stop = bounds(item)
+            ts_start, ts_stop = bounds(gen, item)
             if ts_stop > ts_start:
-                args = phase_args(gen, item)
+                args = phase_args(gen, iid, item)
                 name, category = names[gen]
                 pause_data.update(args)
                 events.append(
@@ -104,7 +105,7 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
                 )
 
     for field in fields:
-        pause_data.update(field.args(gen, item))
+        pause_data.update(field.args(gen, iid, item))
 
     events.extend(
         Counter(track, metric, name, ts_start_ns, value) for metric, name, value in PausePhase.counters(gen, item)
