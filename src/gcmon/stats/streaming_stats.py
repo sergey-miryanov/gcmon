@@ -6,16 +6,31 @@ from itertools import chain
 
 import msgspec
 
+from ..model.phases import PAUSE_ROW, PHASE_ROWS, PhaseRow, sub_phase_rows
 from ..model.process import Process
 from ..model.protocol import TGCStatsInfo
 from ..support.time_units import secs_to_ns
-from .metrics import METRICS, PAUSE_KEY, phase_spans
 from .stats import Stats, get_quantile_value
 
 logger = logging.getLogger(__name__)
 
 
 TStatsData = dict[str, dict[int, Stats]]
+
+
+def phase_bounds(row: type[PhaseRow], item: object) -> tuple[int, int]:
+    """Where *row*'s phase ran in *item*, or `(0, 0)` when *item* does not
+    carry it."""
+    return row.bounds(item) if row.check(item) else (0, 0)
+
+
+def phase_spans(item: TGCStatsInfo) -> list[tuple[str, int, int]]:
+    """The key, start and stop of the pause and of every sub-phase *item*
+    carries."""
+    spans = [(PAUSE_ROW.key, *phase_bounds(PAUSE_ROW, item))]
+    spans.extend((row.key, *row.bounds(item)) for row in sub_phase_rows(item))
+    return spans
+
 
 # (process, iid). One interpreter's sampled metrics, a generation dict per
 # metric. One ring's durations are one of those generations. Keyed on the
@@ -148,7 +163,7 @@ class RingStats(msgspec.Struct):
         """The pause durations gcmon read for one generation of this ring."""
         if self.metrics is None:
             return Stats()
-        return self.metrics[PAUSE_KEY][gen]
+        return self.metrics[PAUSE_ROW.key][gen]
 
     def pause_totals(self, gen: int) -> PauseTotals:
         """One generation, sampled and lost together."""
@@ -179,7 +194,7 @@ class StreamingStats:
     def __init__(self) -> None:
         self._count: int = 0
         # Phase durations in nanoseconds, per metric and generation.
-        self.metrics: TStatsData = {metric: {gen: Stats() for gen in self.GENS} for metric in METRICS}
+        self.metrics: TStatsData = {row.key: {gen: Stats() for gen in self.GENS} for row in PHASE_ROWS}
         # The rings of the processes running now. An entry leaves on the exit
         # that settles it.
         self._running_rings: dict[RingKey, RingStats] = {}
@@ -263,7 +278,7 @@ class StreamingStats:
             self._decline(ring, key)
             return None
 
-        ring.metrics = {metric: {gen: Stats() for gen in self.GENS} for metric in METRICS}
+        ring.metrics = {row.key: {gen: Stats() for gen in self.GENS} for row in PHASE_ROWS}
         self._admitted_rings += 1
         return ring.metrics
 
@@ -399,7 +414,7 @@ class StreamingStats:
             for gen, loss in ring.loss.items():
                 lost.setdefault(gen, LossTotals()).add(loss.count, loss.pause_ns)
 
-        pause = self.metrics[PAUSE_KEY]
+        pause = self.metrics[PAUSE_ROW.key]
         by_gen = {}
         for gen in self.GENS:
             sampled = pause[gen]

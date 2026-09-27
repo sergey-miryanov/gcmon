@@ -84,9 +84,10 @@ block heading, and it puts the decision about which arguments are volatile in
 the same place for every harness.
 
 **The registry is a dict in one module, and the flag reads its keys.** The
-same shape `METRICS` already uses. `--sanitizer` takes a registry key, and
-both the parser's choices and the documented list come off the registry, which
-is what spec 0040 is pushing for elsewhere.
+phase rows in `model/phases.py` work the same way: `--stats` reads each
+phase's key off its row. `--sanitizer` takes a registry key, and both the
+parser's choices and the documented list come off the registry, which is what
+spec 0040 is pushing for elsewhere.
 
 Built-in only. An entry-point plugin surface is a public API that cannot be
 withdrawn, and the two sanitizers anyone has asked for ship in tree.
@@ -128,8 +129,9 @@ block is a sum over the rings whose process carries that key, computed the way
 - **What makes a good test here:** real command lines, quoted from a capture,
   asserted to the key they should produce. A test built from a command line
   invented for the test would pass on a sanitizer that never sees a real one.
-- **Prior art:** the `METRICS` registry and the tests that walk it; the
-  `StatsView.parse` tests for word handling.
+- **Prior art:** the phase rows in `model/phases.py`, whose keys `--stats`
+  reads, and the tests that walk them; the `StatsView.parse` tests for word
+  handling.
 - **Cases:**
   1. Five pyperf workers of one benchmark fold into one block; a sixth
      benchmark's workers make a second.

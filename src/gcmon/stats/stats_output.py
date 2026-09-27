@@ -3,10 +3,10 @@
 from pathlib import Path
 from typing import Any, Final
 
+from ..model.phases import PAUSE_ROW, PHASE_ROWS
 from ..model.process import Process
 from ..model.run_report import RunReport
 from ..support.time_units import dur_to_ms
-from .metrics import METRICS, PAUSE_KEY
 from .stats import Stats
 from .streaming_stats import PauseTotals, StreamingStats
 from .views import StatsView, TableFormat
@@ -215,8 +215,8 @@ def print_stats(stats: StreamingStats, view: StatsView, table_format: TableForma
     totals = stats.pause_totals_by_gen()
     first = True
     has_rows = False
-    for metric_key, metric in METRICS.items():
-        rows = _build_rows(stats.metrics[metric_key], metric.phase.label, totals, metric_key == PAUSE_KEY)
+    for metric in PHASE_ROWS:
+        rows = _build_rows(stats.metrics[metric.key], metric.phase.label, totals, metric is PAUSE_ROW)
         if rows:
             if has_rows:
                 all_rows.append(_SEP_PHASE)
@@ -231,8 +231,8 @@ def print_stats(stats: StreamingStats, view: StatsView, table_format: TableForma
         ring_totals = {gen: stats.pause_totals(process, iid, gen) for gen in stats.GENS}
         first = True
         has_rows = False
-        for metric_key, metric in METRICS.items():
-            rows = _build_rows(ring_data.get(metric_key, {}), metric.phase.label, ring_totals, metric_key == PAUSE_KEY)
+        for metric in PHASE_ROWS:
+            rows = _build_rows(ring_data.get(metric.key, {}), metric.phase.label, ring_totals, metric is PAUSE_ROW)
             if rows:
                 if has_rows:
                     all_rows.append(_SEP_PHASE)
