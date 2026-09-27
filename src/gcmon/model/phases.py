@@ -176,8 +176,6 @@ class MarkAliveSubPhase:
 
     @staticmethod
     def args(gen: int, item: _Info) -> EventArgs:
-        if gen == 0:
-            return {}
         return {GENERATION: gen, IID: item.iid, ALIVE_SIZE: item.alive_size}
 
 
