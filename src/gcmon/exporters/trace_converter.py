@@ -72,9 +72,6 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
     name, category = PAUSE_ROW.phase.names[gen]
 
     events: list[TraceEvent] = []
-    # Ahead of the sub-phases nested inside it, so its BEGIN wins the tie
-    # against a sub-phase starting where the pause does. The slice holds
-    # `pause_data` itself, so a sub-phase adding to it below still reaches it.
     events.append(
         Slice(
             track,
@@ -86,7 +83,6 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
         )
     )
 
-    # Every sub-phase runs inside the pause, so a pause of no length holds none.
     if ts_stop_ns > ts_start_ns:
         for bounds, row_args, names in _row_parts(sub_phase_rows(item)):
             ts_start, ts_stop = bounds(item)

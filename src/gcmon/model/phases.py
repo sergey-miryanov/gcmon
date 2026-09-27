@@ -72,7 +72,6 @@ class PhaseRow(Protocol):
     @staticmethod
     def check(item: object) -> bool: ...
 
-    # Empty when the phase does not run at the record's generation.
     @staticmethod
     def bounds(item: Any) -> tuple[int, int]: ...
 
@@ -81,19 +80,11 @@ class PhaseRow(Protocol):
 
 
 class PauseData:
-    # The whole record: other modules name it too, so it lives in `protocol`.
     type Info = TGCStatsInfo
 
     phase: ClassVar[Phase] = PAUSE
 
-    # The series a pause draws per generation. `uncollectable` is last
-    # because a run that collected everything omits it rather than writing a
-    # zero.
     counter_metrics: ClassVar = (COLLECTED, CANDIDATES, DURATION, UNCOLLECTABLE)
-
-    # Each one's track name per generation. A pause draws three or four
-    # counters and each name is the same string every time, so `counters`
-    # reads it here rather than building it.
     counter_names: ClassVar[Mapping[str, PerGeneration[str]]] = {
         metric: PerGeneration(partial(counter_display_name, metric=metric)) for metric in counter_metrics
     }
@@ -120,8 +111,6 @@ class PauseData:
             DURATION: item.duration,
         }
 
-    # (metric, track name, value) for each counter the pause draws: the
-    # per-generation series, `counter_metrics`, then `heap_size`.
     @classmethod
     def counters(cls, gen: int, item: Info) -> list[tuple[str, str, int | float]]:
         names = cls.counter_names
@@ -132,10 +121,6 @@ class PauseData:
         ]
         if item.uncollectable:
             counters.append((UNCOLLECTABLE, names[UNCOLLECTABLE][gen], item.uncollectable))
-        # Unqualified: it gauges the interpreter rather than a generation
-        # (ADR-0004), and its row sits inside the interpreter's own group, so
-        # no two share a parent and the name need not tell them apart
-        # (ADR-0027).
         counters.append((HEAP_SIZE, HEAP_SIZE, item.heap_size))
         return counters
 
@@ -235,8 +220,6 @@ class HandleWeakrefsData:
         return {GENERATION: gen, IID: item.iid}
 
 
-# The next three start where the phase before them stopped, so each needs
-# that phase's field as well as its own.
 class FinalizeGarbageData:
     class Info(Protocol):
         iid: int
@@ -352,8 +335,7 @@ _SUB_PHASE_ROWS: dict[type, tuple[type[PhaseRow], ...]] = {}
 
 # The fields the sub-phase rows' `check`s read. A msgspec record holds
 # `None` for any it lacks, so which of these it holds decides which rows it
-# carries. The other optional fields are partners of these (a phase's stop,
-# its count) and cannot change the answer, so they stay out of the key.
+# carries.
 _CHECKED_FIELDS: Final = attrgetter(
     ALIVE_SIZE,
     INCREMENT_SIZE,
@@ -384,8 +366,6 @@ def sub_phase_rows(item: TGCStatsInfo) -> tuple[type[PhaseRow], ...]:
         key: Any = type(item)
     else:
         cache = _SUB_PHASE_ROWS_BY_FIELDS
-        # A list comprehension rather than `map(partial(...))`: the key is
-        # built for every record, and the partial's call is most of its cost.
         key = tuple([value is None for value in _CHECKED_FIELDS(item)])
     rows = cache.get(key)
     if rows is None:

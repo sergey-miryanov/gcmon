@@ -124,15 +124,11 @@ def to_mapping(item: TItem) -> JsonlRecord:
         }
 
     if is_gc_stats(item):
-        # A live record: a struct sequence, so a tuple of its fields.
         if isinstance(item, tuple):
             # Any: nothing typed says a struct sequence names its fields.
             structseq: Any = type(item)
             return dict(zip(structseq.__match_args__, item, strict=True))
 
-        # A record read back from a capture, holding None for every field it
-        # lacks. `GCStatsInfo` omits its defaults, which are those Nones, so
-        # msgspec drops them itself rather than a comprehension doing it.
         if isinstance(item, msgspec.Struct):
             record: JsonlRecord = msgspec.to_builtins(item)
             return record
