@@ -3,7 +3,7 @@
 from pathlib import Path
 from typing import Any, Final
 
-from ..model.phases import PAUSE_ROW, PHASE_ROWS
+from ..model.phases import PHASES, PausePhase
 from ..model.process import Process
 from ..model.run_report import RunReport
 from ..support.time_units import dur_to_ms
@@ -215,8 +215,8 @@ def print_stats(stats: StreamingStats, view: StatsView, table_format: TableForma
     totals = stats.pause_totals_by_gen()
     first = True
     has_rows = False
-    for phase_row in PHASE_ROWS:
-        rows = _build_rows(stats.phases[phase_row], phase_row.phase.label, totals, phase_row is PAUSE_ROW)
+    for phase in PHASES:
+        rows = _build_rows(stats.phases[phase], phase.name.label, totals, phase is PausePhase)
         if rows:
             if has_rows:
                 all_rows.append(_SEP_PHASE)
@@ -231,8 +231,8 @@ def print_stats(stats: StreamingStats, view: StatsView, table_format: TableForma
         ring_totals = {gen: stats.pause_totals(process, iid, gen) for gen in stats.GENS}
         first = True
         has_rows = False
-        for phase_row in PHASE_ROWS:
-            rows = _build_rows(ring_data.get(phase_row, {}), phase_row.phase.label, ring_totals, phase_row is PAUSE_ROW)
+        for phase in PHASES:
+            rows = _build_rows(ring_data.get(phase, {}), phase.name.label, ring_totals, phase is PausePhase)
             if rows:
                 if has_rows:
                     all_rows.append(_SEP_PHASE)

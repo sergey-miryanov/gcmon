@@ -24,11 +24,11 @@ conversion.
 ## Decision
 
 A single pipeline `TGCStatsInfo → list[TraceEvent]` lives in `exporters`. What
-it knows about a phase comes from the phase rows in `model`: one row per
-phase, saying which records carry it, its start and stop, and what it
-annotates. A field with no span of its own, such as `increment_size`, has a
-field row instead, saying which records carry it and what it annotates the
-pause with. The rows are the only copy, and every consumer reads them: the
+it knows about a phase comes from `model/phases.py`: one class per phase,
+saying which records carry it, its start and stop, and what it annotates. A
+field with no span of its own, such as `increment_size`, has a pause field
+class instead, saying which records carry it and what it annotates the pause
+with. The classes are the only copy, and every consumer reads them: the
 pipeline, and `stats`, which sits in the same layer as `exporters` rather than
 above it ([ADR-0026](0026-two-subsystems-over-a-shared-base.md)).
 
@@ -62,8 +62,8 @@ writes `0` there and publishes the record unmarked
 
 ## Consequences
 
-- A new sub-phase is one phase row, and the trace and `--stats` both draw it
-  from there. A new counter is added on the pause's row.
+- A new sub-phase is one class, and the trace and `--stats` both draw it from
+  there. A new counter is added on `PausePhase`.
 - Every output format carries the same events by construction. While there
   were two, that equivalence was asserted by comparing one against the other;
   with one format left, the trace is asserted against the `list[TraceEvent]`

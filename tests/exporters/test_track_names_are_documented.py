@@ -72,7 +72,7 @@ from gcmon.model.names import (
     HEAP_SIZE,
     RSS,
 )
-from gcmon.model.phases import PAUSE_ROW
+from gcmon.model.phases import PausePhase
 from gcmon.support.vocabulary import ENCODING
 from tests.helpers import JSONL_FIELDS, SLICE_ARGS
 
@@ -98,7 +98,7 @@ DOCUMENTED: tuple[tuple[str, Path], ...] = (
             START_EVENT,
             STOP_EVENT,
             *(phase.label for phase in GC_PHASES),
-            *PAUSE_ROW.counter_metrics,
+            *PausePhase.counter_metrics,
             *JSONL_FIELDS,
             *SLICE_ARGS,
         )

@@ -12,7 +12,7 @@ from itertools import count
 import pytest
 
 from gcmon.model.data import GCStatsInfo
-from gcmon.model.phases import PAUSE_ROW
+from gcmon.model.phases import PausePhase
 from gcmon.model.poll_status import PollStatus
 from gcmon.model.process import Process
 from gcmon.model.protocol import TGCStatsInfo
@@ -269,7 +269,7 @@ class TestSettlingAnExitedPid:
         assert stats._running_rings == {}
         ring = stats.get_ring_stats(proc(PID), 0)
         assert ring is not None
-        assert ring[PAUSE_ROW][0].percentiles == {50: 1_000, 90: 1_000, 95: 1_000, 99: 1_000}
+        assert ring[PausePhase][0].percentiles == {50: 1_000, 90: 1_000, 95: 1_000, 99: 1_000}
 
     def test_a_successor_on_the_same_pid_gets_a_block_of_its_own(
         self, monitor: EventsMonitor, stats: StreamingStats

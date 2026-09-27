@@ -128,8 +128,8 @@ block is a sum over the rings whose process carries that key, computed the way
 - **What makes a good test here:** real command lines, quoted from a capture,
   asserted to the key they should produce. A test built from a command line
   invented for the test would pass on a sanitizer that never sees a real one.
-- **Prior art:** the phase rows in `model/phases.py`, a table `--stats` walks,
-  and the tests that walk them; the `StatsView.parse` tests for word handling.
+- **Prior art:** the phases in `model/phases.py`, a table `--stats` walks, and
+  the tests that walk them; the `StatsView.parse` tests for word handling.
 - **Cases:**
   1. Five pyperf workers of one benchmark fold into one block; a sixth
      benchmark's workers make a second.

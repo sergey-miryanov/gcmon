@@ -44,7 +44,6 @@ from gcmon.model.names import (
     UNCOLLECTABLE,
 )
 from gcmon.model.phases import (
-    PAUSE_ROW,
     ClearWeakrefsSubPhase,
     DeduceUnreachableSubPhase,
     DeleteGarbageSubPhase,
@@ -54,7 +53,9 @@ from gcmon.model.phases import (
     HandleWeakrefsSubPhase,
     IncrementSizeField,
     MarkAliveSubPhase,
-    PhaseRow,
+    PauseField,
+    PausePhase,
+    SubPhase,
 )
 from gcmon.model.protocol import (
     is_gc_stats,
@@ -100,13 +101,14 @@ class TestIsInstant:
         assert is_instant(incremental_item) is False
 
 
-class TestRowChecks:
-    """Each row's `check` answers for the fields that phase needs. The table
-    is the statement: a row, and the fields that make a record carry it. The
+class TestChecks:
+    """Each sub-phase's and pause field's `check` answers for the fields it
+    needs. The table is the statement: a class, and the fields that make a
+    record carry it. The
     three phases that start where the one before them stopped need that
     phase's field as well."""
 
-    SUB_PHASES = (
+    CHECKS = (
         (IncrementSizeField, {INCREMENT_SIZE: 500}),
         (FillIncrementSubPhase, {TS_FILL_INCREMENT_START: 100}),
         (MarkAliveSubPhase, {ALIVE_SIZE: 300}),
@@ -117,40 +119,42 @@ class TestRowChecks:
         (ClearWeakrefsSubPhase, {TS_HANDLE_RESURRECTED_STOP: 100, TS_CLEAR_WEAKREFS_STOP: 100}),
         (DeleteGarbageSubPhase, {TS_DELETE_GARBAGE_START: 100}),
     )
-    IDS = tuple(row.__name__ for row, _ in SUB_PHASES)
+    IDS = tuple(kind.__name__ for kind, _ in CHECKS)
 
     def test_a_pause_record_carries_the_pause_timestamps(self) -> None:
-        assert PAUSE_ROW.check(create_mock_stats_item())
+        assert PausePhase.check(create_mock_stats_item())
 
     def test_something_that_is_not_a_record_does_not(self) -> None:
-        assert not PAUSE_ROW.check(SimpleNamespace(gen=0))
+        assert not PausePhase.check(SimpleNamespace(gen=0))
 
     def test_a_loss_record_does_not_either(self, loss_item: LossMsg) -> None:
         """It carries `ts_start` and `ts_stop` as well, between two polls
         rather than round a pause."""
-        assert not PAUSE_ROW.check(loss_item)
+        assert not PausePhase.check(loss_item)
 
-    @pytest.mark.parametrize(("row", "fields"), SUB_PHASES, ids=IDS)
-    def test_a_row_sees_the_fields_it_needs(self, row: type[PhaseRow], fields: dict[str, int]) -> None:
-        assert row.check(create_mock_stats_item(**fields))
+    @pytest.mark.parametrize(("kind", "fields"), CHECKS, ids=IDS)
+    def test_it_sees_the_fields_it_needs(self, kind: type[SubPhase | PauseField], fields: dict[str, int]) -> None:
+        assert kind.check(create_mock_stats_item(**fields))
 
-    @pytest.mark.parametrize(("row", "fields"), SUB_PHASES, ids=IDS)
-    def test_a_row_passes_over_a_record_that_lacks_them(self, row: type[PhaseRow], fields: dict[str, int]) -> None:
-        """A pause record leaves every sub-phase unset, so no row may claim
-        it. One that does draws a slice off a missing timestamp."""
-        assert not row.check(create_mock_stats_item())
+    @pytest.mark.parametrize(("kind", "fields"), CHECKS, ids=IDS)
+    def test_it_passes_over_a_record_that_lacks_them(
+        self, kind: type[SubPhase | PauseField], fields: dict[str, int]
+    ) -> None:
+        """A pause record leaves every sub-phase unset, so no check may
+        claim it. One that does draws a slice off a missing timestamp."""
+        assert not kind.check(create_mock_stats_item())
 
-    @pytest.mark.parametrize(("row", "fields"), SUB_PHASES, ids=IDS)
-    def test_a_row_passes_over_a_struct_sequence_that_lacks_them(
-        self, row: type[PhaseRow], fields: dict[str, int]
+    @pytest.mark.parametrize(("kind", "fields"), CHECKS, ids=IDS)
+    def test_it_passes_over_a_struct_sequence_that_lacks_them(
+        self, kind: type[SubPhase | PauseField], fields: dict[str, int]
     ) -> None:
         """A build that does not report a field leaves it off the struct
         sequence rather than holding `None`, so the check reads a missing
         attribute, not an unset one."""
-        assert not row.check(as_structseq(create_mock_stats_item()))
+        assert not kind.check(as_structseq(create_mock_stats_item()))
 
     def test_a_struct_sequence_carries_the_pause_timestamps(self) -> None:
-        assert PAUSE_ROW.check(as_structseq(create_mock_stats_item()))
+        assert PausePhase.check(as_structseq(create_mock_stats_item()))
 
 
 class TestToMappingPartial:

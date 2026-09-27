@@ -10,7 +10,7 @@ from unittest.mock import MagicMock
 import pytest
 
 from gcmon.model.data import GCStatsInfo
-from gcmon.model.phases import PAUSE_ROW
+from gcmon.model.phases import PausePhase
 from gcmon.stats import stats as stats_module
 from gcmon.stats.stats import HAS_DDSKETCH, Stats
 from gcmon.stats.streaming_stats import StreamingStats
@@ -662,7 +662,7 @@ class TestAProcessThatExits:
         ring = stats.get_ring_stats(proc(TARGET_PID), 0)
 
         assert ring is not None
-        assert ring[PAUSE_ROW][0].percentiles == {50: 1_000, 90: 1_000, 95: 1_000, 99: 1_000}
+        assert ring[PausePhase][0].percentiles == {50: 1_000, 90: 1_000, 95: 1_000, 99: 1_000}
 
     def test_count_and_sum_survive(self) -> None:
         totals = self._ran_and_exited().pause_totals(proc(TARGET_PID), 0, 0)
@@ -679,7 +679,7 @@ class TestAProcessThatExits:
 
         running = stats.get_ring_stats(proc(OTHER_PID), 0)
         assert running is not None
-        assert running[PAUSE_ROW][0].percentiles is None
+        assert running[PausePhase][0].percentiles is None
 
     def test_retain_settles_the_pids_it_leaves_out(self) -> None:
         stats = StreamingStats()
@@ -764,7 +764,7 @@ class TestAFanOutThatDeparts:
                 key: (
                     ring.declined,
                     ring.phases is not None,
-                    None if ring.phases is None else ring.phases[PAUSE_ROW][0].percentiles,
+                    None if ring.phases is None else ring.phases[PausePhase][0].percentiles,
                     {gen: (loss.count, loss.pause_ns) for gen, loss in ring.loss.items()},
                     {gen: (totals.collections, totals.duration_s) for gen, totals in ring.cumulative.items()},
                 )
@@ -1062,7 +1062,7 @@ class TestAReusedPid:
         ring = self._reused().get_ring_stats(proc(TARGET_PID, 1), 0)
 
         assert ring is not None
-        assert ring[PAUSE_ROW][0].percentiles == {50: 1_000, 90: 1_000, 95: 1_000, 99: 1_000}
+        assert ring[PausePhase][0].percentiles == {50: 1_000, 90: 1_000, 95: 1_000, 99: 1_000}
 
     def test_the_loss_splits_between_them(self) -> None:
         """`Cov` and `F` read this, so a shared entry would print one

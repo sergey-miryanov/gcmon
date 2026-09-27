@@ -72,7 +72,7 @@ __all__ = [
     "TYPE",
     "UNCOLLECTABLE",
     "PerGeneration",
-    "Phase",
+    "PhaseName",
     "counter_display_name",
     "gc_loss_slice_name",
     "gc_pause_slice_name",
@@ -104,15 +104,15 @@ class PerGeneration[T](dict[int, T]):
         return self._render(gen)
 
 
-class Phase(NamedTuple):
-    """One phase of a collection, as the surfaces that draw it name it.
+class PhaseName(NamedTuple):
+    """What the surfaces that draw a phase of a collection name it.
 
     `label` is what a reader sees, on a slice and in a `--stats` row alike.
     `category` is the Perfetto category the slice carries; `stats` has no
     use for it and ignores it.
 
     `names` holds the slice name and category spelled per generation,
-    rendered once by `_phase` below, as one pair so that a slice costs one
+    rendered once by `_phase_name` below, as one pair so that a slice costs one
     lookup. A conversion emits up to nine slices per record, so it reads
     them here rather than formatting them again.
     """
@@ -122,24 +122,24 @@ class Phase(NamedTuple):
     names: Mapping[int, tuple[str, str]]
 
 
-def _phase(label: str, category: str) -> Phase:
-    """One row of the table, with its per-generation names rendered."""
+def _phase_name(label: str, category: str) -> PhaseName:
+    """A phase's name, with its per-generation names rendered."""
 
     def names(gen: int) -> tuple[str, str]:
         return f"{label}({gen})", f"{category}(gen={gen})"
 
-    return Phase(label, category, PerGeneration(names))
+    return PhaseName(label, category, PerGeneration(names))
 
 
-PAUSE: Final = _phase("GC Pause", "gc.pause")
-MARK_ALIVE: Final = _phase("GC Mark Alive", "gc.mark.alive")
-FILL_INCREMENT: Final = _phase("GC Fill Increment", "gc.increment")
-DEDUCE_UNREACHABLE: Final = _phase("GC Deduce Unreachable", "gc.deduce")
-HANDLE_WEAKREFS: Final = _phase("GC Handle Weakrefs Callbacks", "gc.weakrefs")
-FINALIZE_GARBAGE: Final = _phase("GC Finalize Garbage", "gc.finalize")
-HANDLE_RESURRECTED: Final = _phase("GC Handle Resurrected", "gc.resurrect")
-CLEAR_WEAKREFS: Final = _phase("GC Clear Weakrefs", "gc.clear_weakrefs")
-DELETE_GARBAGE: Final = _phase("GC Delete Garbage", "gc.delete")
+PAUSE: Final = _phase_name("GC Pause", "gc.pause")
+MARK_ALIVE: Final = _phase_name("GC Mark Alive", "gc.mark.alive")
+FILL_INCREMENT: Final = _phase_name("GC Fill Increment", "gc.increment")
+DEDUCE_UNREACHABLE: Final = _phase_name("GC Deduce Unreachable", "gc.deduce")
+HANDLE_WEAKREFS: Final = _phase_name("GC Handle Weakrefs Callbacks", "gc.weakrefs")
+FINALIZE_GARBAGE: Final = _phase_name("GC Finalize Garbage", "gc.finalize")
+HANDLE_RESURRECTED: Final = _phase_name("GC Handle Resurrected", "gc.resurrect")
+CLEAR_WEAKREFS: Final = _phase_name("GC Clear Weakrefs", "gc.clear_weakrefs")
+DELETE_GARBAGE: Final = _phase_name("GC Delete Garbage", "gc.delete")
 
 # The pause first, then its sub-phases in the order the collector runs them.
 GC_PHASES: Final = (
@@ -231,7 +231,7 @@ GC_LOSS_NAME: Final = "GC Loss"
 GC_LOSS_CATEGORY: Final = "gc.loss"
 
 
-def phase_slice_name(phase: Phase, gen: int) -> str:
+def phase_slice_name(phase: PhaseName, gen: int) -> str:
     """The slice one generation's *phase* is drawn as.
 
     A reading of the table `_phase` rendered. The conversion loop indexes
@@ -241,7 +241,7 @@ def phase_slice_name(phase: Phase, gen: int) -> str:
     return phase.names[gen][0]
 
 
-def phase_category(phase: Phase, gen: int) -> str:
+def phase_category(phase: PhaseName, gen: int) -> str:
     """The category that slice carries.
 
     Filtering on the prefix reaches every generation, on the exact string
