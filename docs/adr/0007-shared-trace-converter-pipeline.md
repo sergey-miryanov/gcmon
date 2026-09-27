@@ -26,7 +26,9 @@ conversion.
 A single pipeline `TGCStatsInfo → list[TraceEvent]` lives in `exporters`. What
 it knows about a phase comes from the phase rows in `model`: one row per
 phase, saying which records carry it, its start and stop, and what it
-annotates. The rows are the only copy, and every consumer reads them: the
+annotates. A field with no span of its own, such as `increment_size`, has a
+field row instead, saying which records carry it and what it annotates the
+pause with. The rows are the only copy, and every consumer reads them: the
 pipeline, and `stats`, which sits in the same layer as `exporters` rather than
 above it ([ADR-0026](0026-two-subsystems-over-a-shared-base.md)).
 

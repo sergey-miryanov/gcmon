@@ -12,7 +12,7 @@ from ..model.names import (
     OBSERVED_COUNT,
     gc_loss_slice_name,
 )
-from ..model.phases import PAUSE_ROW, PhaseRow, sub_phase_rows
+from ..model.phases import PAUSE_ROW, PhaseRow, rows_for
 from ..model.process import Process
 from ..model.protocol import (
     TGCStatsInfo,
@@ -46,11 +46,11 @@ type _RowParts = tuple[
     tuple[Callable[[Any], tuple[int, int]], Callable[[int, Any], EventArgs], Mapping[int, tuple[str, str]]], ...
 ]
 
-# Per tuple of rows `sub_phase_rows` hands back: each row's `bounds`, `args`
-# and per-generation names, read off once. A record draws up to eight
+# Per tuple of sub-phase rows `rows_for` hands back: each row's `bounds`,
+# `args` and per-generation names, read off once. A record draws up to eight
 # sub-phases, and reaching each through its row (a staticmethod lookup, then
 # `phase.names` through a named tuple) cost as much as a third of converting
-# it. `sub_phase_rows` caches its tuples, so this holds a handful of entries.
+# it. `rows_for` caches its tuples, so this holds a handful of entries.
 _ROW_PARTS: dict[tuple[type[PhaseRow], ...], _RowParts] = {}
 
 
@@ -83,8 +83,9 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
         )
     )
 
+    sub_phases, fields = rows_for(item)
     if ts_stop_ns > ts_start_ns:
-        for bounds, row_args, names in _row_parts(sub_phase_rows(item)):
+        for bounds, row_args, names in _row_parts(sub_phases):
             ts_start, ts_stop = bounds(item)
             if ts_stop > ts_start:
                 args = row_args(gen, item)
@@ -100,6 +101,9 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
                         args,
                     )
                 )
+
+    for row in fields:
+        pause_data.update(row.args(gen, item))
 
     events.extend(
         Counter(track, metric, name, ts_start_ns, value) for metric, name, value in PAUSE_ROW.counters(gen, item)

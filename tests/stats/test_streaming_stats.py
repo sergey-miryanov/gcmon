@@ -9,14 +9,14 @@ from gcmon.model.data import GCStatsInfo
 from gcmon.model.phases import (
     PAUSE_ROW,
     PHASE_ROWS,
-    ClearWeakrefsData,
-    DeduceUnreachableData,
-    DeleteGarbageData,
-    FinalizeGarbageData,
-    HandleResurrectedData,
-    HandleWeakrefsData,
-    IncrementalData,
-    MarkAliveData,
+    ClearWeakrefsSubPhase,
+    DeduceUnreachableSubPhase,
+    DeleteGarbageSubPhase,
+    FillIncrementSubPhase,
+    FinalizeGarbageSubPhase,
+    HandleResurrectedSubPhase,
+    HandleWeakrefsSubPhase,
+    MarkAliveSubPhase,
     PhaseRow,
 )
 from gcmon.model.protocol import TGCStatsInfo
@@ -113,18 +113,21 @@ class TestStreamingStatsUpdate:
         # Generation 1 runs every phase.
         streaming_stats.update(proc(DEFAULT_PID), incremental_gc_stats_item_factory(gen=1))
 
-        assert streaming_stats.phases[MarkAliveData][1].count() == 1
-        assert streaming_stats.phases[IncrementalData][1].count() == 1
-        assert streaming_stats.phases[DeduceUnreachableData][1].count() == 1
-        assert streaming_stats.phases[HandleWeakrefsData][1].count() == 1
-        assert streaming_stats.phases[FinalizeGarbageData][1].count() == 1
-        assert streaming_stats.phases[HandleResurrectedData][1].count() == 1
-        assert streaming_stats.phases[ClearWeakrefsData][1].count() == 1
-        assert streaming_stats.phases[DeleteGarbageData][1].count() == 1
+        assert streaming_stats.phases[MarkAliveSubPhase][1].count() == 1
+        assert streaming_stats.phases[FillIncrementSubPhase][1].count() == 1
+        assert streaming_stats.phases[DeduceUnreachableSubPhase][1].count() == 1
+        assert streaming_stats.phases[HandleWeakrefsSubPhase][1].count() == 1
+        assert streaming_stats.phases[FinalizeGarbageSubPhase][1].count() == 1
+        assert streaming_stats.phases[HandleResurrectedSubPhase][1].count() == 1
+        assert streaming_stats.phases[ClearWeakrefsSubPhase][1].count() == 1
+        assert streaming_stats.phases[DeleteGarbageSubPhase][1].count() == 1
 
     @pytest.mark.parametrize(
         ("gen_number", "row"),
-        [pytest.param(0, MarkAliveData, id="mark alive"), pytest.param(2, IncrementalData, id="fill increment")],
+        [
+            pytest.param(0, MarkAliveSubPhase, id="mark alive"),
+            pytest.param(2, FillIncrementSubPhase, id="fill increment"),
+        ],
     )
     def test_update_leaves_out_a_phase_the_generation_skips(
         self,
@@ -138,7 +141,7 @@ class TestStreamingStatsUpdate:
         streaming_stats.update(proc(DEFAULT_PID), incremental_gc_stats_item_factory(gen=gen_number))
 
         assert streaming_stats.phases[row][gen_number].count() == 0
-        assert streaming_stats.phases[DeduceUnreachableData][gen_number].count() == 1
+        assert streaming_stats.phases[DeduceUnreachableSubPhase][gen_number].count() == 1
 
     def test_update_skips_zero_duration(
         self,

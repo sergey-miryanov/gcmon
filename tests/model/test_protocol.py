@@ -45,14 +45,15 @@ from gcmon.model.names import (
 )
 from gcmon.model.phases import (
     PAUSE_ROW,
-    ClearWeakrefsData,
-    DeduceUnreachableData,
-    DeleteGarbageData,
-    FinalizeGarbageData,
-    HandleResurrectedData,
-    HandleWeakrefsData,
-    IncrementalData,
-    MarkAliveData,
+    ClearWeakrefsSubPhase,
+    DeduceUnreachableSubPhase,
+    DeleteGarbageSubPhase,
+    FillIncrementSubPhase,
+    FinalizeGarbageSubPhase,
+    HandleResurrectedSubPhase,
+    HandleWeakrefsSubPhase,
+    IncrementSizeField,
+    MarkAliveSubPhase,
     PhaseRow,
 )
 from gcmon.model.protocol import (
@@ -106,14 +107,15 @@ class TestRowChecks:
     phase's field as well."""
 
     SUB_PHASES = (
-        (IncrementalData, {INCREMENT_SIZE: 500}),
-        (MarkAliveData, {ALIVE_SIZE: 300}),
-        (DeduceUnreachableData, {TS_DEDUCE_UNREACHABLE_START: 100}),
-        (HandleWeakrefsData, {TS_HANDLE_WEAKREF_CALLBACKS_START: 100}),
-        (FinalizeGarbageData, {TS_HANDLE_WEAKREF_CALLBACKS_STOP: 100, TS_FINALIZE_GARBAGE_STOP: 100}),
-        (HandleResurrectedData, {TS_FINALIZE_GARBAGE_STOP: 100, TS_HANDLE_RESURRECTED_STOP: 100}),
-        (ClearWeakrefsData, {TS_HANDLE_RESURRECTED_STOP: 100, TS_CLEAR_WEAKREFS_STOP: 100}),
-        (DeleteGarbageData, {TS_DELETE_GARBAGE_START: 100}),
+        (IncrementSizeField, {INCREMENT_SIZE: 500}),
+        (FillIncrementSubPhase, {TS_FILL_INCREMENT_START: 100}),
+        (MarkAliveSubPhase, {ALIVE_SIZE: 300}),
+        (DeduceUnreachableSubPhase, {TS_DEDUCE_UNREACHABLE_START: 100}),
+        (HandleWeakrefsSubPhase, {TS_HANDLE_WEAKREF_CALLBACKS_START: 100}),
+        (FinalizeGarbageSubPhase, {TS_HANDLE_WEAKREF_CALLBACKS_STOP: 100, TS_FINALIZE_GARBAGE_STOP: 100}),
+        (HandleResurrectedSubPhase, {TS_FINALIZE_GARBAGE_STOP: 100, TS_HANDLE_RESURRECTED_STOP: 100}),
+        (ClearWeakrefsSubPhase, {TS_HANDLE_RESURRECTED_STOP: 100, TS_CLEAR_WEAKREFS_STOP: 100}),
+        (DeleteGarbageSubPhase, {TS_DELETE_GARBAGE_START: 100}),
     )
     IDS = tuple(row.__name__ for row, _ in SUB_PHASES)
 

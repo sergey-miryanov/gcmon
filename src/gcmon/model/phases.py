@@ -1,5 +1,5 @@
 """The phases of a collection: which records carry each, where it runs,
-and what it annotates."""
+and what it annotates; and the fields that annotate the pause alone."""
 
 from collections.abc import Mapping
 from functools import partial
@@ -31,6 +31,7 @@ from .names import (
     TS_CLEAR_WEAKREFS_STOP,
     TS_DEDUCE_UNREACHABLE_START,
     TS_DELETE_GARBAGE_START,
+    TS_FILL_INCREMENT_START,
     TS_FINALIZE_GARBAGE_STOP,
     TS_HANDLE_RESURRECTED_STOP,
     TS_HANDLE_WEAKREF_CALLBACKS_START,
@@ -48,19 +49,23 @@ from .protocol import (
 from .trace_event import EventArgs
 
 __all__ = [
+    "PAUSE_FIELD_ROWS",
     "PAUSE_ROW",
     "PHASE_ROWS",
     "SUB_PHASE_ROWS",
-    "ClearWeakrefsData",
-    "DeduceUnreachableData",
-    "DeleteGarbageData",
-    "FinalizeGarbageData",
-    "HandleResurrectedData",
-    "HandleWeakrefsData",
-    "IncrementalData",
-    "MarkAliveData",
+    "ClearWeakrefsSubPhase",
+    "DeduceUnreachableSubPhase",
+    "DeleteGarbageSubPhase",
+    "FieldRow",
+    "FillIncrementSubPhase",
+    "FinalizeGarbageSubPhase",
+    "HandleResurrectedSubPhase",
+    "HandleWeakrefsSubPhase",
+    "IncrementSizeField",
+    "MarkAliveSubPhase",
     "PhaseRow",
     "SubPhaseRow",
+    "rows_for",
     "sub_phase_rows",
 ]
 
@@ -88,7 +93,20 @@ class SubPhaseRow(PhaseRow, Protocol):
     Info: ClassVar[type]
 
 
-class PauseData:
+class FieldRow(Protocol):
+    """Fields with no span of their own: which records carry them, and what
+    they annotate the pause with. `Info` names the fields `args` reads."""
+
+    Info: ClassVar[type]
+
+    @staticmethod
+    def check(item: object) -> bool: ...
+
+    @staticmethod
+    def args(gen: int, item: Any) -> EventArgs: ...
+
+
+class PausePhase:
     type Info = TGCStatsInfo
 
     phase: ClassVar[Phase] = PAUSE
@@ -134,7 +152,7 @@ class PauseData:
         return counters
 
 
-class MarkAliveData:
+class MarkAliveSubPhase:
     class _Info(Protocol):
         gen: int
         iid: int
@@ -158,14 +176,35 @@ class MarkAliveData:
 
     @staticmethod
     def args(gen: int, item: _Info) -> EventArgs:
+        if gen == 0:
+            return {}
         return {GENERATION: gen, IID: item.iid, ALIVE_SIZE: item.alive_size}
 
 
-class IncrementalData:
+class IncrementSizeField:
+    """The size of the increment Fill Increment fills."""
+
     class _Info(Protocol):
-        gen: int
         iid: int
         increment_size: int
+
+    Info: ClassVar[type] = _Info
+
+    @staticmethod
+    def check(item: object) -> TypeGuard[_Info]:
+        return getattr(item, INCREMENT_SIZE, None) is not None
+
+    @staticmethod
+    def args(gen: int, item: _Info) -> EventArgs:
+        # Generation 2 fills no increment.
+        if gen == 2:
+            return {}
+        return {GENERATION: gen, IID: item.iid, INCREMENT_SIZE: item.increment_size}
+
+
+class FillIncrementSubPhase:
+    class _Info(Protocol):
+        gen: int
         ts_fill_increment_start: int
         ts_fill_increment_stop: int
 
@@ -174,7 +213,7 @@ class IncrementalData:
 
     @staticmethod
     def check(item: object) -> TypeGuard[_Info]:
-        return getattr(item, INCREMENT_SIZE, None) is not None
+        return getattr(item, TS_FILL_INCREMENT_START, None) is not None
 
     @staticmethod
     def bounds(item: _Info) -> tuple[int, int]:
@@ -185,10 +224,10 @@ class IncrementalData:
 
     @staticmethod
     def args(gen: int, item: _Info) -> EventArgs:
-        return {GENERATION: gen, IID: item.iid, INCREMENT_SIZE: item.increment_size}
+        return {}
 
 
-class DeduceUnreachableData:
+class DeduceUnreachableSubPhase:
     class _Info(Protocol):
         iid: int
         candidates: int
@@ -211,7 +250,7 @@ class DeduceUnreachableData:
         return {GENERATION: gen, IID: item.iid, CANDIDATES: item.candidates}
 
 
-class HandleWeakrefsData:
+class HandleWeakrefsSubPhase:
     class _Info(Protocol):
         iid: int
         ts_handle_weakref_callbacks_start: int
@@ -233,7 +272,7 @@ class HandleWeakrefsData:
         return {GENERATION: gen, IID: item.iid}
 
 
-class FinalizeGarbageData:
+class FinalizeGarbageSubPhase:
     class _Info(Protocol):
         iid: int
         finalized_garbage_count: int
@@ -259,7 +298,7 @@ class FinalizeGarbageData:
         return {GENERATION: gen, IID: item.iid, FINALIZED_GARBAGE_COUNT: item.finalized_garbage_count}
 
 
-class HandleResurrectedData:
+class HandleResurrectedSubPhase:
     class _Info(Protocol):
         iid: int
         ts_finalize_garbage_stop: int
@@ -284,7 +323,7 @@ class HandleResurrectedData:
         return {GENERATION: gen, IID: item.iid}
 
 
-class ClearWeakrefsData:
+class ClearWeakrefsSubPhase:
     class _Info(Protocol):
         iid: int
         clear_weakrefs_count: int
@@ -310,7 +349,7 @@ class ClearWeakrefsData:
         return {GENERATION: gen, IID: item.iid, CLEAR_WEAKREFS_COUNT: item.clear_weakrefs_count}
 
 
-class DeleteGarbageData:
+class DeleteGarbageSubPhase:
     class _Info(Protocol):
         iid: int
         deleted_garbage_count: int
@@ -333,32 +372,36 @@ class DeleteGarbageData:
         return {GENERATION: gen, IID: item.iid, DELETED_GARBAGE_COUNT: item.deleted_garbage_count}
 
 
-PAUSE_ROW: Final = PauseData
+PAUSE_ROW: Final = PausePhase
 
 # In the order the collector runs them, which is the order they are drawn in.
 SUB_PHASE_ROWS: Final[tuple[type[SubPhaseRow], ...]] = (
-    MarkAliveData,
-    IncrementalData,
-    DeduceUnreachableData,
-    HandleWeakrefsData,
-    FinalizeGarbageData,
-    HandleResurrectedData,
-    ClearWeakrefsData,
-    DeleteGarbageData,
+    MarkAliveSubPhase,
+    FillIncrementSubPhase,
+    DeduceUnreachableSubPhase,
+    HandleWeakrefsSubPhase,
+    FinalizeGarbageSubPhase,
+    HandleResurrectedSubPhase,
+    ClearWeakrefsSubPhase,
+    DeleteGarbageSubPhase,
 )
 
 # The pause, then its sub-phases.
 PHASE_ROWS: Final[tuple[type[PhaseRow], ...]] = (PAUSE_ROW, *SUB_PHASE_ROWS)
 
-# Per struct-sequence type: the sub-phase rows its records carry.
-_SUB_PHASE_ROWS: dict[type, tuple[type[PhaseRow], ...]] = {}
+PAUSE_FIELD_ROWS: Final[tuple[type[FieldRow], ...]] = (IncrementSizeField,)
 
-# The fields the sub-phase rows' `check`s read. A msgspec record holds
-# `None` for any it lacks, so which of these it holds decides which rows it
-# carries.
+type _RecordRows = tuple[tuple[type[SubPhaseRow], ...], tuple[type[FieldRow], ...]]
+
+# Per struct-sequence type: the sub-phase and field rows its records carry.
+_ROWS_BY_TYPE: dict[type, _RecordRows] = {}
+
+# The fields the rows' `check`s read. A msgspec record holds `None` for any
+# it lacks, so which of these it holds decides which rows it carries.
 _CHECKED_FIELDS: Final = attrgetter(
     ALIVE_SIZE,
     INCREMENT_SIZE,
+    TS_FILL_INCREMENT_START,
     TS_DEDUCE_UNREACHABLE_START,
     TS_HANDLE_WEAKREF_CALLBACKS_START,
     TS_HANDLE_WEAKREF_CALLBACKS_STOP,
@@ -368,13 +411,19 @@ _CHECKED_FIELDS: Final = attrgetter(
     TS_DELETE_GARBAGE_START,
 )
 
-# Per set of checked fields present: the sub-phase rows a msgspec record
-# carries. A capture holds a handful of shapes, however many records.
-_SUB_PHASE_ROWS_BY_FIELDS: dict[tuple[bool, ...], tuple[type[PhaseRow], ...]] = {}
+# Per set of checked fields present: the rows a msgspec record carries. A
+# capture holds a handful of shapes, however many records.
+_ROWS_BY_FIELDS: dict[tuple[bool, ...], _RecordRows] = {}
 
 
-def sub_phase_rows(item: TGCStatsInfo) -> tuple[type[PhaseRow], ...]:
-    """The sub-phase rows whose `check` accepts *item*.
+def sub_phase_rows(item: TGCStatsInfo) -> tuple[type[SubPhaseRow], ...]:
+    """The sub-phase rows whose `check` accepts *item*."""
+    return rows_for(item)[0]
+
+
+def rows_for(item: TGCStatsInfo) -> _RecordRows:
+    """The sub-phase rows, then the pause field rows, whose `check` accepts
+    *item*.
 
     A struct sequence's fields are fixed by its type, so the checks run on
     the first record of each type. A msgspec record holds `None` for a field
@@ -382,12 +431,15 @@ def sub_phase_rows(item: TGCStatsInfo) -> tuple[type[PhaseRow], ...]:
     on which optional fields it holds.
     """
     if isinstance(item, tuple):
-        cache: dict[Any, tuple[type[PhaseRow], ...]] = _SUB_PHASE_ROWS
+        cache: dict[Any, _RecordRows] = _ROWS_BY_TYPE
         key: Any = type(item)
     else:
-        cache = _SUB_PHASE_ROWS_BY_FIELDS
+        cache = _ROWS_BY_FIELDS
         key = tuple([value is None for value in _CHECKED_FIELDS(item)])
     rows = cache.get(key)
     if rows is None:
-        rows = cache[key] = tuple(row for row in SUB_PHASE_ROWS if row.check(item))
+        rows = cache[key] = (
+            tuple(row for row in SUB_PHASE_ROWS if row.check(item)),
+            tuple(row for row in PAUSE_FIELD_ROWS if row.check(item)),
+        )
     return rows

@@ -5,27 +5,34 @@ import pytest
 
 from gcmon.model.data import GCStatsInfo
 from gcmon.model.names import TS_START, TS_STOP
-from gcmon.model.phases import PAUSE_ROW, SUB_PHASE_ROWS, sub_phase_rows
+from gcmon.model.phases import PAUSE_FIELD_ROWS, PAUSE_ROW, SUB_PHASE_ROWS, rows_for
 from tests.helpers import create_mock_incremental_item, create_mock_stats_item
 
 _OPTIONAL_FIELDS = [field.name for field in msgspec.structs.fields(GCStatsInfo) if field.default is None]
 
 _RECORD_FIELDS = GCStatsInfo.__struct_fields__
 
-_INFO_FIELDS = {field for row in SUB_PHASE_ROWS for field in get_type_hints(row.Info)}
+_INFO_FIELDS = {field for row in (*SUB_PHASE_ROWS, *PAUSE_FIELD_ROWS) for field in get_type_hints(row.Info)}
+
+
+def _rows_checking(item: GCStatsInfo) -> tuple[tuple[type, ...], tuple[type, ...]]:
+    return (
+        tuple(row for row in SUB_PHASE_ROWS if row.check(item)),
+        tuple(row for row in PAUSE_FIELD_ROWS if row.check(item)),
+    )
 
 
 @pytest.mark.parametrize("missing", _OPTIONAL_FIELDS)
-def test_sub_phase_rows_cache_tells_apart_every_optional_field(missing: str) -> None:
+def test_carried_rows_cache_tells_apart_every_optional_field(missing: str) -> None:
     """A msgspec record's rows are cached on a subset of its optional fields.
     A record lacking any one of them still gets the rows its checks accept,
     rather than those of a fuller record cached before it."""
     full = create_mock_incremental_item(gen=1)
-    assert sub_phase_rows(full) == tuple(row for row in SUB_PHASE_ROWS if row.check(full))
+    assert rows_for(full) == _rows_checking(full)
 
     item = create_mock_incremental_item(gen=1, **{missing: None})
 
-    assert sub_phase_rows(item) == tuple(row for row in SUB_PHASE_ROWS if row.check(item))
+    assert rows_for(item) == _rows_checking(item)
 
 
 def test_every_sub_phase_timestamp_is_read_by_a_row() -> None:

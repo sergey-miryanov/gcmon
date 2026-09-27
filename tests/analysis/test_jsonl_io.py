@@ -39,7 +39,7 @@ from gcmon.model.names import (
     TS_STOP,
     TYPE,
 )
-from gcmon.model.phases import IncrementalData
+from gcmon.model.phases import IncrementSizeField
 from gcmon.model.protocol import is_gc_stats
 from gcmon.model.trace_event import Counter, Slice
 from gcmon.support.vocabulary import ENCODING, FORMAT_PERFETTO
@@ -69,7 +69,7 @@ class TestJsonToItem:
         pid, item = json_to_item(data)
 
         assert pid == 456
-        assert IncrementalData.check(item)
+        assert IncrementSizeField.check(item)
         assert item.increment_size == 500
 
     def test_pid_as_string(self) -> None:
@@ -130,7 +130,7 @@ class TestReadJsonl:
 
         result = read_jsonl(path)
 
-        assert IncrementalData.check(result[1][0])
+        assert IncrementSizeField.check(result[1][0])
 
     def test_raises_on_malformed_json(self, tmp_path: Path) -> None:
         path = tmp_path / "bad.jsonl"

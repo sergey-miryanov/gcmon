@@ -18,14 +18,14 @@ from gcmon.model.names import (
 )
 from gcmon.model.phases import (
     PAUSE_ROW,
-    ClearWeakrefsData,
-    DeduceUnreachableData,
-    DeleteGarbageData,
-    FinalizeGarbageData,
-    HandleResurrectedData,
-    HandleWeakrefsData,
-    IncrementalData,
-    MarkAliveData,
+    ClearWeakrefsSubPhase,
+    DeduceUnreachableSubPhase,
+    DeleteGarbageSubPhase,
+    FillIncrementSubPhase,
+    FinalizeGarbageSubPhase,
+    HandleResurrectedSubPhase,
+    HandleWeakrefsSubPhase,
+    MarkAliveSubPhase,
 )
 from gcmon.stats.streaming_stats import phase_bounds
 from tests.data_helpers import create_instant_msg
@@ -78,7 +78,7 @@ class TestMarkAlivePhase:
     """Tests for the MarkAlive phase."""
 
     def test_name(self) -> None:
-        row = MarkAliveData
+        row = MarkAliveSubPhase
 
         assert row.phase.label == MARK_ALIVE.label
 
@@ -86,7 +86,7 @@ class TestMarkAlivePhase:
         self,
         incremental_gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        row = MarkAliveData
+        row = MarkAliveSubPhase
         item = incremental_gc_stats_item_factory(
             gen=1,
             ts_mark_alive_start=2000,
@@ -102,7 +102,7 @@ class TestMarkAlivePhase:
         self,
         gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        row = MarkAliveData
+        row = MarkAliveSubPhase
         item = gc_stats_item_factory()
 
         ts1, ts2 = phase_bounds(row, item)
@@ -115,7 +115,7 @@ class TestFillIncrementPhase:
     """Tests for the FillIncrement phase."""
 
     def test_name(self) -> None:
-        row = IncrementalData
+        row = FillIncrementSubPhase
 
         assert row.phase.label == FILL_INCREMENT.label
 
@@ -123,7 +123,7 @@ class TestFillIncrementPhase:
         self,
         incremental_gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        row = IncrementalData
+        row = FillIncrementSubPhase
         item = incremental_gc_stats_item_factory(
             ts_fill_increment_start=3000,
             ts_fill_increment_stop=5000,
@@ -138,7 +138,7 @@ class TestFillIncrementPhase:
         self,
         gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        row = IncrementalData
+        row = FillIncrementSubPhase
         item = gc_stats_item_factory()
 
         ts1, ts2 = phase_bounds(row, item)
@@ -151,7 +151,7 @@ class TestDeduceUnreachablePhase:
     """Tests for the DeduceUnreachable phase."""
 
     def test_name(self) -> None:
-        row = DeduceUnreachableData
+        row = DeduceUnreachableSubPhase
 
         assert row.phase.label == DEDUCE_UNREACHABLE.label
 
@@ -159,7 +159,7 @@ class TestDeduceUnreachablePhase:
         self,
         incremental_gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        row = DeduceUnreachableData
+        row = DeduceUnreachableSubPhase
         item = incremental_gc_stats_item_factory(
             ts_deduce_unreachable_start=7000,
             ts_deduce_unreachable_stop=9000,
@@ -174,7 +174,7 @@ class TestDeduceUnreachablePhase:
         self,
         gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        row = DeduceUnreachableData
+        row = DeduceUnreachableSubPhase
         item = gc_stats_item_factory()
 
         ts1, ts2 = phase_bounds(row, item)
@@ -187,7 +187,7 @@ class TestHandleWeakrefsPhase:
     """Tests for the HandleWeakrefs phase."""
 
     def test_name(self) -> None:
-        row = HandleWeakrefsData
+        row = HandleWeakrefsSubPhase
 
         assert row.phase.label == HANDLE_WEAKREFS.label
 
@@ -195,7 +195,7 @@ class TestHandleWeakrefsPhase:
         self,
         incremental_gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        row = HandleWeakrefsData
+        row = HandleWeakrefsSubPhase
         item = incremental_gc_stats_item_factory(
             ts_handle_weakref_callbacks_start=7000,
             ts_handle_weakref_callbacks_stop=9000,
@@ -210,7 +210,7 @@ class TestHandleWeakrefsPhase:
         self,
         gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        row = HandleWeakrefsData
+        row = HandleWeakrefsSubPhase
         item = gc_stats_item_factory()
 
         ts1, ts2 = phase_bounds(row, item)
@@ -223,7 +223,7 @@ class TestFinalizeGarbagePhase:
     """Tests for the FinalizeGarbage phase."""
 
     def test_name(self) -> None:
-        row = FinalizeGarbageData
+        row = FinalizeGarbageSubPhase
 
         assert row.phase.label == FINALIZE_GARBAGE.label
 
@@ -231,7 +231,7 @@ class TestFinalizeGarbagePhase:
         self,
         incremental_gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        row = FinalizeGarbageData
+        row = FinalizeGarbageSubPhase
         item = incremental_gc_stats_item_factory(
             ts_handle_weakref_callbacks_stop=8000,
             ts_finalize_garbage_stop=9000,
@@ -246,7 +246,7 @@ class TestFinalizeGarbagePhase:
         self,
         gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        row = FinalizeGarbageData
+        row = FinalizeGarbageSubPhase
         item = gc_stats_item_factory(ts_finalize_garbage_stop=9000, finalized_garbage_count=1)
 
         ts1, ts2 = phase_bounds(row, item)
@@ -259,7 +259,7 @@ class TestHandleResurrectedPhase:
     """Tests for the HandleResurrected phase."""
 
     def test_name(self) -> None:
-        row = HandleResurrectedData
+        row = HandleResurrectedSubPhase
 
         assert row.phase.label == HANDLE_RESURRECTED.label
 
@@ -267,7 +267,7 @@ class TestHandleResurrectedPhase:
         self,
         incremental_gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        row = HandleResurrectedData
+        row = HandleResurrectedSubPhase
         item = incremental_gc_stats_item_factory(
             ts_finalize_garbage_stop=8000,
             ts_handle_resurrected_stop=9000,
@@ -282,7 +282,7 @@ class TestHandleResurrectedPhase:
         self,
         gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        row = HandleResurrectedData
+        row = HandleResurrectedSubPhase
         item = gc_stats_item_factory(ts_handle_resurrected_stop=9000)
 
         ts1, ts2 = phase_bounds(row, item)
@@ -295,7 +295,7 @@ class TestClearWeakrefsPhase:
     """Tests for the ClearWeakrefs phase."""
 
     def test_name(self) -> None:
-        row = ClearWeakrefsData
+        row = ClearWeakrefsSubPhase
 
         assert row.phase.label == CLEAR_WEAKREFS.label
 
@@ -303,7 +303,7 @@ class TestClearWeakrefsPhase:
         self,
         incremental_gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        row = ClearWeakrefsData
+        row = ClearWeakrefsSubPhase
         item = incremental_gc_stats_item_factory(
             ts_handle_resurrected_stop=8000,
             ts_clear_weakrefs_stop=9000,
@@ -318,7 +318,7 @@ class TestClearWeakrefsPhase:
         self,
         gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        row = ClearWeakrefsData
+        row = ClearWeakrefsSubPhase
         item = gc_stats_item_factory(ts_clear_weakrefs_stop=9000, clear_weakrefs_count=1)
 
         ts1, ts2 = phase_bounds(row, item)
@@ -331,7 +331,7 @@ class TestDeleteGarbagePhase:
     """Tests for the DeleteGarbage phase."""
 
     def test_name(self) -> None:
-        row = DeleteGarbageData
+        row = DeleteGarbageSubPhase
 
         assert row.phase.label == DELETE_GARBAGE.label
 
@@ -339,7 +339,7 @@ class TestDeleteGarbagePhase:
         self,
         incremental_gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        row = DeleteGarbageData
+        row = DeleteGarbageSubPhase
         item = incremental_gc_stats_item_factory(
             ts_delete_garbage_start=7000,
             ts_delete_garbage_stop=9000,
@@ -354,7 +354,7 @@ class TestDeleteGarbagePhase:
         self,
         gc_stats_item_factory: Callable[..., GCStatsInfo],
     ) -> None:
-        row = DeleteGarbageData
+        row = DeleteGarbageSubPhase
         item = gc_stats_item_factory()
 
         ts1, ts2 = phase_bounds(row, item)
