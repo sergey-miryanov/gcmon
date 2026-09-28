@@ -1,5 +1,5 @@
-from types import SimpleNamespace
 from collections.abc import Mapping
+from types import SimpleNamespace
 
 import pytest
 
@@ -7,6 +7,7 @@ from gcmon.control.protocol import START_EVENT
 from gcmon.model.data import GCStatsInfo, GenLoss, InstantMsg, LossMsg
 from gcmon.model.names import (
     ALIVE_SIZE,
+    AUTO_COLLECT,
     CANDIDATES,
     CLEAR_WEAKREFS_COUNT,
     COLLECTED,
@@ -25,7 +26,6 @@ from gcmon.model.names import (
     NAME,
     OBSERVED_COUNT,
     OLD_WORK,
-    AUTO_COLLECT,
     TS,
     TS_CLEAR_WEAKREFS_STOP,
     TS_DEDUCE_UNREACHABLE_START,
@@ -56,10 +56,10 @@ from gcmon.model.phases import (
     IncrementSizeField,
     MarkAliveSubPhase,
     NewIncrementalFields,
+    OldWorkField,
     PauseField,
     PausePhase,
     SubPhase,
-    OldWorkField,
 )
 from gcmon.model.protocol import (
     is_gc_stats,
