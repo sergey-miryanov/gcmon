@@ -95,8 +95,8 @@ class TestFromMapping:
 
         result = from_mapping(to_mapping(record))
 
-        assert NewIncrementalFields.check(result)
         assert result == record
+        assert NewIncrementalFields.check(result)
 
     def test_from_mapping_returns_instant_msg(self, instant_dict: TMapping) -> None:
         result = from_mapping(instant_dict)
