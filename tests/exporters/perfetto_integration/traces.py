@@ -185,11 +185,15 @@ def _write_trace(tmp: Path, cmdline: tuple[str, ...] | None = None) -> Path:
         ),
     )
     exporter.add_event(proc(DEFAULT_PID), create_mock_incremental_item(gen=1, iid=1))
+    # Stops after `_SECOND_PID`'s last record, so the two processes' spans
+    # cross rather than nest.
     exporter.add_event(
         proc(DEFAULT_PID),
         create_mock_stats_item(
             gen=_GEN,
             iid=2,
+            ts_start=_TS_START + 4_000_000,
+            ts_stop=_TS_START + 9_000_000,
             collections=_COLLECTIONS,
             collected=_COLLECTED,
             uncollectable=_UNCOLLECTABLE,

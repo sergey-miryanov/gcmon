@@ -165,13 +165,13 @@ To select sub-phases by generation or interpreter, filter on the annotations
 of their parent pause:
 
 ```sql
--- Sub-phases of generation-1 collections on interpreter 1
+-- Sub-phases of generation-0 collections in the main interpreter
 SELECT s.name, s.ts, s.dur
 FROM slice s
 JOIN slice p ON s.parent_id = p.id
 WHERE p.name GLOB 'GC Pause(*'
-  AND EXTRACT_ARG(p.arg_set_id, 'debug.generation') = 1
-  AND EXTRACT_ARG(p.arg_set_id, 'debug.iid') = 1
+  AND EXTRACT_ARG(p.arg_set_id, 'debug.generation') = 0
+  AND EXTRACT_ARG(p.arg_set_id, 'debug.iid') = 0
 ORDER BY s.ts
 ```
 

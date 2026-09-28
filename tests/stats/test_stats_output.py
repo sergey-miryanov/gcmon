@@ -553,7 +553,7 @@ class TestLossColumns:
         print_stats(stats, StatsView.TOTAL)
 
         rows = {row[1]: row for row in table_rows(capsys.readouterr().out)}
-        assert rows[phase_slice_name(FILL_INCREMENT, 0)][2:4] == ["3/~10", "3.000/~17.000"]
+        assert rows[phase_slice_name(FILL_INCREMENT, 0)][2:4] == ["3/~10", "1.500/~8.500"]
         assert rows[gc_pause_slice_name(0)][2:4] == ["3/10", "3.000/17.000"]
 
     def test_cov_and_f_are_columns(self, capsys: pytest.CaptureFixture[str]) -> None:

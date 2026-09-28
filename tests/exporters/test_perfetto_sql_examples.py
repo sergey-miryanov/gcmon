@@ -27,6 +27,7 @@ from gcmon.exporters.perfetto_format import _LOSS_TRACK_NAME
 from gcmon.exporters.perfetto_process_lifetime import process_track_name
 from gcmon.support.vocabulary import ENCODING
 from tests.helpers import (
+    SUB_PHASES,
     create_mock_incremental_item,
     create_mock_loss_item,
     create_mock_stats_item,
@@ -68,6 +69,15 @@ CROSS_B_PID: int = 2222
 LIVENESS_ONLY_PID: int = 3333
 
 
+def _sub_phases_from(ts_start: int) -> dict[str, int]:
+    """The helper's sub-phase timestamps, moved to start at *ts_start*. Left
+    where the helper puts them, they fall outside a pause that starts
+    elsewhere, and the trace processor gives them no parent."""
+    timestamps = {field: ts for field, ts in SUB_PHASES.items() if field.startswith("ts_")}
+    shift = ts_start - min(timestamps.values())
+    return {field: ts + shift for field, ts in timestamps.items()}
+
+
 def _write_trace(path: Path) -> None:
     """One trace carrying something for every example on the page."""
     exporter = PerfettoExporter(output_path=path, flush_threshold=1000)
@@ -80,7 +90,9 @@ def _write_trace(path: Path) -> None:
         # slices the statistics example groups beside the pause.
         exporter.add_event(
             process,
-            create_mock_incremental_item(gen=0, iid=0, ts_start=ts_start, ts_stop=ts_start + 40_000_000),
+            create_mock_incremental_item(
+                gen=0, iid=0, ts_start=ts_start, ts_stop=ts_start + 40_000_000, **_sub_phases_from(ts_start)
+            ),
         )
         exporter.add_loss_event(
             process,
