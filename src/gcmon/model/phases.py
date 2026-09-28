@@ -366,9 +366,23 @@ class DeleteGarbageSubPhase:
         return {DELETED_GARBAGE_COUNT: item.deleted_garbage_count}
 
 
-class NewIncrementalFields:
+class OldWorkField:
     class _Info(Protocol):
         old_work: int
+
+    Info: ClassVar[type] = _Info
+
+    @staticmethod
+    def check(item: object) -> TypeGuard[_Info]:
+        return getattr(item, OLD_WORK, None) is not None
+
+    @staticmethod
+    def args(gen: int, iid: int, item: _Info) -> EventArgs:
+        return {OLD_WORK: item.old_work,}
+
+
+class NewIncrementalFields:
+    class _Info(Protocol):
         auto_collect: int
         survivor_count: int
         aging_threshold: int
@@ -379,12 +393,11 @@ class NewIncrementalFields:
 
     @staticmethod
     def check(item: object) -> TypeGuard[_Info]:
-        return getattr(item, OLD_WORK, None) is not None
+        return getattr(item, AUTO_COLLECT, None) is not None
 
     @staticmethod
     def args(gen: int, iid: int, item: _Info) -> EventArgs:
         return {
-            OLD_WORK: item.old_work,
             AUTO_COLLECT: item.auto_collect,
             SURVIVOR_COUNT: item.survivor_count,
             AGING_THRESHOLD: item.aging_threshold,
@@ -410,6 +423,7 @@ PHASES: Final[tuple[type[Phase], ...]] = (PausePhase, *SUB_PHASES)
 
 PAUSE_FIELDS: Final[tuple[type[PauseField], ...]] = (
     IncrementSizeField,
+    OldWorkField,
     NewIncrementalFields,
 )
 
@@ -433,6 +447,7 @@ _CHECKED_FIELDS: Final = attrgetter(
     TS_CLEAR_WEAKREFS_STOP,
     TS_DELETE_GARBAGE_START,
     OLD_WORK,
+    AUTO_COLLECT,
 )
 
 # Per set of checked fields present: what a msgspec record carries. A

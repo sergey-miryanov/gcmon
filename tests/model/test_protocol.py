@@ -1,5 +1,5 @@
-from collections.abc import Mapping
 from types import SimpleNamespace
+from collections.abc import Mapping
 
 import pytest
 
@@ -25,6 +25,7 @@ from gcmon.model.names import (
     NAME,
     OBSERVED_COUNT,
     OLD_WORK,
+    AUTO_COLLECT,
     TS,
     TS_CLEAR_WEAKREFS_STOP,
     TS_DEDUCE_UNREACHABLE_START,
@@ -58,6 +59,7 @@ from gcmon.model.phases import (
     PauseField,
     PausePhase,
     SubPhase,
+    OldWorkField,
 )
 from gcmon.model.protocol import (
     is_gc_stats,
@@ -112,7 +114,8 @@ class TestChecks:
 
     CHECKS = (
         (IncrementSizeField, {INCREMENT_SIZE: 500}),
-        (NewIncrementalFields, {OLD_WORK: 500}),
+        (OldWorkField, {OLD_WORK: 500}),
+        (NewIncrementalFields, {AUTO_COLLECT: 1}),
         (FillIncrementSubPhase, {TS_FILL_INCREMENT_START: 100}),
         (MarkAliveSubPhase, {ALIVE_SIZE: 300}),
         (DeduceUnreachableSubPhase, {TS_DEDUCE_UNREACHABLE_START: 100}),
