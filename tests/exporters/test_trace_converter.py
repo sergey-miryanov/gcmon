@@ -13,8 +13,10 @@ from gcmon.model.names import (
     DEDUCE_UNREACHABLE,
     FILL_INCREMENT,
     FINALIZED_GARBAGE_COUNT,
+    GENERATION,
     GENERATIONS,
     HEAP_SIZE,
+    IID,
     INCREMENT_SIZE,
     MARK_ALIVE,
     TS_CLEAR_WEAKREFS_STOP,
@@ -168,6 +170,20 @@ class TestTheIncrementSize:
 
         fill = next(e for e in events if isinstance(e, Slice) and e.name == phase_slice_name(FILL_INCREMENT, 1))
         assert INCREMENT_SIZE not in fill.args
+
+
+class TestTheGenerationAndInterpreter:
+    """The pause annotates them. A sub-phase slice reads its generation off
+    its name and its interpreter off the pause it sits in, so it carries
+    neither."""
+
+    def test_only_the_pause_carries_them(self) -> None:
+        events = convert_item_to_trace_format(proc(1), create_mock_incremental_item(gen=1, iid=3))
+
+        pause, *sub_phases = [e for e in events if isinstance(e, Slice)]
+        assert (pause.args[GENERATION], pause.args[IID]) == (1, 3)
+        assert len(sub_phases) == len(SUB_PHASES)
+        assert all(sub_phase.args.keys().isdisjoint({GENERATION, IID}) for sub_phase in sub_phases)
 
 
 class TestAPhaseTheGenerationSkips:

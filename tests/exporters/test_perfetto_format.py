@@ -489,7 +489,6 @@ class TestConvertItemToPerfettoPackets:
 
         anns = self._annotations_for_slice(packets, phase_slice_name(DEDUCE_UNREACHABLE, 1))
         assert (CANDIDATES, item.candidates) in anns
-        assert (GENERATION, 1) in anns
 
     def test_zero_duration_subphase_skipped(self, state: PerfettoTrackState) -> None:
         item = pause_item(

@@ -5,6 +5,7 @@
 ### Breaking changes
 
 - A `Processes` slice carries no `real_start_ts`, `real_end_ts` or `clipped` annotation
+- A sub-phase slice carries no `generation` or `iid` annotation
 
 ### Features
 

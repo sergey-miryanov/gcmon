@@ -161,6 +161,20 @@ A pause slice carries the same number as a `debug.iid` annotation, which
 `EXTRACT_ARG(s.arg_set_id, 'debug.iid')` reads without the join. A counter
 carries no annotations, and the parent chain is what it has instead.
 
+To select sub-phases by generation or interpreter, filter on the annotations
+of their parent pause:
+
+```sql
+-- Sub-phases of generation-1 collections on interpreter 1
+SELECT s.name, s.ts, s.dur
+FROM slice s
+JOIN slice p ON s.parent_id = p.id
+WHERE p.name GLOB 'GC Pause(*'
+  AND EXTRACT_ARG(p.arg_set_id, 'debug.generation') = 1
+  AND EXTRACT_ARG(p.arg_set_id, 'debug.iid') = 1
+ORDER BY s.ts
+```
+
 ## Example: Querying RSS Values
 
 Under `--rss`, samples land in the `counter` table on a track named `rss`:

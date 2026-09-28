@@ -174,7 +174,7 @@ class MarkAliveSubPhase:
 
     @staticmethod
     def args(gen: int, iid: int, item: _Info) -> EventArgs:
-        return {GENERATION: gen, IID: iid, ALIVE_SIZE: item.alive_size}
+        return {ALIVE_SIZE: item.alive_size}
 
 
 class IncrementSizeField:
@@ -194,7 +194,7 @@ class IncrementSizeField:
         # Generation 2 fills no increment.
         if gen == 2:
             return {}
-        return {GENERATION: gen, IID: iid, INCREMENT_SIZE: item.increment_size}
+        return {INCREMENT_SIZE: item.increment_size}
 
 
 class FillIncrementSubPhase:
@@ -218,7 +218,7 @@ class FillIncrementSubPhase:
 
     @staticmethod
     def args(gen: int, iid: int, item: _Info) -> EventArgs:
-        return {GENERATION: gen, IID: iid}
+        return {}
 
 
 class DeduceUnreachableSubPhase:
@@ -240,7 +240,7 @@ class DeduceUnreachableSubPhase:
 
     @staticmethod
     def args(gen: int, iid: int, item: _Info) -> EventArgs:
-        return {GENERATION: gen, IID: iid, CANDIDATES: item.candidates}
+        return {CANDIDATES: item.candidates}
 
 
 class HandleWeakrefsSubPhase:
@@ -261,7 +261,7 @@ class HandleWeakrefsSubPhase:
 
     @staticmethod
     def args(gen: int, iid: int, item: _Info) -> EventArgs:
-        return {GENERATION: gen, IID: iid}
+        return {}
 
 
 class FinalizeGarbageSubPhase:
@@ -286,7 +286,7 @@ class FinalizeGarbageSubPhase:
 
     @staticmethod
     def args(gen: int, iid: int, item: _Info) -> EventArgs:
-        return {GENERATION: gen, IID: iid, FINALIZED_GARBAGE_COUNT: item.finalized_garbage_count}
+        return {FINALIZED_GARBAGE_COUNT: item.finalized_garbage_count}
 
 
 class HandleResurrectedSubPhase:
@@ -310,7 +310,7 @@ class HandleResurrectedSubPhase:
 
     @staticmethod
     def args(gen: int, iid: int, item: _Info) -> EventArgs:
-        return {GENERATION: gen, IID: iid}
+        return {}
 
 
 class ClearWeakrefsSubPhase:
@@ -335,7 +335,7 @@ class ClearWeakrefsSubPhase:
 
     @staticmethod
     def args(gen: int, iid: int, item: _Info) -> EventArgs:
-        return {GENERATION: gen, IID: iid, CLEAR_WEAKREFS_COUNT: item.clear_weakrefs_count}
+        return {CLEAR_WEAKREFS_COUNT: item.clear_weakrefs_count}
 
 
 class DeleteGarbageSubPhase:
@@ -357,7 +357,7 @@ class DeleteGarbageSubPhase:
 
     @staticmethod
     def args(gen: int, iid: int, item: _Info) -> EventArgs:
-        return {GENERATION: gen, IID: iid, DELETED_GARBAGE_COUNT: item.deleted_garbage_count}
+        return {DELETED_GARBAGE_COUNT: item.deleted_garbage_count}
 
 
 # In the order the collector runs them, which is the order they are drawn in.
