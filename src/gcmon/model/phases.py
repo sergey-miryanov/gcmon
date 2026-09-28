@@ -378,7 +378,9 @@ class OldWorkField:
 
     @staticmethod
     def args(gen: int, iid: int, item: _Info) -> EventArgs:
-        return {OLD_WORK: item.old_work,}
+        return {
+            OLD_WORK: item.old_work,
+        }
 
 
 class NewIncrementalFields:
