@@ -53,10 +53,10 @@ bench:
 
 # Lint with ruff
 lint:
-    poetry run ruff check src
+    poetry run ruff check src tests .github/scripts
 
 lint-fix:
-    poetry run ruff check src --fix
+    poetry run ruff check src tests .github/scripts --fix
 
 # Run both type checkers
 typecheck: typecheck-mypy typecheck-pyrefly
