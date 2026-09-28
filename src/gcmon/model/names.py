@@ -170,6 +170,12 @@ ALIVE_SIZE: Final = "alive_size"
 FINALIZED_GARBAGE_COUNT: Final = "finalized_garbage_count"
 DELETED_GARBAGE_COUNT: Final = "deleted_garbage_count"
 CLEAR_WEAKREFS_COUNT: Final = "clear_weakrefs_count"
+OLD_WORK: Final = "old_work"
+AUTO_COLLECT: Final = "auto_collect"
+SURVIVOR_COUNT: Final = "survivor_count"
+AGING_THRESHOLD: Final = "aging_threshold"
+AGING_SPACES: Final = "aging_spaces"
+AGING_NEXT: Final = "aging_next"
 
 
 def counter_display_name(gen: int, metric: str) -> str:

@@ -11,13 +11,20 @@ from gcmon.model.data import (
     instant_msg,
 )
 from gcmon.model.names import GEN, GENS, IID, LOST_COUNT, OBSERVED_COUNT, PID, TS_START, TS_STOP
-from gcmon.model.phases import DeduceUnreachableSubPhase, FillIncrementSubPhase, IncrementSizeField, MarkAliveSubPhase
+from gcmon.model.phases import (
+    DeduceUnreachableSubPhase,
+    FillIncrementSubPhase,
+    IncrementSizeField,
+    MarkAliveSubPhase,
+    NewIncrementalFields,
+)
 from gcmon.model.protocol import (
     TMapping,
     is_gc_stats,
     is_instant,
     to_mapping,
 )
+from tests.helpers import create_mock_incremental_item
 
 
 class TestInstantMsg:
@@ -80,6 +87,16 @@ class TestFromMapping:
         assert DeduceUnreachableSubPhase.check(result)
         assert result.ts_deduce_unreachable_start == 3_002_500
         assert result.ts_deduce_unreachable_stop == 3_003_000
+
+    def test_the_incremental_fields_survive_a_capture(self) -> None:
+        """`GCStatsInfo` drops a key it does not declare, so a field missing
+        from it reads back as absent rather than failing."""
+        record = create_mock_incremental_item(gen=1)
+
+        result = from_mapping(to_mapping(record))
+
+        assert NewIncrementalFields.check(result)
+        assert result == record
 
     def test_from_mapping_returns_instant_msg(self, instant_dict: TMapping) -> None:
         result = from_mapping(instant_dict)

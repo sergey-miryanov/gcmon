@@ -7,7 +7,11 @@ from operator import attrgetter
 from typing import Any, ClassVar, Final, Protocol, TypeGuard
 
 from .names import (
+    AGING_NEXT,
+    AGING_SPACES,
+    AGING_THRESHOLD,
     ALIVE_SIZE,
+    AUTO_COLLECT,
     CANDIDATES,
     CLEAR_WEAKREFS,
     CLEAR_WEAKREFS_COUNT,
@@ -27,7 +31,9 @@ from .names import (
     IID,
     INCREMENT_SIZE,
     MARK_ALIVE,
+    OLD_WORK,
     PAUSE,
+    SURVIVOR_COUNT,
     TS_CLEAR_WEAKREFS_STOP,
     TS_DEDUCE_UNREACHABLE_START,
     TS_DELETE_GARBAGE_START,
@@ -360,6 +366,33 @@ class DeleteGarbageSubPhase:
         return {DELETED_GARBAGE_COUNT: item.deleted_garbage_count}
 
 
+class NewIncrementalFields:
+    class _Info(Protocol):
+        old_work: int
+        auto_collect: int
+        survivor_count: int
+        aging_threshold: int
+        aging_spaces: int
+        aging_next: int
+
+    Info: ClassVar[type] = _Info
+
+    @staticmethod
+    def check(item: object) -> TypeGuard[_Info]:
+        return getattr(item, OLD_WORK, None) is not None
+
+    @staticmethod
+    def args(gen: int, iid: int, item: _Info) -> EventArgs:
+        return {
+            OLD_WORK: item.old_work,
+            AUTO_COLLECT: item.auto_collect,
+            SURVIVOR_COUNT: item.survivor_count,
+            AGING_THRESHOLD: item.aging_threshold,
+            AGING_SPACES: item.aging_spaces,
+            AGING_NEXT: item.aging_next,
+        }
+
+
 # In the order the collector runs them, which is the order they are drawn in.
 SUB_PHASES: Final[tuple[type[SubPhase], ...]] = (
     MarkAliveSubPhase,
@@ -375,7 +408,10 @@ SUB_PHASES: Final[tuple[type[SubPhase], ...]] = (
 # The pause, then its sub-phases.
 PHASES: Final[tuple[type[Phase], ...]] = (PausePhase, *SUB_PHASES)
 
-PAUSE_FIELDS: Final[tuple[type[PauseField], ...]] = (IncrementSizeField,)
+PAUSE_FIELDS: Final[tuple[type[PauseField], ...]] = (
+    IncrementSizeField,
+    NewIncrementalFields,
+)
 
 type _SubPhasesAndFields = tuple[tuple[type[SubPhase], ...], tuple[type[PauseField], ...]]
 
@@ -396,6 +432,7 @@ _CHECKED_FIELDS: Final = attrgetter(
     TS_HANDLE_RESURRECTED_STOP,
     TS_CLEAR_WEAKREFS_STOP,
     TS_DELETE_GARBAGE_START,
+    OLD_WORK,
 )
 
 # Per set of checked fields present: what a msgspec record carries. A

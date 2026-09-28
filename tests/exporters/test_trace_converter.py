@@ -8,7 +8,11 @@ from gcmon.exporters.trace_converter import (
     seen_text,
 )
 from gcmon.model.names import (
+    AGING_NEXT,
+    AGING_SPACES,
+    AGING_THRESHOLD,
     ALIVE_SIZE,
+    AUTO_COLLECT,
     CLEAR_WEAKREFS_COUNT,
     DEDUCE_UNREACHABLE,
     FILL_INCREMENT,
@@ -19,6 +23,8 @@ from gcmon.model.names import (
     IID,
     INCREMENT_SIZE,
     MARK_ALIVE,
+    OLD_WORK,
+    SURVIVOR_COUNT,
     TS_CLEAR_WEAKREFS_STOP,
     TS_FINALIZE_GARBAGE_STOP,
     TS_HANDLE_RESURRECTED_STOP,
@@ -170,6 +176,36 @@ class TestTheIncrementSize:
 
         fill = next(e for e in events if isinstance(e, Slice) and e.name == phase_slice_name(FILL_INCREMENT, 1))
         assert INCREMENT_SIZE not in fill.args
+
+
+class TestTheIncrementalFields:
+    """They have no span of their own. They annotate the pause, and no
+    sub-phase slice carries them."""
+
+    FIELDS = (OLD_WORK, AUTO_COLLECT, SURVIVOR_COUNT, AGING_THRESHOLD, AGING_SPACES, AGING_NEXT)
+
+    def test_the_pause_carries_them(self) -> None:
+        record = create_mock_incremental_item(gen=1)
+
+        events = convert_item_to_trace_format(proc(1), record)
+
+        pause = next(e for e in events if isinstance(e, Slice) and e.name == gc_pause_slice_name(1))
+        assert {field: pause.args[field] for field in self.FIELDS} == {
+            field: getattr(record, field) for field in self.FIELDS
+        }
+
+    def test_a_record_without_them_leaves_them_off(self) -> None:
+        events = convert_item_to_trace_format(proc(1), create_mock_stats_item(gen=1))
+
+        pause = next(e for e in events if isinstance(e, Slice))
+        assert pause.args.keys() & set(self.FIELDS) == set()
+
+    def test_no_sub_phase_slice_carries_them(self) -> None:
+        events = convert_item_to_trace_format(proc(1), create_mock_incremental_item(gen=1))
+
+        sub_phases = [e for e in events if isinstance(e, Slice) and e.name != gc_pause_slice_name(1)]
+        assert sub_phases
+        assert all(e.args.keys() & set(self.FIELDS) == set() for e in sub_phases)
 
 
 class TestTheGenerationAndInterpreter:

@@ -24,6 +24,7 @@ from gcmon.model.names import (
     LOST_PAUSE_NS,
     NAME,
     OBSERVED_COUNT,
+    OLD_WORK,
     TS,
     TS_CLEAR_WEAKREFS_STOP,
     TS_DEDUCE_UNREACHABLE_START,
@@ -53,6 +54,7 @@ from gcmon.model.phases import (
     HandleWeakrefsSubPhase,
     IncrementSizeField,
     MarkAliveSubPhase,
+    NewIncrementalFields,
     PauseField,
     PausePhase,
     SubPhase,
@@ -110,6 +112,7 @@ class TestChecks:
 
     CHECKS = (
         (IncrementSizeField, {INCREMENT_SIZE: 500}),
+        (NewIncrementalFields, {OLD_WORK: 500}),
         (FillIncrementSubPhase, {TS_FILL_INCREMENT_START: 100}),
         (MarkAliveSubPhase, {ALIVE_SIZE: 300}),
         (DeduceUnreachableSubPhase, {TS_DEDUCE_UNREACHABLE_START: 100}),

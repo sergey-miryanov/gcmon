@@ -16,7 +16,11 @@ from perfetto.trace_processor import TraceProcessor, TraceProcessorConfig
 from gcmon.exporters.exporter import EventsExporter
 from gcmon.model.data import GCStatsInfo, GenLoss, InstantMsg, LossMsg
 from gcmon.model.names import (
+    AGING_NEXT,
+    AGING_SPACES,
+    AGING_THRESHOLD,
     ALIVE_SIZE,
+    AUTO_COLLECT,
     CANDIDATES,
     CLEAR_WEAKREFS_COUNT,
     CMDLINE,
@@ -30,9 +34,11 @@ from gcmon.model.names import (
     IID,
     INCREMENT_SIZE,
     LOST_PAUSE,
+    OLD_WORK,
     PID,
     PID_EPOCH,
     SAMPLED_COUNT,
+    SURVIVOR_COUNT,
     TS_CLEAR_WEAKREFS_STOP,
     TS_DEDUCE_UNREACHABLE_START,
     TS_DEDUCE_UNREACHABLE_STOP,
@@ -436,6 +442,12 @@ SUB_PHASES: Final[dict[str, int]] = {
     TS_DELETE_GARBAGE_START: 1_504_000_000,
     TS_DELETE_GARBAGE_STOP: 1_504_500_000,
     DELETED_GARBAGE_COUNT: 13,
+    OLD_WORK: 500,
+    AUTO_COLLECT: 1,
+    SURVIVOR_COUNT: 60,
+    AGING_THRESHOLD: 3,
+    AGING_SPACES: 4,
+    AGING_NEXT: 2,
 }
 """Every sub-phase a record can carry, in collector order, inside the
 pause `create_mock_stats_item` draws by default."""

@@ -40,6 +40,10 @@ rows. A field gcmon writes and the page never names is a figure nobody can
 look up, and `gcmon combine` reads the same words back, so the page is the
 only place both halves are described together.
 
+``UNDOCUMENTED`` names what gcmon writes and the pages leave out on purpose.
+Leaving a name out is a decision, so it goes on that list rather than
+passing silently. A name on the list that gcmon no longer writes fails too.
+
 ``Interpreter {iid}`` and ``Process {pid}`` are absent below. Only their
 fixed part is derivable from the code, and the pages write the row with the
 placeholder, so there is nothing to match on. So are the control plane's
@@ -66,11 +70,17 @@ from gcmon.exporters.perfetto_process_lifetime import (
     _PROCESS_ROW_SLICE_NAME,
 )
 from gcmon.model.names import (
+    AGING_NEXT,
+    AGING_SPACES,
+    AGING_THRESHOLD,
+    AUTO_COLLECT,
     GC_LOSS_CATEGORY,
     GC_LOSS_NAME,
     GC_PHASES,
     HEAP_SIZE,
+    OLD_WORK,
     RSS,
+    SURVIVOR_COUNT,
 )
 from gcmon.model.phases import PausePhase
 from gcmon.support.vocabulary import ENCODING
@@ -80,29 +90,40 @@ DOCS = Path(__file__).resolve().parents[2] / "docs"
 FORMATS = DOCS / "formats.md"
 SQL = DOCS / "perfetto-sql.md"
 
+# Names gcmon writes that the pages leave out on purpose.
+UNDOCUMENTED: frozenset[str] = frozenset(
+    {
+        OLD_WORK,
+        AUTO_COLLECT,
+        SURVIVOR_COUNT,
+        AGING_THRESHOLD,
+        AGING_SPACES,
+        AGING_NEXT,
+    }
+)
+
+WRITTEN: tuple[str, ...] = (
+    _PAUSE_TRACK_NAME,
+    _LOSS_TRACK_NAME,
+    HEAP_SIZE,
+    _COUNTER_GROUP_NAME,
+    _INTERPRETER_LIST_NAME,
+    _PROCESS_LIFETIME_TRACK_NAME,
+    _PROCESS_ROW_SLICE_NAME,
+    RSS,
+    GC_LOSS_NAME,
+    START_EVENT,
+    STOP_EVENT,
+    *(phase.label for phase in GC_PHASES),
+    *PausePhase.counter_metrics,
+    *JSONL_FIELDS,
+    *SLICE_ARGS,
+)
+
 # Where a reader looks each name up. A category belongs to the SQL page
 # because filtering is the only thing anyone does with one.
 DOCUMENTED: tuple[tuple[str, Path], ...] = (
-    *(
-        (name, FORMATS)
-        for name in (
-            _PAUSE_TRACK_NAME,
-            _LOSS_TRACK_NAME,
-            HEAP_SIZE,
-            _COUNTER_GROUP_NAME,
-            _INTERPRETER_LIST_NAME,
-            _PROCESS_LIFETIME_TRACK_NAME,
-            _PROCESS_ROW_SLICE_NAME,
-            RSS,
-            GC_LOSS_NAME,
-            START_EVENT,
-            STOP_EVENT,
-            *(phase.label for phase in GC_PHASES),
-            *PausePhase.counter_metrics,
-            *JSONL_FIELDS,
-            *SLICE_ARGS,
-        )
-    ),
+    *((name, FORMATS) for name in WRITTEN if name not in UNDOCUMENTED),
     *((phase.category, SQL) for phase in GC_PHASES),
     (GC_LOSS_CATEGORY, SQL),
 )
@@ -115,3 +136,7 @@ DOCUMENTED: tuple[tuple[str, Path], ...] = (
 )
 def test_the_page_names_every_name_gcmon_writes(name: str, page: Path) -> None:
     assert f"`{name}`" in page.read_text(encoding=ENCODING), f"gcmon writes {name!r} and {page.name} does not name it"
+
+
+def test_every_undocumented_name_is_one_gcmon_writes() -> None:
+    assert UNDOCUMENTED - set(WRITTEN) == set()
