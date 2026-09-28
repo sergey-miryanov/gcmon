@@ -14,7 +14,11 @@ from collections.abc import Callable, Mapping, Sequence
 from typing import Final, NamedTuple
 
 __all__ = [
+    "AGING_NEXT",
+    "AGING_SPACES",
+    "AGING_THRESHOLD",
     "ALIVE_SIZE",
+    "AUTO_COLLECT",
     "CANDIDATES",
     "CLEAR_WEAKREFS",
     "CLEAR_WEAKREFS_COUNT",
@@ -48,11 +52,13 @@ __all__ = [
     "MARK_ALIVE",
     "NAME",
     "OBSERVED_COUNT",
+    "OLD_WORK",
     "PAUSE",
     "PID",
     "PID_EPOCH",
     "RSS",
     "SAMPLED_COUNT",
+    "SURVIVOR_COUNT",
     "TS",
     "TS_CLEAR_WEAKREFS_STOP",
     "TS_DEDUCE_UNREACHABLE_START",
