@@ -23,7 +23,7 @@ passing `pytest` covers less than it looks.
 
 | Marker | Command | CI job | What it covers |
 |---|---|---|---|
-| `stress` | `just stress` | `stress-test` | thread safety of the exporter and control-client pipelines |
+| `stress` | `just stress` | `stress` workflow | thread safety of the exporter and control-client pipelines |
 | `fuzz` | `just fuzz` | `fuzz-test` | randomized differential tests against the real trace processor |
 | `architecture` | `just architecture` | `architecture` | the code's structure, read without running it |
 | `benchmark` | `just bench` | CodSpeed workflow | performance benchmarks |
@@ -32,12 +32,16 @@ passing `pytest` covers less than it looks.
 `-m stress --count 20`. The repetition is what gives a probabilistic test its
 chance to fail.
 
+The `stress` workflow runs both passes on `ubuntu-latest`, `macos-latest` and
+`windows-latest`. It runs every Monday, from the Actions tab, and on a pull
+request when the `stress` label is added. The label is removed when the run
+finishes; adding it again starts another run.
+
 `just fuzz` passes no `--count`. The seeds are fixed, so repeating a trial
 re-runs the same trace; widen coverage by raising the trial count in the test.
 The marker is there for cost, since the trace processor starts once per trial.
 
-The `stress-test` and `fuzz-test` jobs are skipped on `main` and on
-`release/*`.
+The `fuzz-test` job is skipped on `main` and on `release/*`.
 
 ## Mutation testing the annotations
 

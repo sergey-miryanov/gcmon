@@ -1,0 +1,65 @@
+name: stress
+
+# The repeated thread-safety and control-plane tests; see docs/testing.md. A
+# run costs three runners for up to 15 minutes, too much for every push.
+on:
+  schedule:
+    - cron: '0 4 * * 1'
+  workflow_dispatch:
+  pull_request:
+    types: [labeled]
+
+concurrency:
+  # Keyed by the label too, so adding some other label to the PR does not
+  # cancel a run in progress.
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event.label.name }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  stress-test:
+    if: github.event_name != 'pull_request' || github.event.label.name == 'stress'
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.15"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: $/.github/actions/setup
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache-prefix: main
+      - name: Create directories
+        run: |
+          mkdir -p .temp
+        shell: bash
+      - name: Run stress-tests for control
+        run: |
+          poetry run just stress-control
+      - name: Run stress-tests
+        run: |
+          poetry run just stress-threads
+
+  # Takes the label off once every job is done, so adding it again is how a
+  # PR asks for another run. A cancelled run leaves it for the run that
+  # replaced it.
+  unlabel:
+    needs: stress-test
+    if: ${{ !cancelled() && github.event_name == 'pull_request' && github.event.label.name == 'stress' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Remove the stress label
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr edit ${{ github.event.pull_request.number }} --repo ${{ github.repository }} --remove-label stress

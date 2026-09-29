@@ -170,34 +170,6 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage.xml
 
-  stress-test:
-    if: github.ref_name != 'main' && !startsWith(github.ref_name, 'release/')
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.15"]
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - uses: $/.github/actions/setup
-        with:
-          python-version: ${{ matrix.python-version }}
-          cache-prefix: main
-      - name: Create directories
-        run: |
-          mkdir -p .temp
-        shell: bash
-      - name: Run stress-tests for control
-        run: |
-          poetry run just stress-control
-      - name: Run stress-tests
-        run: |
-          poetry run just stress-threads
-
   fuzz-test:
     if: github.ref_name != 'main' && !startsWith(github.ref_name, 'release/')
     runs-on: ubuntu-latest
