@@ -1,0 +1,106 @@
+name: typemut
+
+# Mutation testing of the type annotations; see docs/testing.md. A run takes
+# too long for every push.
+on:
+  schedule:
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+  pull_request:
+    types: [labeled]
+
+concurrency:
+  # Keyed by the label too, so adding some other label to the PR does not
+  # cancel a run in progress.
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event.label.name }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  typemut:
+    if: github.event_name != 'pull_request' || github.event.label.name == 'typemut'
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        checker: [mypy, pyrefly]
+        python-version: ["3.15"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: $/.github/actions/setup
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache-prefix: main
+
+      # Serial on purpose: `--jobs` runs each worker in a git worktree, and
+      # pyrefly there resolves `gcmon` against both the worktree and the
+      # checkout the editable install points at, failing clean code.
+      - name: Run typemut
+        run: |
+          poetry run just typemut ${{ matrix.checker }}
+
+      - name: Write the HTML report
+        if: always()
+        run: |
+          poetry run just typemut-html ${{ matrix.checker }}
+
+      - name: Write the baseline this run would accept
+        if: always()
+        run: |
+          poetry run typemut report --db typemut-${{ matrix.checker }}.sqlite --baseline ${{ matrix.checker }}-${{ matrix.os }}.json --update-baseline
+
+      - name: Upload the report and the baseline
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: typemut-${{ matrix.checker }}-${{ matrix.os }}
+          path: |
+            typemut-${{ matrix.checker }}.html
+            ${{ matrix.checker }}-${{ matrix.os }}.json
+
+      # typemut writes Windows paths with backslashes, so a baseline only
+      # matches runs on the OS that wrote it.
+      - name: Check against the baseline
+        shell: bash
+        env:
+          COLUMNS: "160"
+          DB: typemut-${{ matrix.checker }}.sqlite
+          BASELINE: .github/typemut/baselines/${{ matrix.checker }}-${{ matrix.os }}.json
+        run: |
+          echo "### typemut: ${{ matrix.checker }} on ${{ matrix.os }}" >> "$GITHUB_STEP_SUMMARY"
+          if [ ! -f "$BASELINE" ]; then
+            echo "No baseline at \`$BASELINE\` yet." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          status=0
+          poetry run typemut report --db "$DB" --baseline "$BASELINE" > "$RUNNER_TEMP/report.txt" || status=$?
+          cat "$RUNNER_TEMP/report.txt"
+          {
+            echo '```'
+            grep -E '│ TOTAL|^Baseline |^[0-9]+ baseline entries|^  new ' "$RUNNER_TEMP/report.txt"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit $status
+
+  # Takes the label off once every job is done, so adding it again is how a
+  # PR asks for another run. A cancelled run leaves it for the run that
+  # replaced it.
+  unlabel:
+    needs: typemut
+    if: ${{ !cancelled() && github.event_name == 'pull_request' && github.event.label.name == 'typemut' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Remove the typemut label
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr edit ${{ github.event.pull_request.number }} --repo ${{ github.repository }} --remove-label typemut

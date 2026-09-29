@@ -497,6 +497,22 @@ class TestRateValidation:
         assert ENV_RATE in caplog.text
 
 
+class TestNoDuration:
+    """A run with no duration lasts until the caller's own end."""
+
+    def test_it_is_taken_as_none(self) -> None:
+        result = get_monitoring_options(_make_args(duration=None))
+
+        assert result is not None
+        assert result.duration is None
+
+    def test_the_log_names_the_callers_end(self, caplog: pytest.LogCaptureFixture) -> None:
+        with caplog.at_level(logging.INFO, logger=PROGRAM_NAME):
+            get_monitoring_options(_make_args(duration=None), duration_label="until script exits")
+
+        assert "Duration: until script exits" in caplog.text
+
+
 class TestRateArgument:
     """`--rate` on the command line, refused by the parser rather than below."""
 

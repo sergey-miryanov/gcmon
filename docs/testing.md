@@ -39,6 +39,54 @@ The marker is there for cost, since the trace processor starts once per trial.
 The `stress-test` and `fuzz-test` jobs are skipped on `main` and on
 `release/*`.
 
+## Mutation testing the annotations
+
+typemut changes one annotation at a time and runs a type checker over the
+result. A mutant the checker still passes survives: the annotation is looser
+than it could be, or nothing reads it closely enough to notice.
+
+```bash
+poetry run just typemut mypy
+poetry run just typemut pyrefly
+poetry run just typemut-html mypy
+```
+
+Each checker's config is in `.github/typemut/` and runs the command of its
+`just typecheck-*` recipe. A run edits each file under `src/gcmon` in place
+and restores it after the check. On Windows the restored files have CRLF
+endings.
+
+### In CI
+
+The `typemut` workflow runs each checker on `ubuntu-latest` and
+`windows-latest`. It runs every Monday, from the Actions tab, and on a pull
+request when the `typemut` label is added. The label is removed when the run
+finishes; adding it again starts another run.
+
+A job fails on a survivor missing from its baseline,
+`.github/typemut/baselines/<checker>-<os>.json`, and passes when that file
+does not exist. The job summary lists the new survivors. The HTML report in
+the `typemut-<checker>-<os>` artifact shows each mutant's diff and the
+checker's output.
+
+Baselines are per checker and per OS. The checkers kill different mutants, and
+a baseline written on Windows records its paths with backslashes. An entry
+matches on the text of its source line, not its line number.
+
+### Accepting survivors
+
+Every run uploads, next to its report, the baseline that accepts all its
+survivors. To accept a run:
+
+```bash
+gh run download <run-id> -p 'typemut-*' -D <dir>
+cp <dir>/*/*.json .github/typemut/baselines/
+```
+
+The diff of the baselines is the review: an added entry is an accepted
+survivor, a removed one a mutant the checkers now kill. A removed entry is
+reported in the job log and does not fail the job.
+
 ## Shaping a test
 
 A test arranges, acts once, and asserts, in that order, with a blank line

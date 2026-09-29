@@ -23,7 +23,7 @@ it, and how to read the result.
 | Page | What it covers |
 |---|---|
 | [../CONTRIBUTING.md](../CONTRIBUTING.md) | Setting up a working copy, running the tests and the checkers, and what a pull request needs |
-| [testing.md](testing.md) | The test suites, the markers that gate them, and the conventions each one keeps |
+| [testing.md](testing.md) | The test suites, the markers that gate them, the conventions each one keeps, and mutation testing the annotations |
 | [adr/README.md](adr/README.md) | Architecture decision records: why the design looks the way it does |
 | [../specs/README.md](../specs/README.md) | Open work: what has been specified but not yet built, and the order to take it in |
 | [../specs/CONVENTIONS.md](../specs/CONVENTIONS.md) | The rules a spec follows, the two templates, and what retiring one means |

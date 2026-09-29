@@ -1,0 +1,8 @@
+# Mutation testing of the type annotations against mypy. The command is
+# `just typecheck-mypy` without its `poetry run`, since `just typemut`
+# already runs inside the environment.
+[typemut]
+module-path = "src/gcmon"
+test-command = "mypy src tests .github/scripts"
+timeout = 300
+db = "typemut-mypy.sqlite"

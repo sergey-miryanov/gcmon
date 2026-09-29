@@ -1,0 +1,8 @@
+# Mutation testing of the type annotations against pyrefly. The command is
+# `just typecheck-pyrefly` without its `poetry run`, since `just typemut`
+# already runs inside the environment.
+[typemut]
+module-path = "src/gcmon"
+test-command = "pyrefly check src tests .github/scripts"
+timeout = 300
+db = "typemut-pyrefly.sqlite"
