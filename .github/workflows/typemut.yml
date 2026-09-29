@@ -3,13 +3,18 @@ name: typemut
 # Mutation testing of the type annotations: each mutant is one changed
 # annotation, and a checker that still passes lets it survive. A run takes
 # too long for every push, so it runs weekly and reports without failing.
+# On a pull request it runs when the `typemut` label is added.
 on:
   schedule:
     - cron: '0 3 * * 1'
   workflow_dispatch:
+  pull_request:
+    types: [labeled]
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # Keyed by the label too, so adding some other label to the PR does not
+  # cancel a run in progress.
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event.label.name }}
   cancel-in-progress: true
 
 permissions:
@@ -17,6 +22,7 @@ permissions:
 
 jobs:
   typemut:
+    if: github.event_name != 'pull_request' || github.event.label.name == 'typemut'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
     strategy:
