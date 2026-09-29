@@ -35,6 +35,10 @@ htmlcov
 # mypy
 .mypy_cache
 
+# typemut
+/typemut-*.sqlite
+/typemut-*.html
+
 *.json
 *.pftrace
 

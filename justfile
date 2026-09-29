@@ -69,6 +69,14 @@ typecheck-mypy:
 typecheck-pyrefly:
     poetry run pyrefly check src tests .github/scripts
 
+# Mutation-test the type annotations against mypy or pyrefly
+typemut checker="mypy":
+    poetry run typemut run --config .github/typemut/{{checker}}.toml
+
+# Write the HTML report of the last typemut run against mypy or pyrefly
+typemut-html checker="mypy":
+    poetry run typemut html --db typemut-{{checker}}.sqlite --output typemut-{{checker}}.html
+
 # Build the distribution
 build:
     poetry build

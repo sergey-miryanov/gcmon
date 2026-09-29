@@ -55,6 +55,7 @@ perfetto = ">=0.58"
 protobuf = "^7.35"
 pytest-codspeed = ">=5,<6"
 rust-just = ">=1.58"
+typemut = ">=0.3,<1.0"
 
 [tool.poetry.urls]
 Homepage = "https://github.com/sergey-miryanov/gcmon"

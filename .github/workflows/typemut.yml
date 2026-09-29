@@ -1,0 +1,67 @@
+name: typemut
+
+# Mutation testing of the type annotations: each mutant is one changed
+# annotation, and a checker that still passes lets it survive. A run takes
+# too long for every push, so it runs weekly and reports without failing.
+on:
+  schedule:
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  typemut:
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        checker: [mypy, pyrefly]
+        python-version: ["3.15"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: $/.github/actions/setup
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache-prefix: main
+
+      # Serial on purpose: `--jobs` runs each worker in a git worktree, and
+      # pyrefly there resolves `gcmon` against both the worktree and the
+      # checkout the editable install points at, failing clean code.
+      - name: Run typemut
+        run: |
+          poetry run just typemut ${{ matrix.checker }}
+
+      - name: Write the HTML report
+        if: always()
+        run: |
+          poetry run just typemut-html ${{ matrix.checker }}
+
+      - name: Summarize
+        if: always()
+        shell: bash
+        env:
+          COLUMNS: "160"
+        run: |
+          {
+            echo "### typemut: ${{ matrix.checker }} on ${{ matrix.os }}"
+            echo '```'
+            poetry run typemut report --db typemut-${{ matrix.checker }}.sqlite
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: typemut-${{ matrix.checker }}-${{ matrix.os }}
+          path: typemut-${{ matrix.checker }}.html
