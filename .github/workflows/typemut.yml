@@ -71,3 +71,20 @@ jobs:
         with:
           name: typemut-${{ matrix.checker }}-${{ matrix.os }}
           path: typemut-${{ matrix.checker }}.html
+
+  # Takes the label off once every job is done, so adding it again is how a
+  # PR asks for another run. A cancelled run leaves it for the run that
+  # replaced it.
+  unlabel:
+    needs: typemut
+    if: ${{ !cancelled() && github.event_name == 'pull_request' && github.event.label.name == 'typemut' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Remove the typemut label
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr edit ${{ github.event.pull_request.number }} --repo ${{ github.repository }} --remove-label typemut
