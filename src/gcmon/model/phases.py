@@ -72,7 +72,7 @@ class Phase(Protocol):
     def bounds(gen: int, item: Any) -> tuple[int, int]: ...
 
     @staticmethod
-    def args(gen: int, iid: int, item: Any) -> EventArgs: ...
+    def args(gen: int, item: Any) -> EventArgs: ...
 
 
 class SubPhase(Phase, Protocol):
@@ -92,7 +92,7 @@ class PauseField(Protocol):
     def check(item: object) -> bool: ...
 
     @staticmethod
-    def args(gen: int, iid: int, item: Any) -> EventArgs: ...
+    def args(gen: int, item: Any) -> EventArgs: ...
 
 
 class PausePhase:
@@ -115,10 +115,10 @@ class PausePhase:
         return item.ts_start, item.ts_stop
 
     @staticmethod
-    def args(gen: int, iid: int, item: Info) -> EventArgs:
+    def args(gen: int, item: Info) -> EventArgs:
         return {
             GENERATION: gen,
-            IID: iid,
+            IID: item.iid,
             COLLECTIONS: item.collections,
             COLLECTED: item.collected,
             UNCOLLECTABLE: item.uncollectable,
@@ -166,7 +166,7 @@ class MarkAliveSubPhase:
         return item.ts_mark_alive_start, item.ts_mark_alive_stop
 
     @staticmethod
-    def args(gen: int, iid: int, item: _Info) -> EventArgs:
+    def args(gen: int, item: _Info) -> EventArgs:
         return {MarkAliveSubPhase.ALIVE_SIZE: item.alive_size}
 
 
@@ -185,7 +185,7 @@ class IncrementSizeField:
         return getattr(item, IncrementSizeField.INCREMENT_SIZE, None) is not None
 
     @staticmethod
-    def args(gen: int, iid: int, item: _Info) -> EventArgs:
+    def args(gen: int, item: _Info) -> EventArgs:
         # Generation 2 fills no increment.
         if gen == 2:
             return {}
@@ -215,7 +215,7 @@ class FillIncrementSubPhase:
         return item.ts_fill_increment_start, item.ts_fill_increment_stop
 
     @staticmethod
-    def args(gen: int, iid: int, item: _Info) -> EventArgs:
+    def args(gen: int, item: _Info) -> EventArgs:
         return {}
 
 
@@ -240,7 +240,7 @@ class DeduceUnreachableSubPhase:
         return item.ts_deduce_unreachable_start, item.ts_deduce_unreachable_stop
 
     @staticmethod
-    def args(gen: int, iid: int, item: _Info) -> EventArgs:
+    def args(gen: int, item: _Info) -> EventArgs:
         return {CANDIDATES: item.candidates}
 
 
@@ -264,7 +264,7 @@ class HandleWeakrefsSubPhase:
         return item.ts_handle_weakref_callbacks_start, item.ts_handle_weakref_callbacks_stop
 
     @staticmethod
-    def args(gen: int, iid: int, item: _Info) -> EventArgs:
+    def args(gen: int, item: _Info) -> EventArgs:
         return {}
 
 
@@ -292,7 +292,7 @@ class FinalizeGarbageSubPhase:
         return item.ts_handle_weakref_callbacks_stop, item.ts_finalize_garbage_stop
 
     @staticmethod
-    def args(gen: int, iid: int, item: _Info) -> EventArgs:
+    def args(gen: int, item: _Info) -> EventArgs:
         return {FinalizeGarbageSubPhase.FINALIZED_GARBAGE_COUNT: item.finalized_garbage_count}
 
 
@@ -318,7 +318,7 @@ class HandleResurrectedSubPhase:
         return item.ts_finalize_garbage_stop, item.ts_handle_resurrected_stop
 
     @staticmethod
-    def args(gen: int, iid: int, item: _Info) -> EventArgs:
+    def args(gen: int, item: _Info) -> EventArgs:
         return {}
 
 
@@ -346,7 +346,7 @@ class ClearWeakrefsSubPhase:
         return item.ts_handle_resurrected_stop, item.ts_clear_weakrefs_stop
 
     @staticmethod
-    def args(gen: int, iid: int, item: _Info) -> EventArgs:
+    def args(gen: int, item: _Info) -> EventArgs:
         return {ClearWeakrefsSubPhase.CLEAR_WEAKREFS_COUNT: item.clear_weakrefs_count}
 
 
@@ -372,7 +372,7 @@ class DeleteGarbageSubPhase:
         return item.ts_delete_garbage_start, item.ts_delete_garbage_stop
 
     @staticmethod
-    def args(gen: int, iid: int, item: _Info) -> EventArgs:
+    def args(gen: int, item: _Info) -> EventArgs:
         return {DeleteGarbageSubPhase.DELETED_GARBAGE_COUNT: item.deleted_garbage_count}
 
 
@@ -389,7 +389,7 @@ class OldWorkField:
         return getattr(item, OldWorkField.OLD_WORK, None) is not None
 
     @staticmethod
-    def args(gen: int, iid: int, item: _Info) -> EventArgs:
+    def args(gen: int, item: _Info) -> EventArgs:
         return {OldWorkField.OLD_WORK: item.old_work}
 
 
@@ -414,7 +414,7 @@ class NewIncrementalFields:
         return getattr(item, NewIncrementalFields.AUTO_COLLECT, None) is not None
 
     @staticmethod
-    def args(gen: int, iid: int, item: _Info) -> EventArgs:
+    def args(gen: int, item: _Info) -> EventArgs:
         return {
             NewIncrementalFields.AUTO_COLLECT: item.auto_collect,
             NewIncrementalFields.SURVIVOR_COUNT: item.survivor_count,

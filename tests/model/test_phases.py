@@ -44,9 +44,10 @@ def test_every_sub_phase_timestamp_bounds_a_sub_phase() -> None:
 
 
 def test_every_field_nothing_else_reads_annotates_the_pause() -> None:
-    pause_args = PausePhase.args(0, 0, create_mock_stats_item())
-    # `gen` and `iid` reach every phase as parameters rather than through its
-    # `Info`, and the pause annotates `gen` as `generation`.
+    pause_args = PausePhase.args(0, create_mock_stats_item())
+    # `gen` reaches every phase as a parameter and the pause reads `iid` off
+    # the record, neither through an `Info`; the pause annotates `gen` as
+    # `generation`.
     rest = {field for field in _RECORD_FIELDS if not field.startswith("ts_")} - _INFO_FIELDS - {GEN, IID}
 
     assert rest | {GENERATION, IID} <= set(pause_args)
