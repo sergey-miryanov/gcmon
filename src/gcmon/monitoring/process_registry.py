@@ -15,7 +15,7 @@ type CmdlineProvider = Callable[[int], tuple[str, ...] | None]
 type CmdlineSink = Callable[[Process, tuple[str, ...] | None], None]
 
 
-def read_cmdline(pid: int) -> tuple[str, ...] | None:
+def read_cmdline(pid: int) -> tuple[str, ...]:
     """What *pid* is running, off psutil.
 
     `ProcessRegistry` takes it as a provider and defaults to none (ADR-0025).
