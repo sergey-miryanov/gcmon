@@ -1,0 +1,1262 @@
+[
+  {
+    "file": "src\\gcmon\\__init__.py",
+    "operator": "AddOptional",
+    "original": "str",
+    "mutated": "str | None",
+    "source": "def __getattr__(name: str) -> str:"
+  },
+  {
+    "file": "src\\gcmon\\analysis\\combine.py",
+    "operator": "WidenContainerType",
+    "original": "list[Path]",
+    "mutated": "Sequence[Path]",
+    "source": "input_paths: list[Path],"
+  },
+  {
+    "file": "src\\gcmon\\analysis\\combine.py",
+    "operator": "WidenContainerType",
+    "original": "list[TraceEvent]",
+    "mutated": "Sequence[TraceEvent]",
+    "source": "def _normalize_trace_timestamps(events: list[TraceEvent]) -> None:"
+  },
+  {
+    "file": "src\\gcmon\\analysis\\jsonl_io.py",
+    "operator": "WidenContainerType",
+    "original": "Sequence[TItem]",
+    "mutated": "Collection[TItem]",
+    "source": "def normalize_jsonl_timestamps(items: Mapping[int, Sequence[TItem]]) -> None:"
+  },
+  {
+    "file": "src\\gcmon\\analysis\\jsonl_io.py",
+    "operator": "WidenContainerType",
+    "original": "Sequence[TItem]",
+    "mutated": "Collection[TItem]",
+    "source": "def write_jsonl(filename: Path, items: Mapping[int, Sequence[TItem]]) -> None:"
+  },
+  {
+    "file": "src\\gcmon\\analysis\\jsonl_io.py",
+    "operator": "WidenContainerType",
+    "original": "dict[int, list[TItem]]",
+    "mutated": "Mapping[int, list[TItem]]",
+    "source": "def read_jsonl(filename: Path) -> dict[int, list[TItem]]:"
+  },
+  {
+    "file": "src\\gcmon\\analysis\\jsonl_io.py",
+    "operator": "WidenContainerType",
+    "original": "list[TraceEvent]",
+    "mutated": "Sequence[TraceEvent]",
+    "source": "def convert_jsonl_to_trace_format(path: Path) -> list[TraceEvent]:"
+  },
+  {
+    "file": "src\\gcmon\\cli\\analyze\\convert_cmd.py",
+    "operator": "AddOptional",
+    "original": "argparse.ArgumentParser",
+    "mutated": "argparse.ArgumentParser | None",
+    "source": "def add_parser(parser_factory: ParserFactory) -> argparse.ArgumentParser:"
+  },
+  {
+    "file": "src\\gcmon\\cli\\analyze\\convert_cmd.py",
+    "operator": "AddOptional",
+    "original": "int",
+    "mutated": "int | None",
+    "source": "def cmd_combine(args: Namespace) -> int:"
+  },
+  {
+    "file": "src\\gcmon\\cli\\main.py",
+    "operator": "AddOptional",
+    "original": "int",
+    "mutated": "int | None",
+    "source": "def main(argv: list[str] | None = None) -> int:"
+  },
+  {
+    "file": "src\\gcmon\\cli\\main.py",
+    "operator": "RemoveUnionMember",
+    "original": "str | Sequence[Any] | None",
+    "mutated": "Sequence[Any] | None",
+    "source": "values: str | Sequence[Any] | None,"
+  },
+  {
+    "file": "src\\gcmon\\cli\\main.py",
+    "operator": "WidenContainerType",
+    "original": "Sequence[Any]",
+    "mutated": "Collection[Any]",
+    "source": "values: str | Sequence[Any] | None,"
+  },
+  {
+    "file": "src\\gcmon\\cli\\main.py",
+    "operator": "WidenContainerType",
+    "original": "Sequence[str]",
+    "mutated": "Collection[str]",
+    "source": "def __init__(self, option_strings: Sequence[str], dest: str, help: str | None = None) -> None:"
+  },
+  {
+    "file": "src\\gcmon\\cli\\main.py",
+    "operator": "WidenContainerType",
+    "original": "list[str]",
+    "mutated": "Sequence[str]",
+    "source": "def _split_run_args(argv: list[str]) -> tuple[list[str], list[str]]:"
+  },
+  {
+    "file": "src\\gcmon\\cli\\main.py",
+    "operator": "WidenContainerType",
+    "original": "list[str]",
+    "mutated": "Sequence[str]",
+    "source": "def _split_run_args(argv: list[str]) -> tuple[list[str], list[str]]:"
+  },
+  {
+    "file": "src\\gcmon\\cli\\monitor\\_env.py",
+    "operator": "AddOptional",
+    "original": "Path",
+    "mutated": "Path | None",
+    "source": "def get_env_output() -> Path:"
+  },
+  {
+    "file": "src\\gcmon\\cli\\monitor\\_env.py",
+    "operator": "AddOptional",
+    "original": "TableFormat",
+    "mutated": "TableFormat | None",
+    "source": "def get_env_table_format() -> TableFormat:"
+  },
+  {
+    "file": "src\\gcmon\\cli\\monitor\\_env.py",
+    "operator": "AddOptional",
+    "original": "bool",
+    "mutated": "bool | None",
+    "source": "def get_env_rss() -> bool:"
+  },
+  {
+    "file": "src\\gcmon\\cli\\monitor\\_env.py",
+    "operator": "AddOptional",
+    "original": "float",
+    "mutated": "float | None",
+    "source": "def get_env_rss_interval() -> float:"
+  },
+  {
+    "file": "src\\gcmon\\cli\\monitor\\_env.py",
+    "operator": "AddOptional",
+    "original": "int",
+    "mutated": "int | None",
+    "source": "def get_env_flush_threshold() -> int:"
+  },
+  {
+    "file": "src\\gcmon\\cli\\monitor\\_env.py",
+    "operator": "AddOptional",
+    "original": "int",
+    "mutated": "int | None",
+    "source": "def get_env_server_port() -> int:"
+  },
+  {
+    "file": "src\\gcmon\\cli\\monitor\\_env.py",
+    "operator": "AddOptional",
+    "original": "int",
+    "mutated": "int | None",
+    "source": "def get_env_thread_id() -> int:"
+  },
+  {
+    "file": "src\\gcmon\\cli\\monitor\\_env.py",
+    "operator": "AddOptional",
+    "original": "int",
+    "mutated": "int | None",
+    "source": "def get_env_verbose() -> int:"
+  },
+  {
+    "file": "src\\gcmon\\cli\\monitor\\_env.py",
+    "operator": "AddOptional",
+    "original": "str",
+    "mutated": "str | None",
+    "source": "def get_env_format() -> str:"
+  },
+  {
+    "file": "src\\gcmon\\cli\\monitor\\_env.py",
+    "operator": "AddOptional",
+    "original": "str",
+    "mutated": "str | None",
+    "source": "def get_env_server_host() -> str:"
+  },
+  {
+    "file": "src\\gcmon\\cli\\monitor\\_env.py",
+    "operator": "WidenType",
+    "original": "TableFormat",
+    "mutated": "Enum",
+    "source": "def get_env_table_format() -> TableFormat:"
+  },
+  {
+    "file": "src\\gcmon\\cli\\monitor\\monitor_cmd.py",
+    "operator": "AddOptional",
+    "original": "argparse.ArgumentParser",
+    "mutated": "argparse.ArgumentParser | None",
+    "source": "def add_parser(parser_factory: ParserFactory) -> argparse.ArgumentParser:"
+  },
+  {
+    "file": "src\\gcmon\\cli\\monitor\\monitor_cmd.py",
+    "operator": "AddOptional",
+    "original": "int",
+    "mutated": "int | None",
+    "source": "def cmd_monitor(args: Namespace) -> int:"
+  },
+  {
+    "file": "src\\gcmon\\cli\\monitor\\monitoring_options.py",
+    "operator": "AddOptional",
+    "original": "TableFormat",
+    "mutated": "TableFormat | None",
+    "source": "def _normalize_table_format(val: str) -> TableFormat:"
+  },
+  {
+    "file": "src\\gcmon\\cli\\monitor\\monitoring_options.py",
+    "operator": "AddOptional",
+    "original": "float",
+    "mutated": "float | None",
+    "source": "def _rate_argument(text: str) -> float:"
+  },
+  {
+    "file": "src\\gcmon\\cli\\monitor\\monitoring_options.py",
+    "operator": "WidenType",
+    "original": "TableFormat",
+    "mutated": "Enum",
+    "source": "def _normalize_table_format(val: str) -> TableFormat:"
+  },
+  {
+    "file": "src\\gcmon\\cli\\monitor\\run_cmd.py",
+    "operator": "AddOptional",
+    "original": "argparse.ArgumentParser",
+    "mutated": "argparse.ArgumentParser | None",
+    "source": "def add_parser(parser_factory: ParserFactory) -> argparse.ArgumentParser:"
+  },
+  {
+    "file": "src\\gcmon\\cli\\monitor\\run_cmd.py",
+    "operator": "AddOptional",
+    "original": "int",
+    "mutated": "int | None",
+    "source": "def cmd_run(args: Namespace) -> int:"
+  },
+  {
+    "file": "src\\gcmon\\cli\\monitor\\run_cmd.py",
+    "operator": "AddOptional",
+    "original": "list[str]",
+    "mutated": "list[str] | None",
+    "source": "script_args: list[str] = args.script_args or []"
+  },
+  {
+    "file": "src\\gcmon\\control\\control_client.py",
+    "operator": "SwapIteratorGenerator",
+    "original": "Generator[None, Any]",
+    "mutated": "Iterator[None]",
+    "source": "def pause_monitoring(self) -> Generator[None, Any]:"
+  },
+  {
+    "file": "src\\gcmon\\control\\control_server.py",
+    "operator": "AddOptional",
+    "original": "Connection",
+    "mutated": "Connection | None",
+    "source": "def _accept(listener: Listener) -> Connection:"
+  },
+  {
+    "file": "src\\gcmon\\control\\control_server.py",
+    "operator": "AddOptional",
+    "original": "PipeConnection",
+    "mutated": "PipeConnection | None",
+    "source": "def _accept(listener: Listener) -> PipeConnection:"
+  },
+  {
+    "file": "src\\gcmon\\control\\control_server.py",
+    "operator": "AddOptional",
+    "original": "bool",
+    "mutated": "bool | None",
+    "source": "def is_running(self) -> bool:"
+  },
+  {
+    "file": "src\\gcmon\\control\\control_server.py",
+    "operator": "AddOptional",
+    "original": "list[Connection]",
+    "mutated": "list[Connection] | None",
+    "source": "def _wait(conns: list[Connection]) -> list[Connection]:"
+  },
+  {
+    "file": "src\\gcmon\\control\\control_server.py",
+    "operator": "AddOptional",
+    "original": "str",
+    "mutated": "str | None",
+    "source": "def _make_address(name: str) -> str:"
+  },
+  {
+    "file": "src\\gcmon\\control\\control_server.py",
+    "operator": "WidenContainerType",
+    "original": "list[Connection]",
+    "mutated": "Sequence[Connection]",
+    "source": "def _wait(conns: list[Connection]) -> list[Connection]:"
+  },
+  {
+    "file": "src\\gcmon\\control\\control_server.py",
+    "operator": "WidenContainerType",
+    "original": "list[Connection]",
+    "mutated": "Sequence[Connection]",
+    "source": "def _wait(conns: list[Connection]) -> list[Connection]:"
+  },
+  {
+    "file": "src\\gcmon\\control\\control_server.py",
+    "operator": "WidenContainerType",
+    "original": "list[PipeConnection]",
+    "mutated": "Sequence[PipeConnection]",
+    "source": "def _wait(conns: list[PipeConnection]) -> list[PipeConnection]:"
+  },
+  {
+    "file": "src\\gcmon\\control\\control_server.py",
+    "operator": "WidenContainerType",
+    "original": "list[TConnection]",
+    "mutated": "Sequence[TConnection]",
+    "source": "def _close_connections(self, conns: list[TConnection]) -> None:"
+  },
+  {
+    "file": "src\\gcmon\\control\\control_server.py",
+    "operator": "WidenContainerType",
+    "original": "list[TConnection]",
+    "mutated": "Sequence[TConnection]",
+    "source": "def _safe_wait(self, conns: list[TConnection]) -> list[TConnection]:"
+  },
+  {
+    "file": "src\\gcmon\\exporters\\encoder.py",
+    "operator": "AddOptional",
+    "original": "bool",
+    "mutated": "bool | None",
+    "source": "self._has_written: bool = False"
+  },
+  {
+    "file": "src\\gcmon\\exporters\\encoder.py",
+    "operator": "WidenContainerType",
+    "original": "Sequence[TraceEvent]",
+    "mutated": "Collection[TraceEvent]",
+    "source": "def write_events(self, events: Sequence[TraceEvent]) -> None:"
+  },
+  {
+    "file": "src\\gcmon\\exporters\\encoder.py",
+    "operator": "WidenContainerType",
+    "original": "Sequence[bytes]",
+    "mutated": "Collection[bytes]",
+    "source": "def _write_batch(self, descriptors: Sequence[bytes], packets: Sequence[bytes]) -> None:"
+  },
+  {
+    "file": "src\\gcmon\\exporters\\encoder.py",
+    "operator": "WidenContainerType",
+    "original": "Sequence[bytes]",
+    "mutated": "Collection[bytes]",
+    "source": "def _write_batch(self, descriptors: Sequence[bytes], packets: Sequence[bytes]) -> None:"
+  },
+  {
+    "file": "src\\gcmon\\exporters\\encoder.py",
+    "operator": "WidenContainerType",
+    "original": "Set[Process]",
+    "mutated": "AbstractSet[Process]",
+    "source": "def record_process_liveness(self, processes: Set[Process], ts_ns: int) -> None:"
+  },
+  {
+    "file": "src\\gcmon\\exporters\\encoder.py",
+    "operator": "WidenContainerType",
+    "original": "list[bytes]",
+    "mutated": "Sequence[bytes]",
+    "source": "def _drain_retired(self) -> list[bytes]:"
+  },
+  {
+    "file": "src\\gcmon\\exporters\\encoder.py",
+    "operator": "WidenType",
+    "original": "TracePacketField",
+    "mutated": "IntEnum",
+    "source": "field: TracePacketField"
+  },
+  {
+    "file": "src\\gcmon\\exporters\\jsonl_exporter.py",
+    "operator": "AddOptional",
+    "original": "list[JsonlRecord]",
+    "mutated": "list[JsonlRecord] | None",
+    "source": "events: list[JsonlRecord] = []"
+  },
+  {
+    "file": "src\\gcmon\\exporters\\jsonl_exporter.py",
+    "operator": "AddOptional",
+    "original": "list[JsonlRecord]",
+    "mutated": "list[JsonlRecord] | None",
+    "source": "events: list[JsonlRecord] = []"
+  },
+  {
+    "file": "src\\gcmon\\exporters\\jsonl_exporter.py",
+    "operator": "AddOptional",
+    "original": "list[JsonlRecord]",
+    "mutated": "list[JsonlRecord] | None",
+    "source": "events: list[JsonlRecord] = []"
+  },
+  {
+    "file": "src\\gcmon\\exporters\\jsonl_exporter.py",
+    "operator": "WidenContainerType",
+    "original": "list[JsonlRecord]",
+    "mutated": "Sequence[JsonlRecord]",
+    "source": "def _flush(self, events: list[JsonlRecord]) -> None:"
+  },
+  {
+    "file": "src\\gcmon\\exporters\\perfetto_builders.py",
+    "operator": "AddOptional",
+    "original": "bytes",
+    "mutated": "bytes | None",
+    "source": ") -> bytes:"
+  },
+  {
+    "file": "src\\gcmon\\exporters\\perfetto_builders.py",
+    "operator": "AddOptional",
+    "original": "bytes",
+    "mutated": "bytes | None",
+    "source": ") -> bytes:"
+  },
+  {
+    "file": "src\\gcmon\\exporters\\perfetto_builders.py",
+    "operator": "AddOptional",
+    "original": "bytes",
+    "mutated": "bytes | None",
+    "source": "def _make_counter_event(track_uuid: int, value: int | float) -> bytes:"
+  },
+  {
+    "file": "src\\gcmon\\exporters\\perfetto_builders.py",
+    "operator": "AddOptional",
+    "original": "bytes",
+    "mutated": "bytes | None",
+    "source": "def _make_slice_end(track_uuid: int) -> bytes:"
+  },
+  {
+    "file": "src\\gcmon\\exporters\\perfetto_builders.py",
+    "operator": "WidenContainerType",
+    "original": "Sequence[str]",
+    "mutated": "Collection[str]",
+    "source": "cmdline: Sequence[str] | None = None,"
+  },
+  {
+    "file": "src\\gcmon\\exporters\\perfetto_builders.py",
+    "operator": "WidenContainerType",
+    "original": "dict[str, int | str]",
+    "mutated": "Mapping[str, int | str]",
+    "source": "def _args_to_debug_annotations(args: Mapping[str, int | float | str | dict[str, int | str]]) -> list[bytes]:"
+  },
+  {
+    "file": "src\\gcmon\\exporters\\perfetto_builders.py",
+    "operator": "WidenContainerType",
+    "original": "list[bytes]",
+    "mutated": "Sequence[bytes]",
+    "source": "debug_annotations: list[bytes] | None = None,"
+  },
+  {
+    "file": "src\\gcmon\\exporters\\perfetto_builders.py",
+    "operator": "WidenContainerType",
+    "original": "list[bytes]",
+    "mutated": "Sequence[bytes]",
+    "source": "def build_trace(packets: list[bytes]) -> bytes:"
+  },
+  {
+    "file": "src\\gcmon\\exporters\\perfetto_builders.py",
+    "operator": "WidenContainerType",
+    "original": "list[str]",
+    "mutated": "Sequence[str]",
+    "source": "categories: list[str] | None = None,"
+  },
+  {
+    "file": "src\\gcmon\\exporters\\perfetto_builders.py",
+    "operator": "WidenType",
+    "original": "ChildTracksOrdering",
+    "mutated": "IntEnum",
+    "source": "child_ordering: ChildTracksOrdering | None = None,"
+  },
+  {
+    "file": "src\\gcmon\\exporters\\perfetto_builders.py",
+    "operator": "WidenType",
+    "original": "ProcessOrdering",
+    "mutated": "IntEnum",
+    "source": "process_ordering: ProcessOrdering | None = None,"
+  },
+  {
+    "file": "src\\gcmon\\exporters\\perfetto_builders.py",
+    "operator": "WidenType",
+    "original": "TrackEventType",
+    "mutated": "IntEnum",
+    "source": "event_type: TrackEventType,"
+  },
+  {
+    "file": "src\\gcmon\\exporters\\perfetto_exporter.py",
+    "operator": "WidenContainerType",
+    "original": "Set[Process]",
+    "mutated": "AbstractSet[Process]",
+    "source": "def add_process_liveness(self, processes: Set[Process], ts_ns: int) -> None:"
+  },
+  {
+    "file": "src\\gcmon\\exporters\\perfetto_exporter.py",
+    "operator": "WidenContainerType",
+    "original": "list[TraceEvent]",
+    "mutated": "Sequence[TraceEvent]",
+    "source": "def _enqueue(self, events: list[TraceEvent]) -> None:"
+  },
+  {
+    "file": "src\\gcmon\\exporters\\perfetto_format.py",
+    "operator": "AddOptional",
+    "original": "int",
+    "mutated": "int | None",
+    "source": "_UNLISTED_COUNTER_RANK: int = len(_COUNTER_RANKS)"
+  },
+  {
+    "file": "src\\gcmon\\exporters\\perfetto_format.py",
+    "operator": "WidenContainerType",
+    "original": "Sequence[TraceEvent]",
+    "mutated": "Collection[TraceEvent]",
+    "source": "events: Sequence[TraceEvent],"
+  },
+  {
+    "file": "src\\gcmon\\exporters\\perfetto_format.py",
+    "operator": "WidenContainerType",
+    "original": "dict[str, int]",
+    "mutated": "Mapping[str, int]",
+    "source": "_COUNTER_RANKS: dict[str, int] = {metric: rank for rank, metric in enumerate(PausePhase.counter_metrics)}"
+  },
+  {
+    "file": "src\\gcmon\\exporters\\perfetto_format.py",
+    "operator": "WidenContainerType",
+    "original": "dict[str, int]",
+    "mutated": "Mapping[str, int]",
+    "source": "_INTERPRETER_ROW_RANKS: dict[str, int] = {name: rank for rank, name in enumerate(_INTERPRETER_ROW_ORDER)}"
+  },
+  {
+    "file": "src\\gcmon\\exporters\\perfetto_format.py",
+    "operator": "WidenContainerType",
+    "original": "list[bytes]",
+    "mutated": "Sequence[bytes]",
+    "source": ") -> list[bytes]:"
+  },
+  {
+    "file": "src\\gcmon\\exporters\\perfetto_format.py",
+    "operator": "WidenContainerType",
+    "original": "list[bytes]",
+    "mutated": "Sequence[bytes]",
+    "source": ") -> list[bytes]:"
+  },
+  {
+    "file": "src\\gcmon\\exporters\\perfetto_format.py",
+    "operator": "WidenContainerType",
+    "original": "list[bytes]",
+    "mutated": "Sequence[bytes]",
+    "source": ") -> list[bytes]:"
+  },
+  {
+    "file": "src\\gcmon\\exporters\\perfetto_format.py",
+    "operator": "WidenContainerType",
+    "original": "list[bytes]",
+    "mutated": "Sequence[bytes]",
+    "source": ") -> tuple[int, list[bytes]]:"
+  },
+  {
+    "file": "src\\gcmon\\exporters\\perfetto_format.py",
+    "operator": "WidenContainerType",
+    "original": "tuple[str, ...]",
+    "mutated": "Sequence[str]",
+    "source": "_INTERPRETER_ROW_ORDER: tuple[str, ...] = ("
+  },
+  {
+    "file": "src\\gcmon\\exporters\\perfetto_process_lifetime.py",
+    "operator": "AddOptional",
+    "original": "str",
+    "mutated": "str | None",
+    "source": "_PROCESS_ROW_PREFIX: str = \"Process \""
+  },
+  {
+    "file": "src\\gcmon\\exporters\\perfetto_process_lifetime.py",
+    "operator": "WidenContainerType",
+    "original": "list[bytes]",
+    "mutated": "Sequence[bytes]",
+    "source": ") -> list[bytes]:"
+  },
+  {
+    "file": "src\\gcmon\\exporters\\perfetto_process_lifetime.py",
+    "operator": "WidenContainerType",
+    "original": "list[bytes]",
+    "mutated": "Sequence[bytes]",
+    "source": ") -> list[bytes]:"
+  },
+  {
+    "file": "src\\gcmon\\exporters\\perfetto_process_lifetime.py",
+    "operator": "WidenContainerType",
+    "original": "list[bytes]",
+    "mutated": "Sequence[bytes]",
+    "source": "def _cmdline_annotation(process: Process, state: PerfettoTrackState) -> list[bytes]:"
+  },
+  {
+    "file": "src\\gcmon\\exporters\\perfetto_track_state.py",
+    "operator": "AddOptional",
+    "original": "bool",
+    "mutated": "bool | None",
+    "source": "def has_counter_group_track(self, track: Track) -> bool:"
+  },
+  {
+    "file": "src\\gcmon\\exporters\\perfetto_track_state.py",
+    "operator": "AddOptional",
+    "original": "bool",
+    "mutated": "bool | None",
+    "source": "def has_counter_track(self, track: Track, display_name: str) -> bool:"
+  },
+  {
+    "file": "src\\gcmon\\exporters\\perfetto_track_state.py",
+    "operator": "AddOptional",
+    "original": "bool",
+    "mutated": "bool | None",
+    "source": "def has_interpreter_group_track(self, process: Process, iid: int) -> bool:"
+  },
+  {
+    "file": "src\\gcmon\\exporters\\perfetto_track_state.py",
+    "operator": "AddOptional",
+    "original": "bool",
+    "mutated": "bool | None",
+    "source": "def has_interpreter_list_track(self, process: Process) -> bool:"
+  },
+  {
+    "file": "src\\gcmon\\exporters\\perfetto_track_state.py",
+    "operator": "AddOptional",
+    "original": "bool",
+    "mutated": "bool | None",
+    "source": "def has_process_descriptor(self, process: Process) -> bool:"
+  },
+  {
+    "file": "src\\gcmon\\exporters\\perfetto_track_state.py",
+    "operator": "AddOptional",
+    "original": "bool",
+    "mutated": "bool | None",
+    "source": "def has_process_lifetime(self, process: Process) -> bool:"
+  },
+  {
+    "file": "src\\gcmon\\exporters\\perfetto_track_state.py",
+    "operator": "AddOptional",
+    "original": "bool",
+    "mutated": "bool | None",
+    "source": "def has_process_lifetime_emitted(self) -> bool:"
+  },
+  {
+    "file": "src\\gcmon\\exporters\\perfetto_track_state.py",
+    "operator": "AddOptional",
+    "original": "bool",
+    "mutated": "bool | None",
+    "source": "def has_process_lifetime_track(self, process: Process) -> bool:"
+  },
+  {
+    "file": "src\\gcmon\\exporters\\perfetto_track_state.py",
+    "operator": "AddOptional",
+    "original": "bool",
+    "mutated": "bool | None",
+    "source": "def has_process_row_drawn(self, process: Process) -> bool:"
+  },
+  {
+    "file": "src\\gcmon\\exporters\\perfetto_track_state.py",
+    "operator": "AddOptional",
+    "original": "bool",
+    "mutated": "bool | None",
+    "source": "def has_root_descriptor(self) -> bool:"
+  },
+  {
+    "file": "src\\gcmon\\exporters\\perfetto_track_state.py",
+    "operator": "AddOptional",
+    "original": "bool",
+    "mutated": "bool | None",
+    "source": "def has_track(self, track: Track) -> bool:"
+  },
+  {
+    "file": "src\\gcmon\\exporters\\perfetto_track_state.py",
+    "operator": "AddOptional",
+    "original": "int",
+    "mutated": "int | None",
+    "source": "def get_row_pid(self, process: Process) -> int:"
+  },
+  {
+    "file": "src\\gcmon\\exporters\\perfetto_track_state.py",
+    "operator": "WidenContainerType",
+    "original": "list[ProcessSpan]",
+    "mutated": "Sequence[ProcessSpan]",
+    "source": "def get_process_lifetimes(self) -> list[ProcessSpan]:"
+  },
+  {
+    "file": "src\\gcmon\\exporters\\perfetto_track_state.py",
+    "operator": "WidenContainerType",
+    "original": "tuple[str, ...]",
+    "mutated": "Sequence[str]",
+    "source": "def get_cmdline(self, process: Process) -> tuple[str, ...] | None:"
+  },
+  {
+    "file": "src\\gcmon\\exporters\\trace_converter.py",
+    "operator": "WidenContainerType",
+    "original": "Sequence[TItem]",
+    "mutated": "Collection[TItem]",
+    "source": "def _loss_in_time_order(items: Sequence[TItem]) -> Sequence[TItem]:"
+  },
+  {
+    "file": "src\\gcmon\\exporters\\trace_converter.py",
+    "operator": "WidenContainerType",
+    "original": "tuple[tuple[int, str], ...]",
+    "mutated": "Sequence[tuple[int, str]]",
+    "source": "_DURATION_UNITS: tuple[tuple[int, str], ...] = ("
+  },
+  {
+    "file": "src\\gcmon\\exporters\\trace_converter.py",
+    "operator": "WidenContainerType",
+    "original": "tuple[type[Phase], ...]",
+    "mutated": "Sequence[type[Phase]]",
+    "source": "_PHASE_PARTS: dict[tuple[type[Phase], ...], _PhaseParts] = {}"
+  },
+  {
+    "file": "src\\gcmon\\model\\data.py",
+    "operator": "AddOptional",
+    "original": "bool",
+    "mutated": "bool | None",
+    "source": "def no_loss(self) -> bool:"
+  },
+  {
+    "file": "src\\gcmon\\model\\data.py",
+    "operator": "WidenContainerType",
+    "original": "list[GenLoss]",
+    "mutated": "Sequence[GenLoss]",
+    "source": "gens: list[GenLoss]"
+  },
+  {
+    "file": "src\\gcmon\\model\\loss.py",
+    "operator": "AddOptional",
+    "original": "list[TGCStatsInfo]",
+    "mutated": "list[TGCStatsInfo] | None",
+    "source": "def unseen(self, events: Iterable[TGCStatsInfo]) -> list[TGCStatsInfo]:"
+  },
+  {
+    "file": "src\\gcmon\\model\\loss.py",
+    "operator": "WidenContainerType",
+    "original": "list[TGCStatsInfo]",
+    "mutated": "Sequence[TGCStatsInfo]",
+    "source": "def unseen(self, events: Iterable[TGCStatsInfo]) -> list[TGCStatsInfo]:"
+  },
+  {
+    "file": "src\\gcmon\\model\\marks.py",
+    "operator": "AddOptional",
+    "original": "int",
+    "mutated": "int | None",
+    "source": "phase_region: int"
+  },
+  {
+    "file": "src\\gcmon\\model\\marks.py",
+    "operator": "AddOptional",
+    "original": "str",
+    "mutated": "str | None",
+    "source": "bench: str"
+  },
+  {
+    "file": "src\\gcmon\\model\\marks.py",
+    "operator": "WidenType",
+    "original": "Side",
+    "mutated": "StrEnum",
+    "source": "def format_mark(bench: str, region: int, phase_region: int, side: Side) -> str:"
+  },
+  {
+    "file": "src\\gcmon\\model\\marks.py",
+    "operator": "WidenType",
+    "original": "Side",
+    "mutated": "StrEnum",
+    "source": "side: Side"
+  },
+  {
+    "file": "src\\gcmon\\model\\names.py",
+    "operator": "AddOptional",
+    "original": "T",
+    "mutated": "T | None",
+    "source": "def __missing__(self, gen: int) -> T:"
+  },
+  {
+    "file": "src\\gcmon\\model\\names.py",
+    "operator": "WidenContainerType",
+    "original": "Sequence[int]",
+    "mutated": "Collection[int]",
+    "source": "def gc_loss_slice_name(blind: Sequence[int]) -> str:"
+  },
+  {
+    "file": "src\\gcmon\\model\\phases.py",
+    "operator": "AddOptional",
+    "original": "bool",
+    "mutated": "bool | None",
+    "source": "def check(item: object) -> bool: ..."
+  },
+  {
+    "file": "src\\gcmon\\model\\phases.py",
+    "operator": "WidenContainerType",
+    "original": "list[tuple[str, str, int | float]]",
+    "mutated": "Sequence[tuple[str, str, int | float]]",
+    "source": "def counters(cls, gen: int, item: Info) -> list[tuple[str, str, int | float]]:"
+  },
+  {
+    "file": "src\\gcmon\\model\\phases.py",
+    "operator": "WidenContainerType",
+    "original": "tuple[bool, ...]",
+    "mutated": "Sequence[bool]",
+    "source": "_BY_FIELDS: dict[tuple[bool, ...], _SubPhasesAndFields] = {}"
+  },
+  {
+    "file": "src\\gcmon\\model\\phases.py",
+    "operator": "WidenContainerType",
+    "original": "tuple[type[PauseField], ...]",
+    "mutated": "Sequence[type[PauseField]]",
+    "source": "PAUSE_FIELDS: Final[tuple[type[PauseField], ...]] = ("
+  },
+  {
+    "file": "src\\gcmon\\model\\phases.py",
+    "operator": "WidenContainerType",
+    "original": "tuple[type[Phase], ...]",
+    "mutated": "Sequence[type[Phase]]",
+    "source": "PHASES: Final[tuple[type[Phase], ...]] = (PausePhase, *SUB_PHASES)"
+  },
+  {
+    "file": "src\\gcmon\\model\\phases.py",
+    "operator": "WidenContainerType",
+    "original": "tuple[type[SubPhase], ...]",
+    "mutated": "Sequence[type[SubPhase]]",
+    "source": "SUB_PHASES: Final[tuple[type[SubPhase], ...]] = ("
+  },
+  {
+    "file": "src\\gcmon\\model\\phases.py",
+    "operator": "WidenContainerType",
+    "original": "tuple[type[SubPhase], ...]",
+    "mutated": "Sequence[type[SubPhase]]",
+    "source": "def sub_phases(item: TGCStatsInfo) -> tuple[type[SubPhase], ...]:"
+  },
+  {
+    "file": "src\\gcmon\\model\\phases.py",
+    "operator": "WidenType",
+    "original": "SubPhase",
+    "mutated": "Phase",
+    "source": "def sub_phases(item: TGCStatsInfo) -> tuple[type[SubPhase], ...]:"
+  },
+  {
+    "file": "src\\gcmon\\model\\process.py",
+    "operator": "AddOptional",
+    "original": "str",
+    "mutated": "str | None",
+    "source": "def epoch_suffix(self) -> str:"
+  },
+  {
+    "file": "src\\gcmon\\model\\protocol.py",
+    "operator": "WidenContainerType",
+    "original": "Sequence[TGenLoss]",
+    "mutated": "Collection[TGenLoss]",
+    "source": "def gens(self) -> Sequence[TGenLoss]: ..."
+  },
+  {
+    "file": "src\\gcmon\\model\\run_report.py",
+    "operator": "AddOptional",
+    "original": "bool",
+    "mutated": "bool | None",
+    "source": "def overran(self) -> bool:"
+  },
+  {
+    "file": "src\\gcmon\\model\\trace_event.py",
+    "operator": "AddOptional",
+    "original": "str",
+    "mutated": "str | None",
+    "source": "name: str"
+  },
+  {
+    "file": "src\\gcmon\\model\\trace_event.py",
+    "operator": "RemoveUnionMember",
+    "original": "int | float",
+    "mutated": "float",
+    "source": "value: int | float"
+  },
+  {
+    "file": "src\\gcmon\\monitoring\\child_process_runner.py",
+    "operator": "AddOptional",
+    "original": "bool",
+    "mutated": "bool | None",
+    "source": "def is_running(self) -> bool:"
+  },
+  {
+    "file": "src\\gcmon\\monitoring\\child_process_runner.py",
+    "operator": "AddOptional",
+    "original": "bytes",
+    "mutated": "bytes | None",
+    "source": ") -> bytes:"
+  },
+  {
+    "file": "src\\gcmon\\monitoring\\child_process_runner.py",
+    "operator": "WidenContainerType",
+    "original": "dict[str, str]",
+    "mutated": "Mapping[str, str]",
+    "source": "def _build_env(self) -> dict[str, str]:"
+  },
+  {
+    "file": "src\\gcmon\\monitoring\\child_process_runner.py",
+    "operator": "WidenContainerType",
+    "original": "dict[str, str]",
+    "mutated": "Mapping[str, str]",
+    "source": "env: dict[str, str] | None = None,"
+  },
+  {
+    "file": "src\\gcmon\\monitoring\\child_process_runner.py",
+    "operator": "WidenContainerType",
+    "original": "list[str]",
+    "mutated": "Sequence[str]",
+    "source": "def _build_command(self) -> list[str]:"
+  },
+  {
+    "file": "src\\gcmon\\monitoring\\child_process_runner.py",
+    "operator": "WidenContainerType",
+    "original": "list[str]",
+    "mutated": "Sequence[str]",
+    "source": "passthrough_args: list[str] | None = None,"
+  },
+  {
+    "file": "src\\gcmon\\monitoring\\child_process_runner.py",
+    "operator": "WidenType",
+    "original": "ChildProcess",
+    "mutated": "TargetProcess",
+    "source": "def start(self) -> ChildProcess:"
+  },
+  {
+    "file": "src\\gcmon\\monitoring\\events_reader.py",
+    "operator": "WidenContainerType",
+    "original": "Set[int]",
+    "mutated": "AbstractSet[int]",
+    "source": "def retain(self, pids: Set[int]) -> None:"
+  },
+  {
+    "file": "src\\gcmon\\monitoring\\events_reader.py",
+    "operator": "WidenContainerType",
+    "original": "Set[int]",
+    "mutated": "AbstractSet[int]",
+    "source": "def retain(self, pids: Set[int]) -> None:"
+  },
+  {
+    "file": "src\\gcmon\\monitoring\\monitor.py",
+    "operator": "AddOptional",
+    "original": "Self",
+    "mutated": "Self | None",
+    "source": "def __enter__(self) -> Self:"
+  },
+  {
+    "file": "src\\gcmon\\monitoring\\monitor.py",
+    "operator": "AddOptional",
+    "original": "bool",
+    "mutated": "bool | None",
+    "source": "def _is_complete(record: TGCStatsInfo) -> bool:"
+  },
+  {
+    "file": "src\\gcmon\\monitoring\\monitor.py",
+    "operator": "AddOptional",
+    "original": "bool",
+    "mutated": "bool | None",
+    "source": "def is_enabled(self) -> bool:"
+  },
+  {
+    "file": "src\\gcmon\\monitoring\\monitor.py",
+    "operator": "AddOptional",
+    "original": "bool",
+    "mutated": "bool | None",
+    "source": "keep_running: bool"
+  },
+  {
+    "file": "src\\gcmon\\monitoring\\monitor.py",
+    "operator": "AddOptional",
+    "original": "int",
+    "mutated": "int | None",
+    "source": "def pid(self) -> int:"
+  },
+  {
+    "file": "src\\gcmon\\monitoring\\monitor.py",
+    "operator": "WidenContainerType",
+    "original": "Sequence[TGCStatsInfo]",
+    "mutated": "Collection[TGCStatsInfo]",
+    "source": "def _ingest(self, process: Process, records: Sequence[TGCStatsInfo], ts_poll: int) -> None:"
+  },
+  {
+    "file": "src\\gcmon\\monitoring\\monitor.py",
+    "operator": "WidenContainerType",
+    "original": "Set[int]",
+    "mutated": "AbstractSet[int]",
+    "source": "def _retain(self, pids: Set[int], ts: int) -> None:"
+  },
+  {
+    "file": "src\\gcmon\\monitoring\\monitor.py",
+    "operator": "WidenContainerType",
+    "original": "frozenset[Process]",
+    "mutated": "AbstractSet[Process]",
+    "source": "live: frozenset[Process]"
+  },
+  {
+    "file": "src\\gcmon\\monitoring\\monitor.py",
+    "operator": "WidenContainerType",
+    "original": "list[int]",
+    "mutated": "Sequence[int]",
+    "source": "def _get_child_pids(self) -> list[int] | None:"
+  },
+  {
+    "file": "src\\gcmon\\monitoring\\monitor_loop.py",
+    "operator": "AddOptional",
+    "original": "Self",
+    "mutated": "Self | None",
+    "source": "def __enter__(self) -> Self:"
+  },
+  {
+    "file": "src\\gcmon\\monitoring\\process_registry.py",
+    "operator": "AddOptional",
+    "original": "tuple[str, ...]",
+    "mutated": "tuple[str, ...] | None",
+    "source": "def read_cmdline(pid: int) -> tuple[str, ...]:"
+  },
+  {
+    "file": "src\\gcmon\\monitoring\\run_policy.py",
+    "operator": "SwapIteratorGenerator",
+    "original": "Generator[None, Any]",
+    "mutated": "Iterator[None]",
+    "source": "def run(self, stop: Callable[[], bool]) -> Generator[None, Any]: ..."
+  },
+  {
+    "file": "src\\gcmon\\monitoring\\target_process.py",
+    "operator": "AddOptional",
+    "original": "Self",
+    "mutated": "Self | None",
+    "source": "def __enter__(self) -> Self: ..."
+  },
+  {
+    "file": "src\\gcmon\\monitoring\\target_process.py",
+    "operator": "WidenType",
+    "original": "ExternalProcess",
+    "mutated": "TargetProcess",
+    "source": "def start(self) -> ExternalProcess:"
+  },
+  {
+    "file": "src\\gcmon\\monitoring\\wait_policy.py",
+    "operator": "WidenType",
+    "original": "PollStatus",
+    "mutated": "IntEnum",
+    "source": "def wait(self, status: PollStatus) -> bool:"
+  },
+  {
+    "file": "src\\gcmon\\monitoring\\wait_policy.py",
+    "operator": "WidenType",
+    "original": "PollStatus",
+    "mutated": "IntEnum",
+    "source": "def wait(self, status: PollStatus) -> bool:"
+  },
+  {
+    "file": "src\\gcmon\\pyperf\\hook.py",
+    "operator": "AddOptional",
+    "original": "GCMonitorHook",
+    "mutated": "GCMonitorHook | None",
+    "source": "def __enter__(self) -> GCMonitorHook:"
+  },
+  {
+    "file": "src\\gcmon\\pyperf\\hook.py",
+    "operator": "AddOptional",
+    "original": "bool",
+    "mutated": "bool | None",
+    "source": "def _get_env_pyperf_hook_verbose() -> bool:"
+  },
+  {
+    "file": "src\\gcmon\\pyperf\\hook.py",
+    "operator": "WidenContainerType",
+    "original": "dict[str, Any]",
+    "mutated": "Mapping[str, Any]",
+    "source": "def teardown(self, metadata: dict[str, Any]) -> None:"
+  },
+  {
+    "file": "src\\gcmon\\stats\\stats.py",
+    "operator": "AddOptional",
+    "original": "bool",
+    "mutated": "bool | None",
+    "source": "def has_sketch(self) -> bool:"
+  },
+  {
+    "file": "src\\gcmon\\stats\\stats.py",
+    "operator": "WidenContainerType",
+    "original": "Sequence[float]",
+    "mutated": "Collection[float]",
+    "source": "def buffer(self) -> Sequence[float]:"
+  },
+  {
+    "file": "src\\gcmon\\stats\\stats_output.py",
+    "operator": "AddOptional",
+    "original": "str",
+    "mutated": "str | None",
+    "source": "def _dual(sampled: str, whole: str | None, marker: str = \"\") -> str:"
+  },
+  {
+    "file": "src\\gcmon\\stats\\stats_output.py",
+    "operator": "AddOptional",
+    "original": "str",
+    "mutated": "str | None",
+    "source": "def _plural(count: int, noun: str, plural: str | None = None) -> str:"
+  },
+  {
+    "file": "src\\gcmon\\stats\\stats_output.py",
+    "operator": "AddOptional",
+    "original": "str",
+    "mutated": "str | None",
+    "source": "def _ring_label(process: Process, iid: int) -> str:"
+  },
+  {
+    "file": "src\\gcmon\\stats\\stats_output.py",
+    "operator": "WidenContainerType",
+    "original": "dict[int, PauseTotals]",
+    "mutated": "Mapping[int, PauseTotals]",
+    "source": "pause_totals: dict[int, PauseTotals],"
+  },
+  {
+    "file": "src\\gcmon\\stats\\stats_output.py",
+    "operator": "WidenContainerType",
+    "original": "dict[int, Stats]",
+    "mutated": "Mapping[int, Stats]",
+    "source": "gen_stats: dict[int, Stats],"
+  },
+  {
+    "file": "src\\gcmon\\stats\\stats_output.py",
+    "operator": "WidenContainerType",
+    "original": "list[list[str] | Any]",
+    "mutated": "Sequence[list[str] | Any]",
+    "source": "def _print_table(rows: list[list[str] | Any], table_format: TableFormat = TableFormat.PLAIN) -> None:"
+  },
+  {
+    "file": "src\\gcmon\\stats\\stats_output.py",
+    "operator": "WidenContainerType",
+    "original": "list[list[str]]",
+    "mutated": "Sequence[list[str]]",
+    "source": ") -> list[list[str]]:"
+  },
+  {
+    "file": "src\\gcmon\\stats\\stats_output.py",
+    "operator": "WidenContainerType",
+    "original": "list[str]",
+    "mutated": "Sequence[str]",
+    "source": "all_rows: list[list[str] | Any] = []"
+  },
+  {
+    "file": "src\\gcmon\\stats\\stats_output.py",
+    "operator": "WidenContainerType",
+    "original": "list[str]",
+    "mutated": "Sequence[str]",
+    "source": "def _format_stats(s: Stats, count: str | None = None, total: str | None = None) -> list[str]:"
+  },
+  {
+    "file": "src\\gcmon\\stats\\stats_output.py",
+    "operator": "WidenType",
+    "original": "StatsView",
+    "mutated": "Enum",
+    "source": "def _print_footer(stats: StreamingStats, view: StatsView) -> None:"
+  },
+  {
+    "file": "src\\gcmon\\stats\\stats_output.py",
+    "operator": "WidenType",
+    "original": "TableFormat",
+    "mutated": "Enum",
+    "source": "def _print_table(rows: list[list[str] | Any], table_format: TableFormat = TableFormat.PLAIN) -> None:"
+  },
+  {
+    "file": "src\\gcmon\\stats\\streaming_stats.py",
+    "operator": "AddOptional",
+    "original": "bool",
+    "mutated": "bool | None",
+    "source": "declined: bool = False"
+  },
+  {
+    "file": "src\\gcmon\\stats\\streaming_stats.py",
+    "operator": "AddOptional",
+    "original": "int",
+    "mutated": "int | None",
+    "source": "def exact_count(self) -> int:"
+  },
+  {
+    "file": "src\\gcmon\\stats\\streaming_stats.py",
+    "operator": "AddOptional",
+    "original": "int",
+    "mutated": "int | None",
+    "source": "def untracked_rings(self) -> int:"
+  },
+  {
+    "file": "src\\gcmon\\stats\\streaming_stats.py",
+    "operator": "SwapIteratorGenerator",
+    "original": "Iterator[RingStats]",
+    "mutated": "Iterable[RingStats]",
+    "source": "def _all_rings(self) -> Iterator[RingStats]:"
+  },
+  {
+    "file": "src\\gcmon\\stats\\streaming_stats.py",
+    "operator": "SwapIteratorGenerator",
+    "original": "Iterator[tuple[RingKey, RingStats]]",
+    "mutated": "Iterable[tuple[RingKey, RingStats]]",
+    "source": "def _keyed_rings(self) -> Iterator[tuple[RingKey, RingStats]]:"
+  },
+  {
+    "file": "src\\gcmon\\stats\\streaming_stats.py",
+    "operator": "WidenContainerType",
+    "original": "dict[Process, list[RingKey]]",
+    "mutated": "Mapping[Process, list[RingKey]]",
+    "source": "process_keys: dict[Process, list[RingKey]] = {process: [] for process in departed}"
+  },
+  {
+    "file": "src\\gcmon\\stats\\streaming_stats.py",
+    "operator": "WidenContainerType",
+    "original": "dict[int, CumulativeCounters]",
+    "mutated": "Mapping[int, CumulativeCounters]",
+    "source": "def cumulative_totals_by_gen(self) -> dict[int, CumulativeCounters]:"
+  },
+  {
+    "file": "src\\gcmon\\stats\\streaming_stats.py",
+    "operator": "WidenContainerType",
+    "original": "list[RingKey]",
+    "mutated": "Sequence[RingKey]",
+    "source": "def _settle(self, process: Process, keys: list[RingKey]) -> None:"
+  },
+  {
+    "file": "src\\gcmon\\stats\\streaming_stats.py",
+    "operator": "WidenContainerType",
+    "original": "list[RingKey]",
+    "mutated": "Sequence[RingKey]",
+    "source": "def rings(self) -> list[RingKey]:"
+  },
+  {
+    "file": "src\\gcmon\\stats\\streaming_stats.py",
+    "operator": "WidenContainerType",
+    "original": "list[tuple[RingKey, TPhaseStats]]",
+    "mutated": "Sequence[tuple[RingKey, TPhaseStats]]",
+    "source": "def ring_phases(self) -> list[tuple[RingKey, TPhaseStats]]:"
+  },
+  {
+    "file": "src\\gcmon\\stats\\streaming_stats.py",
+    "operator": "WidenContainerType",
+    "original": "list[tuple[type[Phase], int, int]]",
+    "mutated": "Sequence[tuple[type[Phase], int, int]]",
+    "source": "def _record(stats: TPhaseStats, gen: int, spans: list[tuple[type[Phase], int, int]]) -> None:"
+  },
+  {
+    "file": "src\\gcmon\\stats\\views.py",
+    "operator": "WidenContainerType",
+    "original": "list[str]",
+    "mutated": "Sequence[str]",
+    "source": "def words(cls) -> list[str]:"
+  },
+  {
+    "file": "src\\gcmon\\support\\process_terminator.py",
+    "operator": "AddOptional",
+    "original": "bool",
+    "mutated": "bool | None",
+    "source": "def _is_signal_exit_code(returncode: int) -> bool:"
+  },
+  {
+    "file": "src\\gcmon\\support\\replace_signals.py",
+    "operator": "SwapIteratorGenerator",
+    "original": "Generator[None, Any]",
+    "mutated": "Iterator[None]",
+    "source": "def replace_signals(handler: Callable[[int, object], None]) -> Generator[None, Any]:"
+  },
+  {
+    "file": "src\\gcmon\\support\\set_on_exit.py",
+    "operator": "SwapIteratorGenerator",
+    "original": "Generator[threading.Event, Any]",
+    "mutated": "Iterator[threading.Event]",
+    "source": "def set_on_exit(event: threading.Event) -> Generator[threading.Event, Any]:"
+  },
+  {
+    "file": "src\\gcmon\\support\\time_units.py",
+    "operator": "AddOptional",
+    "original": "float",
+    "mutated": "float | None",
+    "source": "def dur_to_ms(dur_ns: float) -> float:"
+  }
+]
