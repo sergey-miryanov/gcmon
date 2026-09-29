@@ -107,6 +107,7 @@ markers = [
     "benchmark: mark a test as a CodSpeed performance benchmark",
     "fuzz: randomized differential tests against the real trace processor (deselected by default; run with -m fuzz)",
     "architecture: the code's structure, read without running it (deselected by default; run with -m architecture)",
+    "control_plane: the control-plane tests that just stress-control repeats",
 ]
 addopts = "-m 'not stress and not benchmark and not fuzz and not architecture'"
 

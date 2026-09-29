@@ -22,6 +22,8 @@ from gcmon.model.names import PID, TS
 from gcmon.monitoring.process_registry import ProcessRegistry
 from tests.helpers import monitored, proc
 
+pytestmark = pytest.mark.control_plane
+
 
 @pytest.fixture
 def server_not_started(mock_exporter: MagicMock) -> Generator[ControlServer]:

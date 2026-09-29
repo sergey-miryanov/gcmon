@@ -13,6 +13,8 @@ from gcmon.control.control_server import CONTROL_ADDRESS_ENV
 from gcmon.control.protocol import MSG, MSG_START, MSG_STOP
 from gcmon.model.names import PID, TS
 
+pytestmark = pytest.mark.control_plane
+
 
 def assert_payload(mock_conn: MagicMock, expected_msg: str, *, call_index: int = 0) -> dict[str, int | str]:
     payload: dict[str, int | str] = mock_conn.send.call_args_list[call_index][0][0]

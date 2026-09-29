@@ -28,7 +28,7 @@ passing `pytest` covers less than it looks.
 | `architecture` | `just architecture` | `architecture` | the code's structure, read without running it |
 | `benchmark` | `just bench` | CodSpeed workflow | performance benchmarks |
 
-`just stress` runs two passes: `-k "control" --count 40` and
+`just stress` runs two passes: `-m control_plane --count 40` and
 `-m stress --count 20`. The repetition is what gives a probabilistic test its
 chance to fail.
 

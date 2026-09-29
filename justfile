@@ -37,7 +37,7 @@ stress: stress-control stress-threads
 
 # Repeat the control-plane tests
 stress-control:
-    poetry run pytest --basetemp=.temp -k "control" -s --count 40
+    poetry run pytest --basetemp=.temp -m control_plane -s --count 40
 
 # Repeat the thread-safety stress tests
 stress-threads:
