@@ -30,12 +30,16 @@ from gcmon.model.names import (
     GENERATION,
     MARK_ALIVE,
     PAUSE,
-    gc_pause_slice_name,
-    phase_slice_name,
 )
 from gcmon.model.trace_event import EventArgs, Slice, TraceEvent
 from tests.exporters.perfetto_helpers import parse_track_descriptor
-from tests.helpers import interpreter_track, open_trace_processor, proc
+from tests.helpers import (
+    gc_pause_slice_name,
+    interpreter_track,
+    open_trace_processor,
+    phase_slice_name,
+    proc,
+)
 
 PID = 4242
 ROW = interpreter_track(PID, 0)

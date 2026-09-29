@@ -8,31 +8,25 @@ from gcmon.exporters.trace_converter import (
     seen_text,
 )
 from gcmon.model.names import (
-    AGING_NEXT,
-    AGING_SPACES,
-    AGING_THRESHOLD,
-    ALIVE_SIZE,
-    AUTO_COLLECT,
-    CLEAR_WEAKREFS_COUNT,
     DEDUCE_UNREACHABLE,
     FILL_INCREMENT,
-    FINALIZED_GARBAGE_COUNT,
     GENERATION,
     GENERATIONS,
     HEAP_SIZE,
     IID,
-    INCREMENT_SIZE,
     MARK_ALIVE,
-    OLD_WORK,
-    SURVIVOR_COUNT,
-    TS_CLEAR_WEAKREFS_STOP,
-    TS_FINALIZE_GARBAGE_STOP,
-    TS_HANDLE_RESURRECTED_STOP,
     PhaseName,
-    gc_pause_slice_name,
-    phase_slice_name,
 )
-from gcmon.model.phases import SUB_PHASES
+from gcmon.model.phases import (
+    SUB_PHASES,
+    ClearWeakrefsSubPhase,
+    FinalizeGarbageSubPhase,
+    HandleResurrectedSubPhase,
+    IncrementSizeField,
+    MarkAliveSubPhase,
+    NewIncrementalFields,
+    OldWorkField,
+)
 from gcmon.model.protocol import TItem
 from gcmon.model.trace_event import Counter, InterpreterTrack, LossTrack, ProcessTrack, Slice
 from tests.data_helpers import create_instant_msg
@@ -42,6 +36,8 @@ from tests.helpers import (
     create_mock_incremental_item,
     create_mock_loss_item,
     create_mock_stats_item,
+    gc_pause_slice_name,
+    phase_slice_name,
     proc,
 )
 
@@ -144,9 +140,9 @@ class TestTheSizesAPauseCarries:
     @pytest.mark.parametrize(
         ("gen_number", "sizes"),
         [
-            (0, {INCREMENT_SIZE}),
-            (1, {INCREMENT_SIZE, ALIVE_SIZE}),
-            (2, {ALIVE_SIZE}),
+            (0, {IncrementSizeField.INCREMENT_SIZE}),
+            (1, {IncrementSizeField.INCREMENT_SIZE, MarkAliveSubPhase.ALIVE_SIZE}),
+            (2, {MarkAliveSubPhase.ALIVE_SIZE}),
         ],
     )
     def test_a_generation_gets_only_the_sizes_it_has(self, gen_number: int, sizes: set[str]) -> None:
@@ -155,7 +151,7 @@ class TestTheSizesAPauseCarries:
         events = convert_item_to_trace_format(proc(1), record)
 
         pause = next(e for e in events if isinstance(e, Slice) and e.name == gc_pause_slice_name(gen_number))
-        assert pause.args.keys() & {INCREMENT_SIZE, ALIVE_SIZE} == sizes
+        assert pause.args.keys() & {IncrementSizeField.INCREMENT_SIZE, MarkAliveSubPhase.ALIVE_SIZE} == sizes
 
 
 class TestTheIncrementSize:
@@ -169,20 +165,27 @@ class TestTheIncrementSize:
 
         slices = [e for e in events if isinstance(e, Slice)]
         assert [e.name for e in slices] == [gc_pause_slice_name(0)]
-        assert slices[0].args[INCREMENT_SIZE] == 500
+        assert slices[0].args[IncrementSizeField.INCREMENT_SIZE] == 500
 
     def test_the_fill_increment_slice_leaves_it_out(self) -> None:
         events = convert_item_to_trace_format(proc(1), create_mock_incremental_item(gen=1))
 
         fill = next(e for e in events if isinstance(e, Slice) and e.name == phase_slice_name(FILL_INCREMENT, 1))
-        assert INCREMENT_SIZE not in fill.args
+        assert IncrementSizeField.INCREMENT_SIZE not in fill.args
 
 
 class TestTheIncrementalFields:
     """They have no span of their own. They annotate the pause, and no
     sub-phase slice carries them."""
 
-    FIELDS = (OLD_WORK, AUTO_COLLECT, SURVIVOR_COUNT, AGING_THRESHOLD, AGING_SPACES, AGING_NEXT)
+    FIELDS = (
+        OldWorkField.OLD_WORK,
+        NewIncrementalFields.AUTO_COLLECT,
+        NewIncrementalFields.SURVIVOR_COUNT,
+        NewIncrementalFields.AGING_THRESHOLD,
+        NewIncrementalFields.AGING_SPACES,
+        NewIncrementalFields.AGING_NEXT,
+    )
 
     def test_the_pause_carries_them(self) -> None:
         record = create_mock_incremental_item(gen=1)
@@ -287,9 +290,18 @@ class TestAPhaseWhoseStartIsMissing:
     @pytest.mark.parametrize(
         "fields",
         [
-            pytest.param({TS_FINALIZE_GARBAGE_STOP: 9_000, FINALIZED_GARBAGE_COUNT: 1}, id="finalize garbage"),
-            pytest.param({TS_HANDLE_RESURRECTED_STOP: 9_000}, id="handle resurrected"),
-            pytest.param({TS_CLEAR_WEAKREFS_STOP: 9_000, CLEAR_WEAKREFS_COUNT: 1}, id="clear weakrefs"),
+            pytest.param(
+                {
+                    FinalizeGarbageSubPhase.TS_FINALIZE_GARBAGE_STOP: 9_000,
+                    FinalizeGarbageSubPhase.FINALIZED_GARBAGE_COUNT: 1,
+                },
+                id="finalize garbage",
+            ),
+            pytest.param({HandleResurrectedSubPhase.TS_HANDLE_RESURRECTED_STOP: 9_000}, id="handle resurrected"),
+            pytest.param(
+                {ClearWeakrefsSubPhase.TS_CLEAR_WEAKREFS_STOP: 9_000, ClearWeakrefsSubPhase.CLEAR_WEAKREFS_COUNT: 1},
+                id="clear weakrefs",
+            ),
         ],
     )
     def test_the_record_converts_and_draws_the_pause_alone(self, fields: dict[str, int]) -> None:

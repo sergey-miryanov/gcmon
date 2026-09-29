@@ -11,7 +11,6 @@ from typing import Any
 
 from gcmon.model.data import GCStatsInfo
 from gcmon.model.names import (
-    ALIVE_SIZE,
     CANDIDATES,
     COLLECTED,
     COLLECTIONS,
@@ -19,15 +18,15 @@ from gcmon.model.names import (
     GEN,
     HEAP_SIZE,
     IID,
-    INCREMENT_SIZE,
     PID,
-    TS_FILL_INCREMENT_START,
-    TS_FILL_INCREMENT_STOP,
-    TS_MARK_ALIVE_START,
-    TS_MARK_ALIVE_STOP,
     TS_START,
     TS_STOP,
     UNCOLLECTABLE,
+)
+from gcmon.model.phases import (
+    FillIncrementSubPhase,
+    IncrementSizeField,
+    MarkAliveSubPhase,
 )
 from tests.helpers import create_mock_incremental_item
 
@@ -90,10 +89,10 @@ def make_jsonl_record(i: int, *, pid: int = 12345, iid: int = 0, gen: int = 0) -
         UNCOLLECTABLE: i % 3,
         CANDIDATES: 10 + i,
         DURATION: 0.004,
-        INCREMENT_SIZE: 1_024 + i,
-        ALIVE_SIZE: 2_048 + i,
-        TS_MARK_ALIVE_START: base + 10_000,
-        TS_MARK_ALIVE_STOP: base + 810_000,
-        TS_FILL_INCREMENT_START: base + 820_000,
-        TS_FILL_INCREMENT_STOP: base + 1_620_000,
+        IncrementSizeField.INCREMENT_SIZE: 1_024 + i,
+        MarkAliveSubPhase.ALIVE_SIZE: 2_048 + i,
+        MarkAliveSubPhase.TS_MARK_ALIVE_START: base + 10_000,
+        MarkAliveSubPhase.TS_MARK_ALIVE_STOP: base + 810_000,
+        FillIncrementSubPhase.TS_FILL_INCREMENT_START: base + 820_000,
+        FillIncrementSubPhase.TS_FILL_INCREMENT_STOP: base + 1_620_000,
     }

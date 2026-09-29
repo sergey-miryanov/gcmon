@@ -34,16 +34,13 @@ from gcmon.model.data import GCStatsInfo, LossMsg
 from gcmon.model.names import (
     CANDIDATES,
     CLEAR_WEAKREFS,
-    CLEAR_WEAKREFS_COUNT,
     COLLECTED,
     COLLECTIONS,
     DEDUCE_UNREACHABLE,
     DELETE_GARBAGE,
-    DELETED_GARBAGE_COUNT,
     DURATION,
     FILL_INCREMENT,
     FINALIZE_GARBAGE,
-    FINALIZED_GARBAGE_COUNT,
     GC_LOSS_NAME,
     GENERATION,
     HANDLE_RESURRECTED,
@@ -60,8 +57,11 @@ from gcmon.model.names import (
     RSS,
     UNCOLLECTABLE,
     counter_display_name,
-    gc_pause_slice_name,
-    phase_slice_name,
+)
+from gcmon.model.phases import (
+    ClearWeakrefsSubPhase,
+    DeleteGarbageSubPhase,
+    FinalizeGarbageSubPhase,
 )
 from gcmon.model.trace_event import (
     Counter,
@@ -77,7 +77,14 @@ from tests.exporters.perfetto_helpers import (
     pause_item,
     processes_row_uuids,
 )
-from tests.helpers import create_mock_loss_item, interpreter_track, proc, process_track
+from tests.helpers import (
+    create_mock_loss_item,
+    gc_pause_slice_name,
+    interpreter_track,
+    phase_slice_name,
+    proc,
+    process_track,
+)
 
 TARGET_PID: int = 100
 
@@ -465,22 +472,31 @@ class TestConvertItemToPerfettoPackets:
         _, packets = convert_item(proc(TARGET_PID), full_subphase_item(), state, sequence_id=1)
 
         anns = self._annotations_for_slice(packets, phase_slice_name(FINALIZE_GARBAGE, 1))
-        assert (FINALIZED_GARBAGE_COUNT, 42) in anns
-        assert all(name not in (DELETED_GARBAGE_COUNT, CLEAR_WEAKREFS_COUNT) for name, _ in anns)
+        assert (FinalizeGarbageSubPhase.FINALIZED_GARBAGE_COUNT, 42) in anns
+        assert all(
+            name not in (DeleteGarbageSubPhase.DELETED_GARBAGE_COUNT, ClearWeakrefsSubPhase.CLEAR_WEAKREFS_COUNT)
+            for name, _ in anns
+        )
 
     def test_clear_weakrefs_sub_phase_has_count_annotation(self, state: PerfettoTrackState) -> None:
         _, packets = convert_item(proc(TARGET_PID), full_subphase_item(), state, sequence_id=1)
 
         anns = self._annotations_for_slice(packets, phase_slice_name(CLEAR_WEAKREFS, 1))
-        assert (CLEAR_WEAKREFS_COUNT, 7) in anns
-        assert all(name not in (FINALIZED_GARBAGE_COUNT, DELETED_GARBAGE_COUNT) for name, _ in anns)
+        assert (ClearWeakrefsSubPhase.CLEAR_WEAKREFS_COUNT, 7) in anns
+        assert all(
+            name not in (FinalizeGarbageSubPhase.FINALIZED_GARBAGE_COUNT, DeleteGarbageSubPhase.DELETED_GARBAGE_COUNT)
+            for name, _ in anns
+        )
 
     def test_delete_garbage_sub_phase_has_count_annotation(self, state: PerfettoTrackState) -> None:
         _, packets = convert_item(proc(TARGET_PID), full_subphase_item(), state, sequence_id=1)
 
         anns = self._annotations_for_slice(packets, phase_slice_name(DELETE_GARBAGE, 1))
-        assert (DELETED_GARBAGE_COUNT, 13) in anns
-        assert all(name not in (FINALIZED_GARBAGE_COUNT, CLEAR_WEAKREFS_COUNT) for name, _ in anns)
+        assert (DeleteGarbageSubPhase.DELETED_GARBAGE_COUNT, 13) in anns
+        assert all(
+            name not in (FinalizeGarbageSubPhase.FINALIZED_GARBAGE_COUNT, ClearWeakrefsSubPhase.CLEAR_WEAKREFS_COUNT)
+            for name, _ in anns
+        )
 
     def test_deduce_unreachable_sub_phase_has_candidates_annotation(self, state: PerfettoTrackState) -> None:
         item = full_subphase_item()

@@ -70,19 +70,17 @@ from gcmon.exporters.perfetto_process_lifetime import (
     _PROCESS_ROW_SLICE_NAME,
 )
 from gcmon.model.names import (
-    AGING_NEXT,
-    AGING_SPACES,
-    AGING_THRESHOLD,
-    AUTO_COLLECT,
     GC_LOSS_CATEGORY,
     GC_LOSS_NAME,
     GC_PHASES,
     HEAP_SIZE,
-    OLD_WORK,
     RSS,
-    SURVIVOR_COUNT,
 )
-from gcmon.model.phases import PausePhase
+from gcmon.model.phases import (
+    NewIncrementalFields,
+    OldWorkField,
+    PausePhase,
+)
 from gcmon.support.vocabulary import ENCODING
 from tests.helpers import JSONL_FIELDS, SLICE_ARGS
 
@@ -93,12 +91,12 @@ SQL = DOCS / "perfetto-sql.md"
 # Names gcmon writes that the pages leave out on purpose.
 UNDOCUMENTED: frozenset[str] = frozenset(
     {
-        OLD_WORK,
-        AUTO_COLLECT,
-        SURVIVOR_COUNT,
-        AGING_THRESHOLD,
-        AGING_SPACES,
-        AGING_NEXT,
+        OldWorkField.OLD_WORK,
+        NewIncrementalFields.AUTO_COLLECT,
+        NewIncrementalFields.SURVIVOR_COUNT,
+        NewIncrementalFields.AGING_THRESHOLD,
+        NewIncrementalFields.AGING_SPACES,
+        NewIncrementalFields.AGING_NEXT,
     }
 )
 

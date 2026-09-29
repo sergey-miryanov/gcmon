@@ -26,8 +26,6 @@ from gcmon.model.names import (
     HANDLE_RESURRECTED,
     HANDLE_WEAKREFS,
     MARK_ALIVE,
-    gc_pause_slice_name,
-    phase_slice_name,
 )
 from gcmon.model.process import Process
 from tests.conftest import DEFAULT_PID
@@ -37,7 +35,9 @@ from tests.exporters.perfetto_helpers import pause_item
 from tests.helpers import (
     create_mock_incremental_item,
     create_mock_stats_item,
+    gc_pause_slice_name,
     perfetto_packets,
+    phase_slice_name,
     proc,
 )
 

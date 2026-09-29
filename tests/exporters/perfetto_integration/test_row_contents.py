@@ -25,28 +25,28 @@ from gcmon.exporters.perfetto_process_lifetime import (
     process_track_name,
 )
 from gcmon.model.names import (
-    ALIVE_SIZE,
     CANDIDATES,
     CLEAR_WEAKREFS,
-    CLEAR_WEAKREFS_COUNT,
     COLLECTED,
     DEDUCE_UNREACHABLE,
     DELETE_GARBAGE,
-    DELETED_GARBAGE_COUNT,
     DURATION,
     FILL_INCREMENT,
     FINALIZE_GARBAGE,
-    FINALIZED_GARBAGE_COUNT,
     HANDLE_RESURRECTED,
     HANDLE_WEAKREFS,
     HEAP_SIZE,
-    INCREMENT_SIZE,
     MARK_ALIVE,
     RSS,
     UNCOLLECTABLE,
     counter_display_name,
-    gc_pause_slice_name,
-    phase_slice_name,
+)
+from gcmon.model.phases import (
+    ClearWeakrefsSubPhase,
+    DeleteGarbageSubPhase,
+    FinalizeGarbageSubPhase,
+    IncrementSizeField,
+    MarkAliveSubPhase,
 )
 from tests.conftest import DEFAULT_PID
 from tests.exporters.perfetto_integration.traces import (
@@ -77,7 +77,9 @@ from tests.exporters.perfetto_integration.traces import (
 )
 from tests.helpers import (
     create_mock_stats_item,
+    gc_pause_slice_name,
     open_trace_processor,
+    phase_slice_name,
     proc,
 )
 
@@ -187,11 +189,11 @@ class TestSliceArgs:
             )
         }
         for key in (
-            INCREMENT_SIZE,
-            ALIVE_SIZE,
-            FINALIZED_GARBAGE_COUNT,
-            DELETED_GARBAGE_COUNT,
-            CLEAR_WEAKREFS_COUNT,
+            IncrementSizeField.INCREMENT_SIZE,
+            MarkAliveSubPhase.ALIVE_SIZE,
+            FinalizeGarbageSubPhase.FINALIZED_GARBAGE_COUNT,
+            DeleteGarbageSubPhase.DELETED_GARBAGE_COUNT,
+            ClearWeakrefsSubPhase.CLEAR_WEAKREFS_COUNT,
         ):
             qualified = f"{prefix}.{key}"
             assert qualified in pause_args, f"missing arg {qualified}; got {sorted(pause_args)}"

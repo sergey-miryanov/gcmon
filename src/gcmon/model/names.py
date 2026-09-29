@@ -14,23 +14,15 @@ from collections.abc import Callable, Mapping, Sequence
 from typing import Final, NamedTuple
 
 __all__ = [
-    "AGING_NEXT",
-    "AGING_SPACES",
-    "AGING_THRESHOLD",
-    "ALIVE_SIZE",
-    "AUTO_COLLECT",
     "CANDIDATES",
     "CLEAR_WEAKREFS",
-    "CLEAR_WEAKREFS_COUNT",
     "CMDLINE",
     "COLLECTED",
     "COLLECTIONS",
     "DEDUCE_UNREACHABLE",
-    "DELETED_GARBAGE_COUNT",
     "DELETE_GARBAGE",
     "DURATION",
     "FILL_INCREMENT",
-    "FINALIZED_GARBAGE_COUNT",
     "FINALIZE_GARBAGE",
     "GC_LOSS_CATEGORY",
     "GC_LOSS_NAME",
@@ -44,7 +36,6 @@ __all__ = [
     "HANDLE_WEAKREFS",
     "HEAP_SIZE",
     "IID",
-    "INCREMENT_SIZE",
     "LOST_COUNT",
     "LOST_FROM",
     "LOST_PAUSE",
@@ -52,27 +43,12 @@ __all__ = [
     "MARK_ALIVE",
     "NAME",
     "OBSERVED_COUNT",
-    "OLD_WORK",
     "PAUSE",
     "PID",
     "PID_EPOCH",
     "RSS",
     "SAMPLED_COUNT",
-    "SURVIVOR_COUNT",
     "TS",
-    "TS_CLEAR_WEAKREFS_STOP",
-    "TS_DEDUCE_UNREACHABLE_START",
-    "TS_DEDUCE_UNREACHABLE_STOP",
-    "TS_DELETE_GARBAGE_START",
-    "TS_DELETE_GARBAGE_STOP",
-    "TS_FILL_INCREMENT_START",
-    "TS_FILL_INCREMENT_STOP",
-    "TS_FINALIZE_GARBAGE_STOP",
-    "TS_HANDLE_RESURRECTED_STOP",
-    "TS_HANDLE_WEAKREF_CALLBACKS_START",
-    "TS_HANDLE_WEAKREF_CALLBACKS_STOP",
-    "TS_MARK_ALIVE_START",
-    "TS_MARK_ALIVE_STOP",
     "TS_START",
     "TS_STOP",
     "TYPE",
@@ -81,9 +57,6 @@ __all__ = [
     "PhaseName",
     "counter_display_name",
     "gc_loss_slice_name",
-    "gc_pause_slice_name",
-    "phase_category",
-    "phase_slice_name",
 ]
 
 
@@ -171,17 +144,6 @@ CANDIDATES: Final = "candidates"
 DURATION: Final = "duration"
 HEAP_SIZE: Final = "heap_size"
 RSS: Final = "rss"
-INCREMENT_SIZE: Final = "increment_size"
-ALIVE_SIZE: Final = "alive_size"
-FINALIZED_GARBAGE_COUNT: Final = "finalized_garbage_count"
-DELETED_GARBAGE_COUNT: Final = "deleted_garbage_count"
-CLEAR_WEAKREFS_COUNT: Final = "clear_weakrefs_count"
-OLD_WORK: Final = "old_work"
-AUTO_COLLECT: Final = "auto_collect"
-SURVIVOR_COUNT: Final = "survivor_count"
-AGING_THRESHOLD: Final = "aging_threshold"
-AGING_SPACES: Final = "aging_spaces"
-AGING_NEXT: Final = "aging_next"
 
 
 def counter_display_name(gen: int, metric: str) -> str:
@@ -219,52 +181,11 @@ LOST_FROM: Final = "lost_from"
 LOST_PAUSE_NS: Final = "lost_pause_ns"
 LOST_PAUSE: Final = "lost_pause"
 
-# When each sub-phase started and stopped, as an instrumented CPython
-# reports it. A name here is a field on the record and nothing else reads
-# it, so the phase it belongs to is the comment beside it.
-TS_MARK_ALIVE_START: Final = "ts_mark_alive_start"
-TS_MARK_ALIVE_STOP: Final = "ts_mark_alive_stop"
-TS_FILL_INCREMENT_START: Final = "ts_fill_increment_start"
-TS_FILL_INCREMENT_STOP: Final = "ts_fill_increment_stop"
-TS_DEDUCE_UNREACHABLE_START: Final = "ts_deduce_unreachable_start"
-TS_DEDUCE_UNREACHABLE_STOP: Final = "ts_deduce_unreachable_stop"
-TS_HANDLE_WEAKREF_CALLBACKS_START: Final = "ts_handle_weakref_callbacks_start"
-TS_HANDLE_WEAKREF_CALLBACKS_STOP: Final = "ts_handle_weakref_callbacks_stop"
-TS_FINALIZE_GARBAGE_STOP: Final = "ts_finalize_garbage_stop"
-TS_HANDLE_RESURRECTED_STOP: Final = "ts_handle_resurrected_stop"
-TS_CLEAR_WEAKREFS_STOP: Final = "ts_clear_weakrefs_stop"
-TS_DELETE_GARBAGE_START: Final = "ts_delete_garbage_start"
-TS_DELETE_GARBAGE_STOP: Final = "ts_delete_garbage_stop"
-
 GC_LOSS_NAME: Final = "GC Loss"
 
 # The category every loss slice carries, and the one a pause query has to
 # exclude: a blind interval is not a pause anything measured (ADR-0015).
 GC_LOSS_CATEGORY: Final = "gc.loss"
-
-
-def phase_slice_name(phase: PhaseName, gen: int) -> str:
-    """The slice one generation's *phase* is drawn as.
-
-    A reading of the table `_phase` rendered. The conversion loop indexes
-    `phase.names` directly, since a call per slice is what this spelling
-    used to cost it; everything colder reads it through here.
-    """
-    return phase.names[gen][0]
-
-
-def phase_category(phase: PhaseName, gen: int) -> str:
-    """The category that slice carries.
-
-    Filtering on the prefix reaches every generation, on the exact string
-    reaches one.
-    """
-    return phase.names[gen][1]
-
-
-def gc_pause_slice_name(gen: int) -> str:
-    """The slice one collection is drawn as, named for its generation."""
-    return phase_slice_name(PAUSE, gen)
 
 
 def gc_loss_slice_name(blind: Sequence[int]) -> str:

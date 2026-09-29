@@ -30,10 +30,19 @@ from gcmon.exporters.perfetto_process_lifetime import _PROCESS_LIFETIME_TRACK_NA
 from gcmon.exporters.perfetto_track_state import PerfettoTrackState
 from gcmon.exporters.trace_converter import convert_item_to_trace_format, convert_loss_to_trace_format
 from gcmon.model.data import GCStatsInfo, LossMsg
-from gcmon.model.names import GC_LOSS_NAME, gc_loss_slice_name, gc_pause_slice_name
+from gcmon.model.names import (
+    GC_LOSS_NAME,
+    gc_loss_slice_name,
+)
 from gcmon.model.trace_event import TraceEvent
 from tests.exporters.perfetto_helpers import pause_item
-from tests.helpers import create_mock_loss_item, misplaced_end_events, open_trace_processor, proc
+from tests.helpers import (
+    create_mock_loss_item,
+    gc_pause_slice_name,
+    misplaced_end_events,
+    open_trace_processor,
+    proc,
+)
 
 pytestmark = pytest.mark.fuzz
 

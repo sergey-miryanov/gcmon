@@ -51,8 +51,6 @@ from gcmon.model.names import (
     SAMPLED_COUNT,
     UNCOLLECTABLE,
     counter_display_name,
-    gc_pause_slice_name,
-    phase_slice_name,
 )
 from gcmon.model.trace_event import Slice, TraceEvent
 from gcmon.support.vocabulary import CMD_COMBINE, FORMAT_PERFETTO, PROGRAM_NAME
@@ -61,7 +59,9 @@ from tests.helpers import (
     SUBPROCESS_WATCHDOG,
     create_mock_incremental_item,
     create_mock_stats_item,
+    gc_pause_slice_name,
     open_trace_processor,
+    phase_slice_name,
     proc,
 )
 

@@ -16,49 +16,40 @@ from perfetto.trace_processor import TraceProcessor, TraceProcessorConfig
 from gcmon.exporters.exporter import EventsExporter
 from gcmon.model.data import GCStatsInfo, GenLoss, InstantMsg, LossMsg
 from gcmon.model.names import (
-    AGING_NEXT,
-    AGING_SPACES,
-    AGING_THRESHOLD,
-    ALIVE_SIZE,
-    AUTO_COLLECT,
     CANDIDATES,
-    CLEAR_WEAKREFS_COUNT,
     CMDLINE,
     COLLECTED,
     COLLECTIONS,
-    DELETED_GARBAGE_COUNT,
     DURATION,
-    FINALIZED_GARBAGE_COUNT,
     GEN,
     HEAP_SIZE,
     IID,
-    INCREMENT_SIZE,
     LOST_PAUSE,
-    OLD_WORK,
+    PAUSE,
     PID,
     PID_EPOCH,
     SAMPLED_COUNT,
-    SURVIVOR_COUNT,
-    TS_CLEAR_WEAKREFS_STOP,
-    TS_DEDUCE_UNREACHABLE_START,
-    TS_DEDUCE_UNREACHABLE_STOP,
-    TS_DELETE_GARBAGE_START,
-    TS_DELETE_GARBAGE_STOP,
-    TS_FILL_INCREMENT_START,
-    TS_FILL_INCREMENT_STOP,
-    TS_FINALIZE_GARBAGE_STOP,
-    TS_HANDLE_RESURRECTED_STOP,
-    TS_HANDLE_WEAKREF_CALLBACKS_START,
-    TS_HANDLE_WEAKREF_CALLBACKS_STOP,
-    TS_MARK_ALIVE_START,
-    TS_MARK_ALIVE_STOP,
     TS_START,
     TS_STOP,
     TYPE,
     UNCOLLECTABLE,
+    PhaseName,
     counter_display_name,
 )
-from gcmon.model.phases import Phase
+from gcmon.model.phases import (
+    ClearWeakrefsSubPhase,
+    DeduceUnreachableSubPhase,
+    DeleteGarbageSubPhase,
+    FillIncrementSubPhase,
+    FinalizeGarbageSubPhase,
+    HandleResurrectedSubPhase,
+    HandleWeakrefsSubPhase,
+    IncrementSizeField,
+    MarkAliveSubPhase,
+    NewIncrementalFields,
+    OldWorkField,
+    Phase,
+)
 from gcmon.model.process import Process
 from gcmon.model.protocol import TGCStatsInfo, TInstantMsg, TLossMsg, is_gc_stats
 from gcmon.model.trace_event import Counter, InterpreterTrack, LossTrack, ProcessTrack, Track
@@ -124,11 +115,14 @@ __all__ = [
     "create_mock_incremental_item",
     "create_mock_loss_item",
     "create_mock_stats_item",
+    "gc_pause_slice_name",
     "interpreter_track",
     "loss_track",
     "monitored",
     "open_trace_processor",
     "perfetto_packets",
+    "phase_category",
+    "phase_slice_name",
     "polled",
     "proc",
     "process_track",
@@ -164,6 +158,21 @@ def gen_counter(track: Track, gen: int, metric: str, ts: int, value: float) -> C
     the converter would never write.
     """
     return Counter(track, metric, counter_display_name(gen, metric), ts, value)
+
+
+def phase_slice_name(phase: PhaseName, gen: int) -> str:
+    """The slice one generation's *phase* is drawn as."""
+    return phase.names[gen][0]
+
+
+def phase_category(phase: PhaseName, gen: int) -> str:
+    """The category that slice carries."""
+    return phase.names[gen][1]
+
+
+def gc_pause_slice_name(gen: int) -> str:
+    """The slice one collection is drawn as, named for its generation."""
+    return phase_slice_name(PAUSE, gen)
 
 
 def monitored(*pids: int) -> ProcessRegistry:
@@ -424,30 +433,30 @@ def create_mock_loss_item(
 
 
 SUB_PHASES: Final[dict[str, int]] = {
-    INCREMENT_SIZE: 1000,
-    ALIVE_SIZE: 800,
-    TS_MARK_ALIVE_START: 1_500_000_000,
-    TS_MARK_ALIVE_STOP: 1_500_500_000,
-    TS_FILL_INCREMENT_START: 1_500_500_000,
-    TS_FILL_INCREMENT_STOP: 1_501_000_000,
-    TS_DEDUCE_UNREACHABLE_START: 1_501_000_000,
-    TS_DEDUCE_UNREACHABLE_STOP: 1_501_500_000,
-    TS_HANDLE_WEAKREF_CALLBACKS_START: 1_501_500_000,
-    TS_HANDLE_WEAKREF_CALLBACKS_STOP: 1_502_000_000,
-    TS_FINALIZE_GARBAGE_STOP: 1_502_500_000,
-    FINALIZED_GARBAGE_COUNT: 42,
-    TS_HANDLE_RESURRECTED_STOP: 1_503_000_000,
-    TS_CLEAR_WEAKREFS_STOP: 1_503_500_000,
-    CLEAR_WEAKREFS_COUNT: 7,
-    TS_DELETE_GARBAGE_START: 1_504_000_000,
-    TS_DELETE_GARBAGE_STOP: 1_504_500_000,
-    DELETED_GARBAGE_COUNT: 13,
-    OLD_WORK: 500,
-    AUTO_COLLECT: 1,
-    SURVIVOR_COUNT: 60,
-    AGING_THRESHOLD: 3,
-    AGING_SPACES: 4,
-    AGING_NEXT: 2,
+    IncrementSizeField.INCREMENT_SIZE: 1000,
+    MarkAliveSubPhase.ALIVE_SIZE: 800,
+    MarkAliveSubPhase.TS_MARK_ALIVE_START: 1_500_000_000,
+    MarkAliveSubPhase.TS_MARK_ALIVE_STOP: 1_500_500_000,
+    FillIncrementSubPhase.TS_FILL_INCREMENT_START: 1_500_500_000,
+    FillIncrementSubPhase.TS_FILL_INCREMENT_STOP: 1_501_000_000,
+    DeduceUnreachableSubPhase.TS_DEDUCE_UNREACHABLE_START: 1_501_000_000,
+    DeduceUnreachableSubPhase.TS_DEDUCE_UNREACHABLE_STOP: 1_501_500_000,
+    HandleWeakrefsSubPhase.TS_HANDLE_WEAKREF_CALLBACKS_START: 1_501_500_000,
+    HandleWeakrefsSubPhase.TS_HANDLE_WEAKREF_CALLBACKS_STOP: 1_502_000_000,
+    FinalizeGarbageSubPhase.TS_FINALIZE_GARBAGE_STOP: 1_502_500_000,
+    FinalizeGarbageSubPhase.FINALIZED_GARBAGE_COUNT: 42,
+    HandleResurrectedSubPhase.TS_HANDLE_RESURRECTED_STOP: 1_503_000_000,
+    ClearWeakrefsSubPhase.TS_CLEAR_WEAKREFS_STOP: 1_503_500_000,
+    ClearWeakrefsSubPhase.CLEAR_WEAKREFS_COUNT: 7,
+    DeleteGarbageSubPhase.TS_DELETE_GARBAGE_START: 1_504_000_000,
+    DeleteGarbageSubPhase.TS_DELETE_GARBAGE_STOP: 1_504_500_000,
+    DeleteGarbageSubPhase.DELETED_GARBAGE_COUNT: 13,
+    OldWorkField.OLD_WORK: 500,
+    NewIncrementalFields.AUTO_COLLECT: 1,
+    NewIncrementalFields.SURVIVOR_COUNT: 60,
+    NewIncrementalFields.AGING_THRESHOLD: 3,
+    NewIncrementalFields.AGING_SPACES: 4,
+    NewIncrementalFields.AGING_NEXT: 2,
 }
 """Every sub-phase a record can carry, in collector order, inside the
 pause `create_mock_stats_item` draws by default."""

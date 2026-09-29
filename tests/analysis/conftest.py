@@ -3,25 +3,16 @@
 from __future__ import annotations
 
 from gcmon.model.data import GCStatsInfo
-from gcmon.model.names import (
-    ALIVE_SIZE,
-    CLEAR_WEAKREFS_COUNT,
-    DELETED_GARBAGE_COUNT,
-    FINALIZED_GARBAGE_COUNT,
-    INCREMENT_SIZE,
-    TS_CLEAR_WEAKREFS_STOP,
-    TS_DEDUCE_UNREACHABLE_START,
-    TS_DEDUCE_UNREACHABLE_STOP,
-    TS_DELETE_GARBAGE_START,
-    TS_DELETE_GARBAGE_STOP,
-    TS_FILL_INCREMENT_START,
-    TS_FILL_INCREMENT_STOP,
-    TS_FINALIZE_GARBAGE_STOP,
-    TS_HANDLE_RESURRECTED_STOP,
-    TS_HANDLE_WEAKREF_CALLBACKS_START,
-    TS_HANDLE_WEAKREF_CALLBACKS_STOP,
-    TS_MARK_ALIVE_START,
-    TS_MARK_ALIVE_STOP,
+from gcmon.model.phases import (
+    ClearWeakrefsSubPhase,
+    DeduceUnreachableSubPhase,
+    DeleteGarbageSubPhase,
+    FillIncrementSubPhase,
+    FinalizeGarbageSubPhase,
+    HandleResurrectedSubPhase,
+    HandleWeakrefsSubPhase,
+    IncrementSizeField,
+    MarkAliveSubPhase,
 )
 from tests.helpers import create_jsonl_record, create_mock_incremental_item
 
@@ -81,24 +72,24 @@ def make_inc_jsonl_record(
     record = create_jsonl_record(pid=pid, gen=gen, ts_start=ts_start, ts_stop=ts_stop)
     record.update(
         {
-            INCREMENT_SIZE: increment_size,
-            ALIVE_SIZE: alive_size,
-            TS_MARK_ALIVE_START: ts_start,
-            TS_MARK_ALIVE_STOP: ts_start + 100,
-            TS_FILL_INCREMENT_START: ts_start + 100,
-            TS_FILL_INCREMENT_STOP: ts_start + 200,
-            TS_DEDUCE_UNREACHABLE_START: ts_start + 200,
-            TS_DEDUCE_UNREACHABLE_STOP: ts_start + 300,
-            TS_HANDLE_WEAKREF_CALLBACKS_START: ts_start + 300,
-            TS_HANDLE_WEAKREF_CALLBACKS_STOP: ts_start + 400,
-            TS_FINALIZE_GARBAGE_STOP: ts_start + 500,
-            FINALIZED_GARBAGE_COUNT: 42,
-            TS_HANDLE_RESURRECTED_STOP: ts_start + 600,
-            TS_CLEAR_WEAKREFS_STOP: ts_start + 700,
-            CLEAR_WEAKREFS_COUNT: 7,
-            TS_DELETE_GARBAGE_START: ts_start + 800,
-            TS_DELETE_GARBAGE_STOP: ts_start + 900,
-            DELETED_GARBAGE_COUNT: 13,
+            IncrementSizeField.INCREMENT_SIZE: increment_size,
+            MarkAliveSubPhase.ALIVE_SIZE: alive_size,
+            MarkAliveSubPhase.TS_MARK_ALIVE_START: ts_start,
+            MarkAliveSubPhase.TS_MARK_ALIVE_STOP: ts_start + 100,
+            FillIncrementSubPhase.TS_FILL_INCREMENT_START: ts_start + 100,
+            FillIncrementSubPhase.TS_FILL_INCREMENT_STOP: ts_start + 200,
+            DeduceUnreachableSubPhase.TS_DEDUCE_UNREACHABLE_START: ts_start + 200,
+            DeduceUnreachableSubPhase.TS_DEDUCE_UNREACHABLE_STOP: ts_start + 300,
+            HandleWeakrefsSubPhase.TS_HANDLE_WEAKREF_CALLBACKS_START: ts_start + 300,
+            HandleWeakrefsSubPhase.TS_HANDLE_WEAKREF_CALLBACKS_STOP: ts_start + 400,
+            FinalizeGarbageSubPhase.TS_FINALIZE_GARBAGE_STOP: ts_start + 500,
+            FinalizeGarbageSubPhase.FINALIZED_GARBAGE_COUNT: 42,
+            HandleResurrectedSubPhase.TS_HANDLE_RESURRECTED_STOP: ts_start + 600,
+            ClearWeakrefsSubPhase.TS_CLEAR_WEAKREFS_STOP: ts_start + 700,
+            ClearWeakrefsSubPhase.CLEAR_WEAKREFS_COUNT: 7,
+            DeleteGarbageSubPhase.TS_DELETE_GARBAGE_START: ts_start + 800,
+            DeleteGarbageSubPhase.TS_DELETE_GARBAGE_STOP: ts_start + 900,
+            DeleteGarbageSubPhase.DELETED_GARBAGE_COUNT: 13,
         }
     )
     return record

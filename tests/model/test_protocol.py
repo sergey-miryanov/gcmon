@@ -6,40 +6,20 @@ import pytest
 from gcmon.control.protocol import START_EVENT
 from gcmon.model.data import GCStatsInfo, GenLoss, InstantMsg, LossMsg
 from gcmon.model.names import (
-    ALIVE_SIZE,
-    AUTO_COLLECT,
     CANDIDATES,
-    CLEAR_WEAKREFS_COUNT,
     COLLECTED,
     COLLECTIONS,
-    DELETED_GARBAGE_COUNT,
     DURATION,
-    FINALIZED_GARBAGE_COUNT,
     GEN,
     GENS,
     HEAP_SIZE,
     IID,
-    INCREMENT_SIZE,
     LOST_COUNT,
     LOST_FROM,
     LOST_PAUSE_NS,
     NAME,
     OBSERVED_COUNT,
-    OLD_WORK,
     TS,
-    TS_CLEAR_WEAKREFS_STOP,
-    TS_DEDUCE_UNREACHABLE_START,
-    TS_DEDUCE_UNREACHABLE_STOP,
-    TS_DELETE_GARBAGE_START,
-    TS_DELETE_GARBAGE_STOP,
-    TS_FILL_INCREMENT_START,
-    TS_FILL_INCREMENT_STOP,
-    TS_FINALIZE_GARBAGE_STOP,
-    TS_HANDLE_RESURRECTED_STOP,
-    TS_HANDLE_WEAKREF_CALLBACKS_START,
-    TS_HANDLE_WEAKREF_CALLBACKS_STOP,
-    TS_MARK_ALIVE_START,
-    TS_MARK_ALIVE_STOP,
     TS_START,
     TS_STOP,
     TYPE,
@@ -113,17 +93,35 @@ class TestChecks:
     phase's field as well."""
 
     CHECKS = (
-        (IncrementSizeField, {INCREMENT_SIZE: 500}),
-        (OldWorkField, {OLD_WORK: 500}),
-        (NewIncrementalFields, {AUTO_COLLECT: 1}),
-        (FillIncrementSubPhase, {TS_FILL_INCREMENT_START: 100}),
-        (MarkAliveSubPhase, {ALIVE_SIZE: 300}),
-        (DeduceUnreachableSubPhase, {TS_DEDUCE_UNREACHABLE_START: 100}),
-        (HandleWeakrefsSubPhase, {TS_HANDLE_WEAKREF_CALLBACKS_START: 100}),
-        (FinalizeGarbageSubPhase, {TS_HANDLE_WEAKREF_CALLBACKS_STOP: 100, TS_FINALIZE_GARBAGE_STOP: 100}),
-        (HandleResurrectedSubPhase, {TS_FINALIZE_GARBAGE_STOP: 100, TS_HANDLE_RESURRECTED_STOP: 100}),
-        (ClearWeakrefsSubPhase, {TS_HANDLE_RESURRECTED_STOP: 100, TS_CLEAR_WEAKREFS_STOP: 100}),
-        (DeleteGarbageSubPhase, {TS_DELETE_GARBAGE_START: 100}),
+        (IncrementSizeField, {IncrementSizeField.INCREMENT_SIZE: 500}),
+        (OldWorkField, {OldWorkField.OLD_WORK: 500}),
+        (NewIncrementalFields, {NewIncrementalFields.AUTO_COLLECT: 1}),
+        (FillIncrementSubPhase, {FillIncrementSubPhase.TS_FILL_INCREMENT_START: 100}),
+        (MarkAliveSubPhase, {MarkAliveSubPhase.ALIVE_SIZE: 300}),
+        (DeduceUnreachableSubPhase, {DeduceUnreachableSubPhase.TS_DEDUCE_UNREACHABLE_START: 100}),
+        (HandleWeakrefsSubPhase, {HandleWeakrefsSubPhase.TS_HANDLE_WEAKREF_CALLBACKS_START: 100}),
+        (
+            FinalizeGarbageSubPhase,
+            {
+                HandleWeakrefsSubPhase.TS_HANDLE_WEAKREF_CALLBACKS_STOP: 100,
+                FinalizeGarbageSubPhase.TS_FINALIZE_GARBAGE_STOP: 100,
+            },
+        ),
+        (
+            HandleResurrectedSubPhase,
+            {
+                FinalizeGarbageSubPhase.TS_FINALIZE_GARBAGE_STOP: 100,
+                HandleResurrectedSubPhase.TS_HANDLE_RESURRECTED_STOP: 100,
+            },
+        ),
+        (
+            ClearWeakrefsSubPhase,
+            {
+                HandleResurrectedSubPhase.TS_HANDLE_RESURRECTED_STOP: 100,
+                ClearWeakrefsSubPhase.TS_CLEAR_WEAKREFS_STOP: 100,
+            },
+        ),
+        (DeleteGarbageSubPhase, {DeleteGarbageSubPhase.TS_DELETE_GARBAGE_START: 100}),
     )
     IDS = tuple(kind.__name__ for kind, _ in CHECKS)
 
@@ -173,20 +171,20 @@ class TestToMappingPartial:
 
         result = to_mapping(item)
 
-        assert result[INCREMENT_SIZE] == 500
-        assert result[TS_FILL_INCREMENT_START] == 1_000_500
-        assert result[TS_FILL_INCREMENT_STOP] == 1_001_000
-        assert ALIVE_SIZE not in result
-        assert TS_MARK_ALIVE_START not in result
-        assert TS_DEDUCE_UNREACHABLE_START not in result
-        assert TS_HANDLE_WEAKREF_CALLBACKS_START not in result
-        assert TS_FINALIZE_GARBAGE_STOP not in result
-        assert TS_HANDLE_RESURRECTED_STOP not in result
-        assert TS_CLEAR_WEAKREFS_STOP not in result
-        assert TS_DELETE_GARBAGE_START not in result
-        assert FINALIZED_GARBAGE_COUNT not in result
-        assert DELETED_GARBAGE_COUNT not in result
-        assert CLEAR_WEAKREFS_COUNT not in result
+        assert result[IncrementSizeField.INCREMENT_SIZE] == 500
+        assert result[FillIncrementSubPhase.TS_FILL_INCREMENT_START] == 1_000_500
+        assert result[FillIncrementSubPhase.TS_FILL_INCREMENT_STOP] == 1_001_000
+        assert MarkAliveSubPhase.ALIVE_SIZE not in result
+        assert MarkAliveSubPhase.TS_MARK_ALIVE_START not in result
+        assert DeduceUnreachableSubPhase.TS_DEDUCE_UNREACHABLE_START not in result
+        assert HandleWeakrefsSubPhase.TS_HANDLE_WEAKREF_CALLBACKS_START not in result
+        assert FinalizeGarbageSubPhase.TS_FINALIZE_GARBAGE_STOP not in result
+        assert HandleResurrectedSubPhase.TS_HANDLE_RESURRECTED_STOP not in result
+        assert ClearWeakrefsSubPhase.TS_CLEAR_WEAKREFS_STOP not in result
+        assert DeleteGarbageSubPhase.TS_DELETE_GARBAGE_START not in result
+        assert FinalizeGarbageSubPhase.FINALIZED_GARBAGE_COUNT not in result
+        assert DeleteGarbageSubPhase.DELETED_GARBAGE_COUNT not in result
+        assert ClearWeakrefsSubPhase.CLEAR_WEAKREFS_COUNT not in result
 
     def test_mark_alive_only(self) -> None:
         item = create_mock_stats_item(
@@ -197,20 +195,20 @@ class TestToMappingPartial:
 
         result = to_mapping(item)
 
-        assert result[ALIVE_SIZE] == 300
-        assert result[TS_MARK_ALIVE_START] == 1_000_500
-        assert result[TS_MARK_ALIVE_STOP] == 1_001_000
-        assert INCREMENT_SIZE not in result
-        assert TS_FILL_INCREMENT_START not in result
-        assert TS_DEDUCE_UNREACHABLE_START not in result
-        assert TS_HANDLE_WEAKREF_CALLBACKS_START not in result
-        assert TS_FINALIZE_GARBAGE_STOP not in result
-        assert TS_HANDLE_RESURRECTED_STOP not in result
-        assert TS_CLEAR_WEAKREFS_STOP not in result
-        assert TS_DELETE_GARBAGE_START not in result
-        assert FINALIZED_GARBAGE_COUNT not in result
-        assert DELETED_GARBAGE_COUNT not in result
-        assert CLEAR_WEAKREFS_COUNT not in result
+        assert result[MarkAliveSubPhase.ALIVE_SIZE] == 300
+        assert result[MarkAliveSubPhase.TS_MARK_ALIVE_START] == 1_000_500
+        assert result[MarkAliveSubPhase.TS_MARK_ALIVE_STOP] == 1_001_000
+        assert IncrementSizeField.INCREMENT_SIZE not in result
+        assert FillIncrementSubPhase.TS_FILL_INCREMENT_START not in result
+        assert DeduceUnreachableSubPhase.TS_DEDUCE_UNREACHABLE_START not in result
+        assert HandleWeakrefsSubPhase.TS_HANDLE_WEAKREF_CALLBACKS_START not in result
+        assert FinalizeGarbageSubPhase.TS_FINALIZE_GARBAGE_STOP not in result
+        assert HandleResurrectedSubPhase.TS_HANDLE_RESURRECTED_STOP not in result
+        assert ClearWeakrefsSubPhase.TS_CLEAR_WEAKREFS_STOP not in result
+        assert DeleteGarbageSubPhase.TS_DELETE_GARBAGE_START not in result
+        assert FinalizeGarbageSubPhase.FINALIZED_GARBAGE_COUNT not in result
+        assert DeleteGarbageSubPhase.DELETED_GARBAGE_COUNT not in result
+        assert ClearWeakrefsSubPhase.CLEAR_WEAKREFS_COUNT not in result
 
     def test_deduce_unreachable_only(self) -> None:
         item = create_mock_stats_item(
@@ -220,19 +218,19 @@ class TestToMappingPartial:
 
         result = to_mapping(item)
 
-        assert result[TS_DEDUCE_UNREACHABLE_START] == 1_000_500
-        assert result[TS_DEDUCE_UNREACHABLE_STOP] == 1_001_000
-        assert INCREMENT_SIZE not in result
-        assert ALIVE_SIZE not in result
-        assert TS_MARK_ALIVE_START not in result
-        assert TS_HANDLE_WEAKREF_CALLBACKS_START not in result
-        assert TS_FINALIZE_GARBAGE_STOP not in result
-        assert TS_HANDLE_RESURRECTED_STOP not in result
-        assert TS_CLEAR_WEAKREFS_STOP not in result
-        assert TS_DELETE_GARBAGE_START not in result
-        assert FINALIZED_GARBAGE_COUNT not in result
-        assert DELETED_GARBAGE_COUNT not in result
-        assert CLEAR_WEAKREFS_COUNT not in result
+        assert result[DeduceUnreachableSubPhase.TS_DEDUCE_UNREACHABLE_START] == 1_000_500
+        assert result[DeduceUnreachableSubPhase.TS_DEDUCE_UNREACHABLE_STOP] == 1_001_000
+        assert IncrementSizeField.INCREMENT_SIZE not in result
+        assert MarkAliveSubPhase.ALIVE_SIZE not in result
+        assert MarkAliveSubPhase.TS_MARK_ALIVE_START not in result
+        assert HandleWeakrefsSubPhase.TS_HANDLE_WEAKREF_CALLBACKS_START not in result
+        assert FinalizeGarbageSubPhase.TS_FINALIZE_GARBAGE_STOP not in result
+        assert HandleResurrectedSubPhase.TS_HANDLE_RESURRECTED_STOP not in result
+        assert ClearWeakrefsSubPhase.TS_CLEAR_WEAKREFS_STOP not in result
+        assert DeleteGarbageSubPhase.TS_DELETE_GARBAGE_START not in result
+        assert FinalizeGarbageSubPhase.FINALIZED_GARBAGE_COUNT not in result
+        assert DeleteGarbageSubPhase.DELETED_GARBAGE_COUNT not in result
+        assert ClearWeakrefsSubPhase.CLEAR_WEAKREFS_COUNT not in result
 
     def test_finalize_garbage_only(self) -> None:
         item = create_mock_stats_item(
@@ -242,10 +240,10 @@ class TestToMappingPartial:
 
         result = to_mapping(item)
 
-        assert result[TS_FINALIZE_GARBAGE_STOP] == 1_005_000
-        assert result[FINALIZED_GARBAGE_COUNT] == 42
-        assert DELETED_GARBAGE_COUNT not in result
-        assert CLEAR_WEAKREFS_COUNT not in result
+        assert result[FinalizeGarbageSubPhase.TS_FINALIZE_GARBAGE_STOP] == 1_005_000
+        assert result[FinalizeGarbageSubPhase.FINALIZED_GARBAGE_COUNT] == 42
+        assert DeleteGarbageSubPhase.DELETED_GARBAGE_COUNT not in result
+        assert ClearWeakrefsSubPhase.CLEAR_WEAKREFS_COUNT not in result
 
     def test_delete_garbage_only(self) -> None:
         item = create_mock_stats_item(
@@ -256,11 +254,11 @@ class TestToMappingPartial:
 
         result = to_mapping(item)
 
-        assert result[TS_DELETE_GARBAGE_START] == 1_008_000
-        assert result[TS_DELETE_GARBAGE_STOP] == 1_009_000
-        assert result[DELETED_GARBAGE_COUNT] == 13
-        assert FINALIZED_GARBAGE_COUNT not in result
-        assert CLEAR_WEAKREFS_COUNT not in result
+        assert result[DeleteGarbageSubPhase.TS_DELETE_GARBAGE_START] == 1_008_000
+        assert result[DeleteGarbageSubPhase.TS_DELETE_GARBAGE_STOP] == 1_009_000
+        assert result[DeleteGarbageSubPhase.DELETED_GARBAGE_COUNT] == 13
+        assert FinalizeGarbageSubPhase.FINALIZED_GARBAGE_COUNT not in result
+        assert ClearWeakrefsSubPhase.CLEAR_WEAKREFS_COUNT not in result
 
     def test_clear_weakrefs_only(self) -> None:
         item = create_mock_stats_item(
@@ -270,10 +268,10 @@ class TestToMappingPartial:
 
         result = to_mapping(item)
 
-        assert result[TS_CLEAR_WEAKREFS_STOP] == 1_007_000
-        assert result[CLEAR_WEAKREFS_COUNT] == 7
-        assert FINALIZED_GARBAGE_COUNT not in result
-        assert DELETED_GARBAGE_COUNT not in result
+        assert result[ClearWeakrefsSubPhase.TS_CLEAR_WEAKREFS_STOP] == 1_007_000
+        assert result[ClearWeakrefsSubPhase.CLEAR_WEAKREFS_COUNT] == 7
+        assert FinalizeGarbageSubPhase.FINALIZED_GARBAGE_COUNT not in result
+        assert DeleteGarbageSubPhase.DELETED_GARBAGE_COUNT not in result
 
     def test_all_partial_phases(self) -> None:
         item = create_mock_stats_item(
@@ -299,24 +297,24 @@ class TestToMappingPartial:
 
         result = to_mapping(item)
 
-        assert result[INCREMENT_SIZE] == 500
-        assert result[ALIVE_SIZE] == 300
-        assert result[TS_MARK_ALIVE_START] == 1_000_500
-        assert result[TS_MARK_ALIVE_STOP] == 1_001_000
-        assert result[TS_FILL_INCREMENT_START] == 1_001_500
-        assert result[TS_FILL_INCREMENT_STOP] == 1_002_000
-        assert result[TS_DEDUCE_UNREACHABLE_START] == 1_002_500
-        assert result[TS_DEDUCE_UNREACHABLE_STOP] == 1_003_000
-        assert result[TS_HANDLE_WEAKREF_CALLBACKS_START] == 1_003_000
-        assert result[TS_HANDLE_WEAKREF_CALLBACKS_STOP] == 1_004_000
-        assert result[TS_FINALIZE_GARBAGE_STOP] == 1_005_000
-        assert result[FINALIZED_GARBAGE_COUNT] == 42
-        assert result[TS_HANDLE_RESURRECTED_STOP] == 1_006_000
-        assert result[TS_CLEAR_WEAKREFS_STOP] == 1_007_000
-        assert result[CLEAR_WEAKREFS_COUNT] == 7
-        assert result[TS_DELETE_GARBAGE_START] == 1_008_000
-        assert result[TS_DELETE_GARBAGE_STOP] == 1_009_000
-        assert result[DELETED_GARBAGE_COUNT] == 13
+        assert result[IncrementSizeField.INCREMENT_SIZE] == 500
+        assert result[MarkAliveSubPhase.ALIVE_SIZE] == 300
+        assert result[MarkAliveSubPhase.TS_MARK_ALIVE_START] == 1_000_500
+        assert result[MarkAliveSubPhase.TS_MARK_ALIVE_STOP] == 1_001_000
+        assert result[FillIncrementSubPhase.TS_FILL_INCREMENT_START] == 1_001_500
+        assert result[FillIncrementSubPhase.TS_FILL_INCREMENT_STOP] == 1_002_000
+        assert result[DeduceUnreachableSubPhase.TS_DEDUCE_UNREACHABLE_START] == 1_002_500
+        assert result[DeduceUnreachableSubPhase.TS_DEDUCE_UNREACHABLE_STOP] == 1_003_000
+        assert result[HandleWeakrefsSubPhase.TS_HANDLE_WEAKREF_CALLBACKS_START] == 1_003_000
+        assert result[HandleWeakrefsSubPhase.TS_HANDLE_WEAKREF_CALLBACKS_STOP] == 1_004_000
+        assert result[FinalizeGarbageSubPhase.TS_FINALIZE_GARBAGE_STOP] == 1_005_000
+        assert result[FinalizeGarbageSubPhase.FINALIZED_GARBAGE_COUNT] == 42
+        assert result[HandleResurrectedSubPhase.TS_HANDLE_RESURRECTED_STOP] == 1_006_000
+        assert result[ClearWeakrefsSubPhase.TS_CLEAR_WEAKREFS_STOP] == 1_007_000
+        assert result[ClearWeakrefsSubPhase.CLEAR_WEAKREFS_COUNT] == 7
+        assert result[DeleteGarbageSubPhase.TS_DELETE_GARBAGE_START] == 1_008_000
+        assert result[DeleteGarbageSubPhase.TS_DELETE_GARBAGE_STOP] == 1_009_000
+        assert result[DeleteGarbageSubPhase.DELETED_GARBAGE_COUNT] == 13
 
 
 class TestToMapping:
@@ -334,7 +332,7 @@ class TestToMapping:
         assert result[UNCOLLECTABLE] == 0
         assert result[CANDIDATES] == 10
         assert result[DURATION] == 0.005
-        assert INCREMENT_SIZE not in result
+        assert IncrementSizeField.INCREMENT_SIZE not in result
 
     def test_incremental_item(self, incremental_item: GCStatsInfo) -> None:
         result = to_mapping(incremental_item)
@@ -350,24 +348,24 @@ class TestToMapping:
         assert result[UNCOLLECTABLE] == 1
         assert result[CANDIDATES] == 20
         assert result[DURATION] == 0.01
-        assert result[INCREMENT_SIZE] == 500
-        assert result[ALIVE_SIZE] == 300
-        assert result[TS_MARK_ALIVE_START] == 3_000_500
-        assert result[TS_MARK_ALIVE_STOP] == 3_001_000
-        assert result[TS_FILL_INCREMENT_START] == 3_001_500
-        assert result[TS_FILL_INCREMENT_STOP] == 3_002_000
-        assert result[TS_DEDUCE_UNREACHABLE_START] == 3_002_500
-        assert result[TS_DEDUCE_UNREACHABLE_STOP] == 3_003_000
-        assert result[TS_HANDLE_WEAKREF_CALLBACKS_START] == 3_003_000
-        assert result[TS_HANDLE_WEAKREF_CALLBACKS_STOP] == 3_004_000
-        assert result[TS_FINALIZE_GARBAGE_STOP] == 3_005_000
-        assert result[FINALIZED_GARBAGE_COUNT] == 42
-        assert result[TS_HANDLE_RESURRECTED_STOP] == 3_006_000
-        assert result[TS_CLEAR_WEAKREFS_STOP] == 3_007_000
-        assert result[CLEAR_WEAKREFS_COUNT] == 7
-        assert result[TS_DELETE_GARBAGE_START] == 3_008_000
-        assert result[TS_DELETE_GARBAGE_STOP] == 3_009_000
-        assert result[DELETED_GARBAGE_COUNT] == 13
+        assert result[IncrementSizeField.INCREMENT_SIZE] == 500
+        assert result[MarkAliveSubPhase.ALIVE_SIZE] == 300
+        assert result[MarkAliveSubPhase.TS_MARK_ALIVE_START] == 3_000_500
+        assert result[MarkAliveSubPhase.TS_MARK_ALIVE_STOP] == 3_001_000
+        assert result[FillIncrementSubPhase.TS_FILL_INCREMENT_START] == 3_001_500
+        assert result[FillIncrementSubPhase.TS_FILL_INCREMENT_STOP] == 3_002_000
+        assert result[DeduceUnreachableSubPhase.TS_DEDUCE_UNREACHABLE_START] == 3_002_500
+        assert result[DeduceUnreachableSubPhase.TS_DEDUCE_UNREACHABLE_STOP] == 3_003_000
+        assert result[HandleWeakrefsSubPhase.TS_HANDLE_WEAKREF_CALLBACKS_START] == 3_003_000
+        assert result[HandleWeakrefsSubPhase.TS_HANDLE_WEAKREF_CALLBACKS_STOP] == 3_004_000
+        assert result[FinalizeGarbageSubPhase.TS_FINALIZE_GARBAGE_STOP] == 3_005_000
+        assert result[FinalizeGarbageSubPhase.FINALIZED_GARBAGE_COUNT] == 42
+        assert result[HandleResurrectedSubPhase.TS_HANDLE_RESURRECTED_STOP] == 3_006_000
+        assert result[ClearWeakrefsSubPhase.TS_CLEAR_WEAKREFS_STOP] == 3_007_000
+        assert result[ClearWeakrefsSubPhase.CLEAR_WEAKREFS_COUNT] == 7
+        assert result[DeleteGarbageSubPhase.TS_DELETE_GARBAGE_START] == 3_008_000
+        assert result[DeleteGarbageSubPhase.TS_DELETE_GARBAGE_STOP] == 3_009_000
+        assert result[DeleteGarbageSubPhase.DELETED_GARBAGE_COUNT] == 13
 
     def test_a_struct_sequence_maps_like_its_msgspec_twin(self) -> None:
         """The monitor hands `to_mapping` struct sequences and the tests

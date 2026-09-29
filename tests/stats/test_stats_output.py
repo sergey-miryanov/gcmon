@@ -16,8 +16,6 @@ from gcmon.model.names import (
     HANDLE_RESURRECTED,
     HANDLE_WEAKREFS,
     MARK_ALIVE,
-    gc_pause_slice_name,
-    phase_slice_name,
 )
 from gcmon.model.run_report import RunReport
 from gcmon.stats.stats import Stats
@@ -32,7 +30,13 @@ from gcmon.stats.stats_output import (
 from gcmon.stats.streaming_stats import StreamingStats
 from gcmon.stats.views import StatsView, TableFormat
 from tests.conftest import DEFAULT_PID
-from tests.helpers import create_mock_incremental_item, create_mock_stats_item, proc
+from tests.helpers import (
+    create_mock_incremental_item,
+    create_mock_stats_item,
+    gc_pause_slice_name,
+    phase_slice_name,
+    proc,
+)
 
 # The process whose rows these tests render.
 TARGET_PID: int = 1

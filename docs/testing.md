@@ -86,7 +86,9 @@ where a phase's label and category are decided, and a `--stats` row and a
 timeline slice read it rather than each spelling the phase out. The metric
 constants beside it are the same word in three roles, a record attribute, a
 JSONL field and a counter track, so a test that builds a record and a test
-that reads the trace back cannot disagree about it.
+that reads the trace back cannot disagree about it. A field name only one
+phase or pause field reads is a constant on that class in
+`gcmon.model.phases`.
 
 Derive a name the code derives. A per-generation counter's display name is a
 function of its generation and its metric, so `tests/helpers.py` has

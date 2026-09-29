@@ -23,7 +23,6 @@ from gcmon.model.names import (
     IID,
     UNCOLLECTABLE,
     counter_display_name,
-    gc_pause_slice_name,
 )
 from gcmon.model.process import Process
 from tests.conftest import DEFAULT_PID
@@ -32,6 +31,7 @@ from tests.helpers import (
     create_mock_incremental_item,
     create_mock_loss_item,
     create_mock_stats_item,
+    gc_pause_slice_name,
     proc,
 )
 

@@ -1,5 +1,6 @@
 """No module re-spells a word `gcmon.model.names`,
-`gcmon.support.vocabulary` or `gcmon.control.protocol` already owns.
+`gcmon.support.vocabulary` or `gcmon.control.protocol` already owns, or a
+field name a phase or pause field class in `gcmon.model.phases` declares.
 
 The constants only help while everything reads them. A literal that creeps
 back is invisible: it agrees with the constant on the day it is written and
@@ -38,6 +39,7 @@ TREES = (ROOT / "src" / "gcmon", ROOT / "tests")
 
 OWNERS = (
     ROOT / "src" / "gcmon" / "model" / "names.py",
+    ROOT / "src" / "gcmon" / "model" / "phases.py",
     ROOT / "src" / "gcmon" / "support" / "vocabulary.py",
     ROOT / "src" / "gcmon" / "control" / "protocol.py",
     ROOT / "tests" / "model" / "test_names.py",
@@ -78,7 +80,7 @@ TOO_GENERIC: frozenset[str] = frozenset({"name", "type"})
 def _watched() -> dict[str, str]:
     """``{literal: constant}`` for every word the vocabulary modules own."""
     from gcmon.control import protocol
-    from gcmon.model import names
+    from gcmon.model import names, phases
     from gcmon.support import vocabulary
 
     out: dict[str, str] = {}
@@ -87,6 +89,10 @@ def _watched() -> dict[str, str]:
             value = getattr(module, attr)
             if isinstance(value, str) and len(value) > 2 and value not in TOO_GENERIC:
                 out.setdefault(value, f"{module.__name__}.{attr}")
+    for kind in (*phases.SUB_PHASES, *phases.PAUSE_FIELDS):
+        for attr, value in vars(kind).items():
+            if attr.isupper() and isinstance(value, str):
+                out.setdefault(value, f"{kind.__module__}.{kind.__name__}.{attr}")
     return out
 
 

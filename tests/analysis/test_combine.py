@@ -16,7 +16,6 @@ from gcmon.analysis.jsonl_io import (
 )
 from gcmon.model.data import LossMsg
 from gcmon.model.names import (
-    ALIVE_SIZE,
     CANDIDATES,
     COLLECTED,
     COLLECTIONS,
@@ -26,7 +25,6 @@ from gcmon.model.names import (
     GENS,
     HEAP_SIZE,
     IID,
-    INCREMENT_SIZE,
     LOST_COUNT,
     LOST_FROM,
     LOST_PAUSE_NS,
@@ -39,7 +37,10 @@ from gcmon.model.names import (
     UNCOLLECTABLE,
     counter_display_name,
     gc_loss_slice_name,
-    gc_pause_slice_name,
+)
+from gcmon.model.phases import (
+    IncrementSizeField,
+    MarkAliveSubPhase,
 )
 from gcmon.model.trace_event import (
     Counter,
@@ -56,6 +57,7 @@ from tests.helpers import (
     create_jsonl_record,
     create_mock_loss_item,
     create_mock_stats_item,
+    gc_pause_slice_name,
     interpreter_track,
     loss_track,
     process_track,
@@ -330,8 +332,8 @@ class TestCombineFiles:
         combine_files([f1], out, output_format=FORMAT_JSONL)
 
         records = [json.loads(line) for line in out.read_text(encoding=ENCODING).strip().split("\n") if line]
-        assert records[0][INCREMENT_SIZE] == 500
-        assert records[0][ALIVE_SIZE] == 300
+        assert records[0][IncrementSizeField.INCREMENT_SIZE] == 500
+        assert records[0][MarkAliveSubPhase.ALIVE_SIZE] == 300
 
     def test_an_instant_record_reaches_the_trace(self, tmp_path: Path) -> None:
         """A monitored run writes one of these at startup, so a capture

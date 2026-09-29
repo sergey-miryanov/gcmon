@@ -7,41 +7,22 @@ from operator import attrgetter
 from typing import Any, ClassVar, Final, Protocol, TypeGuard
 
 from .names import (
-    AGING_NEXT,
-    AGING_SPACES,
-    AGING_THRESHOLD,
-    ALIVE_SIZE,
-    AUTO_COLLECT,
     CANDIDATES,
     CLEAR_WEAKREFS,
-    CLEAR_WEAKREFS_COUNT,
     COLLECTED,
     COLLECTIONS,
     DEDUCE_UNREACHABLE,
     DELETE_GARBAGE,
-    DELETED_GARBAGE_COUNT,
     DURATION,
     FILL_INCREMENT,
     FINALIZE_GARBAGE,
-    FINALIZED_GARBAGE_COUNT,
     GENERATION,
     HANDLE_RESURRECTED,
     HANDLE_WEAKREFS,
     HEAP_SIZE,
     IID,
-    INCREMENT_SIZE,
     MARK_ALIVE,
-    OLD_WORK,
     PAUSE,
-    SURVIVOR_COUNT,
-    TS_CLEAR_WEAKREFS_STOP,
-    TS_DEDUCE_UNREACHABLE_START,
-    TS_DELETE_GARBAGE_START,
-    TS_FILL_INCREMENT_START,
-    TS_FINALIZE_GARBAGE_STOP,
-    TS_HANDLE_RESURRECTED_STOP,
-    TS_HANDLE_WEAKREF_CALLBACKS_START,
-    TS_HANDLE_WEAKREF_CALLBACKS_STOP,
     TS_START,
     UNCOLLECTABLE,
     PerGeneration,
@@ -161,6 +142,10 @@ class PausePhase:
 
 
 class MarkAliveSubPhase:
+    ALIVE_SIZE: Final = "alive_size"
+    TS_MARK_ALIVE_START: Final = "ts_mark_alive_start"
+    TS_MARK_ALIVE_STOP: Final = "ts_mark_alive_stop"
+
     class _Info(Protocol):
         alive_size: int
         ts_mark_alive_start: int
@@ -171,7 +156,7 @@ class MarkAliveSubPhase:
 
     @staticmethod
     def check(item: object) -> TypeGuard[_Info]:
-        return getattr(item, ALIVE_SIZE, None) is not None
+        return getattr(item, MarkAliveSubPhase.ALIVE_SIZE, None) is not None
 
     @staticmethod
     def bounds(gen: int, item: _Info) -> tuple[int, int]:
@@ -182,11 +167,13 @@ class MarkAliveSubPhase:
 
     @staticmethod
     def args(gen: int, iid: int, item: _Info) -> EventArgs:
-        return {ALIVE_SIZE: item.alive_size}
+        return {MarkAliveSubPhase.ALIVE_SIZE: item.alive_size}
 
 
 class IncrementSizeField:
     """The size of the increment Fill Increment fills."""
+
+    INCREMENT_SIZE: Final = "increment_size"
 
     class _Info(Protocol):
         increment_size: int
@@ -195,17 +182,20 @@ class IncrementSizeField:
 
     @staticmethod
     def check(item: object) -> TypeGuard[_Info]:
-        return getattr(item, INCREMENT_SIZE, None) is not None
+        return getattr(item, IncrementSizeField.INCREMENT_SIZE, None) is not None
 
     @staticmethod
     def args(gen: int, iid: int, item: _Info) -> EventArgs:
         # Generation 2 fills no increment.
         if gen == 2:
             return {}
-        return {INCREMENT_SIZE: item.increment_size}
+        return {IncrementSizeField.INCREMENT_SIZE: item.increment_size}
 
 
 class FillIncrementSubPhase:
+    TS_FILL_INCREMENT_START: Final = "ts_fill_increment_start"
+    TS_FILL_INCREMENT_STOP: Final = "ts_fill_increment_stop"
+
     class _Info(Protocol):
         ts_fill_increment_start: int
         ts_fill_increment_stop: int
@@ -215,7 +205,7 @@ class FillIncrementSubPhase:
 
     @staticmethod
     def check(item: object) -> TypeGuard[_Info]:
-        return getattr(item, TS_FILL_INCREMENT_START, None) is not None
+        return getattr(item, FillIncrementSubPhase.TS_FILL_INCREMENT_START, None) is not None
 
     @staticmethod
     def bounds(gen: int, item: _Info) -> tuple[int, int]:
@@ -230,6 +220,9 @@ class FillIncrementSubPhase:
 
 
 class DeduceUnreachableSubPhase:
+    TS_DEDUCE_UNREACHABLE_START: Final = "ts_deduce_unreachable_start"
+    TS_DEDUCE_UNREACHABLE_STOP: Final = "ts_deduce_unreachable_stop"
+
     class _Info(Protocol):
         candidates: int
         ts_deduce_unreachable_start: int
@@ -240,7 +233,7 @@ class DeduceUnreachableSubPhase:
 
     @staticmethod
     def check(item: object) -> TypeGuard[_Info]:
-        return getattr(item, TS_DEDUCE_UNREACHABLE_START, None) is not None
+        return getattr(item, DeduceUnreachableSubPhase.TS_DEDUCE_UNREACHABLE_START, None) is not None
 
     @staticmethod
     def bounds(gen: int, item: _Info) -> tuple[int, int]:
@@ -252,6 +245,9 @@ class DeduceUnreachableSubPhase:
 
 
 class HandleWeakrefsSubPhase:
+    TS_HANDLE_WEAKREF_CALLBACKS_START: Final = "ts_handle_weakref_callbacks_start"
+    TS_HANDLE_WEAKREF_CALLBACKS_STOP: Final = "ts_handle_weakref_callbacks_stop"
+
     class _Info(Protocol):
         ts_handle_weakref_callbacks_start: int
         ts_handle_weakref_callbacks_stop: int
@@ -261,7 +257,7 @@ class HandleWeakrefsSubPhase:
 
     @staticmethod
     def check(item: object) -> TypeGuard[_Info]:
-        return getattr(item, TS_HANDLE_WEAKREF_CALLBACKS_START, None) is not None
+        return getattr(item, HandleWeakrefsSubPhase.TS_HANDLE_WEAKREF_CALLBACKS_START, None) is not None
 
     @staticmethod
     def bounds(gen: int, item: _Info) -> tuple[int, int]:
@@ -273,6 +269,9 @@ class HandleWeakrefsSubPhase:
 
 
 class FinalizeGarbageSubPhase:
+    FINALIZED_GARBAGE_COUNT: Final = "finalized_garbage_count"
+    TS_FINALIZE_GARBAGE_STOP: Final = "ts_finalize_garbage_stop"
+
     class _Info(Protocol):
         finalized_garbage_count: int
         ts_handle_weakref_callbacks_stop: int
@@ -284,8 +283,8 @@ class FinalizeGarbageSubPhase:
     @staticmethod
     def check(item: object) -> TypeGuard[_Info]:
         return (
-            getattr(item, TS_HANDLE_WEAKREF_CALLBACKS_STOP, None) is not None
-            and getattr(item, TS_FINALIZE_GARBAGE_STOP, None) is not None
+            getattr(item, HandleWeakrefsSubPhase.TS_HANDLE_WEAKREF_CALLBACKS_STOP, None) is not None
+            and getattr(item, FinalizeGarbageSubPhase.TS_FINALIZE_GARBAGE_STOP, None) is not None
         )
 
     @staticmethod
@@ -294,10 +293,12 @@ class FinalizeGarbageSubPhase:
 
     @staticmethod
     def args(gen: int, iid: int, item: _Info) -> EventArgs:
-        return {FINALIZED_GARBAGE_COUNT: item.finalized_garbage_count}
+        return {FinalizeGarbageSubPhase.FINALIZED_GARBAGE_COUNT: item.finalized_garbage_count}
 
 
 class HandleResurrectedSubPhase:
+    TS_HANDLE_RESURRECTED_STOP: Final = "ts_handle_resurrected_stop"
+
     class _Info(Protocol):
         ts_finalize_garbage_stop: int
         ts_handle_resurrected_stop: int
@@ -308,8 +309,8 @@ class HandleResurrectedSubPhase:
     @staticmethod
     def check(item: object) -> TypeGuard[_Info]:
         return (
-            getattr(item, TS_FINALIZE_GARBAGE_STOP, None) is not None
-            and getattr(item, TS_HANDLE_RESURRECTED_STOP, None) is not None
+            getattr(item, FinalizeGarbageSubPhase.TS_FINALIZE_GARBAGE_STOP, None) is not None
+            and getattr(item, HandleResurrectedSubPhase.TS_HANDLE_RESURRECTED_STOP, None) is not None
         )
 
     @staticmethod
@@ -322,6 +323,9 @@ class HandleResurrectedSubPhase:
 
 
 class ClearWeakrefsSubPhase:
+    CLEAR_WEAKREFS_COUNT: Final = "clear_weakrefs_count"
+    TS_CLEAR_WEAKREFS_STOP: Final = "ts_clear_weakrefs_stop"
+
     class _Info(Protocol):
         clear_weakrefs_count: int
         ts_handle_resurrected_stop: int
@@ -333,8 +337,8 @@ class ClearWeakrefsSubPhase:
     @staticmethod
     def check(item: object) -> TypeGuard[_Info]:
         return (
-            getattr(item, TS_HANDLE_RESURRECTED_STOP, None) is not None
-            and getattr(item, TS_CLEAR_WEAKREFS_STOP, None) is not None
+            getattr(item, HandleResurrectedSubPhase.TS_HANDLE_RESURRECTED_STOP, None) is not None
+            and getattr(item, ClearWeakrefsSubPhase.TS_CLEAR_WEAKREFS_STOP, None) is not None
         )
 
     @staticmethod
@@ -343,10 +347,14 @@ class ClearWeakrefsSubPhase:
 
     @staticmethod
     def args(gen: int, iid: int, item: _Info) -> EventArgs:
-        return {CLEAR_WEAKREFS_COUNT: item.clear_weakrefs_count}
+        return {ClearWeakrefsSubPhase.CLEAR_WEAKREFS_COUNT: item.clear_weakrefs_count}
 
 
 class DeleteGarbageSubPhase:
+    DELETED_GARBAGE_COUNT: Final = "deleted_garbage_count"
+    TS_DELETE_GARBAGE_START: Final = "ts_delete_garbage_start"
+    TS_DELETE_GARBAGE_STOP: Final = "ts_delete_garbage_stop"
+
     class _Info(Protocol):
         deleted_garbage_count: int
         ts_delete_garbage_start: int
@@ -357,7 +365,7 @@ class DeleteGarbageSubPhase:
 
     @staticmethod
     def check(item: object) -> TypeGuard[_Info]:
-        return getattr(item, TS_DELETE_GARBAGE_START, None) is not None
+        return getattr(item, DeleteGarbageSubPhase.TS_DELETE_GARBAGE_START, None) is not None
 
     @staticmethod
     def bounds(gen: int, item: _Info) -> tuple[int, int]:
@@ -365,10 +373,12 @@ class DeleteGarbageSubPhase:
 
     @staticmethod
     def args(gen: int, iid: int, item: _Info) -> EventArgs:
-        return {DELETED_GARBAGE_COUNT: item.deleted_garbage_count}
+        return {DeleteGarbageSubPhase.DELETED_GARBAGE_COUNT: item.deleted_garbage_count}
 
 
 class OldWorkField:
+    OLD_WORK: Final = "old_work"
+
     class _Info(Protocol):
         old_work: int
 
@@ -376,14 +386,20 @@ class OldWorkField:
 
     @staticmethod
     def check(item: object) -> TypeGuard[_Info]:
-        return getattr(item, OLD_WORK, None) is not None
+        return getattr(item, OldWorkField.OLD_WORK, None) is not None
 
     @staticmethod
     def args(gen: int, iid: int, item: _Info) -> EventArgs:
-        return {OLD_WORK: item.old_work}
+        return {OldWorkField.OLD_WORK: item.old_work}
 
 
 class NewIncrementalFields:
+    AUTO_COLLECT: Final = "auto_collect"
+    SURVIVOR_COUNT: Final = "survivor_count"
+    AGING_THRESHOLD: Final = "aging_threshold"
+    AGING_SPACES: Final = "aging_spaces"
+    AGING_NEXT: Final = "aging_next"
+
     class _Info(Protocol):
         auto_collect: int
         survivor_count: int
@@ -395,16 +411,16 @@ class NewIncrementalFields:
 
     @staticmethod
     def check(item: object) -> TypeGuard[_Info]:
-        return getattr(item, AUTO_COLLECT, None) is not None
+        return getattr(item, NewIncrementalFields.AUTO_COLLECT, None) is not None
 
     @staticmethod
     def args(gen: int, iid: int, item: _Info) -> EventArgs:
         return {
-            AUTO_COLLECT: item.auto_collect,
-            SURVIVOR_COUNT: item.survivor_count,
-            AGING_THRESHOLD: item.aging_threshold,
-            AGING_SPACES: item.aging_spaces,
-            AGING_NEXT: item.aging_next,
+            NewIncrementalFields.AUTO_COLLECT: item.auto_collect,
+            NewIncrementalFields.SURVIVOR_COUNT: item.survivor_count,
+            NewIncrementalFields.AGING_THRESHOLD: item.aging_threshold,
+            NewIncrementalFields.AGING_SPACES: item.aging_spaces,
+            NewIncrementalFields.AGING_NEXT: item.aging_next,
         }
 
 
@@ -438,18 +454,18 @@ _BY_TYPE: dict[type, _SubPhasesAndFields] = {}
 # lacks, so which of these it holds decides which sub-phases and pause fields
 # it carries.
 _CHECKED_FIELDS: Final = attrgetter(
-    ALIVE_SIZE,
-    INCREMENT_SIZE,
-    TS_FILL_INCREMENT_START,
-    TS_DEDUCE_UNREACHABLE_START,
-    TS_HANDLE_WEAKREF_CALLBACKS_START,
-    TS_HANDLE_WEAKREF_CALLBACKS_STOP,
-    TS_FINALIZE_GARBAGE_STOP,
-    TS_HANDLE_RESURRECTED_STOP,
-    TS_CLEAR_WEAKREFS_STOP,
-    TS_DELETE_GARBAGE_START,
-    OLD_WORK,
-    AUTO_COLLECT,
+    MarkAliveSubPhase.ALIVE_SIZE,
+    IncrementSizeField.INCREMENT_SIZE,
+    FillIncrementSubPhase.TS_FILL_INCREMENT_START,
+    DeduceUnreachableSubPhase.TS_DEDUCE_UNREACHABLE_START,
+    HandleWeakrefsSubPhase.TS_HANDLE_WEAKREF_CALLBACKS_START,
+    HandleWeakrefsSubPhase.TS_HANDLE_WEAKREF_CALLBACKS_STOP,
+    FinalizeGarbageSubPhase.TS_FINALIZE_GARBAGE_STOP,
+    HandleResurrectedSubPhase.TS_HANDLE_RESURRECTED_STOP,
+    ClearWeakrefsSubPhase.TS_CLEAR_WEAKREFS_STOP,
+    DeleteGarbageSubPhase.TS_DELETE_GARBAGE_START,
+    OldWorkField.OLD_WORK,
+    NewIncrementalFields.AUTO_COLLECT,
 )
 
 # Per set of checked fields present: what a msgspec record carries. A

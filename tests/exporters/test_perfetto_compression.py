@@ -28,16 +28,16 @@ from gcmon.model.names import (
     GC_LOSS_CATEGORY,
     PAUSE,
     counter_display_name,
-    gc_pause_slice_name,
-    phase_category,
 )
 from tests.helpers import (
     HAS_LIBZSTD,
     assert_valid_perfetto_trace,
     create_mock_loss_item,
     create_mock_stats_item,
+    gc_pause_slice_name,
     open_trace_processor,
     perfetto_packets,
+    phase_category,
     proc,
     zstd,
 )

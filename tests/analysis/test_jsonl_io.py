@@ -16,7 +16,6 @@ from gcmon.analysis.jsonl_io import (
 )
 from gcmon.model.data import GCStatsInfo, LossMsg
 from gcmon.model.names import (
-    ALIVE_SIZE,
     CLEAR_WEAKREFS,
     COLLECTIONS,
     DEDUCE_UNREACHABLE,
@@ -28,7 +27,6 @@ from gcmon.model.names import (
     HANDLE_RESURRECTED,
     HANDLE_WEAKREFS,
     IID,
-    INCREMENT_SIZE,
     LOST_COUNT,
     LOST_FROM,
     LOST_PAUSE_NS,
@@ -39,7 +37,10 @@ from gcmon.model.names import (
     TS_STOP,
     TYPE,
 )
-from gcmon.model.phases import IncrementSizeField
+from gcmon.model.phases import (
+    IncrementSizeField,
+    MarkAliveSubPhase,
+)
 from gcmon.model.protocol import is_gc_stats
 from gcmon.model.trace_event import Counter, Slice
 from gcmon.support.vocabulary import ENCODING, FORMAT_PERFETTO
@@ -229,8 +230,8 @@ class TestWriteJsonl:
         lines = path.read_text(encoding=ENCODING).strip().split("\n")
         record = json.loads(lines[0])
         assert record[PID] == 1
-        assert record[INCREMENT_SIZE] == 500
-        assert record[ALIVE_SIZE] == 300
+        assert record[IncrementSizeField.INCREMENT_SIZE] == 500
+        assert record[MarkAliveSubPhase.ALIVE_SIZE] == 300
 
     def test_empty_items_produces_empty_file(self, tmp_path: Path) -> None:
         path = tmp_path / "empty.jsonl"
