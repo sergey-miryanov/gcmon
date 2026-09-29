@@ -77,10 +77,10 @@ from gcmon.model.names import (
     RSS,
 )
 from gcmon.model.phases import (
+    Counters,
     HeapSizeStopField,
     NewIncrementalFields,
     OldWorkField,
-    PausePhase,
 )
 from gcmon.support.vocabulary import ENCODING
 from tests.helpers import JSONL_FIELDS, SLICE_ARGS
@@ -115,7 +115,7 @@ WRITTEN: tuple[str, ...] = (
     START_EVENT,
     STOP_EVENT,
     *(phase.label for phase in GC_PHASES),
-    *PausePhase.counter_metrics,
+    *Counters.counter_metrics,
     *JSONL_FIELDS,
     *SLICE_ARGS,
 )

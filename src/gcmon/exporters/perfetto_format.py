@@ -12,7 +12,7 @@ importer needs one name.
 from collections.abc import Sequence
 
 from ..model.names import HEAP_SIZE
-from ..model.phases import PausePhase
+from ..model.phases import Counters
 from ..model.trace_event import (
     Counter,
     Instant,
@@ -119,7 +119,7 @@ _INTERPRETER_ROW_RANKS: dict[str, int] = {name: rank for rank, name in enumerate
 # through `_INTERPRETER_ROW_RANKS`, and `rss` parents to the process track,
 # which is OS-scoped, and the trace processor discards a rank there
 # (ADR-0003).
-_COUNTER_RANKS: dict[str, int] = {metric: rank for rank, metric in enumerate(PausePhase.counter_metrics)}
+_COUNTER_RANKS: dict[str, int] = {metric: rank for rank, metric in enumerate(Counters.counter_metrics)}
 
 # A metric this module has never heard of draws below every one it has.
 _UNLISTED_COUNTER_RANK: int = len(_COUNTER_RANKS)

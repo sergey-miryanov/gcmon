@@ -5,7 +5,7 @@ import pytest
 
 from gcmon.model.data import GCStatsInfo
 from gcmon.model.names import GEN, GENERATION, IID, TS_START, TS_STOP
-from gcmon.model.phases import PAUSE_FIELDS, SUB_PHASES, PausePhase, sub_phases_and_fields
+from gcmon.model.phases import PAUSE_FIELDS, SUB_PHASES, Counters, PausePhase, sub_phases_and_fields
 from tests.helpers import create_mock_incremental_item, create_mock_stats_item
 
 _OPTIONAL_FIELDS = [field.name for field in msgspec.structs.fields(GCStatsInfo) if field.default is None]
@@ -57,8 +57,8 @@ def test_a_pause_emits_its_counters_in_the_order_they_draw() -> None:
     """The `GC Metrics` group ranks its counters by `counter_metrics`, and
     `counters` is written out by hand beside it."""
     item = create_mock_stats_item(uncollectable=2)
-    counters = PausePhase.counters(0, item.ts_start, item.ts_stop, item)
+    counters = Counters.counters(0, item.ts_start, item.ts_stop, item)
 
-    assert [metric for metric, _, _, _ in counters if metric in PausePhase.counter_metrics] == list(
-        PausePhase.counter_metrics
+    assert [metric for metric, _, _, _ in counters if metric in Counters.counter_metrics] == list(
+        Counters.counter_metrics
     )

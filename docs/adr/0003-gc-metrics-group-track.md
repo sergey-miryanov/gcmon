@@ -50,7 +50,7 @@ now carry a non-NULL `parent_id` pointing at the `GC Metrics` row, and the
 ranking takes effect *inside* the group.
 
 Ranks come from the order the pause lists the counters it draws,
-`PausePhase.counter_metrics`: `collected`, `candidates`, `duration`, then
+`Counters.counter_metrics`: `collected`, `candidates`, `duration`, then
 `uncollectable`, which is emitted only when non-zero. A metric that list does
 not name ranks below all of them. `rss` has no entry, because a `ProcessTrack`
 draws it where a rank is discarded

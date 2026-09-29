@@ -1000,7 +1000,7 @@ class TestTheRowsInsideAnInterpreterGroupAreRanked:
 
 class TestTheCountersInsideAMetricsGroupAreRanked:
     """The counters a `GC Metrics` group holds draw in the order
-    `PausePhase.counter_metrics` sets.
+    `Counters.counter_metrics` sets.
 
     The order is spelled out below rather than read off that tuple, which
     would pass whatever it said. Which metric draws where is the record's

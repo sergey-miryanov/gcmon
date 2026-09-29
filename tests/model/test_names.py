@@ -34,7 +34,7 @@ from gcmon.model.names import (
     PAUSE,
     gc_loss_slice_name,
 )
-from gcmon.model.phases import PausePhase
+from gcmon.model.phases import Counters
 from gcmon.model.trace_event import Counter
 from gcmon.support.vocabulary import ENCODING
 from tests.data_helpers import create_instant_msg
@@ -102,16 +102,16 @@ class TestTheTableAgreesWithWhatAConversionWrites:
         return {e.metric for e in events if isinstance(e, Counter)}
 
     def test_a_pause_writes_every_counter_metric_the_table_names(self) -> None:
-        assert set(PausePhase.counter_metrics) - self._counters() == set()
+        assert set(Counters.counter_metrics) - self._counters() == set()
 
     def test_a_pause_writes_no_per_generation_counter_the_table_omits(self) -> None:
         """`heap_size` is the one counter outside the set: it is a gauge for
         the whole interpreter rather than for one generation (ADR-0004)."""
-        assert self._counters() - set(PausePhase.counter_metrics) == {HEAP_SIZE}
+        assert self._counters() - set(Counters.counter_metrics) == {HEAP_SIZE}
 
     def test_every_counter_metric_is_a_field_a_record_carries(self) -> None:
         """A metric nothing reads off a record draws an empty track."""
-        assert [m for m in PausePhase.counter_metrics if m not in GCStatsInfo.__annotations__] == []
+        assert [m for m in Counters.counter_metrics if m not in GCStatsInfo.__annotations__] == []
 
     def test_every_jsonl_field_is_one_a_written_line_carries(self, tmp_path: Path) -> None:
         """`gcmon combine` reads these back, so a field a record declares and
