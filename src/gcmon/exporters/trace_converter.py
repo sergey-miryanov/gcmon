@@ -12,7 +12,7 @@ from ..model.names import (
     OBSERVED_COUNT,
     gc_loss_slice_name,
 )
-from ..model.phases import PausePhase, Phase, sub_phases_and_fields
+from ..model.phases import HeapSizeStopField, PausePhase, Phase, sub_phases_and_fields
 from ..model.process import Process
 from ..model.protocol import (
     TGCStatsInfo,
@@ -108,8 +108,14 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
         pause_data.update(field.args(gen, item))
 
     events.extend(
-        Counter(track, metric, name, ts_start_ns, value) for metric, name, value in PausePhase.counters(gen, item)
+        Counter(track, metric, name, ts, value)
+        for metric, name, ts, value in PausePhase.counters(gen, ts_start_ns, ts_stop_ns, item)
     )
+    if HeapSizeStopField.check(item):
+        events.extend(
+            Counter(track, metric, name, ts, value)
+            for metric, name, ts, value in HeapSizeStopField.counters(gen, ts_start_ns, ts_stop_ns, item)
+        )
 
     return events
 

@@ -77,6 +77,7 @@ from gcmon.model.names import (
     RSS,
 )
 from gcmon.model.phases import (
+    HeapSizeStopField,
     NewIncrementalFields,
     OldWorkField,
     PausePhase,
@@ -97,6 +98,7 @@ UNDOCUMENTED: frozenset[str] = frozenset(
         NewIncrementalFields.AGING_THRESHOLD,
         NewIncrementalFields.AGING_SPACES,
         NewIncrementalFields.AGING_NEXT,
+        HeapSizeStopField.HEAP_SIZE_STOP,
     }
 )
 

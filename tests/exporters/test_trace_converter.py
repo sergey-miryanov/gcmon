@@ -22,12 +22,13 @@ from gcmon.model.phases import (
     ClearWeakrefsSubPhase,
     FinalizeGarbageSubPhase,
     HandleResurrectedSubPhase,
+    HeapSizeStopField,
     IncrementSizeField,
     MarkAliveSubPhase,
     NewIncrementalFields,
     OldWorkField,
 )
-from gcmon.model.protocol import TItem
+from gcmon.model.protocol import TGCStatsInfo, TItem
 from gcmon.model.trace_event import Counter, InterpreterTrack, LossTrack, ProcessTrack, Slice
 from tests.data_helpers import create_instant_msg
 from tests.helpers import (
@@ -185,6 +186,7 @@ class TestTheIncrementalFields:
         NewIncrementalFields.AGING_THRESHOLD,
         NewIncrementalFields.AGING_SPACES,
         NewIncrementalFields.AGING_NEXT,
+        HeapSizeStopField.HEAP_SIZE_STOP,
     )
 
     def test_the_pause_carries_them(self) -> None:
@@ -209,6 +211,29 @@ class TestTheIncrementalFields:
         sub_phases = [e for e in events if isinstance(e, Slice) and e.name != gc_pause_slice_name(1)]
         assert sub_phases
         assert all(e.args.keys() & set(self.FIELDS) == set() for e in sub_phases)
+
+
+class TestTheHeapSizeTrack:
+    """It samples the heap as the pause starts, and again as it stops
+    when the record carries the size then."""
+
+    @staticmethod
+    def _samples(record: TGCStatsInfo) -> list[tuple[int, int | float]]:
+        events = convert_item_to_trace_format(proc(1), record)
+        return [(e.ts, e.value) for e in events if isinstance(e, Counter) and e.metric == HEAP_SIZE]
+
+    def test_a_record_with_the_stop_size_draws_both_ends(self) -> None:
+        record = create_mock_incremental_item(gen=1)
+
+        assert self._samples(record) == [
+            (record.ts_start, record.heap_size),
+            (record.ts_stop, record.heap_size_stop),
+        ]
+
+    def test_a_record_without_it_draws_the_start_alone(self) -> None:
+        record = create_mock_stats_item(gen=1)
+
+        assert self._samples(record) == [(record.ts_start, record.heap_size)]
 
 
 class TestTheGenerationAndInterpreter:

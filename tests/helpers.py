@@ -44,6 +44,7 @@ from gcmon.model.phases import (
     FinalizeGarbageSubPhase,
     HandleResurrectedSubPhase,
     HandleWeakrefsSubPhase,
+    HeapSizeStopField,
     IncrementSizeField,
     MarkAliveSubPhase,
     NewIncrementalFields,
@@ -457,6 +458,7 @@ SUB_PHASES: Final[dict[str, int]] = {
     NewIncrementalFields.AGING_THRESHOLD: 3,
     NewIncrementalFields.AGING_SPACES: 4,
     NewIncrementalFields.AGING_NEXT: 2,
+    HeapSizeStopField.HEAP_SIZE_STOP: 41943040,
 }
 """Every sub-phase a record can carry, in collector order, inside the
 pause `create_mock_stats_item` draws by default."""
