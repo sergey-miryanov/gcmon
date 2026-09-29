@@ -1,9 +1,7 @@
 name: typemut
 
-# Mutation testing of the type annotations: each mutant is one changed
-# annotation, and a checker that still passes lets it survive. A run takes
-# too long for every push, so it runs weekly and reports without failing.
-# On a pull request it runs when the `typemut` label is added.
+# Mutation testing of the type annotations; see docs/testing.md. A run takes
+# too long for every push.
 on:
   schedule:
     - cron: '0 3 * * 1'
@@ -52,25 +50,43 @@ jobs:
         run: |
           poetry run just typemut-html ${{ matrix.checker }}
 
-      - name: Summarize
+      - name: Write the baseline this run would accept
         if: always()
-        shell: bash
-        env:
-          COLUMNS: "160"
         run: |
-          {
-            echo "### typemut: ${{ matrix.checker }} on ${{ matrix.os }}"
-            echo '```'
-            poetry run typemut report --db typemut-${{ matrix.checker }}.sqlite
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
+          poetry run typemut report --db typemut-${{ matrix.checker }}.sqlite --baseline ${{ matrix.checker }}-${{ matrix.os }}.json --update-baseline
 
-      - name: Upload the report
+      - name: Upload the report and the baseline
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: typemut-${{ matrix.checker }}-${{ matrix.os }}
-          path: typemut-${{ matrix.checker }}.html
+          path: |
+            typemut-${{ matrix.checker }}.html
+            ${{ matrix.checker }}-${{ matrix.os }}.json
+
+      # typemut writes Windows paths with backslashes, so a baseline only
+      # matches runs on the OS that wrote it.
+      - name: Check against the baseline
+        shell: bash
+        env:
+          COLUMNS: "160"
+          DB: typemut-${{ matrix.checker }}.sqlite
+          BASELINE: .github/typemut/baselines/${{ matrix.checker }}-${{ matrix.os }}.json
+        run: |
+          echo "### typemut: ${{ matrix.checker }} on ${{ matrix.os }}" >> "$GITHUB_STEP_SUMMARY"
+          if [ ! -f "$BASELINE" ]; then
+            echo "No baseline at \`$BASELINE\` yet." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          status=0
+          poetry run typemut report --db "$DB" --baseline "$BASELINE" > "$RUNNER_TEMP/report.txt" || status=$?
+          cat "$RUNNER_TEMP/report.txt"
+          {
+            echo '```'
+            grep -E '│ TOTAL|^Baseline |^[0-9]+ baseline entries|^  new ' "$RUNNER_TEMP/report.txt"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit $status
 
   # Takes the label off once every job is done, so adding it again is how a
   # PR asks for another run. A cancelled run leaves it for the run that
