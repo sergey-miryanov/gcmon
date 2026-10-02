@@ -87,7 +87,7 @@ check-dist:
 
 # Preview the changelog section for a tag, for `latest` (the pyproject version), or WIP by default
 changelog tag="":
-    python .github/scripts/extract_changelog.py {{tag}}
+    poetry run python .github/scripts/extract_changelog.py {{tag}}
 
 # Run every pre-commit hook over the tree
 precommit:
@@ -95,4 +95,4 @@ precommit:
 
 # Rewrap the named Markdown files at 78 columns
 wrap +paths:
-    python .github/scripts/wrap_markdown.py {{paths}}
+    poetry run python .github/scripts/wrap_markdown.py {{paths}}

@@ -124,6 +124,31 @@ class TestExtract:
         assert result == ""
         assert "More than one changelog section for ['0.1.0']" in capsys.readouterr().err
 
+    def test_headings_that_name_no_version_never_repeat(self, fake_changelog: Path) -> None:
+        """They end the section above them and open none, so two that share
+        a first word cannot block a release.
+        """
+        text = fake_changelog.read_text(encoding=ENCODING).replace(
+            "## Version 0.2.0", "## Upgrading from 0.6\nnotes\n\n## Upgrading from 0.5\nnotes\n\n## Version 0.2.0"
+        )
+        fake_changelog.write_text(text, encoding=ENCODING)
+
+        assert extract_changelog.extract("0.2.0") == "- new feature\n- bug fix"
+        assert extract_changelog.extract("WIP") == "- upcoming stuff"
+
+    @pytest.mark.parametrize("nested", ["> ## Note", "- ## Note"], ids=["quote", "list"])
+    def test_a_heading_inside_a_block_stays_in_the_body(self, nested: str, fake_changelog: Path) -> None:
+        text = fake_changelog.read_text(encoding=ENCODING).replace("- bug fix\n", f"{nested}\n- bug fix\n")
+        fake_changelog.write_text(text, encoding=ENCODING)
+
+        assert extract_changelog.extract("0.2.0") == f"- new feature\n{nested}\n- bug fix"
+
+    def test_a_setext_heading_keeps_its_underline_out_of_the_body(self, fake_changelog: Path) -> None:
+        text = fake_changelog.read_text(encoding=ENCODING).replace("## Version 0.2.0", "Version 0.2.0\n---")
+        fake_changelog.write_text(text, encoding=ENCODING)
+
+        assert extract_changelog.extract("0.2.0") == "- new feature\n- bug fix"
+
     def test_found_headers_include_wip(self, fake_changelog: Path, capsys: pytest.CaptureFixture[str]) -> None:
         extract_changelog.extract("9.9.9")
 

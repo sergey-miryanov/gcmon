@@ -42,14 +42,6 @@ class TestAnOrdinalOpeningALine:
 
         assert not [line for line in result.split("\n") if line.startswith(" ")]
 
-    def test_the_ordinal_is_pulled_back_onto_the_line_before(self) -> None:
-        """`MARKER` holds it to the word before, so a later pass cannot read it
-        as a marker either.
-        """
-        result = wrap_markdown.rewrap(self.PARAGRAPH, 78)
-
-        assert not [line for line in result.split("\n") if line.startswith("0029.")]
-
     def test_rewrapping_twice_changes_nothing(self) -> None:
         """The defect reported "already wrapped" on the second run, having
         indented the paragraph on the first.
@@ -72,22 +64,44 @@ class TestAWordThatCanOpenABlock:
         assert not [line for line in result.split("\n") if line.startswith(word)]
         assert wrap_markdown._parts(result) == wrap_markdown._parts(source)
 
-    @pytest.mark.parametrize("word", ["-", "---", "=="])
-    def test_an_underline_ending_the_paragraph_stays_on_the_line_before(self, word: str) -> None:
+    @pytest.mark.parametrize("word", ["-", "---", "==", "***"])
+    def test_an_underline_ending_the_paragraph_is_never_alone(self, word: str) -> None:
         """Alone on the last line it would turn the paragraph into a heading."""
         source = f"Some words here {word}\n"
 
         result = wrap_markdown.rewrap(source, 16)
 
-        assert result == source
+        assert word not in result.split("\n")
+        assert wrap_markdown._parts(result) == wrap_markdown._parts(source)
 
-    def test_a_word_that_opens_nothing_still_breaks(self) -> None:
-        """`<files>` and `2.` cannot interrupt a paragraph, so holding them
-        would only overflow the line.
+    @pytest.mark.parametrize("word", ["---", "==", "***"])
+    def test_an_underline_a_long_word_would_leave_alone_is_never_alone(self, word: str) -> None:
+        """The word after it does not fit beside it, so the probe that puts
+        more text after it on the line is not enough.
         """
-        source = "Some words here <files> and 2) the rest.\n"
+        source = f"Some words here {word} averyveryverylongword more\n"
 
-        assert wrap_markdown.rewrap(source, 16) == "Some words here\n<files> and 2)\nthe rest.\n"
+        result = wrap_markdown.rewrap(source, 16)
+
+        assert word not in result.split("\n")
+        assert wrap_markdown._parts(result) == wrap_markdown._parts(source)
+
+    def test_the_word_before_moves_down_with_it(self) -> None:
+        """Held to the word before, `1.` takes that word to the next line rather
+        than overflow the one it would have ended.
+        """
+        source = "One two three four 1. five\n"
+
+        assert wrap_markdown.rewrap(source, 20) == "One two three\nfour 1. five\n"
+
+    @pytest.mark.parametrize("word", ["<files>", "2.", "0029."])
+    def test_a_word_that_opens_nothing_still_breaks(self, word: str) -> None:
+        """None of these can interrupt a paragraph, so holding one would only
+        pull the word before it down a line.
+        """
+        source = f"aaaa bbbb cccc {word} dd\n"
+
+        assert wrap_markdown.rewrap(source, 14) == f"aaaa bbbb cccc\n{word} dd\n"
 
 
 class TestAListStillWrapsAsAList:
@@ -251,6 +265,22 @@ class TestALinkReferenceDefinitionStaysOnItsLine:
 
         assert wrap_markdown.rewrap(source, 78) == "Some prose that runs straight on. [a]: https://example.com/one\n"
 
+    def test_a_definition_with_text_after_it_stays_on_its_line(self) -> None:
+        """The text makes it a paragraph. Broken after the label or the URL, it
+        would become a real definition and a paragraph under it.
+        """
+        source = f"[a]: https://example.com/{'a' * 60} is here\n"
+
+        assert wrap_markdown.rewrap(source, 78) == source
+
+    def test_footnotes_stay_one_to_a_line(self) -> None:
+        """CommonMark has no footnotes, so it reads these as one paragraph,
+        and joined, the first would swallow the second on GitHub.
+        """
+        source = "[^1]: The first footnote.\n[^2]: The second footnote.\n"
+
+        assert wrap_markdown.rewrap(source, 78) == source
+
 
 LONG = "word " * 30
 """One paragraph line well past any width a test here wraps at."""
@@ -267,6 +297,76 @@ class TestWhatIsNotProse:
 
         assert len(wrapped.split("\n")) > 1
         assert all(line.startswith("> ") for line in wrapped.split("\n"))
+
+    def test_a_table_markdown_it_rejects_keeps_its_rows(self) -> None:
+        """The delimiter row has a column fewer than the header, so this is a
+        paragraph, and joined, the author loses the layout of the typo."""
+        source = "| a | b | c |\n|---|---|\n| 1 | 2 | 3 |\n"
+
+        assert wrap_markdown.rewrap(source, 78) == source
+
+
+class TestALineBreakTheAuthorWrote:
+    @pytest.mark.parametrize("end", ["\\", "  "])
+    def test_a_hard_break_stays_at_the_end_of_its_line(self, end: str) -> None:
+        source = f"{LONG.rstrip()}{end}\nThe next line.\n"
+
+        lines = wrap_markdown.rewrap(source, 40).split("\n")
+
+        assert "The next line." in lines
+        assert lines[lines.index("The next line.") - 1].endswith(f"word{end}")
+
+    def test_a_rewrap_that_loses_a_hard_break_is_not_written(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """The words and the blocks are unchanged, so only the inline
+        structure can tell.
+        """
+        text = "Some words  \nhere\n"
+        path = _page(tmp_path, text)
+        monkeypatch.setattr(wrap_markdown, "rewrap", lambda source, width: "Some words here\n")
+
+        assert not wrap_markdown.process(path, 40, check=False)
+        assert path.read_bytes() == text.encode(ENCODING)
+
+
+class TestSpacesTheAuthorWrote:
+    def test_two_spaces_between_sentences_survive(self) -> None:
+        source = "End of one.  Start of two.\n"
+
+        assert wrap_markdown.rewrap(source, 78) == source
+
+    def test_spaces_inside_a_code_span_too_long_to_hold_survive(self) -> None:
+        source = "Run `python  -m gcmon --format json --output somewhere/long/path.json` now\n"
+
+        assert "`python  -m" in wrap_markdown.rewrap(source, 40)
+
+
+class TestAUnicodeSpaceMarkdownItStrips:
+    """markdown-it strips these off a paragraph's ends; CommonMark keeps them."""
+
+    @pytest.mark.parametrize(
+        "source",
+        [
+            "Intro.\n\n\N{NO-BREAK SPACE}\n\nMore.\n",
+            f"\N{NO-BREAK SPACE}{LONG.rstrip()}\n",
+            f"\N{IDEOGRAPHIC SPACE}{LONG.rstrip()}\n",
+            f"\N{NO-BREAK SPACE}\n{LONG.rstrip()}\n",
+            f"{LONG.rstrip()}\n{LONG.rstrip()}\N{NO-BREAK SPACE}\n",
+        ],
+        ids=["only", "leading", "ideographic", "a-line-of-its-own", "trailing"],
+    )
+    def test_the_paragraph_is_kept_as_written(self, source: str) -> None:
+        assert wrap_markdown.rewrap(source, 40) == source
+
+    def test_one_inside_a_paragraph_is_text(self) -> None:
+        source = f"{LONG.rstrip()}\N{NO-BREAK SPACE}\n{LONG.rstrip()}\n"
+
+        result = wrap_markdown.rewrap(source, 40)
+
+        assert result != source
+        assert "word\N{NO-BREAK SPACE}" in result
+        assert wrap_markdown._parts(result) == wrap_markdown._parts(source)
 
 
 def _page(tmp_path: Path, text: str) -> Path:
@@ -290,6 +390,15 @@ class TestAFileItRewrites:
 
         assert wrap_markdown.process(path, 40, check=False)
         assert path.read_text(encoding=ENCODING).endswith(fence)
+
+    @pytest.mark.parametrize(
+        "code", ["    indented = code\n", "- item\n\n      indented = code\n"], ids=["top", "in-item"]
+    )
+    def test_an_indented_code_block_survives_the_rewrite(self, code: str, tmp_path: Path) -> None:
+        path = _page(tmp_path, f"{LONG.rstrip()}\n\n{code}")
+
+        assert wrap_markdown.process(path, 40, check=False)
+        assert path.read_text(encoding=ENCODING).endswith(code)
 
 
 class TestAFileItWillNotTouch:
@@ -323,15 +432,6 @@ class TestAFileItWillNotTouch:
         the content check, parsing both sides the same way, could not see it.
         """
         text = f"short\n{LONG.rstrip()}\0\n"
-        path = _page(tmp_path, text)
-
-        done = wrap_markdown.process(path, 40, check=False)
-
-        assert not done
-        assert path.read_bytes() == text.encode(ENCODING)
-
-    def test_a_file_with_indented_code_is_skipped(self, tmp_path: Path) -> None:
-        text = f"{LONG.rstrip()}\n\n    indented = code\n"
         path = _page(tmp_path, text)
 
         done = wrap_markdown.process(path, 40, check=False)
@@ -376,9 +476,7 @@ class TestTheToolIsStable:
             path.relative_to(REPO_ROOT).as_posix(): path.read_text(encoding=ENCODING, newline="") for path in paths
         }
         # The two kinds of file the tool itself refuses to rewrite.
-        wrappable = {
-            name: text for name, text in pages.items() if "\r" not in text and not wrap_markdown._indented_code(text)
-        }
+        wrappable = {name: text for name, text in pages.items() if "\r" not in text and "\0" not in text}
         assert wrappable
         once = {name: wrap_markdown.rewrap(text, 78) for name, text in wrappable.items()}
 
