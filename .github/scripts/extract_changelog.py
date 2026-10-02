@@ -4,18 +4,16 @@ from __future__ import annotations
 import argparse
 import itertools
 import os
-import re
 import sys
 import tomllib
 from pathlib import Path
 
 from markdown_it import MarkdownIt
+from packaging.version import InvalidVersion, Version
 
 ROOT = Path(__file__).resolve().parent.parent.parent
 CHANGELOG_PATH = ROOT / "CHANGELOG.md"
 PYPROJECT_PATH = ROOT / "pyproject.toml"
-
-TAG_RE = re.compile(r"v?(?P<version>\d+\.\d+\.\d+(?:(?:a|b|rc)\d+)?(?:\.post\d+)?(?:\.dev\d+)?)")
 
 
 def resolve_version(tag: str | None) -> str | None:
@@ -25,8 +23,16 @@ def resolve_version(tag: str | None) -> str | None:
         with PYPROJECT_PATH.open("rb") as f:
             version: str = tomllib.load(f)["tool"]["poetry"]["version"]
         return version
-    match = TAG_RE.fullmatch(tag)
-    return match.group("version") if match else None
+    text = tag.removeprefix("v")
+    try:
+        parsed = Version(text)
+    except InvalidVersion:
+        return None
+    # Version also takes `0.6`, `0.6.0-rc1`, `1!0.6.0` and `0.6.0+local`. A tag
+    # names a three-part release spelled the way its changelog heading is.
+    if str(parsed) != text or len(parsed.release) != 3 or parsed.epoch or parsed.local:
+        return None
+    return text
 
 
 def sections(text: str) -> list[tuple[str, str]]:
