@@ -12,35 +12,38 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 CHANGELOG_PATH = ROOT / "CHANGELOG.md"
 PYPROJECT_PATH = ROOT / "pyproject.toml"
 
-VERSION_HEADER_RE = re.compile(r"^## Version (?P<version>\S+)", re.MULTILINE)
+HEADER_RE = re.compile(r"^## (?:Version )?(?P<version>\S+)", re.MULTILINE)
+TAG_RE = re.compile(r"v?(?P<version>\d+\.\d+\.\d+(?:(?:a|b|rc)\d+)?(?:\.post\d+)?(?:\.dev\d+)?)")
 
 
-def resolve_version(tag: str | None) -> str:
-    if tag:
-        if tag == "latest":
-            with PYPROJECT_PATH.open("rb") as f:
-                version: str = tomllib.load(f)["tool"]["poetry"]["version"]
-            return version
-        elif match := re.match(r"^v?(\d+\.\d+\.\d+[a-z0-9]*(?:\.dev[0-9]+)?)$", tag):
-            return match.group(1)
-        print("::error::Version tag isn't properly formatted")
-        return ""
-    return "WIP"
+def resolve_version(tag: str | None) -> str | None:
+    if not tag:
+        return "WIP"
+    if tag == "latest":
+        with PYPROJECT_PATH.open("rb") as f:
+            version: str = tomllib.load(f)["tool"]["poetry"]["version"]
+        return version
+    match = TAG_RE.fullmatch(tag)
+    return match.group("version") if match else None
+
+
+def report_error(message: str, text: str) -> None:
+    print(f"::error::{message}", file=sys.stderr)
+    print(f"::error::Found headers: {HEADER_RE.findall(text)}", file=sys.stderr)
 
 
 def extract(version: str) -> str:
     text = CHANGELOG_PATH.read_text(encoding="utf-8")
-    if version == "WIP":
-        pattern = r"## WIP(?=\s|$).*?\n(.*?)(?=\n## |\Z)"
-    else:
-        pattern = rf"## Version {re.escape(version)}(?=\s|$).*?\n(.*?)(?=\n## |\Z)"
+    header = "WIP" if version == "WIP" else f"Version {version}"
+    pattern = rf"## {re.escape(header)}(?=\s|$).*?\n(.*?)(?=\n## |\Z)"
     match = re.search(pattern, text, re.DOTALL)
-    if match:
-        return match.group(1).strip()
-    headers = VERSION_HEADER_RE.findall(text)
-    print(f"::error::No changelog section for version {version!r}.", file=sys.stderr)
-    print(f"::error::Found headers: {headers}", file=sys.stderr)
-    return ""
+    if not match:
+        report_error(f"No changelog section for version {version!r}.", text)
+        return ""
+    body = match.group(1).strip()
+    if not body:
+        report_error(f"The changelog section for version {version!r} is empty.", text)
+    return body
 
 
 def main() -> int:
@@ -48,11 +51,13 @@ def main() -> int:
     parser.add_argument(
         "tag",
         nargs="?",
-        help="Release tag (e.g. v0.1.0); default = pyproject version",
+        help="Release tag (e.g. v0.1.0), or 'latest' for the pyproject version; default = the WIP section",
     )
     args = parser.parse_args()
     version = resolve_version(args.tag)
-    if not version:
+    if version is None:
+        text = CHANGELOG_PATH.read_text(encoding="utf-8")
+        report_error(f"Tag {args.tag!r} is not a version tag like v0.1.0.", text)
         return 1
     body = extract(version)
     if not body:

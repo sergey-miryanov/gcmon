@@ -62,26 +62,25 @@ class TestResolveVersion:
     def test_keeps_pep440_suffix(self) -> None:
         assert extract_changelog.resolve_version("v0.2.0a1") == "0.2.0a1"
 
-    def test_wip_when_tag_missing(self, fake_pyproject: Path) -> None:
+    def test_accepts_tag_without_v_prefix(self) -> None:
+        assert extract_changelog.resolve_version("0.2.0") == "0.2.0"
+
+    @pytest.mark.parametrize("tag", ["v0.2.0rc1", "v0.2.0.post1", "v0.2.0.dev1", "v0.2.0a1.dev1"])
+    def test_keeps_pep440_segments(self, tag: str) -> None:
+        assert extract_changelog.resolve_version(tag) == tag[1:]
+
+    def test_wip_when_tag_missing(self) -> None:
         assert extract_changelog.resolve_version(None) == "WIP"
 
-    def test_empty_string_when_tag_is_git_ref(self, fake_pyproject: Path) -> None:
-        assert not extract_changelog.resolve_version("refs/heads/main")
-
-    def test_falls_back_to_pyproject_when_tag_is_latest(self, fake_pyproject: Path) -> None:
+    def test_reads_pyproject_when_tag_is_latest(self, fake_pyproject: Path) -> None:
         assert extract_changelog.resolve_version("latest") == "0.2.0"
 
-    def test_empty_string_when_incomplete_tag(self, fake_pyproject: Path) -> None:
-        assert not extract_changelog.resolve_version("v0.6")
-
-    def test_empty_string_when_dash_in_tag(self, fake_pyproject: Path) -> None:
-        assert not extract_changelog.resolve_version("v0.6.0-rc1")
-
-    def test_empty_string_when_tag_not_start_with_v_prefix_or_number(self, fake_pyproject: Path) -> None:
-        assert not extract_changelog.resolve_version("release-0.6.0")
-
-    def test_dev_tag_version(self, fake_pyproject: Path) -> None:
-        assert extract_changelog.resolve_version("v0.2.0.dev1") == "0.2.0.dev1"
+    @pytest.mark.parametrize(
+        "tag",
+        ["refs/heads/main", "190/merge", "v0.6", "v0.6.0-rc1", "release-0.6.0", "V0.6.0", "v0.6.0abc", "WIP"],
+    )
+    def test_rejects_non_version_tag(self, tag: str) -> None:
+        assert extract_changelog.resolve_version(tag) is None
 
 
 class TestExtract:
@@ -105,12 +104,25 @@ class TestExtract:
 
         assert result == ""
 
+    def test_found_headers_include_wip(self, fake_changelog: Path, capsys: pytest.CaptureFixture[str]) -> None:
+        extract_changelog.extract("9.9.9")
+
+        assert "'WIP'" in capsys.readouterr().err
+
+    def test_reports_empty_section(self, fake_changelog: Path, capsys: pytest.CaptureFixture[str]) -> None:
+        text = fake_changelog.read_text(encoding=ENCODING).replace("- upcoming stuff\n", "")
+        fake_changelog.write_text(text, encoding=ENCODING)
+
+        result = extract_changelog.extract("WIP")
+
+        assert result == ""
+        assert "section for version 'WIP' is empty" in capsys.readouterr().err
+
 
 class TestMain:
     def test_prints_body_and_exits_zero(
         self,
         fake_changelog: Path,
-        fake_pyproject: Path,
         capsys: pytest.CaptureFixture[str],
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
@@ -167,12 +179,30 @@ class TestMain:
         assert captured.out == ""
         assert "No changelog section" in captured.err
 
+    @pytest.mark.parametrize("tag", ["v0.6", "v0.6.0-rc1", "release-0.6.0"])
+    def test_exits_nonzero_naming_headers_on_malformed_tag(
+        self,
+        tag: str,
+        fake_changelog: Path,
+        capsys: pytest.CaptureFixture[str],
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.setattr("sys.argv", ["extract_changelog.py", tag])
+        monkeypatch.delenv("GITHUB_OUTPUT", raising=False)
+
+        rc = extract_changelog.main()
+
+        assert rc == 1
+        captured = capsys.readouterr()
+        assert captured.out == ""
+        assert f"Tag {tag!r} is not a version tag" in captured.err
+        assert "Found headers: ['WIP', '0.2.0', '0.1.0']" in captured.err
+
 
 class TestMainWritesToGitHubOutput:
     def test_writes_heredoc_when_github_output_set(
         self,
         fake_changelog: Path,
-        fake_pyproject: Path,
         tmp_path: Path,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
@@ -193,7 +223,6 @@ class TestMainWritesToGitHubOutput:
     def test_appends_when_output_file_already_has_content(
         self,
         fake_changelog: Path,
-        fake_pyproject: Path,
         tmp_path: Path,
         monkeypatch: pytest.MonkeyPatch,
     ) -> None:
@@ -212,7 +241,6 @@ class TestMainWritesToGitHubOutput:
     def test_prints_body_to_stdout_even_when_writing_to_file(
         self,
         fake_changelog: Path,
-        fake_pyproject: Path,
         tmp_path: Path,
         capsys: pytest.CaptureFixture[str],
         monkeypatch: pytest.MonkeyPatch,

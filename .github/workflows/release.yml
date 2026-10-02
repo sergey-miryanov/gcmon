@@ -58,7 +58,7 @@ jobs:
       - name: Extract changelog
         id: changelog
         env:
-          TAG: ${{ github.ref_name }}
+          TAG: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || 'latest' }}
         run: poetry run just changelog "$TAG"
 
       - name: Create GitHub Release

@@ -85,7 +85,7 @@ build:
 check-dist:
     poetry run twine check dist/*
 
-# Preview the changelog section for a tag, or for the pyproject version
+# Preview the changelog section for a tag, for `latest` (the pyproject version), or WIP by default
 changelog tag="":
     python .github/scripts/extract_changelog.py {{tag}}
 
