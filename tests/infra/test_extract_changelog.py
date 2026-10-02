@@ -104,6 +104,26 @@ class TestExtract:
 
         assert result == ""
 
+    def test_heading_inside_fence_stays_in_body(self, fake_changelog: Path) -> None:
+        fence = "```\n## Version 0.0.1\n```"
+        text = fake_changelog.read_text(encoding=ENCODING).replace("- upcoming stuff\n", f"{fence}\n")
+        fake_changelog.write_text(text, encoding=ENCODING)
+
+        assert extract_changelog.extract("WIP") == fence
+        assert extract_changelog.extract("0.0.1") == ""
+
+    @pytest.mark.parametrize("version", ["0.1.0", "0.2.0"])
+    def test_repeated_version_fails_any_extraction(
+        self, version: str, fake_changelog: Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        text = fake_changelog.read_text(encoding=ENCODING) + "\n## Version 0.1.0\n- again\n"
+        fake_changelog.write_text(text, encoding=ENCODING)
+
+        result = extract_changelog.extract(version)
+
+        assert result == ""
+        assert "More than one changelog section for ['0.1.0']" in capsys.readouterr().err
+
     def test_found_headers_include_wip(self, fake_changelog: Path, capsys: pytest.CaptureFixture[str]) -> None:
         extract_changelog.extract("9.9.9")
 

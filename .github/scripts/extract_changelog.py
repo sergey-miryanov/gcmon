@@ -2,17 +2,19 @@
 from __future__ import annotations
 
 import argparse
+import itertools
 import os
 import re
 import sys
 import tomllib
 from pathlib import Path
 
+from markdown_it import MarkdownIt
+
 ROOT = Path(__file__).resolve().parent.parent.parent
 CHANGELOG_PATH = ROOT / "CHANGELOG.md"
 PYPROJECT_PATH = ROOT / "pyproject.toml"
 
-HEADER_RE = re.compile(r"^## (?:Version )?(?P<version>\S+)", re.MULTILINE)
 TAG_RE = re.compile(r"v?(?P<version>\d+\.\d+\.\d+(?:(?:a|b|rc)\d+)?(?:\.post\d+)?(?:\.dev\d+)?)")
 
 
@@ -27,20 +29,41 @@ def resolve_version(tag: str | None) -> str | None:
     return match.group("version") if match else None
 
 
+def sections(text: str) -> list[tuple[str, str]]:
+    """Each `##` section as (version or WIP, body as written), in file order.
+
+    `## Version 0.1.0 (2026-05-22)` is keyed `0.1.0`.
+    """
+    lines = text.split("\n")
+    tokens = MarkdownIt().parse(text)
+    heads = [
+        (opening.map[0], title.content)
+        for opening, title in itertools.pairwise(tokens)
+        if opening.type == "heading_open" and opening.tag == "h2" and opening.map
+    ]
+    ends = [start for start, _ in heads[1:]] + [len(lines)]
+    return [
+        (title.removeprefix("Version ").partition(" ")[0], "\n".join(lines[start + 1 : end]).strip())
+        for (start, title), end in zip(heads, ends, strict=True)
+    ]
+
+
 def report_error(message: str, text: str) -> None:
     print(f"::error::{message}", file=sys.stderr)
-    print(f"::error::Found headers: {HEADER_RE.findall(text)}", file=sys.stderr)
+    print(f"::error::Found headers: {[key for key, _ in sections(text)]}", file=sys.stderr)
 
 
 def extract(version: str) -> str:
     text = CHANGELOG_PATH.read_text(encoding="utf-8")
-    header = "WIP" if version == "WIP" else f"Version {version}"
-    pattern = rf"## {re.escape(header)}(?=\s|$).*?\n(.*?)(?=\n## |\Z)"
-    match = re.search(pattern, text, re.DOTALL)
-    if not match:
+    found = sections(text)
+    keys = [key for key, _ in found]
+    if repeated := sorted({key for key in keys if keys.count(key) > 1}):
+        report_error(f"More than one changelog section for {repeated}.", text)
+        return ""
+    body = dict(found).get(version)
+    if body is None:
         report_error(f"No changelog section for version {version!r}.", text)
         return ""
-    body = match.group(1).strip()
     if not body:
         report_error(f"The changelog section for version {version!r} is empty.", text)
     return body
