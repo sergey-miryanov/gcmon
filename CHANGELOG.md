@@ -2,6 +2,8 @@
 
 ## WIP
 
+## Version 0.9.0 (2026-10-03)
+
 ### Breaking changes
 
 - A `Processes` slice carries no `real_start_ts`, `real_end_ts` or `clipped` annotation
@@ -11,9 +13,13 @@
 
 - Every process's span on the `Processes` row is as wide as gcmon observed that process for
 - `dur` on a `Processes` slice is a duration gcmon measured
-- Processes whose lifetimes overlap sit in lanes of the `Processes` row
+- Processes whose spans overlap sit in lanes of the `Processes` row
 - The `Processes` row is as tall as the largest number of processes alive at once
 - A trace from a run that was killed holds the `Processes` span of every process gcmon had already let go of
+- A `GC Pause` slice carries a `duration` annotation
+- A `GC Pause` slice carries `old_work`, `auto_collect`, `survivor_count`, `aging_threshold`, `aging_spaces` and `aging_next` where the record carries them
+- A `GC Pause` slice carries `heap_size_stop` where the record carries it
+- The `heap_size` counter takes a second value at the end of each pause whose record carries `heap_size_stop`
 
 ### Internal
 
