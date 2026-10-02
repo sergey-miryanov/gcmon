@@ -5,6 +5,8 @@ import textwrap
 from pathlib import Path
 from typing import Any
 
+import pytest
+
 from gcmon.support.vocabulary import ENCODING
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -242,6 +244,13 @@ class TestAFileItRewrites:
         assert done
         assert max(len(line) for line in path.read_text(encoding=ENCODING).split("\n")) <= 40
 
+    def test_a_fenced_block_survives_the_rewrite(self, tmp_path: Path) -> None:
+        fence = f"```\n{LONG}\n```\n"
+        path = _page(tmp_path, f"{LONG.rstrip()}\n\n{fence}")
+
+        assert wrap_markdown.process(path, 40, check=False)
+        assert path.read_text(encoding=ENCODING).endswith(fence)
+
 
 class TestAFileItWillNotTouch:
     """`process` rewrites documentation in place, so each way out that leaves
@@ -277,6 +286,31 @@ class TestAFileItWillNotTouch:
 
         assert not done
         assert path.read_bytes() == text.encode(ENCODING)
+
+    def test_a_rewrap_that_loses_a_word_is_not_written(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        text = LONG.rstrip() + "\n"
+        path = _page(tmp_path, text)
+        monkeypatch.setattr(wrap_markdown, "rewrap", lambda source, width: source.replace("word ", "", 1))
+
+        done = wrap_markdown.process(path, 40, check=False)
+
+        assert not done
+        assert path.read_bytes() == text.encode(ENCODING)
+
+
+class TestMain:
+    @pytest.mark.parametrize(("texts", "rc"), [(["short\n"], 0), (["short\n", LONG.rstrip() + "\n"], 1)])
+    def test_exits_nonzero_when_any_file_fails_the_check(
+        self, texts: list[str], rc: int, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        paths = []
+        for number, text in enumerate(texts):
+            path = tmp_path / f"page{number}.md"
+            path.write_bytes(text.encode(ENCODING))
+            paths.append(str(path))
+        monkeypatch.setattr("sys.argv", ["wrap_markdown.py", "--check", "--width", "40", *paths])
+
+        assert wrap_markdown.main() == rc
 
 
 class TestTheToolIsStable:

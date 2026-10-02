@@ -116,7 +116,7 @@ addopts = "-m 'not stress and not benchmark and not fuzz and not architecture'"
 # =============================================================================
 
 [tool.coverage.run]
-source = ["src/gcmon"]
+source = ["src/gcmon", ".github/scripts"]
 branch = true
 omit = ["*/tests/*", "*/__pycache__/*", "*/.venv/*"]
 patch = ["subprocess"]

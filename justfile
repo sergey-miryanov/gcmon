@@ -26,7 +26,7 @@ test-verbose:
 
 # Run the test suite with coverage and a JUnit report
 coverage:
-    poetry run pytest -q --basetemp=.temp --cov=src/gcmon --cov-report=xml:coverage.xml --cov-report=term-missing --cov-branch --junitxml=reports/tests.xml
+    poetry run pytest -q --basetemp=.temp --cov=src/gcmon --cov=.github/scripts --cov-report=xml:coverage.xml --cov-report=term-missing --cov-branch --junitxml=reports/tests.xml
 
 # Check the layer boundaries
 architecture:
