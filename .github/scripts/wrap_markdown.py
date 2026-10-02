@@ -2,11 +2,9 @@
 
     python .github/scripts/wrap_markdown.py --width 78 docs/formats.md
 
-Verbatim: fenced blocks, tables, headings, HTML, and a line opening a link
-reference definition, which stops being one the moment anything follows its
-destination. Rewrapped: paragraphs, block quotes, and list items with their
-continuation lines. A bare ``>`` ends the quoted paragraph it follows, the way
-a blank line ends an unquoted one.
+Blocks are read the way CommonMark reads them. Paragraphs are rewrapped,
+including those in block quotes and list items; every other line is copied
+through: fences, tables, headings, HTML, link reference definitions.
 
 A link, an inline code span and a short parenthesised list read badly split
 over two lines, and stop being greppable, so the spaces inside them are held
@@ -18,25 +16,19 @@ than the overflow it saves.
 
 A ``|`` and an ordinal are held to the word before them for a different
 reason: a continuation line that opens with one reads as a table row or a
-list item, and the next pass would wrap it as one.
-
-Holding only protects a line this tool wrapped. A paragraph arriving with an
-ordinal already at the start of one is read the way CommonMark reads it: a
-bullet may interrupt a paragraph, an ordered marker only where it numbers 1.
-So a sentence running on into ``0029. Three lines`` stays the paragraph it
-was, rather than becoming a list item with the rest indented under it.
+list item. Any other word is held there when markdown-it reads a line opening
+on it as a block of its own: a quote, a heading, a bullet, a fence, HTML.
 
 A definition list is written as a label in bold or italic, a colon, and the
 text under it, so a line starting on one of those labels keeps the break
 before it. A line that is only the label is left where it stands.
 
-An indented code block and a list continuation line look alike, and rewrapping
-one as the other would turn code into prose. A file carrying an indented block
-is reported and left alone; put it in a fence instead.
+A file carrying an indented code block is reported and left alone; put it in a
+fence instead.
 
-The tool compares the word sequence and the verbatim lines before and after,
-and writes nothing when either moved. Pass ``--check`` to report without
-writing, which is what CI would call.
+The tool compares the block structure, the prose words and the lines outside
+paragraphs before and after, and writes nothing when any of them moved. Pass
+``--check`` to report without writing, which is what CI would call.
 
 A line still over the width once a file is wrapped is over on one unbreakable
 token, a link or a URL, since anything else would have been broken. Those are
@@ -46,146 +38,122 @@ counted when the file is written and never fail the run.
 from __future__ import annotations
 
 import argparse
+import functools
+import itertools
 import re
 import sys
-import textwrap
+from collections.abc import Iterator
 from pathlib import Path
 
-FENCE = re.compile(r"^\s*(```|~~~)")
-LIST_ITEM = re.compile(r"^(\s*(?:[-*+]|\d+\.)\s+)(.*)$")
-QUOTE = re.compile(r"^(\s*>\s*)(.*)$")
-VERBATIM = re.compile(r"^(\s*\||#{1,6}\s|<|\[[^\]]+\]:)")
-INDENTED = re.compile(r"^ {4,}\S")
-LABEL = re.compile(r"^(?:\*\*[^*]+\*\*|_[^_]+_):")
+from markdown_it import MarkdownIt
+from markdown_it.token import Token
+
+MARKDOWN = MarkdownIt("commonmark").enable("table")
+LABEL = re.compile(r"(?:\*\*[^*]+\*\*|_[^_]+_):")
 # Spaces that must not become a line break.
 LINK = re.compile(r"\[[^\]]*\]\([^)]*\)")
 # Held only while the whole of it still fits a line: a code span, a list.
 FITTED = re.compile(r"`[^`]+`|\((?:[^()\s]+[,;]\s+){1,4}[^()\s]+\)")
 # Joined to the word before, so no wrapped line opens like a table or a list.
-MARKER = re.compile(r"(?<=\S) (?=\||\d+\.(?:\s|$))")
-ORDERED = re.compile(r"^\s*(\d+)\.")
+MARKER = re.compile(r"(?<=\S) +(?=\||\d+\.(?:\s|$))")
 
 
-def _may_interrupt(line: str) -> bool:
-    """Whether the list marker on *line* may break a paragraph already open.
+def _paragraphs(tokens: list[Token]) -> Iterator[tuple[int, int, str]]:
+    """(first line, end line, text without container markers) of each paragraph."""
+    for opening, inline in itertools.pairwise(tokens):
+        if opening.type == "paragraph_open" and opening.map:
+            yield opening.map[0], opening.map[1], inline.content
 
-    CommonMark lets a bullet do it and an ordered marker only where it numbers
-    1. Without the second half a line beginning `0029.` opens a list item and
-    the rest of the sentence is indented under it.
+
+def _atoms(text: str, room: int) -> list[str]:
+    """*text* split at the spaces a line may break on."""
+    held: set[int] = set()
+    for match in LINK.finditer(text):
+        held.update(range(*match.span()))
+    for match in FITTED.finditer(text):
+        if len(match[0]) <= room:
+            held.update(range(*match.span()))
+    held.update(match.start() for match in MARKER.finditer(text))
+    atoms: list[str] = []
+    start = 0
+    for gap in re.finditer(r" +", text):
+        if gap.start() not in held:
+            atoms.append(text[start : gap.start()])
+            start = gap.end()
+    atoms.append(text[start:])
+    return [atom for atom in atoms if atom]
+
+
+@functools.cache
+def _opens_block(atom: str, last: bool) -> bool:
+    """Whether a continuation line opening on *atom* would end the paragraph."""
+    probe = f"x\n{atom}" if last else f"x\n{atom} x"
+    return [token.type for token in MARKDOWN.parse(probe)] != ["paragraph_open", "inline", "paragraph_close"]
+
+
+def _fill(words: list[str], first: str, rest: str, width: int) -> list[str]:
+    atoms = _atoms(" ".join(words), width - len(rest))
+    lines = [first + atoms[0]]
+    for number, atom in enumerate(atoms[1:], 2):
+        if len(lines[-1]) + 1 + len(atom) <= width or _opens_block(atom, number == len(atoms)):
+            lines[-1] += " " + atom
+        else:
+            lines.append(rest + atom)
+    return lines
+
+
+def _rewrap_paragraph(head: str, content: str, width: int) -> list[str] | None:
+    """The paragraph opening on source line *head*, wrapped; None to keep it.
+
+    Its first line carries the list and quote markers. Later lines keep the
+    quote bars and turn each list marker into the spaces under it.
     """
-    ordered = ORDERED.match(line)
-    return ordered is None or ordered.group(1) == "1"
-
-
-def _hold(text: str) -> str:
-    return text.replace(" ", "\0")
-
-
-def _wrap(lines: list[str], first: str, rest: str, width: int) -> list[str]:
-    joined = " ".join(line.strip() for line in lines)
-    room = width - len(rest)
-    glued = LINK.sub(lambda m: _hold(m.group(0)), joined)
-    glued = FITTED.sub(lambda m: _hold(m.group(0)) if len(m.group(0)) <= room else m.group(0), glued)
-    glued = MARKER.sub("\0", glued)
-    wrapped = textwrap.wrap(
-        glued,
-        width=width,
-        initial_indent=first,
-        subsequent_indent=rest,
-        break_long_words=False,
-        break_on_hyphens=False,
-    )
-    return [line.replace("\0", " ") for line in wrapped]
+    body = [line.strip() for line in content.split("\n")]
+    head = head.rstrip()
+    if not head.endswith(body[0]):
+        return None
+    first = head[: len(head) - len(body[0])]
+    rest = re.sub(r"[^>\s]", " ", first)
+    out: list[str] = []
+    group: list[str] = []
+    for line in body:
+        if LABEL.match(line):
+            if group:
+                out += _fill(group, rest if out else first, rest, width)
+                group = []
+            if LABEL.fullmatch(line):
+                out.append((rest if out else first) + line)
+                continue
+        group.append(line)
+    if group:
+        out += _fill(group, rest if out else first, rest, width)
+    return out
 
 
 def rewrap(text: str, width: int) -> str:
-    out: list[str] = []
-    para: list[str] = []
-    first = rest = ""
-    in_fence = False
-    in_item = False
-
-    def flush() -> None:
-        nonlocal para, first, rest, in_item
-        if para:
-            out.extend(_wrap(para, first, rest, width))
-        para = []
-        first = rest = ""
-        in_item = False
-
-    for line in text.split("\n"):
-        if FENCE.match(line):
-            flush()
-            in_fence = not in_fence
-            out.append(line)
-        elif in_fence:
-            out.append(line)
-        elif not line.strip():
-            flush()
-            out.append("")
-        elif VERBATIM.match(line) and not para:
-            flush()
-            out.append(line)
-        elif label := LABEL.match(line):
-            flush()
-            if label.group(0) == line.rstrip():
-                out.append(line.rstrip())
-            else:
-                para.append(line)
-        elif quote := QUOTE.match(line):
-            if not quote.group(2).strip():
-                flush()
-                out.append(quote.group(1).rstrip())
-                continue
-            if not para:
-                first = rest = quote.group(1)
-            para.append(quote.group(2))
-        elif (item := LIST_ITEM.match(line)) and (not para or in_item or _may_interrupt(line)):
-            flush()
-            first, rest = item.group(1), " " * len(item.group(1))
-            para.append(item.group(2))
-            in_item = True
-        else:
-            para.append(line)
-
-    flush()
-    return "\n".join(out)
+    lines = text.split("\n")
+    for start, end, content in reversed(list(_paragraphs(MARKDOWN.parse(text)))):
+        wrapped = _rewrap_paragraph(lines[start], content, width)
+        if wrapped is not None:
+            lines[start:end] = wrapped
+    return "\n".join(lines)
 
 
-def _parts(text: str) -> tuple[list[str], list[str]]:
-    """(prose words, verbatim lines), the two things a rewrap must preserve."""
+def _parts(text: str) -> tuple[list[str], list[str], list[str]]:
+    """(block structure, prose words, other lines), what a rewrap must preserve."""
+    tokens = MARKDOWN.parse(text)
     prose: list[str] = []
-    verbatim: list[str] = []
-    in_fence = False
-    for line in text.split("\n"):
-        if FENCE.match(line):
-            in_fence = not in_fence
-            verbatim.append(line)
-        elif in_fence or VERBATIM.match(line):
-            verbatim.append(line)
-        else:
-            prose.extend(line.replace(">", " ").split())
-    return prose, verbatim
+    rows: set[int] = set()
+    for start, end, content in _paragraphs(tokens):
+        prose += content.split()
+        rows.update(range(start, end))
+    other = [line for number, line in enumerate(text.split("\n")) if number not in rows]
+    return [token.type for token in tokens], prose, other
 
 
 def _indented_code(text: str) -> list[int]:
-    """Line numbers of indented blocks that no list item could be continuing."""
-    found: list[int] = []
-    in_fence = False
-    open_list = False
-    for number, line in enumerate(text.split("\n"), 1):
-        if FENCE.match(line):
-            in_fence = not in_fence
-        elif in_fence or not line.strip():
-            continue
-        elif LIST_ITEM.match(line):
-            open_list = True
-        elif INDENTED.match(line):
-            if not open_list:
-                found.append(number)
-        elif not line.startswith(" "):
-            open_list = False
-    return found
+    """Line numbers of indented code blocks."""
+    return [token.map[0] + 1 for token in MARKDOWN.parse(text) if token.type == "code_block" and token.map]
 
 
 def process(path: Path, width: int, check: bool) -> bool:
@@ -202,7 +170,6 @@ def process(path: Path, width: int, check: bool) -> bool:
         print(f"{path}: content moved, not written")
         return False
 
-    over = [line for line in result.split("\n") if len(line) > width and not VERBATIM.match(line)]
     if original == result:
         print(f"{path}: already wrapped at {width}")
         return True
@@ -210,6 +177,8 @@ def process(path: Path, width: int, check: bool) -> bool:
         print(f"{path}: would rewrap at {width}")
         return False
     path.write_text(result, encoding="utf-8", newline="")
+    rows = {row for start, end, _ in _paragraphs(MARKDOWN.parse(result)) for row in range(start, end)}
+    over = [line for number, line in enumerate(result.split("\n")) if number in rows and len(line) > width]
     print(f"{path}: rewrapped at {width}, {len(over)} line(s) still over")
     return True
 

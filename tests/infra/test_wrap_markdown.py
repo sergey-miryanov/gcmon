@@ -59,6 +59,37 @@ class TestAnOrdinalOpeningALine:
         assert wrap_markdown.rewrap(once, 78) == once
 
 
+class TestAWordThatCanOpenABlock:
+    """Wrapped to the start of a line, each of these would turn the rest of
+    the paragraph into another block."""
+
+    @pytest.mark.parametrize("word", ["|", ">", "<div>", "#", "-", "+", "*", "1.", "1)", "```", "~~~"])
+    def test_stays_on_the_line_before(self, word: str) -> None:
+        source = f"Some words here {word} and the rest of the sentence.\n"
+
+        result = wrap_markdown.rewrap(source, 16)
+
+        assert not [line for line in result.split("\n") if line.startswith(word)]
+        assert wrap_markdown._parts(result) == wrap_markdown._parts(source)
+
+    @pytest.mark.parametrize("word", ["-", "---", "=="])
+    def test_an_underline_ending_the_paragraph_stays_on_the_line_before(self, word: str) -> None:
+        """Alone on the last line it would turn the paragraph into a heading."""
+        source = f"Some words here {word}\n"
+
+        result = wrap_markdown.rewrap(source, 16)
+
+        assert result == source
+
+    def test_a_word_that_opens_nothing_still_breaks(self) -> None:
+        """`<files>` and `2.` cannot interrupt a paragraph, so holding them
+        would only overflow the line.
+        """
+        source = "Some words here <files> and 2) the rest.\n"
+
+        assert wrap_markdown.rewrap(source, 16) == "Some words here\n<files> and 2)\nthe rest.\n"
+
+
 class TestAListStillWrapsAsAList:
     def test_a_tight_numbered_list_keeps_its_items(self) -> None:
         """Item 2 follows item 1 with no blank line between them, so it is read
@@ -204,9 +235,7 @@ class TestALinkReferenceDefinitionStaysOnItsLine:
         assert max(len(line) for line in wrap_markdown.rewrap(source, 78).split("\n")) <= 78
 
     def test_a_definition_cannot_interrupt_a_paragraph(self) -> None:
-        """CommonMark reads it as part of the paragraph, so the tool does too:
-        the `not para` guard in front of the verbatim branch is deliberate.
-        """
+        """CommonMark reads it as part of the paragraph, so the tool does too."""
         source = "Some prose that runs straight on.\n[a]: https://example.com/one\n"
 
         assert wrap_markdown.rewrap(source, 78) == "Some prose that runs straight on. [a]: https://example.com/one\n"
