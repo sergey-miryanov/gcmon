@@ -41,12 +41,14 @@ jobs:
         run: |
           poetry run just lint
 
-      # Every tracked Markdown file but `CHANGELOG.md`, which is one bullet
-      # per line and stays that way. A CRLF file fails here too: the script
-      # reports one rather than rewriting it.
+      # Every tracked Markdown file but two. `CHANGELOG.md` is one bullet per
+      # line and stays that way. The pull request template is left as written,
+      # since GitHub renders each newline in a pull request body as a line
+      # break. A CRLF file fails here too: the script reports one rather than
+      # rewriting it.
       - name: Check the prose wrapping
         run: |
-          git ls-files -z '*.md' ':!:CHANGELOG.md' \
+          git ls-files -z '*.md' ':!:CHANGELOG.md' ':!:.github/PULL_REQUEST_TEMPLATE.md' \
             | xargs -0 poetry run python .github/scripts/wrap_markdown.py --check
 
   mypy:

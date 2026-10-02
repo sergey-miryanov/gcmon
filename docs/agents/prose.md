@@ -162,8 +162,9 @@ parentage; give that one `draws on`.
 - No em dash. No section sign, which is hard to type on an ordinary keyboard.
 - Wrap at 78, 80 at the outside:
   `python .github/scripts/wrap_markdown.py <files>`. CI runs the same script
-  with `--check` over every tracked Markdown file but `CHANGELOG.md`, which is
-  one bullet per line.
+  with `--check` over every tracked Markdown file but two: `CHANGELOG.md`,
+  which is one bullet per line, and `.github/PULL_REQUEST_TEMPLATE.md`, since
+  GitHub renders each newline in a pull request body as a line break.
 - Use the vocabulary in `specs/CONVENTIONS.md` rule 4: record, event, iid,
   loss window, span. Do not coin a synonym for one of them.
 - Every file is LF. A rewrite that flips the endings buries the real diff;
