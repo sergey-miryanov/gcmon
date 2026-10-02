@@ -23,8 +23,10 @@ A definition list is written as a label in bold or italic, a colon, and the
 text under it, so a line starting on one of those labels keeps the break
 before it. A line that is only the label is left where it stands.
 
-A file carrying an indented code block is reported and left alone; put it in a
-fence instead.
+A file carrying CRLF line endings or a NUL is reported and left alone, since
+markdown-it rewrites both and its text of a paragraph would no longer match
+the source. So is a file carrying an indented code block; put it in a fence
+instead.
 
 The tool compares the block structure, the prose words and the lines outside
 paragraphs before and after, and writes nothing when any of them moved. Pass
@@ -102,16 +104,14 @@ def _fill(words: list[str], first: str, rest: str, width: int) -> list[str]:
     return lines
 
 
-def _rewrap_paragraph(head: str, content: str, width: int) -> list[str] | None:
-    """The paragraph opening on source line *head*, wrapped; None to keep it.
+def _rewrap_paragraph(head: str, content: str, width: int) -> list[str]:
+    """The paragraph opening on source line *head*, wrapped.
 
     Its first line carries the list and quote markers. Later lines keep the
     quote bars and turn each list marker into the spaces under it.
     """
     body = [line.strip() for line in content.split("\n")]
     head = head.rstrip()
-    if not head.endswith(body[0]):
-        return None
     first = head[: len(head) - len(body[0])]
     rest = re.sub(r"[^>\s]", " ", first)
     out: list[str] = []
@@ -133,9 +133,7 @@ def _rewrap_paragraph(head: str, content: str, width: int) -> list[str] | None:
 def rewrap(text: str, width: int) -> str:
     lines = text.split("\n")
     for start, end, content in reversed(list(_paragraphs(MARKDOWN.parse(text)))):
-        wrapped = _rewrap_paragraph(lines[start], content, width)
-        if wrapped is not None:
-            lines[start:end] = wrapped
+        lines[start:end] = _rewrap_paragraph(lines[start], content, width)
     return "\n".join(lines)
 
 
@@ -160,6 +158,9 @@ def process(path: Path, width: int, check: bool) -> bool:
     original = path.read_text(encoding="utf-8", newline="")
     if "\r" in original:
         print(f"{path}: CRLF, skipped")
+        return False
+    if "\0" in original:
+        print(f"{path}: NUL, skipped")
         return False
     if lines := _indented_code(original):
         print(f"{path}: indented code at line(s) {lines}, skipped")

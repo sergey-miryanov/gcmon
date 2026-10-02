@@ -196,6 +196,17 @@ class TestADefinitionListKeepsItsLabels:
 
         assert wrap_markdown.rewrap(source, 78) == source
 
+    def test_a_label_ending_its_paragraph_stays_on_its_own_line(self) -> None:
+        """A blank line under the label leaves nothing after it to wrap."""
+        source = textwrap.dedent("""\
+            Some prose ending here.
+            **Track**:
+
+            One row in a trace.
+        """)
+
+        assert wrap_markdown.rewrap(source, 78) == source
+
 
 class TestALinkReferenceDefinitionStaysOnItsLine:
     """`[label]: url` is a definition only while nothing follows the URL."""
@@ -300,6 +311,18 @@ class TestAFileItWillNotTouch:
 
     def test_a_crlf_file_is_skipped(self, tmp_path: Path) -> None:
         text = LONG.rstrip() + "\r\n"
+        path = _page(tmp_path, text)
+
+        done = wrap_markdown.process(path, 40, check=False)
+
+        assert not done
+        assert path.read_bytes() == text.encode(ENCODING)
+
+    def test_a_file_with_a_nul_is_skipped(self, tmp_path: Path) -> None:
+        """markdown-it reads a NUL as U+FFFD. The rewrite wrote that back, and
+        the content check, parsing both sides the same way, could not see it.
+        """
+        text = f"short\n{LONG.rstrip()}\0\n"
         path = _page(tmp_path, text)
 
         done = wrap_markdown.process(path, 40, check=False)
