@@ -49,17 +49,17 @@ jobs:
       - name: Validate built distributions
         run: poetry run just check-dist
 
-      - name: Publish to PyPI
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && (github.event.inputs.dry_run != 'true')
-        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
-        with:
-          verify-metadata: true
-
       - name: Extract changelog
         id: changelog
         env:
           TAG: ${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || 'latest' }}
         run: poetry run just changelog "$TAG"
+
+      - name: Publish to PyPI
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && (github.event.inputs.dry_run != 'true')
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        with:
+          verify-metadata: true
 
       - name: Create GitHub Release
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v') && (github.event.inputs.dry_run != 'true')
