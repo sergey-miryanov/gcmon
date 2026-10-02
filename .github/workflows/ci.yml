@@ -47,7 +47,7 @@ jobs:
       - name: Check the prose wrapping
         run: |
           git ls-files -z '*.md' ':!:CHANGELOG.md' \
-            | xargs -0 python .github/scripts/wrap_markdown.py --check
+            | xargs -0 poetry run python .github/scripts/wrap_markdown.py --check
 
   mypy:
     runs-on: ${{ matrix.os }}
