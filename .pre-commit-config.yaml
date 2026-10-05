@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: 0494aa7fa1314e98913a41227d8f0a515b2c1049  # frozen: v0.38.2
+    rev: 4f85d46a92dc17713078e5de73f8a13190edf6fc  # frozen: 0.38.2
     hooks:
       - id: check-dependabot
       - id: check-github-workflows
@@ -24,14 +24,14 @@ repos:
       - id: zizmor
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: a56c0b927e6465d37cae3e97d35d4d18ab2b96cd  # frozen: v0.16.9
+    rev: f12be1ebaa5351c1fc76472de98db2c3446c8253  # frozen: v0.16.10
     hooks:
       - id: ruff-check
         args: ["--exit-non-zero-on-fix"]
       - id: ruff-format
 
   - repo: https://github.com/crate-ci/typos
-    rev: 00f422f3b19c57bc6338715ebfe3316d38768461  # frozen: v1.50.3
+    rev: dd369349b73c245acd4dd4154a4bdf771d052150  # frozen: typos-dict-v0.14.2
     hooks:
       - id: typos
 
