@@ -47,7 +47,7 @@ jobs:
       # rewriting it.
       - name: Check the prose wrapping
         run: |
-          git ls-files -z '*.md' ':!:CHANGELOG.md' ':!:.github/PULL_REQUEST_TEMPLATE.md' \
+          git ls-files -z '*.md' ':!:CHANGELOG.md' ':!:CLAUDE.md' ':!:.github/PULL_REQUEST_TEMPLATE.md' ':!:.claude/skills/house-style/SKILL.md' \
             | xargs -0 poetry run python .github/scripts/wrap_markdown.py --check
 
   mypy:
