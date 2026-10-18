@@ -39,7 +39,6 @@ This file holds the open set and the order to take it in. The other two:
 | [0063](0063-compare-two-tracefiles.md) | Feature (enhancement) | L | Nothing answers "did GC get worse between these two runs"; two tables side by side works for one row and fails for sixty |
 | [0072](0072-draw-a-run-on-rows-by-kind.md) | Feature (enhancement) | M | On a wide tree a process's pauses sit two groups down in one of thousands of rows, and nothing draws the run's pauses, loss and processes on a few rows |
 | [0073](0073-convert-a-merged-trace-to-the-process-layout.md) | Feature (enhancement) | M | A trace recorded with `--layout merged` cannot become the process layout, so its counter charts and per-process rows cost a rerun |
-| [0074](0074-say-when-percentiles-cover-only-the-latest-values.md) | Bug (reporting) | XS | Without the `[stats]` extra a row's percentiles cover its latest 1024 values while `Count`, `Sum` and `Avg` cover all of them, so a table prints `Avg` above `P99` and nothing says why |
 
 Every row here has a file. A missing number either retired or never became
 one; [RETIRED.md](RETIRED.md) says which.

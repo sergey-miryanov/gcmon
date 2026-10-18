@@ -40,6 +40,7 @@ rows.
 | 0069 | **Landed** 2026-09-10 (reporting) | L | Each interpreter was drawn as an OS thread that does not exist, and the trace processor merged the per-interpreter `GC Metrics` groups into one row no query could attribute. Every row an interpreter owns sits under an `Interpreter {iid}` group now, and a trace holds no `thread` row of gcmon's. [ADR-0027](../docs/adr/0027-group-every-row-an-interpreter-owns.md) |
 | 0070 | **Superseded** by 0071 | S | Workers forked in one loop each ran for seconds and were drawn microseconds wide on the `Processes` track. It would have snapped near-equal starts together so the fan-out nested instead of clipping, moving each start by up to a chosen tolerance. 0071 removed the clip the snap worked around, so no start has to move |
 | 0071 | **Landed** 2026-09-20 (enhancement) | M | Two processes whose lifetimes crossed could not both keep their width on the `Processes` row, and `dur` there was not a duration gcmon observed. Every process draws its span on a track of its own now, merged into one row by the shared name, and a span that overlaps another sits in a lane of it. [ADR-0011](../docs/adr/0011-process-lifetime-and-ordering.md) |
+| 0074 | **Landed** 2026-10-18 (reporting) | XS | Without the `[stats]` extra a row's percentiles covered its latest 1024 values while `Count`, `Sum` and `Avg` covered all of them, and nothing said so. A footer note says so now. [ADR-0016](../docs/adr/0016-the-ring-is-the-statistics-unit.md) |
 
 ## Gaps
 
