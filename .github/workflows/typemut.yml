@@ -57,7 +57,7 @@ jobs:
 
       - name: Upload the report and the baseline
         if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: typemut-${{ matrix.checker }}-${{ matrix.os }}
           path: |
