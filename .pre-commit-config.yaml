@@ -65,5 +65,8 @@ repos:
 
 ci:
   autofix_prs: true
-  autoupdate_schedule: weekly
+  # Dependabot updates the hooks: pre-commit.ci pins an annotated tag by its
+  # tag object, not its commit. Autoupdate has no off switch, so it runs at
+  # the rarest schedule.
+  autoupdate_schedule: quarterly
   submodules: false
