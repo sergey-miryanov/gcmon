@@ -181,7 +181,7 @@ anything was lost, listing only the generations that lost something.
 **2. Percentiles over the latest values.** Without the `[stats]` extra only.
 
 ```
-2. Percentiles cover at most a row's latest 1024 values. Install gcmon[stats] for percentiles over every value.
+2. Percentiles cover at most a row's latest {limit} values. Install gcmon[stats] for percentiles over every value.
 ```
 
 Without `ddsketch` a row keeps a fixed number of values for its percentiles
