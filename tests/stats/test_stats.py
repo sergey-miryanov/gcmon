@@ -12,7 +12,7 @@ import pytest
 from gcmon.model.data import GCStatsInfo
 from gcmon.model.phases import PausePhase
 from gcmon.stats import stats as stats_module
-from gcmon.stats.stats import HAS_DDSKETCH, Stats
+from gcmon.stats.stats import HAS_DDSKETCH, Stats, get_quantile_value
 from gcmon.stats.streaming_stats import StreamingStats
 from tests.helpers import create_mock_stats_item, proc
 
@@ -712,6 +712,53 @@ class TestAProcessThatExits:
 
         assert len(stats.rings()) == StreamingStats.MAX_ACTIVE_RINGS * 2
         assert stats.untracked_rings() == 0
+
+
+class TestARingThatOutgrewItsBuffer:
+    """A ring whose busy start looks nothing like its idle end, and whose idle
+    end alone fills the sample buffer."""
+
+    BUSY_NS: int = 1_000_000
+    IDLE_NS: int = 50_000
+
+    def _ran_and_exited(self) -> tuple[StreamingStats, list[int]]:
+        """Ring (1, 0) and the pause lengths it took, its process gone."""
+        durations = [self.BUSY_NS] * (3 * Stats.MAX_BUFFER_LEN) + [self.IDLE_NS] * Stats.MAX_BUFFER_LEN
+        stats = StreamingStats()
+        for ns in durations:
+            stats.update(proc(TARGET_PID), _pause(ns))
+        stats.materialize(proc(TARGET_PID))
+        return stats, durations
+
+    @staticmethod
+    def _settled_pauses(stats: StreamingStats) -> Stats:
+        ring = stats.get_ring_stats(proc(TARGET_PID), 0)
+        assert ring is not None
+        return ring[PausePhase][0]
+
+    @pytest.mark.skipif(not HAS_DDSKETCH, reason="ddsketch not installed")
+    def test_the_percentiles_describe_every_record(self) -> None:
+        stats, durations = self._ran_and_exited()
+
+        every_record = sorted(durations)
+        assert self._settled_pauses(stats).percentiles == pytest.approx(
+            {p: get_quantile_value(every_record, p) for p in (50, 90, 95, 99)}, rel=Stats.REL_ACCURACY
+        )
+
+    def test_without_ddsketch_they_describe_the_records_the_buffer_kept(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setattr(stats_module, "HAS_DDSKETCH", False)
+        stats, durations = self._ran_and_exited()
+
+        buffer_kept = sorted(durations[-Stats.MAX_BUFFER_LEN :])
+        assert self._settled_pauses(stats).percentiles == {
+            p: get_quantile_value(buffer_kept, p) for p in (50, 90, 95, 99)
+        }
+
+    def test_the_settle_still_hands_the_memory_back(self) -> None:
+        settled = self._settled_pauses(self._ran_and_exited()[0])
+
+        assert len(settled.buffer) == 0
+        assert not settled.has_sketch
 
 
 class TestAnOpenPidHoldsARing:

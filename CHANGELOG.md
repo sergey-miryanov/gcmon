@@ -2,6 +2,10 @@
 
 ## WIP
 
+### Bugfixes
+
+- With the `[stats]` extra, the percentiles of an interpreter whose process exited during the run cover every record gcmon read from it, where they covered its last 1024
+
 ### Internal
 
 - Stability, correctness and performance improvements

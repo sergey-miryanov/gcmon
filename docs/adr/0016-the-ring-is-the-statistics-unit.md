@@ -66,9 +66,12 @@ four interpreters each.
 **A ring settles when its process exits, and never before.** gcmon learns a
 pid has gone when the tick's listing of the target's children drops it, or
 when a wait policy gives it up, and settles that pid's rings at either. The
-sample buffers go back, the slots go back, and the four percentiles left
-behind cover each of those rings end to end. A target that spawns and exits
-keeps a row per process it ran without exhausting the bound.
+sample buffers go back and the slots go back. Settling changes none of the
+four percentiles, so a row prints the same figures whether its process exited
+before gcmon stopped or outlived it. With `ddsketch` installed they cover the
+ring end to end; without it, only its latest records, as many as a sample
+buffer holds. A target that spawns and exits keeps a row per process it ran
+without exhausting the bound.
 
 **`EventsMonitor` decides who is alive, and `StreamingStats` takes that
 decision.** Whatever arrives on a pid gcmon called dead is a new process, the
@@ -143,8 +146,9 @@ run-wide, the scope `Total` reports.
   free. A tree wide enough to exhaust the bound leaves its later rings out of
   the table.
 - **Every printed row covers one process's ring over one unbroken stretch**,
-  so a row's `Count`, its `Sum` and its percentiles always describe the same
-  records. A settled ring cannot take more values, and one that tries raises.
+  so with `ddsketch` installed a row's `Count`, its `Sum` and its percentiles
+  always describe the same records. A settled ring cannot take more values,
+  and one that tries raises.
 - **A run can print two blocks under one `PID:IID`**, where the operating
   system handed the pid out twice. The `#2` on the second says why, and a
   reader who never sees one loses nothing.

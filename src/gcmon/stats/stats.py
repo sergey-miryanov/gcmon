@@ -51,20 +51,29 @@ class Stats:
         """Settle the percentiles and give the buffer back.
 
         Final. The caller settles a ring once its process has exited, so no
-        value can arrive afterwards, and the four percentiles left behind cover
-        every value this instance saw.
+        value can arrive afterwards. The four percentiles left behind are the
+        ones `percentile` gave a moment before: over every value this instance
+        saw with `ddsketch` installed, over the last `MAX_BUFFER_LEN` without
+        it.
         """
         if self._percentiles is not None or self._count == 0:
             return
-        sorted_data = sorted(self._data)
-        self._percentiles = {
-            50: get_quantile_value(sorted_data, 50),
-            90: get_quantile_value(sorted_data, 90),
-            95: get_quantile_value(sorted_data, 95),
-            99: get_quantile_value(sorted_data, 99),
-        }
+        self._percentiles = self._quantiles((50, 90, 95, 99))
         self._data.clear()
         self._sketch = None
+
+    def _quantiles(self, ps: tuple[int, ...]) -> dict[int, float]:
+        """The buffer is exact while it holds every value, and the sketch is
+        the only record of every value after."""
+        if self._sketch is not None and self._count >= self.MAX_BUFFER_LEN:
+            quantiles = {}
+            for p in ps:
+                q = self._sketch.get_quantile_value(p / 100.0)
+                assert q is not None, "None is an empty sketch, and this one is full"
+                quantiles[p] = q
+            return quantiles
+        sorted_data = sorted(self._data)
+        return {p: get_quantile_value(sorted_data, p) for p in ps}
 
     def average(self) -> float:
         if self._count == 0:
@@ -76,11 +85,7 @@ class Stats:
             raise ValueError(f"percentile must be in [0, 100], got {p}")
         if self._percentiles is not None:
             return self._percentiles.get(p, 0.0)
-        if self._sketch is not None and self._count >= self.MAX_BUFFER_LEN:
-            q = self._sketch.get_quantile_value(p / 100.0)
-            assert q is not None, "None is an empty sketch, and this one is full"
-            return q
-        return get_quantile_value(sorted(self._data), p)
+        return self._quantiles((p,))[p]
 
     def count(self) -> int:
         return self._count
