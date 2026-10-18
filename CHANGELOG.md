@@ -5,6 +5,7 @@
 ### Bugfixes
 
 - With the `[stats]` extra, the percentiles of an interpreter whose process exited during the run cover every record gcmon read from it, where they covered its last 1024
+- Without the `[stats]` extra, a `--stats` footer note says when a row's percentiles cover only its latest 1024 values, where nothing in the output said so
 
 ### Internal
 

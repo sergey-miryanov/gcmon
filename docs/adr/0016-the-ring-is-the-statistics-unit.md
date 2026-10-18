@@ -147,8 +147,9 @@ run-wide, the scope `Total` reports.
   the table.
 - **Every printed row covers one process's ring over one unbroken stretch**,
   so with `ddsketch` installed a row's `Count`, its `Sum` and its percentiles
-  always describe the same records. A settled ring cannot take more values,
-  and one that tries raises.
+  always describe the same records, and without it a note under the table says
+  when they do not. A settled ring cannot take more values, and one that tries
+  raises.
 - **A run can print two blocks under one `PID:IID`**, where the operating
   system handed the pid out twice. The `#2` on the second says why, and a
   reader who never sees one loses nothing.

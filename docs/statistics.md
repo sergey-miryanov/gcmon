@@ -165,9 +165,8 @@ track. See [output formats](formats.md#gc-loss-slices).
 ## The notes under the table
 
 Below the table gcmon prints a numbered note for each thing the cells cannot
-say. Any of them may be absent, and a session that read every record from a
-target that collected nothing before gcmon attached prints no footer at all. A
-lone note still reads `1.`, so read the wording rather than the number.
+say. Any of them may be absent. A lone note still reads `1.`, so read the
+wording rather than the number.
 
 **1. Coverage.**
 
@@ -179,10 +178,22 @@ The `Cov` column gathered across every ring, which is the scope `Total`
 reports, plus the rule for reading the two-number cells. It appears whenever
 anything was lost, listing only the generations that lost something.
 
-**2. Lifetime totals.**
+**2. Percentiles over the latest values.** Without the `[stats]` extra only.
 
 ```
-2. Since each interpreter started, monitored window included, summed over 3 interpreters in 2 processes: Gen0 4820 in 6231.400 ms.
+2. Percentiles cover at most a row's latest 1024 values. Install gcmon[stats] for percentiles over every value.
+```
+
+Without `ddsketch` a row keeps a fixed number of values for its percentiles
+and drops the oldest past it, while `Count`, `Sum` and `Avg` take every value.
+A row past the limit can print an `Avg` that no percentile beside it explains.
+The note appears when any printed row has passed it; the first number in each
+row's `Count` says which.
+
+**3. Lifetime totals.**
+
+```
+3. Since each interpreter started, monitored window included, summed over 3 interpreters in 2 processes: Gen0 4820 in 6231.400 ms.
 ```
 
 The third interval above. It changes no cell in the table. The counts say what
@@ -190,10 +201,10 @@ the figure folded: three interpreters that started at different moments, in
 two processes. A run watching one interpreter reads
 `1 interpreter in 1 process`.
 
-**3. Rings with no row.** `--stats=full` only.
+**4. Rings with no row.** `--stats=full` only.
 
 ```
-3. 2 rings got no row: gcmon was already tracking 256 interpreters at once. Those records are counted in Total.
+4. 2 rings got no row: gcmon was already tracking 256 interpreters at once. Those records are counted in Total.
 ```
 
 gcmon holds detailed statistics for a bounded number of interpreters at once,
@@ -204,14 +215,15 @@ record, so the rows can add up to less than the run and this note says by how
 many rings.
 
 `--stats=total` prints no ring rows, so gcmon leaves the note out. The warning
-naming the pid and the interpreter is logged under either view. Notes 1 and 2
-are run-wide and print under both.
+naming the pid and the interpreter is logged under either view. Notes 1 to 3
+print under both.
 
 ## Without `[stats]` extra
 
 gcmon keeps a fixed number of samples in memory and sorts them for exact
 percentiles. Once the buffer is full it drops the oldest, so a long session
-loses its early shape.
+loses its early shape, and a
+[note under the table](#the-notes-under-the-table) says so.
 
 ## With `[stats]` extra
 

@@ -18,7 +18,8 @@ from gcmon.model.names import (
     MARK_ALIVE,
 )
 from gcmon.model.run_report import RunReport
-from gcmon.stats.stats import Stats
+from gcmon.stats import stats as stats_module
+from gcmon.stats.stats import HAS_DDSKETCH, Stats
 from gcmon.stats.stats_output import (
     READ_TIME_LABEL,
     TOTAL_LABEL,
@@ -818,6 +819,87 @@ class TestTheNoteOnRingsWithNoRow:
         print_stats(self._crowded(1), StatsView.FULL)
 
         assert "counted in Total" in capsys.readouterr().out
+
+
+class TestTheNoteOnPercentilesOfTheLatestValues:
+    """Without `ddsketch` a row's percentiles cover its latest values alone,
+    while `Count`, `Sum` and `Avg` cover all of them."""
+
+    NOTE = (
+        f"Percentiles cover at most a row's latest {Stats.MAX_BUFFER_LEN} values. "
+        "Install gcmon[stats] for percentiles over every value."
+    )
+
+    @staticmethod
+    def _pauses(count: int) -> StreamingStats:
+        stats = StreamingStats()
+        for _ in range(count):
+            stats.update(proc(TARGET_PID), _pause())
+        return stats
+
+    @pytest.mark.parametrize("view", [StatsView.TOTAL, StatsView.FULL])
+    def test_a_row_past_the_buffer_prints_it(
+        self, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch, view: StatsView
+    ) -> None:
+        monkeypatch.setattr(stats_module, "HAS_DDSKETCH", False)
+
+        print_stats(self._pauses(Stats.MAX_BUFFER_LEN + 1), view)
+
+        assert _notes(capsys.readouterr().out) == [f"1. {self.NOTE}"]
+
+    def test_read_time_past_the_buffer_prints_it_alone(
+        self, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """It takes a value per poll, however seldom the target collects."""
+        monkeypatch.setattr(stats_module, "HAS_DDSKETCH", False)
+        stats = self._pauses(1)
+        for _ in range(Stats.MAX_BUFFER_LEN + 1):
+            stats.record_read_time(500_000)
+
+        print_stats(stats, StatsView.TOTAL)
+
+        assert _notes(capsys.readouterr().out) == [f"1. {self.NOTE}"]
+
+    def test_it_follows_the_coverage_note(
+        self, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Both qualify the percentile columns."""
+        monkeypatch.setattr(stats_module, "HAS_DDSKETCH", False)
+        stats = self._pauses(Stats.MAX_BUFFER_LEN + 1)
+        stats.record_loss(proc(TARGET_PID), 0, 0, 7, 7_000_000)
+        stats.observe_cumulative(proc(TARGET_PID), 0, 0, 2_000, 2.0)
+
+        print_stats(stats, StatsView.TOTAL)
+
+        notes = _notes(capsys.readouterr().out)
+        assert notes[0].startswith("1. Coverage:")
+        assert notes[1] == f"2. {self.NOTE}"
+        assert notes[2].startswith("3. Since each interpreter started")
+
+    def test_a_full_buffer_holds_every_value_and_prints_nothing(
+        self, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setattr(stats_module, "HAS_DDSKETCH", False)
+        stats = self._pauses(Stats.MAX_BUFFER_LEN)
+        for _ in range(Stats.MAX_BUFFER_LEN):
+            stats.record_read_time(500_000)
+
+        print_stats(stats, StatsView.FULL)
+
+        assert _notes(capsys.readouterr().out) == []
+
+    @pytest.mark.skipif(not HAS_DDSKETCH, reason="ddsketch not installed")
+    @pytest.mark.parametrize("settled", [False, True], ids=["running", "settled"])
+    def test_with_ddsketch_no_row_prints_it(self, capsys: pytest.CaptureFixture[str], settled: bool) -> None:
+        """Settling drops the sketch, and the settled percentiles still cover
+        every value."""
+        stats = self._pauses(Stats.MAX_BUFFER_LEN + 1)
+        if settled:
+            stats.materialize(proc(TARGET_PID))
+
+        print_stats(stats, StatsView.FULL)
+
+        assert _notes(capsys.readouterr().out) == []
 
 
 class TestTheTwoViews:

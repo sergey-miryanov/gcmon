@@ -30,6 +30,7 @@ class Stats:
         self._sketch: DDSketch | None = None
         if HAS_DDSKETCH:
             self._sketch = DDSketch(relative_accuracy=self.REL_ACCURACY)
+        self._sketched = self._sketch is not None
         self._data: deque[float] = deque(maxlen=self.MAX_BUFFER_LEN)
         self._sum: float = 0
         self._count: int = 0
@@ -100,6 +101,10 @@ class Stats:
     @property
     def has_sketch(self) -> bool:
         return self._sketch is not None
+
+    @property
+    def percentiles_cover_every_value(self) -> bool:
+        return self._sketched or self._count <= self.MAX_BUFFER_LEN
 
     @property
     def percentiles(self) -> dict[int, float] | None:

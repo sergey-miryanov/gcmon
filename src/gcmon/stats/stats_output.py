@@ -211,12 +211,15 @@ def print_stats(stats: StreamingStats, view: StatsView, table_format: TableForma
     first column one further than `TOTAL`'s.
     """
     all_rows: list[list[str] | Any] = []
+    row_sources: list[Stats] = []
 
     totals = stats.pause_totals_by_gen()
     first = True
     has_rows = False
     for phase in PHASES:
-        rows = _build_rows(stats.phases[phase], phase.name.label, totals, phase is PausePhase)
+        gen_stats = stats.phases[phase]
+        row_sources.extend(gen_stats.values())
+        rows = _build_rows(gen_stats, phase.name.label, totals, phase is PausePhase)
         if rows:
             if has_rows:
                 all_rows.append(_SEP_PHASE)
@@ -232,7 +235,9 @@ def print_stats(stats: StreamingStats, view: StatsView, table_format: TableForma
         first = True
         has_rows = False
         for phase in PHASES:
-            rows = _build_rows(ring_data.get(phase, {}), phase.name.label, ring_totals, phase is PausePhase)
+            gen_stats = ring_data.get(phase, {})
+            row_sources.extend(gen_stats.values())
+            rows = _build_rows(gen_stats, phase.name.label, ring_totals, phase is PausePhase)
             if rows:
                 if has_rows:
                     all_rows.append(_SEP_PHASE)
@@ -246,6 +251,7 @@ def print_stats(stats: StreamingStats, view: StatsView, table_format: TableForma
 
     rt = stats.read_time
     if rt.count() > 0:
+        row_sources.append(rt)
         all_rows.append(_SEP_GROUP)
         all_rows.append(["", READ_TIME_LABEL, *_format_stats(rt), "", ""])
 
@@ -254,18 +260,16 @@ def print_stats(stats: StreamingStats, view: StatsView, table_format: TableForma
         return
 
     _print_table(all_rows, table_format=table_format)
-    _print_footer(stats, view)
+    every_value = all(s.percentiles_cover_every_value for s in row_sources)
+    _print_footer(stats, view, percentiles_cover_every_value=every_value)
 
 
-def _print_footer(stats: StreamingStats, view: StatsView) -> None:
-    """What the table's two number kinds mean.
-
-    Only printed when something was lost or the target collected before gcmon
-    attached. A run that saw everything has nothing to explain.
+def _print_footer(stats: StreamingStats, view: StatsView, percentiles_cover_every_value: bool) -> None:
+    """What the cells cannot say.
 
     Which notes appear depends on the run, so the number rather than the order
     separates two that wrap on a narrow terminal. A lone note still reads
-    ``1.``. The first two are run-wide; the third is `FULL` only.
+    ``1.``.
     """
     pauses = stats.pause_totals_by_gen()
     cumulative = stats.cumulative_totals_by_gen()
@@ -276,6 +280,11 @@ def _print_footer(stats: StreamingStats, view: StatsView) -> None:
     if covered:
         parts = ", ".join(f"Gen{gen} {_coverage_cell(t.coverage, t.lost_count)}" for gen, t in covered)
         notes.append(f"Coverage: {parts}. Count and Sum read sampled/exact; percentiles are sampled and read high.")
+    if not percentiles_cover_every_value:
+        notes.append(
+            f"Percentiles cover at most a row's latest {Stats.MAX_BUFFER_LEN} values. "
+            "Install gcmon[stats] for percentiles over every value."
+        )
     if counted:
         parts = ", ".join(
             f"Gen{gen} {totals.collections} in {dur_to_ms(totals.pause_ns):.3f} ms" for gen, totals in counted
