@@ -31,9 +31,11 @@ runs:
       uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
       with:
         path: ${{ runner.os == 'Windows' && '~\AppData\Local\pypoetry\Cache' || runner.os == 'macOS' && '~/Library/Caches/pypoetry' || '~/.cache/pypoetry' }}
-        key: poetry-cache-${{ inputs.cache-prefix }}-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('poetry.lock') }}
+        # `-lock-` closes the version, so a 3.15.0 run cannot restore a
+        # 3.15.0-rc.3 cache, whose virtualenv points at a removed interpreter.
+        key: poetry-cache-${{ inputs.cache-prefix }}-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-lock-${{ hashFiles('poetry.lock') }}
         restore-keys: |
-          poetry-cache-${{ inputs.cache-prefix }}-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-
+          poetry-cache-${{ inputs.cache-prefix }}-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-lock-
 
     - name: Install dependencies
       run: poetry install --all-groups --all-extras --no-interaction

@@ -2,6 +2,10 @@
 
 ## WIP
 
+### Internal
+
+- Stability, correctness and performance improvements
+
 ## Version 0.9.0 (2026-10-03)
 
 ### Breaking changes

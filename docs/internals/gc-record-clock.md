@@ -8,7 +8,7 @@ the same timeline. [ADR-0007](../adr/0007-shared-trace-converter-pipeline.md),
 [ADR-0023](../adr/0023-the-pyperf-hook-annotates-and-does-not-drive.md) are
 the decisions this backs.
 
-Everything here is read at CPython 3.15.0b4, in `Python/gc.c`,
+Everything here is read at CPython 3.15.0, in `Python/gc.c`,
 `Python/gc_free_threading.c`, `Python/pytime.c` and `Modules/timemodule.c`.
 
 | | Reads | Through |

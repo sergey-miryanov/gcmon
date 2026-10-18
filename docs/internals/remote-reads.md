@@ -5,8 +5,8 @@ read goes through, and which platform can serve a read from a recycled pid.
 [ADR-0020](../adr/0020-attach-to-a-process-once.md) is the decision this
 backs.
 
-Everything here lives in `Python/remote_debug.h`, read at CPython 3.15.0b4.
-The three read paths are branches of one function,
+Everything here lives in `Python/remote_debug.h`, read at CPython 3.15.0. The
+three read paths are branches of one function,
 `_Py_RemoteDebug_ReadRemoteMemory`.
 
 | | Windows | macOS | Linux |
