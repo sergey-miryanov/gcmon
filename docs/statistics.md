@@ -204,7 +204,7 @@ two processes. A run watching one interpreter reads
 **4. Rings with no row.** `--stats=full` only.
 
 ```
-4. 2 rings got no row: gcmon was already tracking 256 interpreters at once. Those records are counted in Total.
+4. 2 rings got no row: gcmon was already tracking {bound} interpreters at once. Those records are counted in Total.
 ```
 
 gcmon holds detailed statistics for a bounded number of interpreters at once,
