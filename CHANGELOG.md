@@ -2,10 +2,12 @@
 
 ## WIP
 
+## Version 0.9.1 (2026-10-18)
+
 ### Bugfixes
 
-- With the `[stats]` extra, the percentiles of an interpreter whose process exited during the run cover every record gcmon read from it, where they covered its last 1024
-- Without the `[stats]` extra, a `--stats` footer note says when a row's percentiles cover only its latest 1024 values, where nothing in the output said so
+- With the `[stats]` extra, an exited process's percentiles cover every value, where they covered each row's latest 1024
+- Without the `[stats]` extra, a `--stats` footer note says when percentiles cover only a row's latest 1024 values
 
 ### Internal
 
