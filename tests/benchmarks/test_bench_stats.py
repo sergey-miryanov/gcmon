@@ -103,6 +103,46 @@ def test_stats_update_and_percentiles(benchmark: BenchmarkFixture) -> None:
     assert p99 >= p50
 
 
+# The count picks where the percentiles come from: the buffer below its limit,
+# the DDSketch past it.
+BUFFER_OR_DDSKETCH = pytest.mark.parametrize(
+    "count", [Stats.MAX_BUFFER_LEN - 1, EVENT_COUNT], ids=["buffer", "ddsketch"]
+)
+
+
+def _filled_stats(count: int) -> tuple[tuple[Any, ...], dict[str, Any]]:
+    """A `pedantic` setup: a `Stats` holding *count* values, built outside the
+    measured window."""
+    stats = Stats()
+    for i in range(count):
+        stats.update(float((i * 7919) % 100_003))
+    return (stats,), {}
+
+
+@pytest.mark.benchmark
+@BUFFER_OR_DDSKETCH
+def test_stats_percentile(benchmark: BenchmarkFixture, count: int) -> None:
+    def run(stats: Stats) -> tuple[float, ...]:
+        return stats.percentile(50), stats.percentile(90), stats.percentile(95), stats.percentile(99)
+
+    p50, _p90, _p95, p99 = benchmark.pedantic(run, setup=lambda: _filled_stats(count))
+
+    assert p99 >= p50
+
+
+@pytest.mark.benchmark
+@BUFFER_OR_DDSKETCH
+def test_stats_materialize(benchmark: BenchmarkFixture, count: int) -> None:
+    def run(stats: Stats) -> Stats:
+        stats.materialize()
+        return stats
+
+    result = benchmark.pedantic(run, setup=lambda: _filled_stats(count))
+
+    # Not timing: a settle that did nothing would otherwise read as a win.
+    assert result.percentiles is not None
+
+
 @pytest.mark.benchmark
 def test_get_quantile_value(benchmark: BenchmarkFixture) -> None:
     buffer = sorted(float((i * 7919) % 100_003) for i in range(EVENT_COUNT))
