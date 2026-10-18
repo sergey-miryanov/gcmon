@@ -260,11 +260,10 @@ def print_stats(stats: StreamingStats, view: StatsView, table_format: TableForma
         return
 
     _print_table(all_rows, table_format=table_format)
-    every_value = all(s.percentiles_cover_every_value for s in row_sources)
-    _print_footer(stats, view, percentiles_cover_every_value=every_value)
+    _print_footer(stats, view, windowed=any(s.windowed for s in row_sources))
 
 
-def _print_footer(stats: StreamingStats, view: StatsView, percentiles_cover_every_value: bool) -> None:
+def _print_footer(stats: StreamingStats, view: StatsView, windowed: bool) -> None:
     """What the cells cannot say.
 
     Which notes appear depends on the run, so the number rather than the order
@@ -280,7 +279,7 @@ def _print_footer(stats: StreamingStats, view: StatsView, percentiles_cover_ever
     if covered:
         parts = ", ".join(f"Gen{gen} {_coverage_cell(t.coverage, t.lost_count)}" for gen, t in covered)
         notes.append(f"Coverage: {parts}. Count and Sum read sampled/exact; percentiles are sampled and read high.")
-    if not percentiles_cover_every_value:
+    if windowed:
         notes.append(
             f"Percentiles cover at most a row's latest {Stats.MAX_BUFFER_LEN} values. "
             "Install gcmon[stats] for percentiles over every value."

@@ -103,8 +103,8 @@ class Stats:
         return self._sketch is not None
 
     @property
-    def percentiles_cover_every_value(self) -> bool:
-        return self._sketched or self._count <= self.MAX_BUFFER_LEN
+    def windowed(self) -> bool:
+        return not self._sketched and self._count > self.MAX_BUFFER_LEN
 
     @property
     def percentiles(self) -> dict[int, float] | None:
