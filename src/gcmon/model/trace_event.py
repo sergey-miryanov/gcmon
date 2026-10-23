@@ -16,6 +16,7 @@ __all__ = [
     "Instant",
     "InterpreterTrack",
     "LossTrack",
+    "PauseTrack",
     "ProcessTrack",
     "Slice",
     "TraceEvent",
@@ -32,11 +33,25 @@ class ProcessTrack(msgspec.Struct, frozen=True):
     process: Process
 
 
-class InterpreterTrack(msgspec.Struct, frozen=True):
-    """Interpreter *iid*'s row, carrying its collections.
+class PauseTrack(msgspec.Struct, frozen=True):
+    """Interpreter *iid*'s collections in generation *gen*: each pause and
+    the sub-phases inside it.
 
     Drawn as a plain custom track named ``GC Pauses``, under the group that
-    holds every row interpreter *iid* owns (ADR-0027).
+    holds every row interpreter *iid* owns (ADR-0027). The trace processor
+    merges an interpreter's three into one row by name.
+    """
+
+    process: Process
+    iid: int
+    gen: int
+
+
+class InterpreterTrack(msgspec.Struct, frozen=True):
+    """Interpreter *iid*'s counters.
+
+    It has no row of its own: each counter draws on a track of its own,
+    inside the group that holds every row interpreter *iid* owns (ADR-0027).
     """
 
     process: Process
@@ -56,7 +71,7 @@ class LossTrack(msgspec.Struct, frozen=True):
     iid: int
 
 
-type Track = ProcessTrack | InterpreterTrack | LossTrack
+type Track = ProcessTrack | PauseTrack | InterpreterTrack | LossTrack
 
 
 type ArgGroup = dict[str, int | str]

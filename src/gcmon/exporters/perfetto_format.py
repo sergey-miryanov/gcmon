@@ -18,6 +18,7 @@ from ..model.trace_event import (
     Instant,
     InterpreterTrack,
     LossTrack,
+    PauseTrack,
     ProcessTrack,
     Slice,
     TraceEvent,
@@ -126,7 +127,7 @@ _UNLISTED_COUNTER_RANK: int = len(_COUNTER_RANKS)
 
 
 def _emit_interpreter_group_descriptors(
-    track: InterpreterTrack | LossTrack,
+    track: PauseTrack | InterpreterTrack | LossTrack,
     state: PerfettoTrackState,
     sequence_id: int,
 ) -> tuple[int, list[bytes]]:
@@ -161,7 +162,7 @@ def _emit_interpreter_group_descriptors(
 
 
 def _emit_pause_descriptor(
-    track: InterpreterTrack,
+    track: PauseTrack,
     state: PerfettoTrackState,
     sequence_id: int,
 ) -> list[bytes]:
@@ -207,7 +208,7 @@ def _emit_loss_descriptor(
 
 
 def _emit_counter_group_descriptor(
-    track: InterpreterTrack | LossTrack,
+    track: PauseTrack | InterpreterTrack | LossTrack,
     state: PerfettoTrackState,
     sequence_id: int,
 ) -> tuple[int, list[bytes]]:
@@ -303,7 +304,8 @@ def _emit_track_descriptors(
 
     The process descriptor whichever kind of track this is, then the track's
     own where it has one of its own to write. A ``ProcessTrack`` has none: the
-    process descriptor *is* its descriptor.
+    process descriptor *is* its descriptor. An ``InterpreterTrack`` has none
+    either: each of its counters gets one of its own.
     """
     process = track.process
     descriptors = _emit_process_descriptor(
@@ -313,7 +315,7 @@ def _emit_track_descriptors(
         sibling_order_rank=state.get_process_track_rank(process),
         start_timestamp_ns=state.get_process_lifetime_start_ts(process),
     )
-    if isinstance(track, InterpreterTrack):
+    if isinstance(track, PauseTrack):
         descriptors.extend(_emit_pause_descriptor(track, state, sequence_id))
     elif isinstance(track, LossTrack):
         descriptors.extend(_emit_loss_descriptor(track, state, sequence_id))

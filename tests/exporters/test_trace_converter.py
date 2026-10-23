@@ -29,7 +29,7 @@ from gcmon.model.phases import (
     OldWorkField,
 )
 from gcmon.model.protocol import TGCStatsInfo, TItem
-from gcmon.model.trace_event import Counter, InterpreterTrack, LossTrack, ProcessTrack, Slice
+from gcmon.model.trace_event import Counter, InterpreterTrack, LossTrack, PauseTrack, ProcessTrack, Slice
 from tests.data_helpers import create_instant_msg
 from tests.helpers import (
     as_instrumented_structseq,
@@ -250,6 +250,22 @@ class TestTheGenerationAndInterpreter:
         assert all(sub_phase.args.keys().isdisjoint({GENERATION, IID}) for sub_phase in sub_phases)
 
 
+class TestTheTracksARecordNames:
+    """Its pause and sub-phases draw on a track carrying the generation, and
+    its counters on the interpreter's own (ADR-0024)."""
+
+    @pytest.mark.parametrize("gen_number", [0, 1, 2])
+    def test_its_slices_name_its_generation_s_pause_track(self, gen_number: int) -> None:
+        events = convert_item_to_trace_format(proc(1), create_mock_incremental_item(gen=gen_number, iid=3))
+
+        assert {e.track for e in events if isinstance(e, Slice)} == {PauseTrack(proc(1), 3, gen_number)}
+
+    def test_its_counters_name_the_interpreter_s_track(self) -> None:
+        events = convert_item_to_trace_format(proc(1), create_mock_incremental_item(gen=1, iid=3))
+
+        assert {e.track for e in events if isinstance(e, Counter)} == {InterpreterTrack(proc(1), 3)}
+
+
 class TestAPhaseTheGenerationSkips:
     """Mark Alive does not run at generation 0, nor Fill Increment at 2. A
     record carrying a span for one there still draws no slice for it."""
@@ -354,6 +370,6 @@ class TestAnItemOfNoKnownKind:
 
         events = convert_to_trace_format({1: capture})
 
-        # Each kind draws on a track type of its own. The event types would
+        # Each kind draws on track types of its own. The event types would
         # not show a loss, which is a `Slice` like a pause.
-        assert {type(e.track) for e in events} == {InterpreterTrack, LossTrack, ProcessTrack}
+        assert {type(e.track) for e in events} == {PauseTrack, InterpreterTrack, LossTrack, ProcessTrack}

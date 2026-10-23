@@ -11,7 +11,7 @@ from collections.abc import Iterable
 from typing import NamedTuple
 
 from ..model.process import Process
-from ..model.trace_event import InterpreterTrack, Track
+from ..model.trace_event import PauseTrack, Track
 
 
 class ProcessSpan(NamedTuple):
@@ -105,11 +105,11 @@ class PerfettoTrackState:
     def get_interpreter_count(self, process: Process) -> int:
         """How many of *process*'s interpreters gcmon read a record from.
 
-        `convert_item_to_trace_format` is the only place an
-        `InterpreterTrack` is built and it takes the iid off a record, so an
-        interpreter that produced nothing reaches no part of the exporter.
+        `convert_item_to_trace_format` is the only place a `PauseTrack` is
+        built and it takes the iid off a record, so an interpreter that
+        produced nothing reaches no part of the exporter.
         """
-        return sum(1 for track in self._tracks if isinstance(track, InterpreterTrack) and track.process == process)
+        return len({track.iid for track in self._tracks if isinstance(track, PauseTrack) and track.process == process})
 
     def record_sampled(self, process: Process) -> None:
         """Count one more record read for *process*.
@@ -175,9 +175,9 @@ class PerfettoTrackState:
     def get_or_create_interpreter_group_track_uuid(self, process: Process, iid: int) -> int:
         """The uuid of the group holding every row interpreter *iid* owns.
 
-        Keyed on the pair rather than on a `Track`, because an
-        `InterpreterTrack` and a `LossTrack` naming the same interpreter
-        share a group (ADR-0027).
+        Keyed on the pair rather than on a `Track`, because every
+        `PauseTrack`, the `InterpreterTrack` and the `LossTrack` naming the
+        same interpreter share a group (ADR-0027).
         """
         key = (process, iid)
         if key not in self._interpreter_group_uuids:

@@ -17,11 +17,13 @@ from gcmon.exporters.perfetto_format import (
     _COUNTER_GROUP_NAME,
     _INTERPRETER_LIST_NAME,
     _INTERPRETER_ROW_ORDER,
+    _PAUSE_TRACK_NAME,
     _interpreter_group_name,
 )
 from gcmon.exporters.perfetto_process_lifetime import (
     _PROCESS_LIFETIME_TRACK_NAME,
     _PROCESS_ROW_PREFIX,
+    _PROCESS_ROW_SLICE_NAME,
     process_track_name,
 )
 from gcmon.model.names import (
@@ -59,6 +61,7 @@ from tests.exporters.perfetto_integration.traces import (
     _EXPECTED_PAUSE_ARGS,
     _FAKE_CMDLINE_JOINED,
     _HEAP_SIZE,
+    _IID,
     _INSTANT_NAME,
     _PAUSE_NAME,
     _RSS_PID_1,
@@ -74,6 +77,7 @@ from tests.exporters.perfetto_integration.traces import (
     _on_interpreter,
     _process_filter,
     _process_filter_instant,
+    flat_key,
 )
 from tests.helpers import (
     create_mock_stats_item,
@@ -399,6 +403,39 @@ class TestTheOrderRowsAreDrawnIn:
         drawn = rows_drawn_under(every_row_trace_processor)
 
         assert drawn == [_DEFAULT_ROW_NAME, _PROCESS_LIFETIME_TRACK_NAME, _INTERPRETER_LIST_NAME, RSS]
+
+
+class TestAnInterpreterCollectingInEveryGeneration:
+    """One interpreter's three generations draw on one `GC Pauses` row and
+    count as one interpreter, however many tracks the row is made of."""
+
+    def test_draws_one_pause_row(self, three_generations_trace_processor: TraceProcessor) -> None:
+        drawn = rows_drawn_under(
+            three_generations_trace_processor, _INTERPRETER_LIST_NAME, _interpreter_group_name(_IID)
+        )
+
+        assert drawn.count(_PAUSE_TRACK_NAME) == 1
+
+    def test_the_row_holds_every_generation_s_pause(self, three_generations_trace_processor: TraceProcessor) -> None:
+        tp = three_generations_trace_processor
+        list(tp.query("INCLUDE PERFETTO MODULE viz.summary.track_event"))
+        [row] = list(
+            tp.query(f"SELECT track_ids FROM _track_event_tracks_ordered_groups WHERE name = '{_PAUSE_TRACK_NAME}'")
+        )
+
+        pauses = tp.query(f"SELECT name FROM slice WHERE track_id IN ({row.track_ids}) AND depth = 0")
+
+        assert sorted(r.name for r in pauses) == [gc_pause_slice_name(gen) for gen in range(3)]
+
+    def test_counts_as_one_interpreter(self, three_generations_trace_processor: TraceProcessor) -> None:
+        [row] = list(
+            three_generations_trace_processor.query(
+                f"SELECT EXTRACT_ARG(arg_set_id, '{flat_key('interpreters')}') AS interpreters "
+                f"FROM slice WHERE name = '{_PROCESS_ROW_SLICE_NAME}'"
+            )
+        )
+
+        assert row.interpreters == 1
 
 
 class TestTrackDescriptors:

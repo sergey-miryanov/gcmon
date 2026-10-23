@@ -35,14 +35,14 @@ from gcmon.model.trace_event import EventArgs, Slice, TraceEvent
 from tests.exporters.perfetto_helpers import parse_track_descriptor
 from tests.helpers import (
     gc_pause_slice_name,
-    interpreter_track,
     open_trace_processor,
+    pause_track,
     phase_slice_name,
     proc,
 )
 
 PID = 4242
-ROW = interpreter_track(PID, 0)
+ROW = pause_track(PID, 0, 0)
 ROW_PROCESS_NAME = process_track_name(proc(PID))
 SEQUENCE_ID = 7
 
@@ -244,12 +244,13 @@ class TestTheTraceProcessorBuildsTheNesting:
     def test_a_whole_record_shape_reads_back_intact(self, tmp_path: Path) -> None:
         """A pause with three sub-phases: one starting with it, two meeting
         each other, the last ending with it. Every tie above at once."""
+        track = pause_track(PID, 0, 2)
         row = _as_read_back(
             [
-                Slice(ROW, gc_pause_slice_name(2), PAUSE.category, 1_000, 1_900, {}),
-                Slice(ROW, phase_slice_name(MARK_ALIVE, 2), MARK_ALIVE.category, 1_000, 1_200, {}),
-                Slice(ROW, phase_slice_name(DEDUCE_UNREACHABLE, 2), DEDUCE_UNREACHABLE.category, 1_400, 1_700, {}),
-                Slice(ROW, phase_slice_name(DELETE_GARBAGE, 2), DELETE_GARBAGE.category, 1_700, 1_900, {}),
+                Slice(track, gc_pause_slice_name(2), PAUSE.category, 1_000, 1_900, {}),
+                Slice(track, phase_slice_name(MARK_ALIVE, 2), MARK_ALIVE.category, 1_000, 1_200, {}),
+                Slice(track, phase_slice_name(DEDUCE_UNREACHABLE, 2), DEDUCE_UNREACHABLE.category, 1_400, 1_700, {}),
+                Slice(track, phase_slice_name(DELETE_GARBAGE, 2), DELETE_GARBAGE.category, 1_700, 1_900, {}),
             ],
             tmp_path,
             "record",

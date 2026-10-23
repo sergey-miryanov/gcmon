@@ -547,6 +547,20 @@ def _write_every_row_trace(tmp: Path) -> Path:
     return path
 
 
+def _write_three_generations_trace(tmp: Path) -> Path:
+    """One interpreter collecting once in each generation, one after another."""
+    path = tmp / "trace_three_generations.pb"
+    exporter = PerfettoExporter(output_path=path, flush_threshold=1000)
+    for gen in range(3):
+        ts_start = _TS_START + gen * 10_000_000
+        exporter.add_event(
+            proc(DEFAULT_PID),
+            create_mock_stats_item(gen=gen, iid=_IID, ts_start=ts_start, ts_stop=ts_start + 5_000_000),
+        )
+    exporter.close()
+    return path
+
+
 def _write_trace_with_rss(tmp: Path) -> Path:
     path = tmp / "trace_with_rss.pb"
     exporter: PerfettoExporter = PerfettoExporter(output_path=path, flush_threshold=1000)

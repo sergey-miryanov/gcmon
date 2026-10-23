@@ -18,6 +18,7 @@ from tests.helpers import (
     create_mock_stats_item,
     interpreter_track,
     loss_track,
+    pause_track,
     proc,
     process_track,
 )
@@ -65,7 +66,7 @@ class TestTheBufferHoldsNothingButEvents:
         exporter.add_event(proc(TARGET_PID), item)
 
         assert exporter._buffer == convert_item_to_trace_format(proc(TARGET_PID), item)
-        assert {e.track for e in exporter._buffer} == {interpreter_track(TARGET_PID, 0)}
+        assert {e.track for e in exporter._buffer} == {pause_track(TARGET_PID, 0, 0), interpreter_track(TARGET_PID, 0)}
 
 
 class TestAddRssSample:
@@ -128,13 +129,13 @@ class TestAddLossEvent:
         exporter.add_loss_event(proc(TARGET_PID), _loss())
 
         assert {e.track for e in exporter._buffer if isinstance(e, Slice)} == {
-            interpreter_track(TARGET_PID, 0),
+            pause_track(TARGET_PID, 0, 0),
             loss_track(TARGET_PID, 0),
         }
 
     def test_a_loss_event_names_no_interpreter_row(self, tmp_path: Path) -> None:
-        """A `LossTrack` is not an `InterpreterTrack`, so a poll gcmon went blind in
-        draws nothing on the interpreter's own row."""
+        """A `LossTrack` is not a `PauseTrack`, so a poll gcmon went blind in
+        draws nothing on the interpreter's pause row."""
         exporter = self._make_exporter(tmp_path)
 
         exporter.add_loss_event(proc(TARGET_PID), _loss())

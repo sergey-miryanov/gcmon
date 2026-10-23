@@ -51,6 +51,7 @@ from tests.helpers import (
     create_jsonl_record,
     create_mock_stats_item,
     interpreter_track,
+    pause_track,
 )
 
 
@@ -372,7 +373,12 @@ class TestConvertJsonlToTraceFormat:
 
         events = convert_jsonl_to_trace_format(path)
 
-        assert {e.track for e in events} == {interpreter_track(1, 0), interpreter_track(2, 0)}
+        assert {e.track for e in events} == {
+            pause_track(1, 0, 0),
+            interpreter_track(1, 0),
+            pause_track(2, 0, 0),
+            interpreter_track(2, 0),
+        }
 
 
 class TestAnOldFormatLossRecord:

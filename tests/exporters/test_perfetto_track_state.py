@@ -5,7 +5,7 @@ from gcmon.model.names import COLLECTED, HEAP_SIZE, counter_display_name
 from gcmon.model.process import Process
 from tests.conftest import DEFAULT_PID
 from tests.exporters.perfetto_helpers import span
-from tests.helpers import interpreter_track, loss_track, proc
+from tests.helpers import interpreter_track, loss_track, pause_track, proc
 
 # The process the state is asked about.
 TARGET_PID: int = 100
@@ -17,7 +17,7 @@ OTHER_PID: int = 200
 class TestPerfettoTrackState:
     def test_init_empty(self, state: PerfettoTrackState) -> None:
         assert not state.has_process_descriptor(proc(123))
-        assert not state.has_track(interpreter_track(123, 0))
+        assert not state.has_track(pause_track(123, 0, 0))
         assert not state.has_counter_track(interpreter_track(123, 0), counter_display_name(0, COLLECTED))
 
     def test_pid_tracking(self, state: PerfettoTrackState) -> None:
@@ -29,28 +29,28 @@ class TestPerfettoTrackState:
         assert not state.has_process_descriptor(proc(OTHER_PID))
 
     def test_marking_a_track_marks_that_interpreter_alone(self, state: PerfettoTrackState) -> None:
-        assert not state.has_track(interpreter_track(TARGET_PID, 0))
+        assert not state.has_track(pause_track(TARGET_PID, 0, 0))
 
-        state.mark_track(interpreter_track(TARGET_PID, 0))
+        state.mark_track(pause_track(TARGET_PID, 0, 0))
 
-        assert state.has_track(interpreter_track(TARGET_PID, 0))
-        assert not state.has_track(interpreter_track(TARGET_PID, 1))
-        assert not state.has_track(interpreter_track(OTHER_PID, 0))
+        assert state.has_track(pause_track(TARGET_PID, 0, 0))
+        assert not state.has_track(pause_track(TARGET_PID, 1, 0))
+        assert not state.has_track(pause_track(OTHER_PID, 0, 0))
 
     def test_process_track_uuid(self, state: PerfettoTrackState) -> None:
         uuid = state.get_process_track_uuid(proc(DEFAULT_PID))
 
         assert uuid == 1
 
-    def test_interpreter_track_uuid(self, state: PerfettoTrackState) -> None:
-        uuid = state.get_track_uuid(interpreter_track(DEFAULT_PID, 0))
+    def test_pause_track_uuid(self, state: PerfettoTrackState) -> None:
+        uuid = state.get_track_uuid(pause_track(DEFAULT_PID, 0, 0))
 
         assert uuid == 1
 
-    def test_interpreter_track_uuid_different_iid(self, state: PerfettoTrackState) -> None:
-        uuid0 = state.get_track_uuid(interpreter_track(DEFAULT_PID, 0))
+    def test_pause_track_uuid_different_iid(self, state: PerfettoTrackState) -> None:
+        uuid0 = state.get_track_uuid(pause_track(DEFAULT_PID, 0, 0))
 
-        uuid1 = state.get_track_uuid(interpreter_track(DEFAULT_PID, 1))
+        uuid1 = state.get_track_uuid(pause_track(DEFAULT_PID, 1, 0))
 
         assert uuid0 != uuid1
 
@@ -162,47 +162,53 @@ class TestRankAllocation:
 class TestInterpreterCount:
     """How many interpreters gcmon read a record from, per process.
 
-    An `InterpreterTrack` is built in one place, off a record's iid, so a
-    track marked here is an interpreter that produced something.
+    A `PauseTrack` is built in one place, off a record, so a track marked
+    here is an interpreter that produced something.
     """
 
     def test_a_process_with_no_tracks_counts_zero(self, state: PerfettoTrackState) -> None:
         assert state.get_interpreter_count(proc(TARGET_PID)) == 0
 
     def test_each_interpreter_counts_once(self, state: PerfettoTrackState) -> None:
-        state.mark_track(interpreter_track(TARGET_PID, 0))
-        state.mark_track(interpreter_track(TARGET_PID, 1))
+        state.mark_track(pause_track(TARGET_PID, 0, 0))
+        state.mark_track(pause_track(TARGET_PID, 1, 0))
 
         assert state.get_interpreter_count(proc(TARGET_PID)) == 2
 
-    def test_marking_one_twice_counts_once(self, state: PerfettoTrackState) -> None:
-        state.mark_track(interpreter_track(TARGET_PID, 0))
+    def test_one_collecting_in_every_generation_counts_once(self, state: PerfettoTrackState) -> None:
+        for gen in range(3):
+            state.mark_track(pause_track(TARGET_PID, 0, gen))
 
-        state.mark_track(interpreter_track(TARGET_PID, 0))
+        assert state.get_interpreter_count(proc(TARGET_PID)) == 1
+
+    def test_marking_one_twice_counts_once(self, state: PerfettoTrackState) -> None:
+        state.mark_track(pause_track(TARGET_PID, 0, 0))
+
+        state.mark_track(pause_track(TARGET_PID, 0, 0))
 
         assert state.get_interpreter_count(proc(TARGET_PID)) == 1
 
     def test_a_loss_row_does_not_widen_the_count(self, state: PerfettoTrackState) -> None:
         """A loss row names an interpreter but is not one, and gcmon builds
         its groups from records it already read."""
-        state.mark_track(interpreter_track(TARGET_PID, 0))
+        state.mark_track(pause_track(TARGET_PID, 0, 0))
 
         state.mark_track(loss_track(TARGET_PID, 0))
 
         assert state.get_interpreter_count(proc(TARGET_PID)) == 1
 
     def test_another_process_is_counted_apart(self, state: PerfettoTrackState) -> None:
-        state.mark_track(interpreter_track(TARGET_PID, 0))
-        state.mark_track(interpreter_track(OTHER_PID, 0))
-        state.mark_track(interpreter_track(OTHER_PID, 1))
+        state.mark_track(pause_track(TARGET_PID, 0, 0))
+        state.mark_track(pause_track(OTHER_PID, 0, 0))
+        state.mark_track(pause_track(OTHER_PID, 1, 0))
 
         assert state.get_interpreter_count(proc(TARGET_PID)) == 1
         assert state.get_interpreter_count(proc(OTHER_PID)) == 2
 
     def test_two_processes_on_one_pid_are_counted_apart(self, state: PerfettoTrackState) -> None:
-        state.mark_track(interpreter_track(TARGET_PID, 0))
-        state.mark_track(interpreter_track(TARGET_PID, 0, pid_epoch=2))
-        state.mark_track(interpreter_track(TARGET_PID, 1, pid_epoch=2))
+        state.mark_track(pause_track(TARGET_PID, 0, 0))
+        state.mark_track(pause_track(TARGET_PID, 0, 0, pid_epoch=2))
+        state.mark_track(pause_track(TARGET_PID, 1, 0, pid_epoch=2))
 
         assert state.get_interpreter_count(proc(TARGET_PID)) == 1
         assert state.get_interpreter_count(proc(TARGET_PID, 2)) == 2
@@ -348,11 +354,13 @@ class TestProcessLifetimeState:
 class TestTwoProcessesOnOnePidGetTheirOwnRows:
     """A `Track` names the process it was drawn for, and every row the
     exporter allocates is filed under that process: a pid handed on draws two
-    process tracks, two interpreter tracks, two loss tracks, two counter groups and
-    two of each counter (ADR-0028)."""
+    process tracks, two of each pause track, two loss tracks, two counter groups
+    and two of each counter (ADR-0028)."""
 
     FIRST = interpreter_track(TARGET_PID, 0, 1)
     SECOND = interpreter_track(TARGET_PID, 0, 2)
+    FIRST_PAUSES = pause_track(TARGET_PID, 0, 0, pid_epoch=1)
+    SECOND_PAUSES = pause_track(TARGET_PID, 0, 0, pid_epoch=2)
 
     def test_the_process_track_gets_a_uuid_per_process(self, state: PerfettoTrackState) -> None:
 
@@ -363,14 +371,14 @@ class TestTwoProcessesOnOnePidGetTheirOwnRows:
 
         assert not state.has_process_descriptor(proc(TARGET_PID, 2))
 
-    def test_the_interpreter_track_gets_a_uuid_per_process(self, state: PerfettoTrackState) -> None:
+    def test_the_pause_track_gets_a_uuid_per_process(self, state: PerfettoTrackState) -> None:
 
-        assert state.get_track_uuid(self.SECOND) != state.get_track_uuid(self.FIRST)
+        assert state.get_track_uuid(self.SECOND_PAUSES) != state.get_track_uuid(self.FIRST_PAUSES)
 
-    def test_the_interpreter_descriptor_goes_out_per_process(self, state: PerfettoTrackState) -> None:
-        state.mark_track(self.FIRST)
+    def test_the_pause_descriptor_goes_out_per_process(self, state: PerfettoTrackState) -> None:
+        state.mark_track(self.FIRST_PAUSES)
 
-        assert not state.has_track(self.SECOND)
+        assert not state.has_track(self.SECOND_PAUSES)
 
     def test_the_loss_track_gets_a_uuid_per_process(self, state: PerfettoTrackState) -> None:
 
@@ -391,7 +399,7 @@ class TestTwoProcessesOnOnePidGetTheirOwnRows:
     def test_two_interpreters_are_still_two_rows(self, state: PerfettoTrackState) -> None:
         """The control: dropping the epoch must not fold anything else."""
 
-        assert state.get_track_uuid(interpreter_track(TARGET_PID, 1, 1)) != state.get_track_uuid(self.FIRST)
+        assert state.get_track_uuid(pause_track(TARGET_PID, 1, 0)) != state.get_track_uuid(self.FIRST_PAUSES)
 
 
 class TestCaptureTotals:

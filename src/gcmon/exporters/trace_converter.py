@@ -30,6 +30,7 @@ from ..model.trace_event import (
     Instant,
     InterpreterTrack,
     LossTrack,
+    PauseTrack,
     ProcessTrack,
     Slice,
     TraceEvent,
@@ -66,7 +67,7 @@ def _phase_parts(phases: tuple[type[Phase], ...]) -> _PhaseParts:
 def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[TraceEvent]:
     gen = item.gen
     iid = item.iid
-    track = InterpreterTrack(process, iid)
+    track = PauseTrack(process, iid, gen)
     ts_start_ns = item.ts_start
     ts_stop_ns = item.ts_stop
 
@@ -107,8 +108,9 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
     for field in fields:
         pause_data.update(field.args(gen, item))
 
+    counter_track = InterpreterTrack(process, iid)
     events.extend(
-        Counter(track, metric, name, ts, value)
+        Counter(counter_track, metric, name, ts, value)
         for metric, name, ts, value in Counters.counters(gen, ts_start_ns, ts_stop_ns, item)
     )
 

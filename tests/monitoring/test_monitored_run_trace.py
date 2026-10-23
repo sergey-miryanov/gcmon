@@ -538,7 +538,7 @@ class TestTheChildLeavingIsVisible:
         by_track = run.row_pid_by_track()
         row_pids = run.row_pids_on(CHILD_PID)
         rows = {
-            uuid
+            by_track[uuid]
             for packet in run.packets()
             if packet.HasField("track_event")
             and packet.track_event.type == TrackEvent.Type.TYPE_SLICE_BEGIN
