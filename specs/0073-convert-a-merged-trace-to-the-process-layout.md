@@ -127,7 +127,7 @@ process.
   the fold testable without a trace processor.
 - **What makes a good test here:** what the trace processor reads from both
   traces, not their bytes, with row pids and ranks left out of the comparison.
-- **Prior art:** spec 0072 case 7, and `test_combine_loss_round_trip.py`.
+- **Prior art:** spec 0075 case 2, and `test_combine_loss_round_trip.py`.
 - **Cases:**
   1. Every slice, argument, counter sample, `Lifetime` count and RSS sample of
      the live process-layout trace appears in the converted one, row pids and
@@ -154,4 +154,4 @@ process.
 
 ## 7. Further notes
 
-- Constrained after spec 0072, which writes the input.
+- Constrained after spec 0075, which writes the input.

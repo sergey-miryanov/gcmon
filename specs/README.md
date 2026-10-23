@@ -39,6 +39,7 @@ This file holds the open set and the order to take it in. The other two:
 | [0063](0063-compare-two-tracefiles.md) | Feature (enhancement) | L | Nothing answers "did GC get worse between these two runs"; two tables side by side works for one row and fails for sixty |
 | [0072](0072-draw-a-run-on-rows-by-kind.md) | Feature (enhancement) | M | On a wide tree a process's pauses sit two groups down in one of thousands of rows, and nothing draws the run's pauses, loss and processes on a few rows |
 | [0073](0073-convert-a-merged-trace-to-the-process-layout.md) | Feature (enhancement) | M | A trace recorded with `--layout merged` cannot become the process layout, so its counter charts and per-process rows cost a rerun |
+| [0075](0075-draw-a-run-without-its-process-rows.md) | Feature (enhancement) | S | A trace of a wide tree holds thousands of process rows beside its run rows and draws each pause twice, with no way to keep the run rows alone |
 
 Every row here has a file. A missing number either retired or never became
 one; [RETIRED.md](RETIRED.md) says which.
@@ -56,7 +57,8 @@ one; [RETIRED.md](RETIRED.md) says which.
 | 0042 | |
 | 0020 | Unblocked: 0067 landed, and the `Lifetime` slice is where both fields go |
 | 0072 | |
-| 0073 | Constrained: after 0072 |
+| 0075 | Constrained: after 0072 |
+| 0073 | Constrained: after 0075 |
 | 0051 | Unblocked: 0039 landed, and `StreamingStats` is in the module it will keep |
 | 0060 | Smallest of the comparison set and depends on none of it |
 | 0061 | Unblocked: 0059 landed, and a trace now says which process held a pid |
@@ -81,6 +83,7 @@ the position. A blank cell means no recorded reason, so that row can move.
 | First | Then | Why |
 |-------|------|-----|
 | 0060, 0061, 0062 | 0063 | 0063 builds two of the tables those three produce and diffs them; it computes no statistic of its own |
-| 0072 | 0073 | 0073 reads the merged trace 0072 writes |
+| 0072 | 0075 | 0075 draws the run rows 0072 builds, without the process rows |
+| 0075 | 0073 | 0073 reads the merged trace 0075 writes |
 
 0042 depends on nothing else here; take it at any time.

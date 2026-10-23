@@ -93,35 +93,46 @@ Perfetto UI. One run writes one, live or through `combine`. **Tracefile** and
 _Avoid_: timeline, profile, output file
 
 **Track**:
-One row in a trace. An **event** names the track it is drawn on: a
-**process**'s row for its marks and its RSS, an **interpreter**'s **pause
-row** for that interpreter's collections, or its **loss** row.
-_Avoid_: thread (a track is not one), tid, row (in output; fine in prose). A
-**lane** is not a track either; it is the entry below.
+What an **event** names as the place it is drawn: a **process**'s own track
+for its marks, an **interpreter**'s pauses in one **generation**, or its
+**loss** windows. A **layout** writes one track descriptor per track, and the
+full layout two, one on each row that draws it. A counter names the process or
+interpreter that owns it and is drawn on a track of its own.
+_Avoid_: thread (a track is not one), tid, row and lane (the two entries
+below)
+
+**Row**:
+One line the viewer draws, made of every track that shares its name and its
+parent. The `Processes` row merges a track per process, and an interpreter's
+`GC Pauses` row a track per generation. Perfetto's UI calls a row a track.
+_Avoid_: track (that is what an event names), visual track
 
 **Lane**:
-One of the sub-rows a **track** stacks overlapping slices into. Every process
-draws its **span** on a track of its own and the `Processes` row is those
-tracks merged, so the row is as many lanes tall as the largest number of
-processes alive at once, and which lane a span lands in follows from the spans
-before it and means nothing else.
-_Avoid_: track and sub-track (the merge leaves a lane no track of its own to
-name), slot, depth, level
+One of the sub-rows a **row** stacks overlapping slices into, each with a
+`track_id` of its own in the trace processor. Every process draws its **span**
+on a track of its own and the `Processes` row is those tracks merged, so the
+row is as many lanes tall as the largest number of processes alive at once,
+and which lane a span lands in follows from the spans before it and means
+nothing else.
+_Avoid_: track (the trace processor's word for it), sub-track, slot, depth,
+level
 
 **Layout**:
-Which tracks a **trace** draws its events on. The **process layout** gives
-every process a row of its own with its interpreters inside it. The **merged
-layout** draws the run by kind: one row holds every `Gen0` pause in it,
-another every **loss window**, each made of tracks merged by name. Both are
-Perfetto traces, and an operator picks one per run.
-_Avoid_: format (that is `--format`, the file type), short, full, compact,
-overview, summary
+Which rows a **trace** draws its events on. The **process rows** give every
+process a row of its own with its interpreters inside it. The **run rows**
+draw the run by kind: one row holds every `Gen0` pause in it, another every
+**loss window**. The **process layout** draws the process rows, the **merged
+layout** the run rows, and the **full layout**, the default, both. `Processes`
+is in all three, and an operator picks one layout per run.
+_Avoid_: format (that is `--format`, the file type), short, compact, overview,
+summary, merged rows (every row merges its tracks by name)
 
 **Interpreter group**:
 The `Interpreter {iid}` row every track one **interpreter** owns hangs under:
 its pause row, its loss row, its `heap_size` and its **counter group**. One
 per **iid**, holding no events of its own.
-_Avoid_: thread group, iid track, interpreter track (that is the pause row)
+_Avoid_: thread group, iid track, interpreter track (`InterpreterTrack` is
+what its counters name)
 
 **Interpreter list**:
 The `Python Interpreters` row holding a process's **interpreter groups**, one
