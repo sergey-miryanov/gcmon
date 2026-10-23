@@ -2,6 +2,11 @@
 
 ## WIP
 
+### Features
+
+- Every pause in the run sits on its generation's row under `All GC Pauses`
+- A pause under `All GC Pauses` carries `pid` and `pid_epoch`
+
 ## Version 0.9.1 (2026-10-18)
 
 ### Bugfixes

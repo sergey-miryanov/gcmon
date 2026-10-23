@@ -3,6 +3,7 @@ from pathlib import Path
 # Imported as a module, not by name: `case NAME:` binds a variable where
 # `case module.NAME:` compares against its value.
 from ..support import vocabulary
+from .encoder import Layout
 from .exporter import EventsExporter
 from .jsonl_exporter import JsonlExporter
 from .perfetto_exporter import PerfettoExporter
@@ -22,6 +23,10 @@ class EventsExporterFactory:
             case vocabulary.FORMAT_JSONL:
                 return JsonlExporter(output_path=self._output_path, flush_threshold=self._flush_threshold)
             case vocabulary.FORMAT_PERFETTO:
-                return PerfettoExporter(output_path=self._output_path, flush_threshold=self._flush_threshold)
+                return PerfettoExporter(
+                    output_path=self._output_path,
+                    flush_threshold=self._flush_threshold,
+                    layout=Layout.FULL,
+                )
             case _:
                 raise ValueError(f"Unknown output format: {self._output_format}")

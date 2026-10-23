@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from ..exporters.encoder import ProtobufEventEncoder
+from ..exporters.encoder import Layout, ProtobufEventEncoder
 from ..exporters.trace_converter import convert_to_trace_format
 from ..model.protocol import TItem
 from ..model.trace_event import Slice, TraceEvent
@@ -83,7 +83,7 @@ def combine_files(
 
         trace_events.extend(file_events)
 
-    perfetto_encoder = ProtobufEventEncoder()
+    perfetto_encoder = ProtobufEventEncoder(layout=Layout.PROCESS)
     perfetto_encoder.open(output_path)
     try:
         perfetto_encoder.write_events(trace_events)

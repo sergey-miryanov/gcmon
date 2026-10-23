@@ -28,6 +28,7 @@ from gcmon.exporters.perfetto_process_lifetime import (
     _PROCESS_ROW_SLICE_NAME,
     process_track_name,
 )
+from gcmon.exporters.perfetto_run_rows import _ALL_PAUSES_GROUP_NAME
 from gcmon.exporters.trace_converter import convert_to_trace_format
 from gcmon.model.data import GCStatsInfo
 from gcmon.model.names import (
@@ -54,7 +55,12 @@ from gcmon.model.names import (
 )
 from gcmon.model.trace_event import Slice, TraceEvent
 from gcmon.support.vocabulary import CMD_COMBINE, FORMAT_PERFETTO, PROGRAM_NAME
-from tests.exporters.perfetto_integration.traces import _ARG_PREFIX, _on_interpreter, _process_filter
+from tests.exporters.perfetto_integration.traces import (
+    _ARG_PREFIX,
+    _on_interpreter,
+    _process_filter,
+    rows_drawn_under,
+)
 from tests.helpers import (
     SUBPROCESS_WATCHDOG,
     create_mock_incremental_item,
@@ -325,6 +331,9 @@ class TestCombinedTraceIsStructurallyComplete:
         )
 
         assert rows == sorted([_NAME_A, _NAME_B]), f"expected process tracks for both PIDs, got {rows}"
+
+    def test_draws_the_process_layout(self, loaded_trace_processor: TraceProcessor) -> None:
+        assert _ALL_PAUSES_GROUP_NAME not in rows_drawn_under(loaded_trace_processor)
 
     def test_the_close_time_sweep_leaves_a_combined_process_alone(
         self,

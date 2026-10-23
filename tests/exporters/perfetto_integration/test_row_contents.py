@@ -26,6 +26,7 @@ from gcmon.exporters.perfetto_process_lifetime import (
     _PROCESS_ROW_SLICE_NAME,
     process_track_name,
 )
+from gcmon.exporters.perfetto_run_rows import _ALL_PAUSES_GROUP_NAME
 from gcmon.model.names import (
     CANDIDATES,
     CLEAR_WEAKREFS,
@@ -78,6 +79,7 @@ from tests.exporters.perfetto_integration.traces import (
     _process_filter,
     _process_filter_instant,
     flat_key,
+    rows_drawn_under,
 )
 from tests.helpers import (
     create_mock_stats_item,
@@ -361,24 +363,6 @@ class TestCounterYAxisShareKey:
         assert self._share_keys(trace_processor)[HEAP_SIZE] == {None}
 
 
-def rows_drawn_under(tp: TraceProcessor, *path: str) -> list[str]:
-    """The rows under the row *path* names, top to bottom. No path is the top
-    level.
-
-    `order_id` is the key the Perfetto UI sorts a TrackEvent row's children
-    on, and the trace processor computes it: by `sibling_order_rank` under a
-    parent whose `child_ordering` is explicit, by name under one with none.
-    """
-    list(tp.query("INCLUDE PERFETTO MODULE viz.summary.track_event"))
-    rows = list(
-        tp.query("SELECT min_track_id AS id, parent_id, name, order_id FROM _track_event_tracks_ordered_groups")
-    )
-    parent: int | None = None
-    for name in path:
-        [parent] = [r.id for r in rows if r.parent_id == parent and r.name == name]
-    return [r.name for r in sorted((r for r in rows if r.parent_id == parent), key=lambda r: r.order_id)]
-
-
 class TestTheOrderRowsAreDrawnIn:
     """Read off the trace processor, which is where the UI gets it. Neither
     order below is the alphabetical one, so a rank that stopped reaching the
@@ -399,10 +383,17 @@ class TestTheOrderRowsAreDrawnIn:
     def test_the_top_level_rows_come_out_by_name(self, every_row_trace_processor: TraceProcessor) -> None:
         """No rank reaches these: a process track is OS-scoped and the trace
         processor discards one there (ADR-0003). The name is all that places
-        the interpreter list under the process row (ADR-0027)."""
+        the interpreter list under the process row (ADR-0027), and the run
+        rows above both."""
         drawn = rows_drawn_under(every_row_trace_processor)
 
-        assert drawn == [_DEFAULT_ROW_NAME, _PROCESS_LIFETIME_TRACK_NAME, _INTERPRETER_LIST_NAME, RSS]
+        assert drawn == [
+            _ALL_PAUSES_GROUP_NAME,
+            _DEFAULT_ROW_NAME,
+            _PROCESS_LIFETIME_TRACK_NAME,
+            _INTERPRETER_LIST_NAME,
+            RSS,
+        ]
 
 
 class TestAnInterpreterCollectingInEveryGeneration:

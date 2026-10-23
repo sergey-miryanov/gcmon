@@ -10,9 +10,14 @@ from __future__ import annotations
 from pathlib import Path
 from typing import NamedTuple
 
+import msgspec
+from perfetto.trace_processor import TraceProcessor
+
 from gcmon.exporters import PerfettoExporter
+from gcmon.exporters.encoder import Layout
 from gcmon.exporters.perfetto_format import _interpreter_group_name
 from gcmon.exporters.perfetto_process_lifetime import process_track_name
+from gcmon.model.data import GCStatsInfo
 from gcmon.model.names import (
     CANDIDATES,
     COLLECTED,
@@ -105,6 +110,24 @@ def flat_key(arg: str) -> str:
 _FAKE_CMDLINE: tuple[str, ...] = ("python3", "-m", "fake_target")
 
 _FAKE_CMDLINE_JOINED: str = " ".join(_FAKE_CMDLINE)
+
+
+def rows_drawn_under(tp: TraceProcessor, *path: str) -> list[str]:
+    """The rows under the row *path* names, top to bottom. No path is the top
+    level.
+
+    `order_id` is the key the Perfetto UI sorts a TrackEvent row's children
+    on, and the trace processor computes it: by `sibling_order_rank` under a
+    parent whose `child_ordering` is explicit, by name under one with none.
+    """
+    list(tp.query("INCLUDE PERFETTO MODULE viz.summary.track_event"))
+    rows = list(
+        tp.query("SELECT min_track_id AS id, parent_id, name, order_id FROM _track_event_tracks_ordered_groups")
+    )
+    parent: int | None = None
+    for name in path:
+        [parent] = [r.id for r in rows if r.parent_id == parent and r.name == name]
+    return [r.name for r in sorted((r for r in rows if r.parent_id == parent), key=lambda r: r.order_id)]
 
 
 def _process_filter(pid: int) -> str:
@@ -556,6 +579,66 @@ def _write_three_generations_trace(tmp: Path) -> Path:
         exporter.add_event(
             proc(DEFAULT_PID),
             create_mock_stats_item(gen=gen, iid=_IID, ts_start=ts_start, ts_stop=ts_start + 5_000_000),
+        )
+    exporter.close()
+    return path
+
+
+def _shifted(record: GCStatsInfo, shift: int) -> GCStatsInfo:
+    """*record* moved *shift* nanoseconds later, every sub-phase with it."""
+    moved = {
+        field: ts + shift
+        for field, ts in msgspec.structs.asdict(record).items()
+        if field.startswith("ts_") and ts is not None
+    }
+    return msgspec.structs.replace(record, **moved)
+
+
+# Neither it nor twice it is a multiple of the sub-phases' 500 us steps, so no
+# sub-phase of one pause starts where one of another's does.
+_OVERLAP_SHIFT: int = 2_100_000
+
+_OVERLAPPING_PAUSES: tuple[tuple[Process, GCStatsInfo], ...] = (
+    (proc(DEFAULT_PID), create_mock_incremental_item(gen=_GEN, iid=_IID)),
+    (proc(DEFAULT_PID), _shifted(create_mock_incremental_item(gen=_GEN, iid=_IID + 1), _OVERLAP_SHIFT)),
+    (proc(_SECOND_PID, 2), _shifted(create_mock_incremental_item(gen=_GEN, iid=_IID), 2 * _OVERLAP_SHIFT)),
+)
+"""Three interpreters' gen-0 pauses, every sub-phase set, two of them in one
+process, each starting inside the ones before it."""
+
+
+def _write_overlapping_pauses_trace(tmp: Path) -> Path:
+    path = tmp / "trace_overlapping_pauses.pb"
+    exporter = PerfettoExporter(output_path=path, flush_threshold=1000)
+    for process, record in _OVERLAPPING_PAUSES:
+        exporter.add_event(process, record)
+    exporter.close()
+    return path
+
+
+def _write_every_kind_trace(tmp: Path, layout: Layout) -> Path:
+    """Two processes drawing every kind of event in *layout*, flushed one event
+    at a time, the second retired before the first's last pauses."""
+    path = tmp / f"trace_every_kind_{layout.value}.pb"
+    exporter = PerfettoExporter(output_path=path, flush_threshold=1, layout=layout)
+    first, second = dict.fromkeys(process for process, _ in _OVERLAPPING_PAUSES)
+    for process in (first, second):
+        exporter.add_process_cmdline(process, _FAKE_CMDLINE)
+    exporter.add_instant_event(first, create_instant_msg(name=_INSTANT_NAME, ts=_TS_START - 1_000_000))
+    for process, record in _OVERLAPPING_PAUSES:
+        exporter.add_event(process, record)
+        exporter.add_rss_sample(process, _RSS_VAL_1, record.ts_start)
+    loss_start = max(record.ts_stop for _, record in _OVERLAPPING_PAUSES) + 5_000_000
+    exporter.add_loss_event(
+        first,
+        create_mock_loss_item(iid=_IID, gen=_GEN, ts_start=loss_start, ts_stop=loss_start + _LOSS_WINDOW_NS),
+    )
+    exporter.add_process_liveness({first, second}, loss_start + _LOSS_WINDOW_NS)
+    exporter.add_process_retired(second)
+    for gen in (2, 1):
+        ts_start = loss_start + _LOSS_WINDOW_NS + gen * 10_000_000
+        exporter.add_event(
+            first, create_mock_stats_item(gen=gen, iid=1, ts_start=ts_start, ts_stop=ts_start + 5_000_000)
         )
     exporter.close()
     return path

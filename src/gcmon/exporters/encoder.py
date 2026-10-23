@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import zlib
 from collections.abc import Callable, Sequence, Set
+from enum import Enum
 from functools import partial
 from pathlib import Path
 from typing import NamedTuple
@@ -21,6 +22,7 @@ from .perfetto_format import (
     emit_retired_process_row,
     finalize_perfetto_packets,
 )
+from .perfetto_run_rows import draw_batch_on_run_rows
 from .protobuf_encoder import encode_bytes_field
 
 _DEFLATE_LEVEL = 6
@@ -49,9 +51,18 @@ def _resolve_codec() -> Codec:
 _CODEC = _resolve_codec()
 
 __all__ = [
+    "Layout",
     "ProtobufEventEncoder",
     "convert_trace_events_to_perfetto",
 ]
+
+
+class Layout(Enum):
+    """The rows a trace draws besides ``Processes``: ``FULL`` the run rows and
+    the process rows, ``PROCESS`` the process rows alone."""
+
+    FULL = "full"
+    PROCESS = "process"
 
 
 class ProtobufEventEncoder:
@@ -61,6 +72,7 @@ class ProtobufEventEncoder:
         self,
         sequence_id: int | None = None,
         codec: Codec | None = None,
+        layout: Layout = Layout.FULL,
     ) -> None:
         self._path: Path | None = None
         self._track_state = PerfettoTrackState()
@@ -68,6 +80,7 @@ class ProtobufEventEncoder:
         self._has_written: bool = False
         self._retired: list[Process] = []
         self._codec: Codec = codec if codec is not None else _CODEC
+        self._draws_run_rows: bool = layout is Layout.FULL
 
     def open(self, path: Path) -> None:
         """Bind this encoder to *path*. One encoder writes one trace.
@@ -132,11 +145,12 @@ class ProtobufEventEncoder:
         if not events:
             return
         assert self._path is not None, "open() must be called before write_events()"
-        descriptors, packets = convert_trace_events_to_perfetto(
-            list(events),
-            self._track_state,
-            self._sequence_id,
-        )
+        batch = list(events)
+        descriptors, packets = convert_trace_events_to_perfetto(batch, self._track_state, self._sequence_id)
+        if self._draws_run_rows:
+            run_descriptors, run_packets = draw_batch_on_run_rows(batch, self._track_state, self._sequence_id)
+            descriptors.extend(run_descriptors)
+            packets.extend(run_packets)
         # After the convert pass, so a queued event has reached the span
         # accumulator before the bar is drawn over it.
         retired = self._drain_retired()

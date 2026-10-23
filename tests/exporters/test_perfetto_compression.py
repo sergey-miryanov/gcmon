@@ -20,7 +20,7 @@ from perfetto.protos.perfetto.trace.perfetto_trace_pb2 import Trace, TracePacket
 from perfetto.trace_processor import TraceProcessor
 
 from gcmon.exporters import PerfettoExporter
-from gcmon.exporters.encoder import _CODEC, _DEFLATE, Codec, _resolve_codec
+from gcmon.exporters.encoder import _CODEC, _DEFLATE, Codec, Layout, _resolve_codec
 from gcmon.exporters.perfetto_proto import TraceField, TracePacketField
 from gcmon.exporters.protobuf_encoder import encode_bytes_field
 from gcmon.model.names import (
@@ -231,11 +231,13 @@ class TestTheTraceStillMeansWhatItMeant:
 
 
 def _write_pauses(path: Path, count: int, codec: Codec) -> Path:
-    """A run of *count* collections, flushed one per batch."""
+    """A run of *count* collections, flushed one per batch, each pause drawn
+    once."""
     exporter = PerfettoExporter(
         output_path=path,
         flush_threshold=1,
         codec=codec,
+        layout=Layout.PROCESS,
     )
     for i in range(count):
         exporter.add_event(

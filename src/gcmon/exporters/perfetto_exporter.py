@@ -9,7 +9,7 @@ from ..model.names import RSS
 from ..model.process import Process
 from ..model.protocol import TGCStatsInfo, TInstantMsg, TLossMsg
 from ..model.trace_event import Counter, Instant, ProcessTrack, TraceEvent
-from .encoder import Codec, ProtobufEventEncoder
+from .encoder import Codec, Layout, ProtobufEventEncoder
 from .exporter import EventsExporter
 from .trace_converter import convert_item_to_trace_format, convert_loss_to_trace_format
 
@@ -32,13 +32,14 @@ class PerfettoExporter(EventsExporter):
         flush_threshold: int = 1000,
         sequence_id: int | None = None,
         codec: Codec | None = None,
+        layout: Layout = Layout.FULL,
     ) -> None:
         super().__init__()
         self._io_lock = threading.Lock()
         self._buffer: list[TraceEvent] = []
         self._flush_threshold = flush_threshold
         self._output_path = output_path
-        self._encoder = ProtobufEventEncoder(sequence_id=sequence_id, codec=codec)
+        self._encoder = ProtobufEventEncoder(sequence_id=sequence_id, codec=codec, layout=layout)
         self._closed = False
         self._encoder.open(output_path)
 

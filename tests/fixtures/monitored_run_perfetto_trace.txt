@@ -504,6 +504,77 @@ track_descriptor {
   sibling_order_rank: 1
 }
 --- packet ---
+trusted_packet_sequence_id: 1
+track_descriptor {
+  uuid: 51
+  name: "All GC Pauses"
+  child_ordering: EXPLICIT
+}
+--- packet ---
+trusted_packet_sequence_id: 1
+track_descriptor {
+  uuid: 52
+  name: "Gen0"
+  parent_uuid: 51
+  sibling_order_rank: 0
+}
+--- packet ---
+trusted_packet_sequence_id: 1
+track_descriptor {
+  uuid: 53
+  name: "Gen2"
+  parent_uuid: 51
+  sibling_order_rank: 2
+}
+--- packet ---
+trusted_packet_sequence_id: 1
+track_descriptor {
+  uuid: 54
+  name: "Gen1"
+  parent_uuid: 51
+  sibling_order_rank: 1
+}
+--- packet ---
+trusted_packet_sequence_id: 1
+track_descriptor {
+  uuid: 55
+  name: "Gen2"
+  parent_uuid: 51
+  sibling_order_rank: 2
+}
+--- packet ---
+trusted_packet_sequence_id: 1
+track_descriptor {
+  uuid: 56
+  name: "Gen0"
+  parent_uuid: 51
+  sibling_order_rank: 0
+}
+--- packet ---
+trusted_packet_sequence_id: 1
+track_descriptor {
+  uuid: 57
+  name: "Gen1"
+  parent_uuid: 51
+  sibling_order_rank: 1
+}
+--- packet ---
+trusted_packet_sequence_id: 1
+track_descriptor {
+  uuid: 58
+  name: "Gen0"
+  parent_uuid: 51
+  sibling_order_rank: 0
+}
+--- packet ---
+trusted_packet_sequence_id: 1
+track_descriptor {
+  uuid: 59
+  name: "Gen1"
+  parent_uuid: 51
+  sibling_order_rank: 1
+}
+--- packet ---
 timestamp: 1000000000
 trusted_packet_sequence_id: 1
 track_event {
@@ -16129,9 +16200,10369 @@ track_event {
   counter_value: 0
 }
 --- packet ---
+timestamp: 1000000000
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0001077
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 1000107700
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 1013174400
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0002805
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 53
+  categories: "gc.pause(gen=2)"
+  name: "GC Pause(2)"
+}
+--- packet ---
+timestamp: 1013454900
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 53
+}
+--- packet ---
+timestamp: 1104008900
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 8
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0083717
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 1109583800
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 1147116600
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 9
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.014553899999999998
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 1153298800
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 1191742100
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 10
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.020219499999999998
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 1197407700
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 1234946200
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 11
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0258283
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 1240555000
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 1277504500
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 12
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0320734
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 1283749600
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 1320848100
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 13
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0384264
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 1327201100
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 1364652300
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 14
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.044214
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 1370439900
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 1407777800
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0062064
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 54
+  categories: "gc.pause(gen=1)"
+  name: "GC Pause(1)"
+}
+--- packet ---
+timestamp: 1413984200
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 54
+}
+--- packet ---
+timestamp: 1452313500
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 15
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.050235
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 1458334500
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 1495857700
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 16
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0558256
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 1501448300
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 1537815000
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 17
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0624559
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 1544445300
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 1582188300
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 18
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0678636
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 1587596000
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 1150174400
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0002805
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 55
+  categories: "gc.pause(gen=2)"
+  name: "GC Pause(2)"
+}
+--- packet ---
+timestamp: 1150454900
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 55
+}
+--- packet ---
+timestamp: 1165395400
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 5
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0008007
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 56
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 1165643900
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 56
+}
+--- packet ---
+timestamp: 1172256600
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 6
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.00097720000000000012
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 56
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 1172433100
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 56
+}
+--- packet ---
+timestamp: 1193086500
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 7
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0027968000000000003
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 56
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 1194906100
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 56
+}
+--- packet ---
+timestamp: 1241008900
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 8
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0083717
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 56
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 1246583800
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 56
+}
+--- packet ---
+timestamp: 1284116600
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 9
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.014553899999999998
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 56
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 1290298800
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 56
+}
+--- packet ---
+timestamp: 1328742100
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 10
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.020219499999999998
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 56
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 1334407700
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 56
+}
+--- packet ---
+timestamp: 1371946200
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 11
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0258283
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 56
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 1377555000
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 56
+}
+--- packet ---
+timestamp: 1414504500
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 12
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0320734
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 56
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 1420749600
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 56
+}
+--- packet ---
+timestamp: 1457848100
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 13
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0384264
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 56
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 1464201100
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 56
+}
+--- packet ---
+timestamp: 1501652300
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 14
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.044214
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 56
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 1507439900
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 56
+}
+--- packet ---
+timestamp: 1544777800
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0062064
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 57
+  categories: "gc.pause(gen=1)"
+  name: "GC Pause(1)"
+}
+--- packet ---
+timestamp: 1550984200
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 57
+}
+--- packet ---
+timestamp: 1589313500
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 15
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.050235
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 56
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 1595334500
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 56
+}
+--- packet ---
+timestamp: 1712888000
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 21
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0851385
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 1719113800
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 1755971900
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 22
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.090856100000000009
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 1761689500
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 1798429500
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 23
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0962872
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 1803860600
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 1841041900
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 24
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.10237550000000001
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 1847130200
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 1884586000
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 25
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.1097061
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 1891916600
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 1930458100
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.012124
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 54
+  categories: "gc.pause(gen=1)"
+  name: "GC Pause(1)"
+}
+--- packet ---
+timestamp: 1936375700
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 54
+}
+--- packet ---
+timestamp: 1973828700
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 26
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.1159636
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 1980086200
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 2019318500
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 27
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.1221513
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 2025506200
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 2063007400
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 28
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.1280379
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 2068894000
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 2105043800
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 29
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.13395900000000002
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 2110964900
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 2148097200
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 30
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.13999830000000002
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 2154136500
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 2191353900
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 31
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.1458491
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 2197204700
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 1674815000
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 17
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0624559
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 56
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 1681445300
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 56
+}
+--- packet ---
+timestamp: 1719188300
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 18
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0678636
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 56
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 1724596000
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 56
+}
+--- packet ---
+timestamp: 1762261800
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 19
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0734224
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 56
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 1767820600
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 56
+}
+--- packet ---
+timestamp: 1807780200
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 20
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0789127
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 56
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 1813270500
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 56
+}
+--- packet ---
+timestamp: 1849888000
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 21
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0851385
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 56
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 1856113800
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 56
+}
+--- packet ---
+timestamp: 1892971900
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 22
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.090856100000000009
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 56
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 1898689500
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 56
+}
+--- packet ---
+timestamp: 1935429500
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 23
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0962872
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 56
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 1940860600
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 56
+}
+--- packet ---
+timestamp: 1978041900
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 24
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.10237550000000001
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 56
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 1984130200
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 56
+}
+--- packet ---
+timestamp: 2021586000
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 25
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.1097061
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 56
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 2028916600
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 56
+}
+--- packet ---
+timestamp: 2067458100
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.012124
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 57
+  categories: "gc.pause(gen=1)"
+  name: "GC Pause(1)"
+}
+--- packet ---
+timestamp: 2073375700
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 57
+}
+--- packet ---
+timestamp: 2110828700
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 26
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.1159636
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 56
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 2117086200
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 56
+}
+--- packet ---
+timestamp: 2156318500
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 27
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.1221513
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 56
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 2162506200
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 56
+}
+--- packet ---
+timestamp: 2319717400
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 34
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.164045
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 2326456100
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 2363243800
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 35
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.1704689
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 2369667700
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 2406819000
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 36
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.1761189
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 2412469000
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 2450385900
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 3
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0179904
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 54
+  categories: "gc.pause(gen=1)"
+  name: "GC Pause(1)"
+}
+--- packet ---
+timestamp: 2456252300
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 54
+}
+--- packet ---
+timestamp: 2493675900
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 37
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.1820678
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 2499624800
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 2536850600
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 38
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.18792
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 2542702800
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 2582148800
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 39
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.1940675
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 2588296300
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 2624628100
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 40
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.1999132
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 2630473800
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 2666979900
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 41
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.2054998
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 2672566500
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 2708763000
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 42
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.21155090000000001
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 2714814100
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 2751441800
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 43
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.21727700000000003
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 2757167900
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 2794458200
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 44
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.22260840000000004
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 2799789600
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 2285097200
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 30
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.13999830000000002
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 56
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 2291136500
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 56
+}
+--- packet ---
+timestamp: 2328353900
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 31
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.1458491
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 56
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 2334204700
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 56
+}
+--- packet ---
+timestamp: 2371697100
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 32
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.15152200000000002
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 56
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 2377370000
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 56
+}
+--- packet ---
+timestamp: 2414721900
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 33
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.1573063
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 56
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 2420506200
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 56
+}
+--- packet ---
+timestamp: 2456717400
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 34
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.164045
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 56
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 2463456100
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 56
+}
+--- packet ---
+timestamp: 2500243800
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 35
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.1704689
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 56
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 2506667700
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 56
+}
+--- packet ---
+timestamp: 2543819000
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 36
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.1761189
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 56
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 2549469000
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 56
+}
+--- packet ---
+timestamp: 2587385900
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 3
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0179904
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 57
+  categories: "gc.pause(gen=1)"
+  name: "GC Pause(1)"
+}
+--- packet ---
+timestamp: 2593252300
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 57
+}
+--- packet ---
+timestamp: 2630675900
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 37
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.1820678
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 56
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 2636624800
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 56
+}
+--- packet ---
+timestamp: 2673850600
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 38
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.18792
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 56
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 2679702800
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 56
+}
+--- packet ---
+timestamp: 2719148800
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 39
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.1940675
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 56
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 2725296300
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 56
+}
+--- packet ---
+timestamp: 2761628100
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 40
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.1999132
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 56
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 2767473800
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 56
+}
+--- packet ---
+timestamp: 2879474900
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 46
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.23436780000000004
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 2885414200
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 2922471700
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 47
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.24010720000000005
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 2928211100
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 2966195000
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 4
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0255738
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 54
+  categories: "gc.pause(gen=1)"
+  name: "GC Pause(1)"
+}
+--- packet ---
+timestamp: 2973778400
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 54
+}
+--- packet ---
+timestamp: 3012758400
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 48
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.24632700000000005
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 3018978200
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 3055978300
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 49
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.25200800000000007
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 3061659300
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 3098182000
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 50
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.25754670000000007
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 3103720700
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 3140608100
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 51
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.26360600000000006
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 3146667400
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 3184089700
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 52
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.26940230000000004
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 3189886000
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 3227778800
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 53
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.27554180000000006
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 3233918300
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 3270344200
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 54
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.28112420000000005
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 3275926600
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 3315598400
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 55
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.28850250000000005
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 3322976700
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 3360509800
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 56
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.29439040000000005
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 3366397700
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 3490165500
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 5
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0314256
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 54
+  categories: "gc.pause(gen=1)"
+  name: "GC Pause(1)"
+}
+--- packet ---
+timestamp: 3496017300
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 54
+}
+--- packet ---
+timestamp: 3532154900
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 59
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.31200340000000004
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 3538044800
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 3575147900
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 60
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.3182147
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 3581359200
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 3618765000
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 61
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.32385630000000004
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 3624406600
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 3661480600
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 62
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.32953780000000005
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 3667162100
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 3704523900
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 63
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.33559450000000007
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 3710580600
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 3746887700
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 64
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.34156840000000005
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 3752861600
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 3788811700
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 65
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.34765100000000004
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 3794894300
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 3835854400
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 66
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.35415150000000006
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 3842354900
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 3883273400
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 67
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.36196680000000009
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 3891088700
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 3929526400
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 68
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.36779060000000008
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 3935350200
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 3972513400
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 69
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.3735479000000001
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 3978270700
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 3497509800
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 56
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.29439040000000005
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 58
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 3503397700
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 58
+}
+--- packet ---
+timestamp: 3540986300
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 57
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.29991120000000004
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 58
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 3546507100
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 58
+}
+--- packet ---
+timestamp: 3583755700
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 58
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.30611350000000004
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 58
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 3589958000
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 58
+}
+--- packet ---
+timestamp: 3627165500
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 5
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0314256
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 59
+  categories: "gc.pause(gen=1)"
+  name: "GC Pause(1)"
+}
+--- packet ---
+timestamp: 3633017300
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 59
+}
+--- packet ---
+timestamp: 3669154900
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 59
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.31200340000000004
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 58
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 3675044800
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 58
+}
+--- packet ---
+timestamp: 3712147900
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 60
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.3182147
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 58
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 3718359200
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 58
+}
+--- packet ---
+timestamp: 3755765000
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 61
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.32385630000000004
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 58
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 3761406600
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 58
+}
+--- packet ---
+timestamp: 3798480600
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 62
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.32953780000000005
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 58
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 3804162100
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 58
+}
+--- packet ---
+timestamp: 3841523900
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 63
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.33559450000000007
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 58
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 3847580600
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 58
+}
+--- packet ---
+timestamp: 3883887700
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 64
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.34156840000000005
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 58
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 3889861600
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 58
+}
+--- packet ---
+timestamp: 3925811700
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 65
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.34765100000000004
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 58
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 3931894300
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 58
+}
+--- packet ---
+timestamp: 3972854400
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 66
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.35415150000000006
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 58
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 3979354900
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 58
+}
+--- packet ---
+timestamp: 4021599500
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 6
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.037427499999999995
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 54
+  categories: "gc.pause(gen=1)"
+  name: "GC Pause(1)"
+}
+--- packet ---
+timestamp: 4027601400
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 54
+}
+--- packet ---
+timestamp: 4064300900
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 70
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.37963490000000011
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 4070387900
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 4106700400
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 71
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.38570680000000013
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 4112772300
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 4149090900
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 72
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.39167070000000015
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 4155054800
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 4192675400
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 73
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.39728260000000015
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 4198287300
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 4236235800
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 74
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.40298060000000013
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 4241933800
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 4279303800
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 75
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.40857850000000012
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 4284901700
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 4322021100
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 76
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.41435990000000011
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 4327802500
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 4368542600
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 77
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.42051400000000011
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 4374696700
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 4412811400
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 78
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.42665110000000012
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 4418948500
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 4456333500
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 79
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.43235520000000011
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 4462037600
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 4499598800
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 80
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.43813140000000012
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 4505375000
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 4548076800
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 7
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.043161
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 54
+  categories: "gc.pause(gen=1)"
+  name: "GC Pause(1)"
+}
+--- packet ---
+timestamp: 4553810300
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 54
+}
+--- packet ---
+timestamp: 4109513400
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 69
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.3735479000000001
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 58
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 4115270700
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 58
+}
+--- packet ---
+timestamp: 4158599500
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 6
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.037427499999999995
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 59
+  categories: "gc.pause(gen=1)"
+  name: "GC Pause(1)"
+}
+--- packet ---
+timestamp: 4164601400
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 59
+}
+--- packet ---
+timestamp: 4201300900
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 70
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.37963490000000011
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 58
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 4207387900
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 58
+}
+--- packet ---
+timestamp: 4243700400
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 71
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.38570680000000013
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 58
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 4249772300
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 58
+}
+--- packet ---
+timestamp: 4286090900
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 72
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.39167070000000015
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 58
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 4292054800
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 58
+}
+--- packet ---
+timestamp: 4329675400
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 73
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.39728260000000015
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 58
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 4335287300
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 58
+}
+--- packet ---
+timestamp: 4373235800
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 74
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.40298060000000013
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 58
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 4378933800
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 58
+}
+--- packet ---
+timestamp: 4416303800
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 75
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.40857850000000012
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 58
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 4421901700
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 58
+}
+--- packet ---
+timestamp: 4459021100
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 76
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.41435990000000011
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 58
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 4464802500
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 58
+}
+--- packet ---
+timestamp: 4505542600
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 77
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.42051400000000011
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 58
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 4511696700
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 58
+}
+--- packet ---
+timestamp: 4549811400
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 78
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.42665110000000012
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 58
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 4555948500
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 58
+}
+--- packet ---
+timestamp: 4593333500
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 79
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.43235520000000011
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 58
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 4599037600
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 58
+}
+--- packet ---
+timestamp: 4645349500
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 82
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.45197580000000015
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 4651253500
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 4689804700
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 83
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.45982860000000014
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 4697657500
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 4740861000
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 84
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.46641950000000015
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 4747451900
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 4789200400
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 85
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.47244430000000015
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 4795225200
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 4835070600
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 86
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.47856210000000016
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 4841188400
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 4879738600
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 87
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.48505140000000013
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 4886227900
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 4925238600
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 88
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.49093910000000013
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 4931126300
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 4969120400
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 89
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.49713530000000011
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 4975316600
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 5016088600
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 90
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.50319960000000008
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 5022152900
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 5060714200
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 91
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.50955780000000006
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 5067072400
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 5104231600
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 8
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0493759
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 54
+  categories: "gc.pause(gen=1)"
+  name: "GC Pause(1)"
+}
+--- packet ---
+timestamp: 5110446500
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 54
+}
+--- packet ---
+timestamp: 5150345800
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 92
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.515379
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 5156167000
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 4636598800
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 80
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.43813140000000012
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 58
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 4642375000
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 58
+}
+--- packet ---
+timestamp: 4685076800
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 7
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.043161
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 59
+  categories: "gc.pause(gen=1)"
+  name: "GC Pause(1)"
+}
+--- packet ---
+timestamp: 4690810300
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 59
+}
+--- packet ---
+timestamp: 4734168600
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 81
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.44607180000000013
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 58
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 4742109000
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 58
+}
+--- packet ---
+timestamp: 4782349500
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 82
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.45197580000000015
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 58
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 4788253500
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 58
+}
+--- packet ---
+timestamp: 4826804700
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 83
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.45982860000000014
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 58
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 4834657500
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 58
+}
+--- packet ---
+timestamp: 4877861000
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 84
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.46641950000000015
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 58
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 4884451900
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 58
+}
+--- packet ---
+timestamp: 4926200400
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 85
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.47244430000000015
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 58
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 4932225200
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 58
+}
+--- packet ---
+timestamp: 4972070600
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 86
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.47856210000000016
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 58
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 4978188400
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 58
+}
+--- packet ---
+timestamp: 5016738600
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 87
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.48505140000000013
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 58
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 5023227900
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 58
+}
+--- packet ---
+timestamp: 5062238600
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 88
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.49093910000000013
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 58
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 5068126300
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 58
+}
+--- packet ---
+timestamp: 5106120400
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 89
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.49713530000000011
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 58
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 5112316600
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 58
+}
+--- packet ---
+timestamp: 5153088600
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 90
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.50319960000000008
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 58
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 5159152900
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 58
+}
+--- packet ---
+timestamp: 5284501500
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 95
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.5337176
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 5290263100
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 5329319300
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 96
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.5402344
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 5335836100
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 5373569900
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 97
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.5461852
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 5379520700
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 5419805300
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 98
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.5521407
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 5425760800
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 5464100300
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 99
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.5582032
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 5470162800
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 5507796300
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 100
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.564294
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 5513887100
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 5552282300
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 101
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.571519
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 5559507300
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 5596625800
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 102
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.5780171
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 5603123900
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 5640838600
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 9
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0552476
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 54
+  categories: "gc.pause(gen=1)"
+  name: "GC Pause(1)"
+}
+--- packet ---
+timestamp: 5646710300
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 54
+}
+--- packet ---
+timestamp: 5685367600
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 103
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.5837178999999999
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 5691068400
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 5729437100
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 104
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.5899895
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 5735708700
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 5772349000
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 105
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.59617049999999994
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 52
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 5778530000
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 52
+}
+--- packet ---
+timestamp: 5241231600
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 8
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0493759
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 59
+  categories: "gc.pause(gen=1)"
+  name: "GC Pause(1)"
+}
+--- packet ---
+timestamp: 5247446500
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 59
+}
+--- packet ---
+timestamp: 5287345800
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 92
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.515379
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 58
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 5293167000
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 58
+}
+--- packet ---
+timestamp: 5332087900
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 93
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.5219059
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 58
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 5338614800
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 58
+}
+--- packet ---
+timestamp: 5376680500
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 94
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.527956
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 58
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 5382730600
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 58
+}
+--- packet ---
+timestamp: 5421501500
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 95
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.5337176
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 58
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 5427263100
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 58
+}
+--- packet ---
+timestamp: 5466319300
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 96
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.5402344
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 58
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 5472836100
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 58
+}
+--- packet ---
+timestamp: 5510569900
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 97
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.5461852
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 58
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 5516520700
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 58
+}
+--- packet ---
+timestamp: 5556805300
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 98
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.5521407
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 58
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 5562760800
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 58
+}
+--- packet ---
+timestamp: 5601100300
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 99
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.5582032
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 58
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 5607162800
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 58
+}
+--- packet ---
+timestamp: 5644796300
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 100
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.564294
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 58
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 5650887100
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 58
+}
+--- packet ---
+timestamp: 5689282300
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 101
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.571519
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 58
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 5696507300
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 58
+}
+--- packet ---
+timestamp: 5733625800
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 102
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.5780171
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 58
+  categories: "gc.pause(gen=0)"
+  name: "GC Pause(0)"
+}
+--- packet ---
+timestamp: 5740123900
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 58
+}
+--- packet ---
+timestamp: 5777838600
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "generation"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 9
+    name: "collections"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "collected"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "uncollectable"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "candidates"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "heap_size"
+  }
+  debug_annotations {
+    double_value: 0.0552476
+    name: "duration"
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 59
+  categories: "gc.pause(gen=1)"
+  name: "GC Pause(1)"
+}
+--- packet ---
+timestamp: 5783710300
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 59
+}
+--- packet ---
 trusted_packet_sequence_id: 1
 track_descriptor {
-  uuid: 51
+  uuid: 60
   name: "Processes"
 }
 --- packet ---
@@ -16147,7 +26578,7 @@ track_event {
     name: "pid_epoch"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 51
+  track_uuid: 60
   name: "Process 33512"
 }
 --- packet ---
@@ -16155,7 +26586,7 @@ timestamp: 2802600000
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 51
+  track_uuid: 60
 }
 --- packet ---
 timestamp: 1002600000
@@ -16203,13 +26634,13 @@ track_event {
 --- packet ---
 trusted_packet_sequence_id: 1
 track_descriptor {
-  uuid: 52
+  uuid: 61
   name: "Processes"
 }
 --- packet ---
 trusted_packet_sequence_id: 1
 track_descriptor {
-  uuid: 53
+  uuid: 62
   name: "Processes"
 }
 --- packet ---
@@ -16225,7 +26656,7 @@ track_event {
     name: "pid_epoch"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 52
+  track_uuid: 61
   name: "Process 33328"
 }
 --- packet ---
@@ -16233,7 +26664,7 @@ timestamp: 5802600000
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 52
+  track_uuid: 61
 }
 --- packet ---
 timestamp: 3497509800
@@ -16248,7 +26679,7 @@ track_event {
     name: "pid_epoch"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 53
+  track_uuid: 62
   name: "Process 33512#2"
 }
 --- packet ---
@@ -16256,7 +26687,7 @@ timestamp: 5802600000
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 53
+  track_uuid: 62
 }
 --- packet ---
 timestamp: 1000000000

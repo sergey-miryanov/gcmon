@@ -107,15 +107,16 @@ class TestPerfettoExporter:
         assert exporter._output_path == path
 
     def _verify_event_structure(self, path: Path, num_items: int) -> None:
-        """Every record is a pause and five counters. The process adds two
-        slices of its own: its row and its bar on `Processes`."""
+        """Every record is a pause on each set of rows and five counters. The
+        process adds two slices of its own: its row and its bar on
+        `Processes`."""
         packets = _read_trace_packets(path)
 
         slice_begins = _count_event_type(packets, TrackEventType.SLICE_BEGIN)
         slice_ends = _count_event_type(packets, TrackEventType.SLICE_END)
         counters = _count_event_type(packets, TrackEventType.COUNTER)
 
-        assert (slice_begins, slice_ends, counters) == (num_items + 2, num_items + 2, num_items * 5)
+        assert (slice_begins, slice_ends, counters) == (2 * num_items + 2, 2 * num_items + 2, num_items * 5)
 
     def test_flushes_at_threshold(self, mock_stats_item: GCStatsInfo, perfetto_exporter: ExporterFactory) -> None:
         """The file is there before ``close``, so the batch went out on its own."""
@@ -188,9 +189,9 @@ class TestPerfettoExporter:
         exporter.close()
 
         packets = _read_trace_packets(path)
-        # 1 GC pause slice begin + 1 Processes-track lifetime begin
+        # The GC pause on each set of rows + 1 Processes-track lifetime begin
         # + 1 Lifetime bar on the pid's own row.
-        assert _count_event_type(packets, TrackEventType.SLICE_BEGIN) == 3
+        assert _count_event_type(packets, TrackEventType.SLICE_BEGIN) == 4
 
     def test_different_generation_events(self, perfetto_exporter: ExporterFactory) -> None:
         exporter, path = perfetto_exporter()
@@ -278,7 +279,7 @@ class TestPerfettoExporter:
         exporter.close()
 
         packets = _read_trace_packets(path)
-        assert _count_event_type(packets, TrackEventType.SLICE_BEGIN) == 3
+        assert _count_event_type(packets, TrackEventType.SLICE_BEGIN) == 4
         assert _events_ahead_of_their_descriptor(packets) == []
 
     def test_multiple_processes(self, perfetto_exporter: ExporterFactory) -> None:

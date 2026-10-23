@@ -25,6 +25,7 @@ from gcmon.exporters.perfetto_format import (
     TrackEventType,
 )
 from gcmon.exporters.perfetto_process_lifetime import _PROCESS_ROW_SLICE_NAME
+from gcmon.exporters.perfetto_run_rows import _ALL_PAUSES_GROUP_NAME
 from gcmon.model.names import GC_PAUSE_NAME, LOST_COUNT, SAMPLED_COUNT, TYPE
 from gcmon.model.protocol import TGCStatsInfo, TInstantMsg
 from gcmon.support.vocabulary import ENCODING, FORMAT_JSONL, FORMAT_PERFETTO, FORMAT_STDOUT
@@ -154,6 +155,21 @@ def _get_track_event(packet: TracePacket) -> TrackEvent | None:
     return None
 
 
+def _off_the_run_rows(packets: list[TracePacket]) -> list[TrackEvent]:
+    """The track events in *packets*, in order, less the run rows', which draw
+    every pause a second time."""
+    run_rows: set[int] = set()
+    events: list[TrackEvent] = []
+    for packet in packets:
+        if packet.HasField("track_descriptor"):
+            desc = packet.track_descriptor
+            if desc.name == _ALL_PAUSES_GROUP_NAME or desc.parent_uuid in run_rows:
+                run_rows.add(desc.uuid)
+        elif packet.HasField("track_event") and packet.track_event.track_uuid not in run_rows:
+            events.append(packet.track_event)
+    return events
+
+
 class PerfettoFileCapture(OutputCapture):
     """Captures Perfetto protobuf output."""
 
@@ -166,12 +182,7 @@ class PerfettoFileCapture(OutputCapture):
         return perfetto_packets(self._path.read_bytes())
 
     def _count_event_type(self, event_type: int) -> int:
-        n = 0
-        for pf in self._packets():
-            track_event = _get_track_event(pf)
-            if track_event is not None and track_event.type == event_type:
-                n += 1
-        return n
+        return sum(1 for track_event in _off_the_run_rows(self._packets()) if track_event.type == event_type)
 
     @override
     def count_completes(self) -> int:
@@ -536,7 +547,8 @@ class TestCaptureTotalsUnderLoad:
         return totals[0]
 
     def _count_pauses_before_the_bar(self, path: Path) -> int:
-        """The ``GC Pause`` BEGINs written ahead of the ``Lifetime`` bar.
+        """The process rows' ``GC Pause`` BEGINs written ahead of the
+        ``Lifetime`` bar.
 
         One per record, and every batch is appended under ``_io_lock``, so
         file order is the order the encoder converted them in. A writer that
@@ -544,10 +556,7 @@ class TestCaptureTotalsUnderLoad:
         the trace and outside the count by construction.
         """
         pauses = 0
-        for packet in perfetto_packets(path.read_bytes()):
-            track_event = _get_track_event(packet)
-            if track_event is None:
-                continue
+        for track_event in _off_the_run_rows(perfetto_packets(path.read_bytes())):
             if track_event.name == _PROCESS_ROW_SLICE_NAME:
                 return pauses
             if track_event.type == TrackEventType.SLICE_BEGIN and track_event.name.startswith(GC_PAUSE_NAME):
