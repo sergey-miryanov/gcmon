@@ -40,6 +40,7 @@ class PerfettoTrackState:
     def __init__(self) -> None:
         self._described_processes: set[Process] = set()
         self._tracks: set[Track] = set()
+        self._interpreter_iids: dict[Process, set[int]] = {}
         self._counter_tracks: dict[tuple[Track, str], int] = {}
         self._counter_group_uuids: dict[Track, int] = {}
         self._interpreter_list_uuids: dict[Process, int] = {}
@@ -79,6 +80,8 @@ class PerfettoTrackState:
 
     def mark_track(self, track: Track) -> None:
         self._tracks.add(track)
+        if isinstance(track, PauseTrack):
+            self._interpreter_iids.setdefault(track.process, set()).add(track.iid)
 
     def get_row_pid(self, process: Process) -> int:
         """The pid *process*'s row is written under, gcmon's own.
@@ -109,7 +112,7 @@ class PerfettoTrackState:
         built and it takes the iid off a record, so an interpreter that
         produced nothing reaches no part of the exporter.
         """
-        return len({track.iid for track in self._tracks if isinstance(track, PauseTrack) and track.process == process})
+        return len(self._interpreter_iids.get(process, ()))
 
     def record_sampled(self, process: Process) -> None:
         """Count one more record read for *process*.
