@@ -92,7 +92,7 @@ class Slice(msgspec.Struct):
     event of every capture when it does.
     """
 
-    track: Track
+    track: PauseTrack | LossTrack
     name: str
     cat: str
     ts_start: int
@@ -116,7 +116,7 @@ class Instant(msgspec.Struct):
 
 
 class Counter(msgspec.Struct):
-    track: Track
+    track: ProcessTrack | InterpreterTrack
     metric: str
     display_name: str
     ts: int

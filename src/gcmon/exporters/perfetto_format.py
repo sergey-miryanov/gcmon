@@ -208,7 +208,7 @@ def _emit_loss_descriptor(
 
 
 def _emit_counter_group_descriptor(
-    track: PauseTrack | InterpreterTrack | LossTrack,
+    track: InterpreterTrack,
     state: PerfettoTrackState,
     sequence_id: int,
 ) -> tuple[int, list[bytes]]:
@@ -234,7 +234,7 @@ def _emit_counter_group_descriptor(
 
 
 def _emit_counter_track_descriptor(
-    track: Track,
+    track: ProcessTrack | InterpreterTrack,
     metric: str,
     display_name: str,
     state: PerfettoTrackState,

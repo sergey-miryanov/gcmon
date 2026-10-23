@@ -66,8 +66,9 @@ from gcmon.model.phases import (
 from gcmon.model.trace_event import (
     Counter,
     Instant,
+    InterpreterTrack,
+    ProcessTrack,
     TraceEvent,
-    Track,
 )
 from tests.exporters.perfetto_helpers import (
     convert_item,
@@ -1028,7 +1029,7 @@ class TestTheCountersInsideAMetricsGroupAreRanked:
 
 
 class TestACounterTakesItsRankFromItsMetric:
-    def _counter(self, track: Track, metric: str) -> list[TrackDescriptor]:
+    def _counter(self, track: ProcessTrack | InterpreterTrack, metric: str) -> list[TrackDescriptor]:
         state = PerfettoTrackState()
         descriptors, _ = convert_trace_events_to_perfetto(
             [Counter(track, metric, f"G0 {metric}", 1_000, 42)],
