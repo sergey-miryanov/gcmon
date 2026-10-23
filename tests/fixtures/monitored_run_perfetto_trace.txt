@@ -522,22 +522,12 @@ track_descriptor {
 trusted_packet_sequence_id: 1
 track_descriptor {
   uuid: 53
-  name: "Gen2"
-  parent_uuid: 51
-  sibling_order_rank: 2
+  name: "GC Loss"
 }
 --- packet ---
 trusted_packet_sequence_id: 1
 track_descriptor {
   uuid: 54
-  name: "Gen1"
-  parent_uuid: 51
-  sibling_order_rank: 1
-}
---- packet ---
-trusted_packet_sequence_id: 1
-track_descriptor {
-  uuid: 55
   name: "Gen2"
   parent_uuid: 51
   sibling_order_rank: 2
@@ -545,23 +535,23 @@ track_descriptor {
 --- packet ---
 trusted_packet_sequence_id: 1
 track_descriptor {
-  uuid: 56
-  name: "Gen0"
+  uuid: 55
+  name: "Gen1"
   parent_uuid: 51
-  sibling_order_rank: 0
+  sibling_order_rank: 1
+}
+--- packet ---
+trusted_packet_sequence_id: 1
+track_descriptor {
+  uuid: 56
+  name: "Gen2"
+  parent_uuid: 51
+  sibling_order_rank: 2
 }
 --- packet ---
 trusted_packet_sequence_id: 1
 track_descriptor {
   uuid: 57
-  name: "Gen1"
-  parent_uuid: 51
-  sibling_order_rank: 1
-}
---- packet ---
-trusted_packet_sequence_id: 1
-track_descriptor {
-  uuid: 58
   name: "Gen0"
   parent_uuid: 51
   sibling_order_rank: 0
@@ -569,10 +559,38 @@ track_descriptor {
 --- packet ---
 trusted_packet_sequence_id: 1
 track_descriptor {
-  uuid: 59
+  uuid: 58
   name: "Gen1"
   parent_uuid: 51
   sibling_order_rank: 1
+}
+--- packet ---
+trusted_packet_sequence_id: 1
+track_descriptor {
+  uuid: 59
+  name: "GC Loss"
+}
+--- packet ---
+trusted_packet_sequence_id: 1
+track_descriptor {
+  uuid: 60
+  name: "Gen0"
+  parent_uuid: 51
+  sibling_order_rank: 0
+}
+--- packet ---
+trusted_packet_sequence_id: 1
+track_descriptor {
+  uuid: 61
+  name: "Gen1"
+  parent_uuid: 51
+  sibling_order_rank: 1
+}
+--- packet ---
+trusted_packet_sequence_id: 1
+track_descriptor {
+  uuid: 62
+  name: "GC Loss"
 }
 --- packet ---
 timestamp: 1000000000
@@ -16256,6 +16274,99 @@ track_event {
   track_uuid: 52
 }
 --- packet ---
+timestamp: 1001000000
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 13
+    name: "observed_count"
+  }
+  debug_annotations {
+    int_value: 6
+    name: "lost_count"
+  }
+  debug_annotations {
+    string_value: "68.4% (13 of 19)"
+    name: "seen"
+  }
+  debug_annotations {
+    string_value: "2ms 689µs 100ns"
+    name: "lost_pause"
+  }
+  debug_annotations {
+    int_value: 2689100
+    name: "lost_pause_ns"
+  }
+  debug_annotations {
+    name: "gen0"
+    dict_entries {
+      int_value: 11
+      name: "observed_count"
+    }
+    dict_entries {
+      string_value: "2..7"
+      name: "lost_collections"
+    }
+    dict_entries {
+      int_value: 6
+      name: "lost_count"
+    }
+    dict_entries {
+      string_value: "2ms 689µs 100ns"
+      name: "lost_pause"
+    }
+    dict_entries {
+      int_value: 2689100
+      name: "lost_pause_ns"
+    }
+  }
+  debug_annotations {
+    name: "gen1"
+    dict_entries {
+      int_value: 1
+      name: "observed_count"
+    }
+    dict_entries {
+      int_value: 0
+      name: "lost_count"
+    }
+  }
+  debug_annotations {
+    name: "gen2"
+    dict_entries {
+      int_value: 1
+      name: "observed_count"
+    }
+    dict_entries {
+      int_value: 0
+      name: "lost_count"
+    }
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 53
+  categories: "gc.loss"
+  name: "GC Loss(0)"
+}
+--- packet ---
+timestamp: 1601000000
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 53
+}
+--- packet ---
 timestamp: 1013174400
 trusted_packet_sequence_id: 1
 track_event {
@@ -16300,7 +16411,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 53
+  track_uuid: 54
   categories: "gc.pause(gen=2)"
   name: "GC Pause(2)"
 }
@@ -16309,7 +16420,7 @@ timestamp: 1013454900
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 53
+  track_uuid: 54
 }
 --- packet ---
 timestamp: 1104008900
@@ -16748,7 +16859,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 54
+  track_uuid: 55
   categories: "gc.pause(gen=1)"
   name: "GC Pause(1)"
 }
@@ -16757,7 +16868,7 @@ timestamp: 1413984200
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 54
+  track_uuid: 55
 }
 --- packet ---
 timestamp: 1452313500
@@ -17028,7 +17139,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 55
+  track_uuid: 56
   categories: "gc.pause(gen=2)"
   name: "GC Pause(2)"
 }
@@ -17037,7 +17148,7 @@ timestamp: 1150454900
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 55
+  track_uuid: 56
 }
 --- packet ---
 timestamp: 1165395400
@@ -17084,7 +17195,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 56
+  track_uuid: 57
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -17093,7 +17204,7 @@ timestamp: 1165643900
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 56
+  track_uuid: 57
 }
 --- packet ---
 timestamp: 1172256600
@@ -17140,7 +17251,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 56
+  track_uuid: 57
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -17149,7 +17260,7 @@ timestamp: 1172433100
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 56
+  track_uuid: 57
 }
 --- packet ---
 timestamp: 1193086500
@@ -17196,7 +17307,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 56
+  track_uuid: 57
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -17205,7 +17316,7 @@ timestamp: 1194906100
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 56
+  track_uuid: 57
 }
 --- packet ---
 timestamp: 1241008900
@@ -17252,7 +17363,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 56
+  track_uuid: 57
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -17261,7 +17372,7 @@ timestamp: 1246583800
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 56
+  track_uuid: 57
 }
 --- packet ---
 timestamp: 1284116600
@@ -17308,7 +17419,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 56
+  track_uuid: 57
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -17317,7 +17428,7 @@ timestamp: 1290298800
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 56
+  track_uuid: 57
 }
 --- packet ---
 timestamp: 1328742100
@@ -17364,7 +17475,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 56
+  track_uuid: 57
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -17373,7 +17484,7 @@ timestamp: 1334407700
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 56
+  track_uuid: 57
 }
 --- packet ---
 timestamp: 1371946200
@@ -17420,7 +17531,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 56
+  track_uuid: 57
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -17429,7 +17540,7 @@ timestamp: 1377555000
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 56
+  track_uuid: 57
 }
 --- packet ---
 timestamp: 1414504500
@@ -17476,7 +17587,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 56
+  track_uuid: 57
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -17485,7 +17596,7 @@ timestamp: 1420749600
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 56
+  track_uuid: 57
 }
 --- packet ---
 timestamp: 1457848100
@@ -17532,7 +17643,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 56
+  track_uuid: 57
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -17541,7 +17652,7 @@ timestamp: 1464201100
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 56
+  track_uuid: 57
 }
 --- packet ---
 timestamp: 1501652300
@@ -17588,7 +17699,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 56
+  track_uuid: 57
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -17597,7 +17708,7 @@ timestamp: 1507439900
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 56
+  track_uuid: 57
 }
 --- packet ---
 timestamp: 1544777800
@@ -17644,7 +17755,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 57
+  track_uuid: 58
   categories: "gc.pause(gen=1)"
   name: "GC Pause(1)"
 }
@@ -17653,7 +17764,7 @@ timestamp: 1550984200
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 57
+  track_uuid: 58
 }
 --- packet ---
 timestamp: 1589313500
@@ -17700,7 +17811,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 56
+  track_uuid: 57
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -17709,7 +17820,89 @@ timestamp: 1595334500
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 56
+  track_uuid: 57
+}
+--- packet ---
+timestamp: 1601000000
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 12
+    name: "observed_count"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "lost_count"
+  }
+  debug_annotations {
+    string_value: "85.7% (12 of 14)"
+    name: "seen"
+  }
+  debug_annotations {
+    string_value: "11ms 49µs 100ns"
+    name: "lost_pause"
+  }
+  debug_annotations {
+    int_value: 11049100
+    name: "lost_pause_ns"
+  }
+  debug_annotations {
+    name: "gen0"
+    dict_entries {
+      int_value: 11
+      name: "observed_count"
+    }
+    dict_entries {
+      string_value: "19..20"
+      name: "lost_collections"
+    }
+    dict_entries {
+      int_value: 2
+      name: "lost_count"
+    }
+    dict_entries {
+      string_value: "11ms 49µs 100ns"
+      name: "lost_pause"
+    }
+    dict_entries {
+      int_value: 11049100
+      name: "lost_pause_ns"
+    }
+  }
+  debug_annotations {
+    name: "gen1"
+    dict_entries {
+      int_value: 1
+      name: "observed_count"
+    }
+    dict_entries {
+      int_value: 0
+      name: "lost_count"
+    }
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 53
+  categories: "gc.loss"
+  name: "GC Loss(0)"
+}
+--- packet ---
+timestamp: 2201000000
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 53
 }
 --- packet ---
 timestamp: 1712888000
@@ -18036,7 +18229,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 54
+  track_uuid: 55
   categories: "gc.pause(gen=1)"
   name: "GC Pause(1)"
 }
@@ -18045,7 +18238,7 @@ timestamp: 1936375700
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 54
+  track_uuid: 55
 }
 --- packet ---
 timestamp: 1973828700
@@ -18384,6 +18577,88 @@ track_event {
   track_uuid: 52
 }
 --- packet ---
+timestamp: 1602000000
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 12
+    name: "observed_count"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "lost_count"
+  }
+  debug_annotations {
+    string_value: "92.3% (12 of 13)"
+    name: "seen"
+  }
+  debug_annotations {
+    string_value: "5ms 590µs 600ns"
+    name: "lost_pause"
+  }
+  debug_annotations {
+    int_value: 5590600
+    name: "lost_pause_ns"
+  }
+  debug_annotations {
+    name: "gen0"
+    dict_entries {
+      int_value: 11
+      name: "observed_count"
+    }
+    dict_entries {
+      string_value: "16"
+      name: "lost_collections"
+    }
+    dict_entries {
+      int_value: 1
+      name: "lost_count"
+    }
+    dict_entries {
+      string_value: "5ms 590µs 600ns"
+      name: "lost_pause"
+    }
+    dict_entries {
+      int_value: 5590600
+      name: "lost_pause_ns"
+    }
+  }
+  debug_annotations {
+    name: "gen1"
+    dict_entries {
+      int_value: 1
+      name: "observed_count"
+    }
+    dict_entries {
+      int_value: 0
+      name: "lost_count"
+    }
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 59
+  categories: "gc.loss"
+  name: "GC Loss(0)"
+}
+--- packet ---
+timestamp: 2202000000
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 59
+}
+--- packet ---
 timestamp: 1674815000
 trusted_packet_sequence_id: 1
 track_event {
@@ -18428,7 +18703,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 56
+  track_uuid: 57
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -18437,7 +18712,7 @@ timestamp: 1681445300
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 56
+  track_uuid: 57
 }
 --- packet ---
 timestamp: 1719188300
@@ -18484,7 +18759,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 56
+  track_uuid: 57
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -18493,7 +18768,7 @@ timestamp: 1724596000
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 56
+  track_uuid: 57
 }
 --- packet ---
 timestamp: 1762261800
@@ -18540,7 +18815,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 56
+  track_uuid: 57
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -18549,7 +18824,7 @@ timestamp: 1767820600
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 56
+  track_uuid: 57
 }
 --- packet ---
 timestamp: 1807780200
@@ -18596,7 +18871,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 56
+  track_uuid: 57
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -18605,7 +18880,7 @@ timestamp: 1813270500
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 56
+  track_uuid: 57
 }
 --- packet ---
 timestamp: 1849888000
@@ -18652,7 +18927,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 56
+  track_uuid: 57
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -18661,7 +18936,7 @@ timestamp: 1856113800
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 56
+  track_uuid: 57
 }
 --- packet ---
 timestamp: 1892971900
@@ -18708,7 +18983,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 56
+  track_uuid: 57
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -18717,7 +18992,7 @@ timestamp: 1898689500
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 56
+  track_uuid: 57
 }
 --- packet ---
 timestamp: 1935429500
@@ -18764,7 +19039,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 56
+  track_uuid: 57
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -18773,7 +19048,7 @@ timestamp: 1940860600
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 56
+  track_uuid: 57
 }
 --- packet ---
 timestamp: 1978041900
@@ -18820,7 +19095,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 56
+  track_uuid: 57
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -18829,7 +19104,7 @@ timestamp: 1984130200
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 56
+  track_uuid: 57
 }
 --- packet ---
 timestamp: 2021586000
@@ -18876,7 +19151,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 56
+  track_uuid: 57
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -18885,7 +19160,7 @@ timestamp: 2028916600
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 56
+  track_uuid: 57
 }
 --- packet ---
 timestamp: 2067458100
@@ -18932,7 +19207,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 57
+  track_uuid: 58
   categories: "gc.pause(gen=1)"
   name: "GC Pause(1)"
 }
@@ -18941,7 +19216,7 @@ timestamp: 2073375700
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 57
+  track_uuid: 58
 }
 --- packet ---
 timestamp: 2110828700
@@ -18988,7 +19263,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 56
+  track_uuid: 57
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -18997,7 +19272,7 @@ timestamp: 2117086200
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 56
+  track_uuid: 57
 }
 --- packet ---
 timestamp: 2156318500
@@ -19044,7 +19319,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 56
+  track_uuid: 57
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -19053,7 +19328,89 @@ timestamp: 2162506200
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 56
+  track_uuid: 57
+}
+--- packet ---
+timestamp: 2201000000
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 12
+    name: "observed_count"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "lost_count"
+  }
+  debug_annotations {
+    string_value: "85.7% (12 of 14)"
+    name: "seen"
+  }
+  debug_annotations {
+    string_value: "11ms 457µs 200ns"
+    name: "lost_pause"
+  }
+  debug_annotations {
+    int_value: 11457200
+    name: "lost_pause_ns"
+  }
+  debug_annotations {
+    name: "gen0"
+    dict_entries {
+      int_value: 11
+      name: "observed_count"
+    }
+    dict_entries {
+      string_value: "32..33"
+      name: "lost_collections"
+    }
+    dict_entries {
+      int_value: 2
+      name: "lost_count"
+    }
+    dict_entries {
+      string_value: "11ms 457µs 200ns"
+      name: "lost_pause"
+    }
+    dict_entries {
+      int_value: 11457200
+      name: "lost_pause_ns"
+    }
+  }
+  debug_annotations {
+    name: "gen1"
+    dict_entries {
+      int_value: 1
+      name: "observed_count"
+    }
+    dict_entries {
+      int_value: 0
+      name: "lost_count"
+    }
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 53
+  categories: "gc.loss"
+  name: "GC Loss(0)"
+}
+--- packet ---
+timestamp: 2801000000
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 53
 }
 --- packet ---
 timestamp: 2319717400
@@ -19268,7 +19625,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 54
+  track_uuid: 55
   categories: "gc.pause(gen=1)"
   name: "GC Pause(1)"
 }
@@ -19277,7 +19634,7 @@ timestamp: 2456252300
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 54
+  track_uuid: 55
 }
 --- packet ---
 timestamp: 2493675900
@@ -19728,6 +20085,88 @@ track_event {
   track_uuid: 52
 }
 --- packet ---
+timestamp: 2202000000
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 12
+    name: "observed_count"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "lost_count"
+  }
+  debug_annotations {
+    string_value: "85.7% (12 of 14)"
+    name: "seen"
+  }
+  debug_annotations {
+    string_value: "11ms 807µs 700ns"
+    name: "lost_pause"
+  }
+  debug_annotations {
+    int_value: 11807700
+    name: "lost_pause_ns"
+  }
+  debug_annotations {
+    name: "gen0"
+    dict_entries {
+      int_value: 11
+      name: "observed_count"
+    }
+    dict_entries {
+      string_value: "28..29"
+      name: "lost_collections"
+    }
+    dict_entries {
+      int_value: 2
+      name: "lost_count"
+    }
+    dict_entries {
+      string_value: "11ms 807µs 700ns"
+      name: "lost_pause"
+    }
+    dict_entries {
+      int_value: 11807700
+      name: "lost_pause_ns"
+    }
+  }
+  debug_annotations {
+    name: "gen1"
+    dict_entries {
+      int_value: 1
+      name: "observed_count"
+    }
+    dict_entries {
+      int_value: 0
+      name: "lost_count"
+    }
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 59
+  categories: "gc.loss"
+  name: "GC Loss(0)"
+}
+--- packet ---
+timestamp: 2802000000
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 59
+}
+--- packet ---
 timestamp: 2285097200
 trusted_packet_sequence_id: 1
 track_event {
@@ -19772,7 +20211,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 56
+  track_uuid: 57
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -19781,7 +20220,7 @@ timestamp: 2291136500
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 56
+  track_uuid: 57
 }
 --- packet ---
 timestamp: 2328353900
@@ -19828,7 +20267,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 56
+  track_uuid: 57
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -19837,7 +20276,7 @@ timestamp: 2334204700
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 56
+  track_uuid: 57
 }
 --- packet ---
 timestamp: 2371697100
@@ -19884,7 +20323,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 56
+  track_uuid: 57
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -19893,7 +20332,7 @@ timestamp: 2377370000
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 56
+  track_uuid: 57
 }
 --- packet ---
 timestamp: 2414721900
@@ -19940,7 +20379,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 56
+  track_uuid: 57
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -19949,7 +20388,7 @@ timestamp: 2420506200
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 56
+  track_uuid: 57
 }
 --- packet ---
 timestamp: 2456717400
@@ -19996,7 +20435,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 56
+  track_uuid: 57
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -20005,7 +20444,7 @@ timestamp: 2463456100
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 56
+  track_uuid: 57
 }
 --- packet ---
 timestamp: 2500243800
@@ -20052,7 +20491,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 56
+  track_uuid: 57
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -20061,7 +20500,7 @@ timestamp: 2506667700
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 56
+  track_uuid: 57
 }
 --- packet ---
 timestamp: 2543819000
@@ -20108,7 +20547,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 56
+  track_uuid: 57
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -20117,7 +20556,7 @@ timestamp: 2549469000
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 56
+  track_uuid: 57
 }
 --- packet ---
 timestamp: 2587385900
@@ -20164,7 +20603,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 57
+  track_uuid: 58
   categories: "gc.pause(gen=1)"
   name: "GC Pause(1)"
 }
@@ -20173,7 +20612,7 @@ timestamp: 2593252300
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 57
+  track_uuid: 58
 }
 --- packet ---
 timestamp: 2630675900
@@ -20220,7 +20659,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 56
+  track_uuid: 57
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -20229,7 +20668,7 @@ timestamp: 2636624800
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 56
+  track_uuid: 57
 }
 --- packet ---
 timestamp: 2673850600
@@ -20276,7 +20715,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 56
+  track_uuid: 57
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -20285,7 +20724,7 @@ timestamp: 2679702800
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 56
+  track_uuid: 57
 }
 --- packet ---
 timestamp: 2719148800
@@ -20332,7 +20771,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 56
+  track_uuid: 57
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -20341,7 +20780,7 @@ timestamp: 2725296300
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 56
+  track_uuid: 57
 }
 --- packet ---
 timestamp: 2761628100
@@ -20388,7 +20827,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 56
+  track_uuid: 57
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -20397,7 +20836,89 @@ timestamp: 2767473800
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 56
+  track_uuid: 57
+}
+--- packet ---
+timestamp: 2801000000
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 12
+    name: "observed_count"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "lost_count"
+  }
+  debug_annotations {
+    string_value: "92.3% (12 of 13)"
+    name: "seen"
+  }
+  debug_annotations {
+    string_value: "5ms 820µs 100ns"
+    name: "lost_pause"
+  }
+  debug_annotations {
+    int_value: 5820100
+    name: "lost_pause_ns"
+  }
+  debug_annotations {
+    name: "gen0"
+    dict_entries {
+      int_value: 11
+      name: "observed_count"
+    }
+    dict_entries {
+      string_value: "45"
+      name: "lost_collections"
+    }
+    dict_entries {
+      int_value: 1
+      name: "lost_count"
+    }
+    dict_entries {
+      string_value: "5ms 820µs 100ns"
+      name: "lost_pause"
+    }
+    dict_entries {
+      int_value: 5820100
+      name: "lost_pause_ns"
+    }
+  }
+  debug_annotations {
+    name: "gen1"
+    dict_entries {
+      int_value: 1
+      name: "observed_count"
+    }
+    dict_entries {
+      int_value: 0
+      name: "lost_count"
+    }
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 53
+  categories: "gc.loss"
+  name: "GC Loss(0)"
+}
+--- packet ---
+timestamp: 3401000000
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 53
 }
 --- packet ---
 timestamp: 2879474900
@@ -20556,7 +21077,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 54
+  track_uuid: 55
   categories: "gc.pause(gen=1)"
   name: "GC Pause(1)"
 }
@@ -20565,7 +21086,7 @@ timestamp: 2973778400
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 54
+  track_uuid: 55
 }
 --- packet ---
 timestamp: 3012758400
@@ -21072,6 +21593,88 @@ track_event {
   track_uuid: 52
 }
 --- packet ---
+timestamp: 3401000000
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 12
+    name: "observed_count"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "lost_count"
+  }
+  debug_annotations {
+    string_value: "85.7% (12 of 14)"
+    name: "seen"
+  }
+  debug_annotations {
+    string_value: "11ms 723µs 100ns"
+    name: "lost_pause"
+  }
+  debug_annotations {
+    int_value: 11723100
+    name: "lost_pause_ns"
+  }
+  debug_annotations {
+    name: "gen0"
+    dict_entries {
+      int_value: 11
+      name: "observed_count"
+    }
+    dict_entries {
+      string_value: "57..58"
+      name: "lost_collections"
+    }
+    dict_entries {
+      int_value: 2
+      name: "lost_count"
+    }
+    dict_entries {
+      string_value: "11ms 723µs 100ns"
+      name: "lost_pause"
+    }
+    dict_entries {
+      int_value: 11723100
+      name: "lost_pause_ns"
+    }
+  }
+  debug_annotations {
+    name: "gen1"
+    dict_entries {
+      int_value: 1
+      name: "observed_count"
+    }
+    dict_entries {
+      int_value: 0
+      name: "lost_count"
+    }
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 53
+  categories: "gc.loss"
+  name: "GC Loss(0)"
+}
+--- packet ---
+timestamp: 4001000000
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 53
+}
+--- packet ---
 timestamp: 3490165500
 trusted_packet_sequence_id: 1
 track_event {
@@ -21116,7 +21719,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 54
+  track_uuid: 55
   categories: "gc.pause(gen=1)"
   name: "GC Pause(1)"
 }
@@ -21125,7 +21728,7 @@ timestamp: 3496017300
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 54
+  track_uuid: 55
 }
 --- packet ---
 timestamp: 3532154900
@@ -21788,7 +22391,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 58
+  track_uuid: 60
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -21797,7 +22400,7 @@ timestamp: 3503397700
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 58
+  track_uuid: 60
 }
 --- packet ---
 timestamp: 3540986300
@@ -21844,7 +22447,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 58
+  track_uuid: 60
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -21853,7 +22456,7 @@ timestamp: 3546507100
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 58
+  track_uuid: 60
 }
 --- packet ---
 timestamp: 3583755700
@@ -21900,7 +22503,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 58
+  track_uuid: 60
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -21909,7 +22512,7 @@ timestamp: 3589958000
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 58
+  track_uuid: 60
 }
 --- packet ---
 timestamp: 3627165500
@@ -21956,7 +22559,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 59
+  track_uuid: 61
   categories: "gc.pause(gen=1)"
   name: "GC Pause(1)"
 }
@@ -21965,7 +22568,7 @@ timestamp: 3633017300
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 59
+  track_uuid: 61
 }
 --- packet ---
 timestamp: 3669154900
@@ -22012,7 +22615,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 58
+  track_uuid: 60
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -22021,7 +22624,7 @@ timestamp: 3675044800
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 58
+  track_uuid: 60
 }
 --- packet ---
 timestamp: 3712147900
@@ -22068,7 +22671,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 58
+  track_uuid: 60
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -22077,7 +22680,7 @@ timestamp: 3718359200
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 58
+  track_uuid: 60
 }
 --- packet ---
 timestamp: 3755765000
@@ -22124,7 +22727,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 58
+  track_uuid: 60
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -22133,7 +22736,7 @@ timestamp: 3761406600
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 58
+  track_uuid: 60
 }
 --- packet ---
 timestamp: 3798480600
@@ -22180,7 +22783,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 58
+  track_uuid: 60
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -22189,7 +22792,7 @@ timestamp: 3804162100
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 58
+  track_uuid: 60
 }
 --- packet ---
 timestamp: 3841523900
@@ -22236,7 +22839,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 58
+  track_uuid: 60
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -22245,7 +22848,7 @@ timestamp: 3847580600
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 58
+  track_uuid: 60
 }
 --- packet ---
 timestamp: 3883887700
@@ -22292,7 +22895,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 58
+  track_uuid: 60
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -22301,7 +22904,7 @@ timestamp: 3889861600
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 58
+  track_uuid: 60
 }
 --- packet ---
 timestamp: 3925811700
@@ -22348,7 +22951,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 58
+  track_uuid: 60
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -22357,7 +22960,7 @@ timestamp: 3931894300
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 58
+  track_uuid: 60
 }
 --- packet ---
 timestamp: 3972854400
@@ -22404,7 +23007,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 58
+  track_uuid: 60
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -22413,7 +23016,7 @@ timestamp: 3979354900
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 58
+  track_uuid: 60
 }
 --- packet ---
 timestamp: 4021599500
@@ -22460,7 +23063,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 54
+  track_uuid: 55
   categories: "gc.pause(gen=1)"
   name: "GC Pause(1)"
 }
@@ -22469,7 +23072,7 @@ timestamp: 4027601400
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 54
+  track_uuid: 55
 }
 --- packet ---
 timestamp: 4064300900
@@ -23132,7 +23735,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 54
+  track_uuid: 55
   categories: "gc.pause(gen=1)"
   name: "GC Pause(1)"
 }
@@ -23141,7 +23744,89 @@ timestamp: 4553810300
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 54
+  track_uuid: 55
+}
+--- packet ---
+timestamp: 4002000000
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 12
+    name: "observed_count"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "lost_count"
+  }
+  debug_annotations {
+    string_value: "85.7% (12 of 14)"
+    name: "seen"
+  }
+  debug_annotations {
+    string_value: "13ms 639µs 100ns"
+    name: "lost_pause"
+  }
+  debug_annotations {
+    int_value: 13639100
+    name: "lost_pause_ns"
+  }
+  debug_annotations {
+    name: "gen0"
+    dict_entries {
+      int_value: 11
+      name: "observed_count"
+    }
+    dict_entries {
+      string_value: "67..68"
+      name: "lost_collections"
+    }
+    dict_entries {
+      int_value: 2
+      name: "lost_count"
+    }
+    dict_entries {
+      string_value: "13ms 639µs 100ns"
+      name: "lost_pause"
+    }
+    dict_entries {
+      int_value: 13639100
+      name: "lost_pause_ns"
+    }
+  }
+  debug_annotations {
+    name: "gen1"
+    dict_entries {
+      int_value: 1
+      name: "observed_count"
+    }
+    dict_entries {
+      int_value: 0
+      name: "lost_count"
+    }
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 62
+  categories: "gc.loss"
+  name: "GC Loss(0)"
+}
+--- packet ---
+timestamp: 4602000000
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 62
 }
 --- packet ---
 timestamp: 4109513400
@@ -23188,7 +23873,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 58
+  track_uuid: 60
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -23197,7 +23882,7 @@ timestamp: 4115270700
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 58
+  track_uuid: 60
 }
 --- packet ---
 timestamp: 4158599500
@@ -23244,7 +23929,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 59
+  track_uuid: 61
   categories: "gc.pause(gen=1)"
   name: "GC Pause(1)"
 }
@@ -23253,7 +23938,7 @@ timestamp: 4164601400
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 59
+  track_uuid: 61
 }
 --- packet ---
 timestamp: 4201300900
@@ -23300,7 +23985,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 58
+  track_uuid: 60
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -23309,7 +23994,7 @@ timestamp: 4207387900
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 58
+  track_uuid: 60
 }
 --- packet ---
 timestamp: 4243700400
@@ -23356,7 +24041,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 58
+  track_uuid: 60
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -23365,7 +24050,7 @@ timestamp: 4249772300
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 58
+  track_uuid: 60
 }
 --- packet ---
 timestamp: 4286090900
@@ -23412,7 +24097,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 58
+  track_uuid: 60
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -23421,7 +24106,7 @@ timestamp: 4292054800
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 58
+  track_uuid: 60
 }
 --- packet ---
 timestamp: 4329675400
@@ -23468,7 +24153,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 58
+  track_uuid: 60
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -23477,7 +24162,7 @@ timestamp: 4335287300
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 58
+  track_uuid: 60
 }
 --- packet ---
 timestamp: 4373235800
@@ -23524,7 +24209,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 58
+  track_uuid: 60
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -23533,7 +24218,7 @@ timestamp: 4378933800
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 58
+  track_uuid: 60
 }
 --- packet ---
 timestamp: 4416303800
@@ -23580,7 +24265,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 58
+  track_uuid: 60
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -23589,7 +24274,7 @@ timestamp: 4421901700
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 58
+  track_uuid: 60
 }
 --- packet ---
 timestamp: 4459021100
@@ -23636,7 +24321,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 58
+  track_uuid: 60
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -23645,7 +24330,7 @@ timestamp: 4464802500
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 58
+  track_uuid: 60
 }
 --- packet ---
 timestamp: 4505542600
@@ -23692,7 +24377,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 58
+  track_uuid: 60
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -23701,7 +24386,7 @@ timestamp: 4511696700
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 58
+  track_uuid: 60
 }
 --- packet ---
 timestamp: 4549811400
@@ -23748,7 +24433,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 58
+  track_uuid: 60
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -23757,7 +24442,7 @@ timestamp: 4555948500
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 58
+  track_uuid: 60
 }
 --- packet ---
 timestamp: 4593333500
@@ -23804,7 +24489,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 58
+  track_uuid: 60
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -23813,7 +24498,89 @@ timestamp: 4599037600
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 58
+  track_uuid: 60
+}
+--- packet ---
+timestamp: 4601000000
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 12
+    name: "observed_count"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "lost_count"
+  }
+  debug_annotations {
+    string_value: "92.3% (12 of 13)"
+    name: "seen"
+  }
+  debug_annotations {
+    string_value: "7ms 940µs 400ns"
+    name: "lost_pause"
+  }
+  debug_annotations {
+    int_value: 7940400
+    name: "lost_pause_ns"
+  }
+  debug_annotations {
+    name: "gen0"
+    dict_entries {
+      int_value: 11
+      name: "observed_count"
+    }
+    dict_entries {
+      string_value: "81"
+      name: "lost_collections"
+    }
+    dict_entries {
+      int_value: 1
+      name: "lost_count"
+    }
+    dict_entries {
+      string_value: "7ms 940µs 400ns"
+      name: "lost_pause"
+    }
+    dict_entries {
+      int_value: 7940400
+      name: "lost_pause_ns"
+    }
+  }
+  debug_annotations {
+    name: "gen1"
+    dict_entries {
+      int_value: 1
+      name: "observed_count"
+    }
+    dict_entries {
+      int_value: 0
+      name: "lost_count"
+    }
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 53
+  categories: "gc.loss"
+  name: "GC Loss(0)"
+}
+--- packet ---
+timestamp: 5201000000
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 53
 }
 --- packet ---
 timestamp: 4645349500
@@ -24420,7 +25187,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 54
+  track_uuid: 55
   categories: "gc.pause(gen=1)"
   name: "GC Pause(1)"
 }
@@ -24429,7 +25196,7 @@ timestamp: 5110446500
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 54
+  track_uuid: 55
 }
 --- packet ---
 timestamp: 5150345800
@@ -24532,7 +25299,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 58
+  track_uuid: 60
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -24541,7 +25308,7 @@ timestamp: 4642375000
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 58
+  track_uuid: 60
 }
 --- packet ---
 timestamp: 4685076800
@@ -24588,7 +25355,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 59
+  track_uuid: 61
   categories: "gc.pause(gen=1)"
   name: "GC Pause(1)"
 }
@@ -24597,7 +25364,7 @@ timestamp: 4690810300
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 59
+  track_uuid: 61
 }
 --- packet ---
 timestamp: 4734168600
@@ -24644,7 +25411,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 58
+  track_uuid: 60
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -24653,7 +25420,7 @@ timestamp: 4742109000
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 58
+  track_uuid: 60
 }
 --- packet ---
 timestamp: 4782349500
@@ -24700,7 +25467,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 58
+  track_uuid: 60
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -24709,7 +25476,7 @@ timestamp: 4788253500
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 58
+  track_uuid: 60
 }
 --- packet ---
 timestamp: 4826804700
@@ -24756,7 +25523,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 58
+  track_uuid: 60
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -24765,7 +25532,7 @@ timestamp: 4834657500
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 58
+  track_uuid: 60
 }
 --- packet ---
 timestamp: 4877861000
@@ -24812,7 +25579,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 58
+  track_uuid: 60
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -24821,7 +25588,7 @@ timestamp: 4884451900
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 58
+  track_uuid: 60
 }
 --- packet ---
 timestamp: 4926200400
@@ -24868,7 +25635,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 58
+  track_uuid: 60
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -24877,7 +25644,7 @@ timestamp: 4932225200
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 58
+  track_uuid: 60
 }
 --- packet ---
 timestamp: 4972070600
@@ -24924,7 +25691,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 58
+  track_uuid: 60
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -24933,7 +25700,7 @@ timestamp: 4978188400
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 58
+  track_uuid: 60
 }
 --- packet ---
 timestamp: 5016738600
@@ -24980,7 +25747,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 58
+  track_uuid: 60
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -24989,7 +25756,7 @@ timestamp: 5023227900
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 58
+  track_uuid: 60
 }
 --- packet ---
 timestamp: 5062238600
@@ -25036,7 +25803,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 58
+  track_uuid: 60
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -25045,7 +25812,7 @@ timestamp: 5068126300
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 58
+  track_uuid: 60
 }
 --- packet ---
 timestamp: 5106120400
@@ -25092,7 +25859,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 58
+  track_uuid: 60
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -25101,7 +25868,7 @@ timestamp: 5112316600
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 58
+  track_uuid: 60
 }
 --- packet ---
 timestamp: 5153088600
@@ -25148,7 +25915,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 58
+  track_uuid: 60
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -25157,7 +25924,89 @@ timestamp: 5159152900
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 58
+  track_uuid: 60
+}
+--- packet ---
+timestamp: 5201000000
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33328
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 12
+    name: "observed_count"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "lost_count"
+  }
+  debug_annotations {
+    string_value: "85.7% (12 of 14)"
+    name: "seen"
+  }
+  debug_annotations {
+    string_value: "12ms 577µs"
+    name: "lost_pause"
+  }
+  debug_annotations {
+    int_value: 12577000
+    name: "lost_pause_ns"
+  }
+  debug_annotations {
+    name: "gen0"
+    dict_entries {
+      int_value: 11
+      name: "observed_count"
+    }
+    dict_entries {
+      string_value: "93..94"
+      name: "lost_collections"
+    }
+    dict_entries {
+      int_value: 2
+      name: "lost_count"
+    }
+    dict_entries {
+      string_value: "12ms 577µs"
+      name: "lost_pause"
+    }
+    dict_entries {
+      int_value: 12577000
+      name: "lost_pause_ns"
+    }
+  }
+  debug_annotations {
+    name: "gen1"
+    dict_entries {
+      int_value: 1
+      name: "observed_count"
+    }
+    dict_entries {
+      int_value: 0
+      name: "lost_count"
+    }
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 53
+  categories: "gc.loss"
+  name: "GC Loss(0)"
+}
+--- packet ---
+timestamp: 5801000000
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 53
 }
 --- packet ---
 timestamp: 5284501500
@@ -25652,7 +26501,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 54
+  track_uuid: 55
   categories: "gc.pause(gen=1)"
   name: "GC Pause(1)"
 }
@@ -25661,7 +26510,7 @@ timestamp: 5646710300
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 54
+  track_uuid: 55
 }
 --- packet ---
 timestamp: 5685367600
@@ -25832,6 +26681,88 @@ track_event {
   track_uuid: 52
 }
 --- packet ---
+timestamp: 5202000000
+trusted_packet_sequence_id: 1
+track_event {
+  debug_annotations {
+    int_value: 33512
+    name: "pid"
+  }
+  debug_annotations {
+    int_value: 2
+    name: "pid_epoch"
+  }
+  debug_annotations {
+    int_value: 0
+    name: "iid"
+  }
+  debug_annotations {
+    int_value: 13
+    name: "observed_count"
+  }
+  debug_annotations {
+    int_value: 1
+    name: "lost_count"
+  }
+  debug_annotations {
+    string_value: "92.9% (13 of 14)"
+    name: "seen"
+  }
+  debug_annotations {
+    string_value: "6ms 358µs 200ns"
+    name: "lost_pause"
+  }
+  debug_annotations {
+    int_value: 6358200
+    name: "lost_pause_ns"
+  }
+  debug_annotations {
+    name: "gen0"
+    dict_entries {
+      int_value: 11
+      name: "observed_count"
+    }
+    dict_entries {
+      string_value: "91"
+      name: "lost_collections"
+    }
+    dict_entries {
+      int_value: 1
+      name: "lost_count"
+    }
+    dict_entries {
+      string_value: "6ms 358µs 200ns"
+      name: "lost_pause"
+    }
+    dict_entries {
+      int_value: 6358200
+      name: "lost_pause_ns"
+    }
+  }
+  debug_annotations {
+    name: "gen1"
+    dict_entries {
+      int_value: 2
+      name: "observed_count"
+    }
+    dict_entries {
+      int_value: 0
+      name: "lost_count"
+    }
+  }
+  type: TYPE_SLICE_BEGIN
+  track_uuid: 62
+  categories: "gc.loss"
+  name: "GC Loss(0)"
+}
+--- packet ---
+timestamp: 5802000000
+trusted_packet_sequence_id: 1
+track_event {
+  type: TYPE_SLICE_END
+  track_uuid: 62
+}
+--- packet ---
 timestamp: 5241231600
 trusted_packet_sequence_id: 1
 track_event {
@@ -25876,7 +26807,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 59
+  track_uuid: 61
   categories: "gc.pause(gen=1)"
   name: "GC Pause(1)"
 }
@@ -25885,7 +26816,7 @@ timestamp: 5247446500
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 59
+  track_uuid: 61
 }
 --- packet ---
 timestamp: 5287345800
@@ -25932,7 +26863,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 58
+  track_uuid: 60
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -25941,7 +26872,7 @@ timestamp: 5293167000
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 58
+  track_uuid: 60
 }
 --- packet ---
 timestamp: 5332087900
@@ -25988,7 +26919,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 58
+  track_uuid: 60
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -25997,7 +26928,7 @@ timestamp: 5338614800
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 58
+  track_uuid: 60
 }
 --- packet ---
 timestamp: 5376680500
@@ -26044,7 +26975,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 58
+  track_uuid: 60
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -26053,7 +26984,7 @@ timestamp: 5382730600
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 58
+  track_uuid: 60
 }
 --- packet ---
 timestamp: 5421501500
@@ -26100,7 +27031,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 58
+  track_uuid: 60
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -26109,7 +27040,7 @@ timestamp: 5427263100
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 58
+  track_uuid: 60
 }
 --- packet ---
 timestamp: 5466319300
@@ -26156,7 +27087,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 58
+  track_uuid: 60
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -26165,7 +27096,7 @@ timestamp: 5472836100
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 58
+  track_uuid: 60
 }
 --- packet ---
 timestamp: 5510569900
@@ -26212,7 +27143,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 58
+  track_uuid: 60
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -26221,7 +27152,7 @@ timestamp: 5516520700
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 58
+  track_uuid: 60
 }
 --- packet ---
 timestamp: 5556805300
@@ -26268,7 +27199,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 58
+  track_uuid: 60
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -26277,7 +27208,7 @@ timestamp: 5562760800
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 58
+  track_uuid: 60
 }
 --- packet ---
 timestamp: 5601100300
@@ -26324,7 +27255,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 58
+  track_uuid: 60
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -26333,7 +27264,7 @@ timestamp: 5607162800
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 58
+  track_uuid: 60
 }
 --- packet ---
 timestamp: 5644796300
@@ -26380,7 +27311,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 58
+  track_uuid: 60
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -26389,7 +27320,7 @@ timestamp: 5650887100
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 58
+  track_uuid: 60
 }
 --- packet ---
 timestamp: 5689282300
@@ -26436,7 +27367,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 58
+  track_uuid: 60
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -26445,7 +27376,7 @@ timestamp: 5696507300
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 58
+  track_uuid: 60
 }
 --- packet ---
 timestamp: 5733625800
@@ -26492,7 +27423,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 58
+  track_uuid: 60
   categories: "gc.pause(gen=0)"
   name: "GC Pause(0)"
 }
@@ -26501,7 +27432,7 @@ timestamp: 5740123900
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 58
+  track_uuid: 60
 }
 --- packet ---
 timestamp: 5777838600
@@ -26548,7 +27479,7 @@ track_event {
     name: "duration"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 59
+  track_uuid: 61
   categories: "gc.pause(gen=1)"
   name: "GC Pause(1)"
 }
@@ -26557,12 +27488,12 @@ timestamp: 5783710300
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 59
+  track_uuid: 61
 }
 --- packet ---
 trusted_packet_sequence_id: 1
 track_descriptor {
-  uuid: 60
+  uuid: 63
   name: "Processes"
 }
 --- packet ---
@@ -26578,7 +27509,7 @@ track_event {
     name: "pid_epoch"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 60
+  track_uuid: 63
   name: "Process 33512"
 }
 --- packet ---
@@ -26586,7 +27517,7 @@ timestamp: 2802600000
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 60
+  track_uuid: 63
 }
 --- packet ---
 timestamp: 1002600000
@@ -26634,13 +27565,13 @@ track_event {
 --- packet ---
 trusted_packet_sequence_id: 1
 track_descriptor {
-  uuid: 61
+  uuid: 64
   name: "Processes"
 }
 --- packet ---
 trusted_packet_sequence_id: 1
 track_descriptor {
-  uuid: 62
+  uuid: 65
   name: "Processes"
 }
 --- packet ---
@@ -26656,7 +27587,7 @@ track_event {
     name: "pid_epoch"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 61
+  track_uuid: 64
   name: "Process 33328"
 }
 --- packet ---
@@ -26664,7 +27595,7 @@ timestamp: 5802600000
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 61
+  track_uuid: 64
 }
 --- packet ---
 timestamp: 3497509800
@@ -26679,7 +27610,7 @@ track_event {
     name: "pid_epoch"
   }
   type: TYPE_SLICE_BEGIN
-  track_uuid: 62
+  track_uuid: 65
   name: "Process 33512#2"
 }
 --- packet ---
@@ -26687,7 +27618,7 @@ timestamp: 5802600000
 trusted_packet_sequence_id: 1
 track_event {
   type: TYPE_SLICE_END
-  track_uuid: 62
+  track_uuid: 65
 }
 --- packet ---
 timestamp: 1000000000

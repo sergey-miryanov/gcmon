@@ -17,6 +17,7 @@ from gcmon.exporters.perfetto_format import (
     _COUNTER_GROUP_NAME,
     _INTERPRETER_LIST_NAME,
     _INTERPRETER_ROW_ORDER,
+    _LOSS_TRACK_NAME,
     _PAUSE_TRACK_NAME,
     _interpreter_group_name,
 )
@@ -389,6 +390,7 @@ class TestTheOrderRowsAreDrawnIn:
 
         assert drawn == [
             _ALL_PAUSES_GROUP_NAME,
+            _LOSS_TRACK_NAME,
             _DEFAULT_ROW_NAME,
             _PROCESS_LIFETIME_TRACK_NAME,
             _INTERPRETER_LIST_NAME,

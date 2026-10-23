@@ -21,6 +21,7 @@ from tests.exporters.perfetto_integration.traces import (
     _write_liveness_only_trace,
     _write_liveness_trace,
     _write_nested_mark_trace,
+    _write_overlapping_losses_trace,
     _write_overlapping_pauses_trace,
     _write_pid_held_four_times_trace,
     _write_reused_pid_trace,
@@ -97,6 +98,12 @@ def three_generations_trace_processor(tmp_path: Path) -> Iterator[TraceProcessor
 @pytest.fixture
 def overlapping_pauses_trace_processor(tmp_path: Path) -> Iterator[TraceProcessor]:
     with open_trace_processor(_write_overlapping_pauses_trace(tmp_path)) as tp:
+        yield tp
+
+
+@pytest.fixture
+def overlapping_losses_trace_processor(tmp_path: Path) -> Iterator[TraceProcessor]:
+    with open_trace_processor(_write_overlapping_losses_trace(tmp_path)) as tp:
         yield tp
 
 

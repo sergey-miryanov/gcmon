@@ -22,6 +22,7 @@ from gcmon.exporters import (
     StdoutExporter,
 )
 from gcmon.exporters.perfetto_format import (
+    _LOSS_TRACK_NAME,
     TrackEventType,
 )
 from gcmon.exporters.perfetto_process_lifetime import _PROCESS_ROW_SLICE_NAME
@@ -157,13 +158,16 @@ def _get_track_event(packet: TracePacket) -> TrackEvent | None:
 
 def _off_the_run_rows(packets: list[TracePacket]) -> list[TrackEvent]:
     """The track events in *packets*, in order, less the run rows', which draw
-    every pause a second time."""
+    every pause and loss window a second time."""
     run_rows: set[int] = set()
     events: list[TrackEvent] = []
     for packet in packets:
         if packet.HasField("track_descriptor"):
             desc = packet.track_descriptor
-            if desc.name == _ALL_PAUSES_GROUP_NAME or desc.parent_uuid in run_rows:
+            at_the_root = not desc.HasField("parent_uuid")
+            if (
+                at_the_root and desc.name in (_ALL_PAUSES_GROUP_NAME, _LOSS_TRACK_NAME)
+            ) or desc.parent_uuid in run_rows:
                 run_rows.add(desc.uuid)
         elif packet.HasField("track_event") and packet.track_event.track_uuid not in run_rows:
             events.append(packet.track_event)

@@ -8,7 +8,13 @@ from pathlib import Path
 from perfetto.trace_processor import TraceProcessor
 
 from gcmon.exporters.encoder import Layout
-from gcmon.exporters.perfetto_format import _PAUSE_TRACK_NAME
+from gcmon.exporters.perfetto_format import (
+    _INTERPRETER_LIST_NAME,
+    _LOSS_TRACK_NAME,
+    _PAUSE_TRACK_NAME,
+    _interpreter_group_name,
+)
+from gcmon.exporters.perfetto_process_lifetime import process_track_name
 from gcmon.exporters.perfetto_run_rows import _ALL_PAUSES_GROUP_NAME, _generation_row_name
 from gcmon.exporters.trace_converter import convert_item_to_trace_format
 from gcmon.model.names import GENERATIONS, PID, PID_EPOCH
@@ -19,10 +25,13 @@ from tests.exporters.perfetto_integration.traces import (
     _KILL_GC_STOP,
     _KILL_LAST_GC_START,
     _KILL_LAST_GC_STOP,
+    _OVERLAPPING_LOSSES,
     _OVERLAPPING_PAUSES,
     _PAUSE_NAME,
     _write_every_kind_trace,
+    _write_overlapping_losses_trace,
     flat_key,
+    row_track_ids,
     rows_drawn_under,
 )
 from tests.helpers import open_trace_processor
@@ -38,12 +47,7 @@ _PID_EPOCH: str = f"EXTRACT_ARG(s.arg_set_id, '{flat_key(PID_EPOCH)}')"
 _NAMES_A_PROCESS: str = f"({_PID} IS NOT NULL) AS has_pid, ({_PID_EPOCH} IS NOT NULL) AS has_pid_epoch"
 
 
-def _row_track_ids(tp: TraceProcessor, name: str) -> str:
-    """The tracks the one row called *name* is drawn from, a lane each, as a
-    list SQL's ``IN`` takes."""
-    list(tp.query("INCLUDE PERFETTO MODULE viz.summary.track_event"))
-    [row] = list(tp.query(f"SELECT track_ids FROM _track_event_tracks_ordered_groups WHERE name = '{name}'"))
-    return str(row.track_ids)
+_GEN_ROW: tuple[str, str] = (_ALL_PAUSES_GROUP_NAME, _generation_row_name(_GEN))
 
 
 def _every_row(path: Path) -> tuple[list[_RowPath], dict[_RowPath, _Drawn]]:
@@ -115,13 +119,13 @@ class TestInterpretersPausingAtOnce:
     their one row needs a lane each."""
 
     def test_share_one_row_a_lane_each(self, overlapping_pauses_trace_processor: TraceProcessor) -> None:
-        track_ids = _row_track_ids(overlapping_pauses_trace_processor, _generation_row_name(_GEN))
+        track_ids = row_track_ids(overlapping_pauses_trace_processor, *_GEN_ROW)
 
         assert len(track_ids.split(",")) == 3
 
     def test_each_pause_keeps_its_own_width(self, overlapping_pauses_trace_processor: TraceProcessor) -> None:
         tp = overlapping_pauses_trace_processor
-        track_ids = _row_track_ids(tp, _generation_row_name(_GEN))
+        track_ids = row_track_ids(tp, *_GEN_ROW)
 
         drawn = tp.query(f"SELECT ts, dur FROM slice WHERE track_id IN ({track_ids}) AND depth = 0")
 
@@ -131,7 +135,7 @@ class TestInterpretersPausingAtOnce:
 
     def test_each_sub_phase_sits_inside_its_own_pause(self, overlapping_pauses_trace_processor: TraceProcessor) -> None:
         tp = overlapping_pauses_trace_processor
-        track_ids = _row_track_ids(tp, _generation_row_name(_GEN))
+        track_ids = row_track_ids(tp, *_GEN_ROW)
 
         drawn = tp.query(
             "SELECT s.ts, s.dur, p.ts AS parent_ts FROM slice s JOIN slice p ON s.parent_id = p.id "
@@ -163,7 +167,7 @@ class TestWhoseAPauseIs:
         self, overlapping_pauses_trace_processor: TraceProcessor
     ) -> None:
         tp = overlapping_pauses_trace_processor
-        track_ids = _row_track_ids(tp, _generation_row_name(_GEN))
+        track_ids = row_track_ids(tp, *_GEN_ROW)
 
         drawn = tp.query(
             f"SELECT {_PID} AS pid, {_PID_EPOCH} AS pid_epoch FROM slice s "
@@ -176,7 +180,7 @@ class TestWhoseAPauseIs:
 
     def test_a_sub_phase_does_not(self, overlapping_pauses_trace_processor: TraceProcessor) -> None:
         tp = overlapping_pauses_trace_processor
-        track_ids = _row_track_ids(tp, _generation_row_name(_GEN))
+        track_ids = row_track_ids(tp, *_GEN_ROW)
 
         drawn = tp.query(f"SELECT {_NAMES_A_PROCESS} FROM slice s WHERE s.track_id IN ({track_ids}) AND s.depth > 0")
 
@@ -193,6 +197,80 @@ class TestWhoseAPauseIs:
         assert {(r.has_pid, r.has_pid_epoch) for r in drawn} == {(0, 0)}
 
 
+class TestLossWindowsAtOnce:
+    """Three interpreters' loss windows, two of them in one process, overlap
+    on the one root ``GC Loss``, where one interpreter's touching polls still
+    read as neighbours."""
+
+    def test_share_one_root_row_a_track_per_interpreter(
+        self, overlapping_losses_trace_processor: TraceProcessor
+    ) -> None:
+        track_ids = row_track_ids(overlapping_losses_trace_processor, _LOSS_TRACK_NAME)
+
+        assert len(track_ids.split(",")) == 3
+
+    def test_each_window_keeps_its_own_width_inside_none(
+        self, overlapping_losses_trace_processor: TraceProcessor
+    ) -> None:
+        tp = overlapping_losses_trace_processor
+        track_ids = row_track_ids(tp, _LOSS_TRACK_NAME)
+
+        drawn = tp.query(f"SELECT ts, dur, depth FROM slice WHERE track_id IN ({track_ids})")
+
+        assert sorted((r.ts, r.dur, r.depth) for r in drawn) == sorted(
+            (loss.ts_start, loss.ts_stop - loss.ts_start, 0) for _, loss in _OVERLAPPING_LOSSES
+        )
+
+    def test_leave_no_end_unpaired(self, overlapping_losses_trace_processor: TraceProcessor) -> None:
+        flagged = overlapping_losses_trace_processor.query(
+            "SELECT name FROM stats WHERE severity IN ('error', 'data_loss') AND value > 0"
+        )
+
+        assert [r.name for r in flagged] == []
+
+    def test_each_interpreter_keeps_its_own_loss_row(self, tmp_path: Path) -> None:
+        _order, drawn = _every_row(_write_overlapping_losses_trace(tmp_path))
+        expected: dict[_RowPath, list[tuple[object, ...]]] = {}
+        for process, loss in _OVERLAPPING_LOSSES:
+            row = (
+                process_track_name(process),
+                _INTERPRETER_LIST_NAME,
+                _interpreter_group_name(loss.iid),
+                _LOSS_TRACK_NAME,
+            )
+            expected.setdefault(row, []).append((loss.ts_start, loss.ts_stop - loss.ts_start, 0))
+
+        assert {row: sorted(s[1:4] for s in drawn[row][0]) for row in expected} == {
+            row: sorted(windows) for row, windows in expected.items()
+        }
+
+
+class TestWhoseALossWindowIs:
+    def test_a_window_on_the_root_row_names_its_process(
+        self, overlapping_losses_trace_processor: TraceProcessor
+    ) -> None:
+        tp = overlapping_losses_trace_processor
+        track_ids = row_track_ids(tp, _LOSS_TRACK_NAME)
+
+        drawn = tp.query(
+            f"SELECT {_PID} AS pid, {_PID_EPOCH} AS pid_epoch FROM slice s WHERE s.track_id IN ({track_ids})"
+        )
+
+        assert sorted((r.pid, r.pid_epoch) for r in drawn) == sorted(
+            (process.pid, process.pid_epoch) for process, _ in _OVERLAPPING_LOSSES
+        )
+
+    def test_nothing_on_an_interpreter_s_loss_row_does(
+        self, overlapping_losses_trace_processor: TraceProcessor
+    ) -> None:
+        drawn = overlapping_losses_trace_processor.query(
+            f"SELECT {_NAMES_A_PROCESS} FROM slice s JOIN track t ON s.track_id = t.id "
+            f"WHERE t.name = '{_LOSS_TRACK_NAME}' AND t.parent_id IS NOT NULL"
+        )
+
+        assert {(r.has_pid, r.has_pid_epoch) for r in drawn} == {(0, 0)}
+
+
 def test_a_run_killed_before_close_keeps_every_flushed_pause_on_both_sets_of_rows(
     killed_run_trace_processor: TraceProcessor,
 ) -> None:
@@ -200,7 +278,7 @@ def test_a_run_killed_before_close_keeps_every_flushed_pause_on_both_sets_of_row
     each on its own flush."""
     tp = killed_run_trace_processor
     on_run_rows = tp.query(
-        f"SELECT ts, dur FROM slice WHERE track_id IN ({_row_track_ids(tp, _generation_row_name(_GEN))}) AND depth = 0"
+        f"SELECT ts, dur FROM slice WHERE track_id IN ({row_track_ids(tp, *_GEN_ROW)}) AND depth = 0"
     )
     on_process_rows = tp.query(
         "SELECT s.ts, s.dur FROM slice s JOIN track t ON s.track_id = t.id "
@@ -222,11 +300,12 @@ def test_the_process_layout_draws_the_full_trace_less_its_run_rows(tmp_path: Pat
     full_order, full_drawn = _every_row(_write_every_kind_trace(tmp_path, Layout.FULL))
     process_order, process_drawn = _every_row(_write_every_kind_trace(tmp_path, Layout.PROCESS))
 
-    run_rows = [row for row in full_order if row[1] == _ALL_PAUSES_GROUP_NAME]
+    run_rows = [row for row in full_order if row[0] == "" and row[1] in (_ALL_PAUSES_GROUP_NAME, _LOSS_TRACK_NAME)]
 
     assert run_rows == [
         ("", _ALL_PAUSES_GROUP_NAME),
         *(("", _ALL_PAUSES_GROUP_NAME, _generation_row_name(gen)) for gen in GENERATIONS),
+        ("", _LOSS_TRACK_NAME),
     ]
     assert process_order == [row for row in full_order if row not in run_rows]
     assert process_drawn == {row: drawn for row, drawn in full_drawn.items() if row not in run_rows}

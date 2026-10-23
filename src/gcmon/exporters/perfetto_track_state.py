@@ -11,7 +11,7 @@ from collections.abc import Iterable
 from typing import NamedTuple
 
 from ..model.process import Process
-from ..model.trace_event import PauseTrack, Track
+from ..model.trace_event import LossTrack, PauseTrack, Track
 
 
 class ProcessSpan(NamedTuple):
@@ -61,7 +61,7 @@ class PerfettoTrackState:
         self._process_lifetime_emitted: bool = False
         self._process_rows_drawn: set[Process] = set()
         self._root_descriptor_emitted: bool = False
-        self._run_pause_track_uuids: dict[PauseTrack, int] = {}
+        self._run_track_uuids: dict[PauseTrack | LossTrack, int] = {}
         self._all_pauses_group_uuid: int | None = None
         self._next_uuid: int = 1
         self._next_row_pid: int = 1
@@ -296,19 +296,18 @@ class PerfettoTrackState:
     def mark_root_descriptor_emitted(self) -> None:
         self._root_descriptor_emitted = True
 
-    def has_run_pause_track(self, track: PauseTrack) -> bool:
-        return track in self._run_pause_track_uuids
+    def has_run_track(self, track: PauseTrack | LossTrack) -> bool:
+        return track in self._run_track_uuids
 
-    def get_or_create_run_pause_track_uuid(self, track: PauseTrack) -> int:
-        """The uuid of the track *track*'s pauses draw on among the run rows.
+    def get_or_create_run_track_uuid(self, track: PauseTrack | LossTrack) -> int:
+        """The uuid of the track *track*'s slices draw on among the run rows.
 
-        Keyed apart from the process rows' ``GC Pauses`` track, which is keyed
-        on the same ``PauseTrack``: neither set may take the other's
-        descriptor for its own.
+        Keyed apart from the process rows' track, which is keyed on the same
+        *track*: neither set may take the other's descriptor for its own.
         """
-        if track not in self._run_pause_track_uuids:
-            self._run_pause_track_uuids[track] = self._alloc_uuid()
-        return self._run_pause_track_uuids[track]
+        if track not in self._run_track_uuids:
+            self._run_track_uuids[track] = self._alloc_uuid()
+        return self._run_track_uuids[track]
 
     def has_all_pauses_group(self) -> bool:
         return self._all_pauses_group_uuid is not None

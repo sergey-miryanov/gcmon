@@ -8,7 +8,7 @@ the figures a trace is built from, which the assertions quote back.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import NamedTuple
+from typing import Any, NamedTuple
 
 import msgspec
 from perfetto.trace_processor import TraceProcessor
@@ -17,7 +17,7 @@ from gcmon.exporters import PerfettoExporter
 from gcmon.exporters.encoder import Layout
 from gcmon.exporters.perfetto_format import _interpreter_group_name
 from gcmon.exporters.perfetto_process_lifetime import process_track_name
-from gcmon.model.data import GCStatsInfo
+from gcmon.model.data import GCStatsInfo, LossMsg
 from gcmon.model.names import (
     CANDIDATES,
     COLLECTED,
@@ -120,14 +120,31 @@ def rows_drawn_under(tp: TraceProcessor, *path: str) -> list[str]:
     on, and the trace processor computes it: by `sibling_order_rank` under a
     parent whose `child_ordering` is explicit, by name under one with none.
     """
+    rows, parent = _rows_and_the_one_at(tp, path)
+    return [r.name for r in sorted((r for r in rows if r.parent_id == parent), key=lambda r: r.order_id)]
+
+
+def row_track_ids(tp: TraceProcessor, *path: str) -> str:
+    """The tracks the row *path* names is drawn from, a lane each, as a list
+    SQL's ``IN`` takes."""
+    rows, row = _rows_and_the_one_at(tp, path)
+    [track_ids] = [r.track_ids for r in rows if r.id == row]
+    return str(track_ids)
+
+
+def _rows_and_the_one_at(tp: TraceProcessor, path: tuple[str, ...]) -> tuple[list[Any], int | None]:
+    """Every row the trace draws, and the id of the one *path* names from the
+    top level down."""
     list(tp.query("INCLUDE PERFETTO MODULE viz.summary.track_event"))
     rows = list(
-        tp.query("SELECT min_track_id AS id, parent_id, name, order_id FROM _track_event_tracks_ordered_groups")
+        tp.query(
+            "SELECT min_track_id AS id, parent_id, name, order_id, track_ids FROM _track_event_tracks_ordered_groups"
+        )
     )
-    parent: int | None = None
+    row: int | None = None
     for name in path:
-        [parent] = [r.id for r in rows if r.parent_id == parent and r.name == name]
-    return [r.name for r in sorted((r for r in rows if r.parent_id == parent), key=lambda r: r.order_id)]
+        [row] = [r.id for r in rows if r.parent_id == row and r.name == name]
+    return rows, row
 
 
 def _process_filter(pid: int) -> str:
@@ -612,6 +629,36 @@ def _write_overlapping_pauses_trace(tmp: Path) -> Path:
     exporter = PerfettoExporter(output_path=path, flush_threshold=1000)
     for process, record in _OVERLAPPING_PAUSES:
         exporter.add_event(process, record)
+    exporter.close()
+    return path
+
+
+_LOSS_START: int = 1_600_000_000
+
+_OVERLAPPING_LOSSES: tuple[tuple[Process, LossMsg], ...] = (
+    (proc(DEFAULT_PID), create_mock_loss_item(iid=_IID, ts_start=_LOSS_START, ts_stop=_LOSS_START + 10_000_000)),
+    (
+        proc(DEFAULT_PID),
+        create_mock_loss_item(iid=_IID, ts_start=_LOSS_START + 10_000_000, ts_stop=_LOSS_START + 20_000_000),
+    ),
+    (
+        proc(DEFAULT_PID),
+        create_mock_loss_item(iid=_IID + 1, ts_start=_LOSS_START + 5_000_000, ts_stop=_LOSS_START + 15_000_000),
+    ),
+    (
+        proc(_SECOND_PID, 2),
+        create_mock_loss_item(iid=_IID, ts_start=_LOSS_START + 7_000_000, ts_stop=_LOSS_START + 17_000_000),
+    ),
+)
+"""Three interpreters' loss windows, two of them in one process: the first
+interpreter's two polls touch, and the others' windows overlap both."""
+
+
+def _write_overlapping_losses_trace(tmp: Path) -> Path:
+    path = tmp / "trace_overlapping_losses.pb"
+    exporter = PerfettoExporter(output_path=path, flush_threshold=1000)
+    for process, loss in _OVERLAPPING_LOSSES:
+        exporter.add_loss_event(process, loss)
     exporter.close()
     return path
 
