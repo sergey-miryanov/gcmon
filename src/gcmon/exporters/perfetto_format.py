@@ -37,8 +37,8 @@ from .perfetto_builders import (
 from .perfetto_process_lifetime import (
     _emit_process_descriptor,
     _emit_root_descriptor,
+    _fold_batch,
     _record_capture_totals,
-    _record_process_lifetime,
     emit_retired_process_row,
     finalize_perfetto_packets,
 )
@@ -322,48 +322,31 @@ def _emit_track_descriptors(
     return descriptors
 
 
-def convert_trace_events_to_perfetto(
+def _draw_batch_on_process_rows(
     events: Sequence[TraceEvent],
     state: PerfettoTrackState,
     sequence_id: int,
 ) -> tuple[list[bytes], list[bytes]]:
-    """Convert a list of ``TraceEvent`` objects to Perfetto protobuf packets.
+    """The process rows' share of a batch: every descriptor its events need
+    and the packets drawing them.
 
     A track's descriptor goes out because an event named that track, ahead of
     the packet that named it. No producer sends metadata first, and none can
     forget to.
 
-    Returns ``(descriptors, packets)``, two lists of encoded ``TracePacket``
-    bytes ready for ``build_trace``. The first call on a given *state* also
-    emits the root descriptor.
-
     Each process descriptor carries a ``sibling_order_rank`` and a
     ``process.start_timestamp_ns``, both taken from that process's first
-    event. *state* accumulates those across batches, and the pre-pass below
-    folds this batch in before the main loop, so a process described in this
-    batch is ranked against the events of it. Both fields are always present:
-    a descriptor goes out only for a process that named a track, which is a
-    process the pre-pass has folded in.
-
-    A span on the ``Processes`` row goes out with its process's own row, at
-    the flush that retires it or at trace close
-    (``emit_retired_process_row``, ``finalize_perfetto_packets``).
+    event. The shared part has folded this batch in already, so a process
+    described in this batch is ranked against the events of it.
     """
     descriptors: list[bytes] = []
     packets: list[bytes] = []
 
     if events:
-        for event in events:
-            _record_process_lifetime(event, state)
-            _record_capture_totals(event, state)
         descriptors.extend(_emit_root_descriptor(state, sequence_id))
 
-    # Ranked after the pre-pass folded the batch in, so the processes this
-    # batch describes are ordered against each other by first observation
-    # rather than by the order their events happen to sit in.
-    state.rank_processes(event.track.process for event in events)
-
     for event in events:
+        _record_capture_totals(event, state)
         process = event.track.process
         descriptors.extend(_emit_track_descriptors(event.track, state, sequence_id))
 
@@ -429,3 +412,23 @@ def convert_trace_events_to_perfetto(
             )
 
     return descriptors, packets
+
+
+def convert_trace_events_to_perfetto(
+    events: Sequence[TraceEvent],
+    state: PerfettoTrackState,
+    sequence_id: int,
+) -> tuple[list[bytes], list[bytes]]:
+    """Convert a list of ``TraceEvent`` objects to Perfetto protobuf packets:
+    the shared part folds the batch in, then the process rows draw it.
+
+    Returns ``(descriptors, packets)``, two lists of encoded ``TracePacket``
+    bytes ready for ``build_trace``. The first call on a given *state* also
+    emits the root descriptor.
+
+    A span on the ``Processes`` row goes out with its process's own row, at
+    the flush that retires it or at trace close
+    (``emit_retired_process_row``, ``finalize_perfetto_packets``).
+    """
+    _fold_batch(events, state)
+    return _draw_batch_on_process_rows(events, state, sequence_id)

@@ -7,6 +7,8 @@ on the process's own row. See ADR-0011 and ADR-0028, and ADR-0001 for where
 this sits among the encoder's layers.
 """
 
+from collections.abc import Sequence
+
 from ..model.names import (
     CMDLINE,
     LOST_COUNT,
@@ -80,8 +82,8 @@ def _emit_process_descriptor(
     process: Process,
     state: PerfettoTrackState,
     sequence_id: int,
-    sibling_order_rank: int | None = None,
-    start_timestamp_ns: int | None = None,
+    sibling_order_rank: int | None,
+    start_timestamp_ns: int | None,
 ) -> list[bytes]:
     """Build a process track descriptor if not already emitted for *process*.
 
@@ -96,6 +98,9 @@ def _emit_process_descriptor(
     """
     if state.has_process_descriptor(process):
         return []
+    assert sibling_order_rank is not None and start_timestamp_ns is not None, (
+        f"{process} is described before the shared part folded it in"
+    )
     state.mark_process_descriptor(process)
     proc_uuid = state.get_process_track_uuid(process)
     cmdline = state.get_cmdline(process)
@@ -238,14 +243,62 @@ def _emit_process_row_lifetime_slice(
     ]
 
 
+def _draw_spans_on_process_rows(
+    spans: Sequence[ProcessSpan],
+    state: PerfettoTrackState,
+    sequence_id: int,
+) -> list[bytes]:
+    """The process rows' share of *spans*, each one final: the root
+    descriptor, a descriptor for each span's process where it has none, and
+    the ``Lifetime`` bar on it."""
+    if not spans:
+        return []
+    descriptors = _emit_root_descriptor(state, sequence_id)
+    for span in spans:
+        descriptors.extend(
+            _emit_process_descriptor(
+                span.process,
+                state,
+                sequence_id,
+                sibling_order_rank=state.get_process_track_rank(span.process),
+                start_timestamp_ns=span.start_ts,
+            )
+        )
+    packets: list[bytes] = []
+    for span in spans:
+        packets.extend(_emit_process_row_lifetime_slice(span, state, sequence_id))
+    return [*descriptors, *packets]
+
+
+def _draw_retired_span(
+    process: Process,
+    state: PerfettoTrackState,
+    sequence_id: int,
+) -> tuple[list[ProcessSpan], list[bytes]]:
+    """The shared part's share of retiring *process*: the track it draws its
+    span on, and the span. Returns the span with the packets, for the rows
+    that draw over the same interval.
+    """
+    if state.has_process_lifetime_emitted() or state.has_process_lifetime_track(process):
+        return [], []
+    span = state.get_process_lifetime(process)
+    if span is None:
+        return [], []
+    state.rank_processes([process])
+    return [span], [
+        _emit_process_lifetime_track_descriptor(process, state, sequence_id),
+        *_emit_process_lifetime_slice(span, state, sequence_id),
+    ]
+
+
 def emit_retired_process_row(
     process: Process,
     state: PerfettoTrackState,
     sequence_id: int,
 ) -> list[bytes]:
-    """Everything *process* draws, before the end of the run: the root
-    descriptor, its process descriptor, its span on the shared ``Processes``
-    row and its ``Lifetime`` bar.
+    """Everything *process* draws, before the end of the run: its span on the
+    shared ``Processes`` row, then the root descriptor, its process descriptor
+    and its ``Lifetime`` bar.
 
     gcmon has let go of the pid, so *process*'s span is final: a record read
     afterwards is filed under whatever holds the pid now (ADR-0025), and
@@ -258,26 +311,8 @@ def emit_retired_process_row(
     Returns nothing for a process gcmon never observed, for one already drawn,
     and for a trace whose closeout has gone out.
     """
-    if state.has_process_lifetime_emitted() or state.has_process_row_drawn(process):
-        return []
-    span = state.get_process_lifetime(process)
-    if span is None:
-        return []
-    state.rank_processes([process])
-    packets = [
-        *_emit_root_descriptor(state, sequence_id),
-        *_emit_process_descriptor(
-            process,
-            state,
-            sequence_id,
-            sibling_order_rank=state.get_process_track_rank(process),
-            start_timestamp_ns=span.start_ts,
-        ),
-        _emit_process_lifetime_track_descriptor(process, state, sequence_id),
-    ]
-    packets.extend(_emit_process_lifetime_slice(span, state, sequence_id))
-    packets.extend(_emit_process_row_lifetime_slice(span, state, sequence_id))
-    return packets
+    spans, packets = _draw_retired_span(process, state, sequence_id)
+    return [*packets, *_draw_spans_on_process_rows(spans, state, sequence_id)]
 
 
 def _record_process_lifetime(
@@ -297,6 +332,22 @@ def _record_process_lifetime(
         state.update_process_lifetime(process, event.ts_stop)
     else:
         state.update_process_lifetime(process, event.ts)
+
+
+def _fold_batch(
+    events: Sequence[TraceEvent],
+    state: PerfettoTrackState,
+) -> None:
+    """The shared part's share of a batch: fold every event into its
+    process's span, then rank the processes the batch names.
+
+    Ranked after the whole batch is in, so the processes it describes are
+    ordered against each other by first observation rather than by the order
+    their events happen to sit in.
+    """
+    for event in events:
+        _record_process_lifetime(event, state)
+    state.rank_processes(event.track.process for event in events)
 
 
 def _record_capture_totals(
@@ -336,15 +387,43 @@ def _record_capture_totals(
         state.record_sampled(event.track.process)
 
 
+def _draw_final_spans(
+    state: PerfettoTrackState,
+    sequence_id: int,
+) -> tuple[list[ProcessSpan], list[bytes]]:
+    """The shared part's share of the closeout: for every process still
+    held, the track it draws its span on, and the span. Returns the spans
+    with the packets, for the rows that draw over the same intervals.
+    """
+    if state.has_process_lifetime_emitted():
+        return [], []
+    recorded = state.get_process_lifetimes()
+    if not recorded:
+        return [], []
+    state.mark_process_lifetime_emitted()
+    spans = sorted(
+        (span for span in recorded if not state.has_process_lifetime_track(span.process)),
+        key=lambda span: (span.start_ts, span.process),
+    )
+    state.rank_processes(span.process for span in spans)
+    descriptors = [_emit_process_lifetime_track_descriptor(span.process, state, sequence_id) for span in spans]
+    packets: list[bytes] = []
+    for span in spans:
+        packets.extend(_emit_process_lifetime_slice(span, state, sequence_id))
+    return spans, [*descriptors, *packets]
+
+
 def finalize_perfetto_packets(
     state: PerfettoTrackState,
     sequence_id: int,
 ) -> list[bytes]:
-    """Emit every descriptor and span packet the end of the trace owes:
-    the root descriptor, then per process still held a descriptor for its
-    row where it has none, a descriptor for the track it draws its span on,
-    that span, and its ``Lifetime`` bar on its own row. Call this once, at
-    the end of the trace (typically the encoder's ``close()``).
+    """Emit every descriptor and span packet the end of the trace owes, the
+    shared part's before the process rows'. The shared part draws, for every
+    process still held, a descriptor for the track it draws its span on, then
+    every span. The process rows follow with the root descriptor, a
+    descriptor for each of those processes' rows where it has none, then
+    every ``Lifetime`` bar. Call this once, at the end of the trace
+    (typically the encoder's ``close()``).
 
     A process gcmon retired during the run drew both of its slices then
     (``emit_retired_process_row``), so this pass skips it.
@@ -364,37 +443,8 @@ def finalize_perfetto_packets(
 
     Safe to call with no spans, and safe to call twice; both return an
     empty list. The ``_process_lifetime_emitted`` flag on *state* guards
-    the second call, and it guards every track it describes: a descriptor
-    is not idempotent on its own.
+    the second call, which hands the process rows no spans: a descriptor is
+    not idempotent on its own.
     """
-    if state.has_process_lifetime_emitted():
-        return []
-    recorded = state.get_process_lifetimes()
-    if not recorded:
-        return []
-    state.mark_process_lifetime_emitted()
-    spans = sorted(
-        (span for span in recorded if not state.has_process_row_drawn(span.process)),
-        key=lambda span: (span.start_ts, span.process),
-    )
-
-    state.rank_processes(span.process for span in spans)
-    descriptors = _emit_root_descriptor(state, sequence_id)
-    for span in spans:
-        descriptors.extend(
-            _emit_process_descriptor(
-                span.process,
-                state,
-                sequence_id,
-                sibling_order_rank=state.get_process_track_rank(span.process),
-                start_timestamp_ns=span.start_ts,
-            )
-        )
-        descriptors.append(_emit_process_lifetime_track_descriptor(span.process, state, sequence_id))
-
-    packets: list[bytes] = []
-    for span in spans:
-        packets.extend(_emit_process_lifetime_slice(span, state, sequence_id))
-        packets.extend(_emit_process_row_lifetime_slice(span, state, sequence_id))
-
-    return [*descriptors, *packets]
+    spans, packets = _draw_final_spans(state, sequence_id)
+    return [*packets, *_draw_spans_on_process_rows(spans, state, sequence_id)]
