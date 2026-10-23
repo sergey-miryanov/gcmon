@@ -15,7 +15,7 @@ from pathlib import Path
 import pytest
 from pytest_codspeed import BenchmarkFixture
 
-from gcmon.exporters.encoder import ProtobufEventEncoder
+from gcmon.exporters.encoder import Layout, ProtobufEventEncoder
 from gcmon.exporters.trace_converter import convert_item_to_trace_format
 from gcmon.model.trace_event import TraceEvent
 from tests.helpers import proc
@@ -43,12 +43,13 @@ def _batches() -> list[list[TraceEvent]]:
 
 
 @pytest.mark.benchmark
-def test_write_a_run_of_batches(benchmark: BenchmarkFixture, tmp_path: Path) -> None:
+@pytest.mark.parametrize("layout", list(Layout), ids=[layout.value for layout in Layout])
+def test_write_a_run_of_batches(benchmark: BenchmarkFixture, tmp_path: Path, layout: Layout) -> None:
     batches = _batches()
     path = tmp_path / "bench.pftrace"
 
     def run() -> int:
-        encoder = ProtobufEventEncoder(sequence_id=1)
+        encoder = ProtobufEventEncoder(sequence_id=1, layout=layout)
         encoder.open(path)
         for events in batches:
             encoder.write_events(events)
