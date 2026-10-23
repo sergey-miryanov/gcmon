@@ -156,6 +156,12 @@ inverting the per-generation names in `model.names`. The converter has the
 generation when it builds the slice, and the track is where an event says
 which row it is drawn on (ADR-0024).
 
+Rejected: choosing the row from the pause's `generation` arg. A sub-phase
+carries none. Writing the arg on every sub-phase costs an annotation per
+sub-phase of every record, where the tracks cost two descriptors per
+interpreter, once. Taking a sub-phase's generation from the pause written
+before it relies on an order nothing checks.
+
 **Each track maps to a row in each set:**
 
 | An event on | Process rows | Run rows |
