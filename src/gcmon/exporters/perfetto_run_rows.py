@@ -12,10 +12,8 @@ from collections.abc import Sequence
 from ..model.names import PAUSE, PID, PID_EPOCH
 from ..model.trace_event import PauseTrack, Slice, TraceEvent
 from .perfetto_builders import (
-    _args_to_debug_annotations,
     _build_debug_annotation_int,
-    _make_slice_begin,
-    _make_slice_end,
+    _make_slice_packets,
     build_trace_packet,
     build_track_descriptor,
 )
@@ -66,6 +64,7 @@ def _emit_generation_track_descriptor(
 
 def draw_batch_on_run_rows(
     events: Sequence[TraceEvent],
+    annotations: Sequence[list[bytes]],
     state: PerfettoTrackState,
     sequence_id: int,
 ) -> tuple[list[bytes], list[bytes]]:
@@ -77,7 +76,7 @@ def draw_batch_on_run_rows(
     """
     descriptors: list[bytes] = []
     packets: list[bytes] = []
-    for event in events:
+    for event, encoded in zip(events, annotations, strict=True):
         if not isinstance(event, Slice):
             continue
         track = event.track
@@ -85,25 +84,13 @@ def draw_batch_on_run_rows(
             continue
         descriptors.extend(_emit_generation_track_descriptor(track, state, sequence_id))
         track_uuid = state.get_or_create_run_pause_track_uuid(track)
-        annotations = _args_to_debug_annotations(event.args)
         if event.cat.startswith(PAUSE.category):
-            annotations = [
+            encoded = [
                 _build_debug_annotation_int(PID, track.process.pid),
                 _build_debug_annotation_int(PID_EPOCH, track.process.pid_epoch),
-                *annotations,
+                *encoded,
             ]
-        packets.append(
-            build_trace_packet(
-                sequence_id,
-                timestamp=event.ts_start,
-                track_event=_make_slice_begin(track_uuid, event.name, [event.cat], annotations),
-            )
-        )
-        packets.append(
-            build_trace_packet(
-                sequence_id,
-                timestamp=event.ts_stop,
-                track_event=_make_slice_end(track_uuid),
-            )
+        packets.extend(
+            _make_slice_packets(sequence_id, track_uuid, event.name, event.cat, event.ts_start, event.ts_stop, encoded)
         )
     return descriptors, packets

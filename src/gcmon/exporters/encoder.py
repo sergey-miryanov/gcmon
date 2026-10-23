@@ -20,6 +20,7 @@ from .perfetto_format import (
     TracePacketField,
     convert_trace_events_to_perfetto,
     emit_retired_process_row,
+    encode_batch_args,
     finalize_perfetto_packets,
 )
 from .perfetto_run_rows import draw_batch_on_run_rows
@@ -146,9 +147,14 @@ class ProtobufEventEncoder:
             return
         assert self._path is not None, "open() must be called before write_events()"
         batch = list(events)
-        descriptors, packets = convert_trace_events_to_perfetto(batch, self._track_state, self._sequence_id)
+        annotations = encode_batch_args(batch)
+        descriptors, packets = convert_trace_events_to_perfetto(
+            batch, self._track_state, self._sequence_id, annotations
+        )
         if self._draws_run_rows:
-            run_descriptors, run_packets = draw_batch_on_run_rows(batch, self._track_state, self._sequence_id)
+            run_descriptors, run_packets = draw_batch_on_run_rows(
+                batch, annotations, self._track_state, self._sequence_id
+            )
             descriptors.extend(run_descriptors)
             packets.extend(run_packets)
         # After the convert pass, so a queued event has reached the span

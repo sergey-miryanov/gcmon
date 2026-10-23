@@ -212,25 +212,34 @@ def build_trace(packets: list[bytes]) -> bytes:
     return result
 
 
-def _make_slice_begin(
+def _make_slice_packets(
+    sequence_id: int,
     track_uuid: int,
     name: str,
-    categories: list[str],
+    category: str,
+    ts_start: int,
+    ts_stop: int,
     annotations: list[bytes],
-) -> bytes:
-    return build_track_event(
+) -> tuple[bytes, bytes]:
+    """A slice's BEGIN and END packets.
+
+    An adjacent pair, not interleaved into stack order: the trace processor
+    sorts by timestamp and builds the nesting itself. BEGIN first, so a
+    zero-length slice reads as ``dur = 0`` rather than ``-1``. See ADR-0011
+    for the pattern. The END carries no name and closes the top of the
+    stack, so it does not need the naming ADR-0011 relies on.
+    """
+    begin = build_track_event(
         event_type=TrackEventType.SLICE_BEGIN,
         track_uuid=track_uuid,
         name=name,
-        categories=categories,
+        categories=[category],
         debug_annotations=annotations,
     )
-
-
-def _make_slice_end(track_uuid: int) -> bytes:
-    return build_track_event(
-        event_type=TrackEventType.SLICE_END,
-        track_uuid=track_uuid,
+    end = build_track_event(event_type=TrackEventType.SLICE_END, track_uuid=track_uuid)
+    return (
+        build_trace_packet(sequence_id, timestamp=ts_start, track_event=begin),
+        build_trace_packet(sequence_id, timestamp=ts_stop, track_event=end),
     )
 
 

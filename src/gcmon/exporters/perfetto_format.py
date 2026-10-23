@@ -27,8 +27,7 @@ from ..model.trace_event import (
 from .perfetto_builders import (
     _args_to_debug_annotations,
     _make_counter_event,
-    _make_slice_begin,
-    _make_slice_end,
+    _make_slice_packets,
     build_trace,
     build_trace_packet,
     build_track_descriptor,
@@ -74,6 +73,7 @@ __all__ = [
     "build_track_event",
     "convert_trace_events_to_perfetto",
     "emit_retired_process_row",
+    "encode_batch_args",
     "finalize_perfetto_packets",
 ]
 
@@ -324,6 +324,7 @@ def _emit_track_descriptors(
 
 def _draw_batch_on_process_rows(
     events: Sequence[TraceEvent],
+    annotations: Sequence[list[bytes]],
     state: PerfettoTrackState,
     sequence_id: int,
 ) -> tuple[list[bytes], list[bytes]]:
@@ -345,36 +346,21 @@ def _draw_batch_on_process_rows(
     if events:
         descriptors.extend(_emit_root_descriptor(state, sequence_id))
 
-    for event in events:
+    for event, encoded in zip(events, annotations, strict=True):
         _record_capture_totals(event, state)
         process = event.track.process
         descriptors.extend(_emit_track_descriptors(event.track, state, sequence_id))
 
         if isinstance(event, Slice):
-            track_uuid = state.get_track_uuid(event.track)
-            # An adjacent pair, not interleaved into stack order: the trace
-            # processor sorts by timestamp and builds the nesting itself.
-            # BEGIN first, so a zero-length slice reads as ``dur = 0`` rather
-            # than ``-1``. See ADR-0011 for the pattern. An END here carries no
-            # name and closes the top of the stack, so it does not need the
-            # naming ADR-0011 relies on.
-            packets.append(
-                build_trace_packet(
+            packets.extend(
+                _make_slice_packets(
                     sequence_id,
-                    timestamp=event.ts_start,
-                    track_event=_make_slice_begin(
-                        track_uuid,
-                        event.name,
-                        [event.cat],
-                        _args_to_debug_annotations(event.args),
-                    ),
-                )
-            )
-            packets.append(
-                build_trace_packet(
-                    sequence_id,
-                    timestamp=event.ts_stop,
-                    track_event=_make_slice_end(track_uuid),
+                    state.get_track_uuid(event.track),
+                    event.name,
+                    event.cat,
+                    event.ts_start,
+                    event.ts_stop,
+                    encoded,
                 )
             )
 
@@ -388,7 +374,7 @@ def _draw_batch_on_process_rows(
                         event_type=TrackEventType.INSTANT,
                         track_uuid=proc_uuid,
                         name=event.name,
-                        debug_annotations=_args_to_debug_annotations(event.args),
+                        debug_annotations=encoded,
                     ),
                 )
             )
@@ -414,13 +400,23 @@ def _draw_batch_on_process_rows(
     return descriptors, packets
 
 
+def encode_batch_args(events: Sequence[TraceEvent]) -> list[list[bytes]]:
+    """Every event's args as debug annotations, one list per event, encoded
+    once for every set of rows that draws the batch."""
+    return [[] if isinstance(event, Counter) else _args_to_debug_annotations(event.args) for event in events]
+
+
 def convert_trace_events_to_perfetto(
     events: Sequence[TraceEvent],
     state: PerfettoTrackState,
     sequence_id: int,
+    annotations: Sequence[list[bytes]] | None = None,
 ) -> tuple[list[bytes], list[bytes]]:
     """Convert a list of ``TraceEvent`` objects to Perfetto protobuf packets:
     the shared part folds the batch in, then the process rows draw it.
+
+    *annotations* are ``encode_batch_args(events)``, passed in when the run
+    rows draw the same batch, and encoded here when they are not.
 
     Returns ``(descriptors, packets)``, two lists of encoded ``TracePacket``
     bytes ready for ``build_trace``. The first call on a given *state* also
@@ -431,4 +427,6 @@ def convert_trace_events_to_perfetto(
     (``emit_retired_process_row``, ``finalize_perfetto_packets``).
     """
     _fold_batch(events, state)
-    return _draw_batch_on_process_rows(events, state, sequence_id)
+    if annotations is None:
+        annotations = encode_batch_args(events)
+    return _draw_batch_on_process_rows(events, annotations, state, sequence_id)
