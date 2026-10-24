@@ -170,7 +170,7 @@ before it relies on an order nothing checks.
 | `InterpreterTrack`, a counter | `heap_size`, or the `GC Metrics` group | not drawn |
 | `LossTrack` | `GC Loss` in the interpreter group | a track per `(process, iid)` named `GC Loss` at the root |
 | `ProcessTrack`, an instant | the process row | a track per process named `Marks` at the root |
-| `ProcessTrack`, a counter | `rss` on the process row | a counter per process named for its span, parented to `RSS`, ranked by `get_process_track_rank` |
+| `ProcessTrack`, a counter | `rss` on the process row | a counter per process named `<span> rss`, parented to `RSS`, ranked by `get_process_track_rank` |
 
 A span goes on `Processes`, once, from the shared part.
 

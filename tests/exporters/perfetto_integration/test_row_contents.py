@@ -747,5 +747,5 @@ class TestTwoInterpretersHeapSizes:
             counter_display_name(0, DURATION),
             HEAP_SIZE,
             RSS,
-            process_track_name(proc(DEFAULT_PID)),
+            f"{process_track_name(proc(DEFAULT_PID))} {RSS}",
         }

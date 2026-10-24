@@ -23,6 +23,7 @@ from gcmon.exporters.perfetto_run_rows import (
 )
 from gcmon.exporters.trace_converter import convert_item_to_trace_format
 from gcmon.model.names import GENERATIONS, PID, PID_EPOCH, RSS
+from gcmon.model.process import Process
 from gcmon.model.trace_event import Slice
 from tests.conftest import DEFAULT_PID
 from tests.exporters.perfetto_integration.traces import (
@@ -62,6 +63,11 @@ _NAMES_A_PROCESS: str = f"({_PID} IS NOT NULL) AS has_pid, ({_PID_EPOCH} IS NOT 
 
 
 _GEN_ROW: tuple[str, str] = (_ALL_PAUSES_GROUP_NAME, _generation_row_name(_GEN))
+
+
+def _rss_row_name(process: Process) -> str:
+    """Not the process's own name, which its row and its span already hold."""
+    return f"{process_track_name(process)} {RSS}"
 
 
 def _every_row(path: Path) -> tuple[list[_RowPath], dict[_RowPath, _Drawn]]:
@@ -334,8 +340,8 @@ class TestRss:
         )
 
         assert rows_drawn_under(tp, _RSS_GROUP_NAME) == [
-            process_track_name(proc(_SECOND_PID)),
-            process_track_name(proc(DEFAULT_PID)),
+            _rss_row_name(proc(_SECOND_PID)),
+            _rss_row_name(proc(DEFAULT_PID)),
         ]
         assert [str(r.ordering) for r in group] == ["explicit"]
 
@@ -345,7 +351,7 @@ class TestRss:
         for process, ts, rss in _RSS_SAMPLES:
             expected.setdefault(process_track_name(process), []).append((ts, rss))
 
-        assert {name: drawn[("", _RSS_GROUP_NAME, name)][1] for name in expected} == expected
+        assert {name: drawn[("", _RSS_GROUP_NAME, f"{name} {RSS}")][1] for name in expected} == expected
         assert {name: drawn[(name, RSS)][1] for name in expected} == expected
 
 
@@ -378,7 +384,7 @@ def test_a_run_killed_before_close_keeps_its_flushed_mark_and_sample_on_both_set
         marks_on_process_rows = tp.query(
             f"SELECT s.ts FROM slice s JOIN process_track t ON s.track_id = t.id WHERE s.name = '{_INSTANT_NAME}'"
         )
-        rss_row = row_track_ids(tp, _RSS_GROUP_NAME, process_track_name(proc(DEFAULT_PID)))
+        rss_row = row_track_ids(tp, _RSS_GROUP_NAME, _rss_row_name(proc(DEFAULT_PID)))
         samples_on_run_rows = tp.query(f"SELECT ts, value FROM counter WHERE track_id IN ({rss_row})")
         samples_on_process_rows = tp.query(
             f"SELECT c.ts, c.value FROM counter c JOIN counter_track t ON c.track_id = t.id WHERE t.name = '{RSS}'"
@@ -416,8 +422,8 @@ def test_the_process_layout_draws_the_full_trace_less_its_run_rows(tmp_path: Pat
         ("", _LOSS_TRACK_NAME),
         ("", _MARKS_TRACK_NAME),
         ("", _RSS_GROUP_NAME),
-        ("", _RSS_GROUP_NAME, process_track_name(proc(DEFAULT_PID))),
-        ("", _RSS_GROUP_NAME, process_track_name(proc(_SECOND_PID, 2))),
+        ("", _RSS_GROUP_NAME, _rss_row_name(proc(DEFAULT_PID))),
+        ("", _RSS_GROUP_NAME, _rss_row_name(proc(_SECOND_PID, 2))),
     ]
     assert process_order == [row for row in full_order if row not in run_rows]
     assert process_drawn == {row: drawn for row, drawn in full_drawn.items() if row not in run_rows}

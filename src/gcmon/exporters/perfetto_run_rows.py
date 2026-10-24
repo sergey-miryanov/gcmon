@@ -104,7 +104,7 @@ def _emit_rss_counter_descriptor(
     group_uuid, packets = _emit_group_descriptor(_RSS_GROUP_NAME, state, sequence_id)
     desc = build_track_descriptor(
         state.get_or_create_run_counter_track_uuid(track),
-        process_track_name(track.process),
+        f"{process_track_name(track.process)} {RSS}",
         parent_uuid=group_uuid,
         is_counter=True,
         sibling_order_rank=rank,
