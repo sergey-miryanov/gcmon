@@ -55,6 +55,7 @@ __all__ = [
     "PauseField",
     "PausePhase",
     "Phase",
+    "ReasonField",
     "SubPhase",
     "sub_phases",
     "sub_phases_and_fields",
@@ -425,6 +426,23 @@ class HeapSizeStopField:
         return {HeapSizeStopField.HEAP_SIZE_STOP: item.heap_size_stop}
 
 
+class ReasonField:
+    REASON: Final = "reason"
+
+    class _Info(Protocol):
+        reason: int
+
+    Info: ClassVar[type] = _Info
+
+    @staticmethod
+    def check(item: object) -> TypeGuard[_Info]:
+        return getattr(item, ReasonField.REASON, None) is not None
+
+    @staticmethod
+    def args(gen: int, item: _Info) -> EventArgs:
+        return {ReasonField.REASON: item.reason}
+
+
 class Counters:
     """The counters one pause draws: per generation, then the heap size as
     it starts and stops."""
@@ -474,6 +492,7 @@ PAUSE_FIELDS: Final[tuple[type[PauseField], ...]] = (
     OldWorkField,
     NewIncrementalFields,
     HeapSizeStopField,
+    ReasonField,
 )
 
 type _SubPhasesAndFields = tuple[tuple[type[SubPhase], ...], tuple[type[PauseField], ...]]
@@ -498,6 +517,7 @@ _CHECKED_FIELDS: Final = attrgetter(
     OldWorkField.OLD_WORK,
     NewIncrementalFields.AUTO_COLLECT,
     HeapSizeStopField.HEAP_SIZE_STOP,
+    ReasonField.REASON,
 )
 
 # Per set of checked fields present: what a msgspec record carries. A

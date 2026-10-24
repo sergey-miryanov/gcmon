@@ -17,6 +17,7 @@ from gcmon.model.phases import (
     IncrementSizeField,
     MarkAliveSubPhase,
     NewIncrementalFields,
+    ReasonField,
 )
 from gcmon.model.protocol import (
     TMapping,
@@ -24,7 +25,7 @@ from gcmon.model.protocol import (
     is_instant,
     to_mapping,
 )
-from tests.helpers import create_mock_incremental_item
+from tests.helpers import as_instrumented_structseq, create_mock_incremental_item
 
 
 class TestInstantMsg:
@@ -97,6 +98,16 @@ class TestFromMapping:
 
         assert result == record
         assert NewIncrementalFields.check(result)
+
+    def test_the_reason_survives_a_capture_of_a_struct_sequence(self) -> None:
+        """A live capture writes the struct sequence's fields, and reading
+        it back has to keep them for a later conversion."""
+        record = create_mock_incremental_item(gen=1)
+
+        result = from_mapping(to_mapping(as_instrumented_structseq(record)))
+
+        assert result == record
+        assert ReasonField.check(result)
 
     def test_from_mapping_returns_instant_msg(self, instant_dict: TMapping) -> None:
         result = from_mapping(instant_dict)

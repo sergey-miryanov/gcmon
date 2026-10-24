@@ -247,6 +247,7 @@ terminal), each line is a JSON object holding one GC record:
 | `finalized_garbage_count` | Objects this run finalized | Custom build |
 | `deleted_garbage_count` | Objects this run deleted | Custom build |
 | `clear_weakrefs_count` | Weakrefs this run cleared | Custom build |
+| `reason` | What started the run: `0` the collector on its own, `1` interpreter shutdown, `2` an explicit call such as `gc.collect()` | Custom build |
 | `ts_mark_alive_start`, `ts_mark_alive_stop` | When `GC Mark Alive` started and stopped | Custom build |
 | `ts_fill_increment_start`, `ts_fill_increment_stop` | When `GC Fill Increment` started and stopped | Custom build |
 | `ts_deduce_unreachable_start`, `ts_deduce_unreachable_stop` | When `GC Deduce Unreachable` started and stopped | Custom build |

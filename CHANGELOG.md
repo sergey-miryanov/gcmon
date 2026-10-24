@@ -12,6 +12,7 @@
 - A mark on the `Marks` row carries `pid` and `pid_epoch`
 - With `--rss`, each process's RSS sits on a row of its own under `RSS`, in the order of the process rows
 - `--layout process`, or `GCMON_LAYOUT=process`, writes the rows per process alone, without the run rows
+- A `GC Pause` slice carries `reason` where the record carries it
 
 ### Internal
 

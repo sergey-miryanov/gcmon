@@ -42,6 +42,7 @@ class GCStatsInfo(msgspec.Struct, omit_defaults=True):
     aging_spaces: int | None = None
     aging_next: int | None = None
     heap_size_stop: int | None = None
+    reason: int | None = None
 
 
 class InstantMsg(msgspec.Struct):

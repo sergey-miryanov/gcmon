@@ -27,6 +27,7 @@ from gcmon.model.phases import (
     MarkAliveSubPhase,
     NewIncrementalFields,
     OldWorkField,
+    ReasonField,
 )
 from gcmon.model.protocol import TGCStatsInfo, TItem
 from gcmon.model.trace_event import Counter, InterpreterTrack, LossTrack, PauseTrack, ProcessTrack, Slice
@@ -187,6 +188,7 @@ class TestTheIncrementalFields:
         NewIncrementalFields.AGING_SPACES,
         NewIncrementalFields.AGING_NEXT,
         HeapSizeStopField.HEAP_SIZE_STOP,
+        ReasonField.REASON,
     )
 
     def test_the_pause_carries_them(self) -> None:
