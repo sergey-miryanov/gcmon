@@ -5,7 +5,7 @@ modules. Anything used by a single module stays in that module.
 """
 
 import functools
-from collections.abc import Collection
+from collections.abc import Collection, Sequence
 
 from perfetto.protos.perfetto.trace.perfetto_trace_pb2 import (
     TracePacket,
@@ -13,12 +13,13 @@ from perfetto.protos.perfetto.trace.perfetto_trace_pb2 import (
     TrackEvent,
 )
 
-from gcmon.exporters.perfetto_format import convert_trace_events_to_perfetto
+from gcmon.exporters.perfetto_format import draw_batch_on_process_rows, fold_batch
 from gcmon.exporters.perfetto_process_lifetime import finalize_perfetto_packets
 from gcmon.exporters.perfetto_track_state import PerfettoTrackState, ProcessSpan
 from gcmon.exporters.trace_converter import convert_item_to_trace_format
 from gcmon.model.data import GCStatsInfo
 from gcmon.model.process import Process
+from gcmon.model.trace_event import TraceEvent
 from tests.helpers import create_mock_stats_item, proc
 
 pause_item = functools.partial(
@@ -38,6 +39,17 @@ The builder in `tests/helpers.py` carries the realistic ones, which read as
 noise in a test that asserts a timestamp landed on a packet. Only the
 defaults differ; every field is still the same builder's.
 """
+
+
+def draw_process_rows(
+    events: Sequence[TraceEvent],
+    state: PerfettoTrackState,
+    sequence_id: int = 1,
+) -> tuple[list[bytes], list[bytes]]:
+    """One batch through the shared part and the process rows, the way a
+    ``process`` trace's encoder draws it."""
+    fold_batch(events, state)
+    return draw_batch_on_process_rows(events, state, sequence_id)
 
 
 def span(pid: int, start_ts: int, end_ts: int, pid_epoch: int = 1) -> ProcessSpan:
@@ -63,7 +75,7 @@ def convert_item(
     Unlike ``convert_items``, this finalizes; a test that wants to see
     what convert emitted on its own wants that one instead.
     """
-    descriptors, packets = convert_trace_events_to_perfetto(
+    descriptors, packets = draw_process_rows(
         convert_item_to_trace_format(process, item),
         state,
         sequence_id,
@@ -87,7 +99,7 @@ def convert_items(
     descriptors: list[bytes] = []
     packets: list[bytes] = []
     for process, item in items:
-        batch_desc, batch_packets = convert_trace_events_to_perfetto(
+        batch_desc, batch_packets = draw_process_rows(
             convert_item_to_trace_format(process, item),
             state,
             sequence_id,

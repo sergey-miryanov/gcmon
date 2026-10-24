@@ -20,7 +20,7 @@ from perfetto.protos.perfetto.trace.perfetto_trace_pb2 import TracePacket
 from perfetto.trace_processor import TraceProcessor
 
 from gcmon.exporters.perfetto_builders import build_trace
-from gcmon.exporters.perfetto_format import _PAUSE_TRACK_NAME, convert_trace_events_to_perfetto
+from gcmon.exporters.perfetto_format import _PAUSE_TRACK_NAME
 from gcmon.exporters.perfetto_process_lifetime import process_track_name
 from gcmon.exporters.perfetto_proto import TrackEventType
 from gcmon.exporters.perfetto_track_state import PerfettoTrackState
@@ -32,7 +32,7 @@ from gcmon.model.names import (
     PAUSE,
 )
 from gcmon.model.trace_event import EventArgs, Slice, TraceEvent
-from tests.exporters.perfetto_helpers import parse_track_descriptor
+from tests.exporters.perfetto_helpers import draw_process_rows, parse_track_descriptor
 from tests.helpers import (
     gc_pause_slice_name,
     open_trace_processor,
@@ -67,7 +67,7 @@ def _slice_packets(packets: list[bytes]) -> list[TracePacket]:
 
 
 def _convert(events: list[TraceEvent]) -> Converted:
-    return convert_trace_events_to_perfetto(events, PerfettoTrackState(), SEQUENCE_ID)
+    return draw_process_rows(events, PerfettoTrackState(), SEQUENCE_ID)
 
 
 def _pause_slice(ts_stop: int = 1_500, args: EventArgs | None = None) -> Slice:

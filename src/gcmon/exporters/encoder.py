@@ -18,10 +18,11 @@ from .perfetto_format import (
     PerfettoTrackState,
     TraceField,
     TracePacketField,
-    convert_trace_events_to_perfetto,
+    draw_batch_on_process_rows,
     emit_retired_process_row,
     encode_batch_args,
     finalize_perfetto_packets,
+    fold_batch,
 )
 from .perfetto_run_rows import draw_batch_on_run_rows
 from .protobuf_encoder import encode_bytes_field
@@ -54,7 +55,7 @@ _CODEC = _resolve_codec()
 __all__ = [
     "Layout",
     "ProtobufEventEncoder",
-    "convert_trace_events_to_perfetto",
+    "draw_batch_on_process_rows",
 ]
 
 
@@ -147,17 +148,16 @@ class ProtobufEventEncoder:
             return
         assert self._path is not None, "open() must be called before write_events()"
         batch = list(events)
+        fold_batch(batch, self._track_state)
         annotations = encode_batch_args(batch)
-        descriptors, packets = convert_trace_events_to_perfetto(
-            batch, self._track_state, self._sequence_id, annotations
-        )
+        descriptors, packets = draw_batch_on_process_rows(batch, self._track_state, self._sequence_id, annotations)
         if self._draws_run_rows:
             run_descriptors, run_packets = draw_batch_on_run_rows(
                 batch, annotations, self._track_state, self._sequence_id
             )
             descriptors.extend(run_descriptors)
             packets.extend(run_packets)
-        # After the convert pass, so a queued event has reached the span
+        # After the fold, so a queued event has reached the span
         # accumulator before the bar is drawn over it.
         retired = self._drain_retired()
         if not descriptors and not packets and not retired:

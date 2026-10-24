@@ -22,7 +22,7 @@ from typing import Any
 from perfetto.protos.perfetto.trace.perfetto_trace_pb2 import DebugAnnotation, TracePacket
 
 from gcmon.analysis.jsonl_io import write_jsonl
-from gcmon.exporters.perfetto_format import convert_trace_events_to_perfetto, finalize_perfetto_packets
+from gcmon.exporters.perfetto_format import finalize_perfetto_packets
 from gcmon.exporters.perfetto_track_state import PerfettoTrackState
 from gcmon.exporters.trace_converter import convert_item_to_trace_format, convert_loss_to_trace_format
 from gcmon.model.data import GCStatsInfo
@@ -38,6 +38,7 @@ from gcmon.model.phases import Counters
 from gcmon.model.trace_event import Counter
 from gcmon.support.vocabulary import ENCODING
 from tests.data_helpers import create_instant_msg
+from tests.exporters.perfetto_helpers import draw_process_rows
 from tests.helpers import (
     JSONL_FIELDS,
     SLICE_ARGS,
@@ -140,7 +141,7 @@ class TestTheTableAgreesWithWhatAConversionWrites:
             state.update_process_lifetime(second, ts)
         loss = convert_loss_to_trace_format(first, create_mock_loss_item())
 
-        _descriptors, packets = convert_trace_events_to_perfetto(loss, state, sequence_id=1)
+        _descriptors, packets = draw_process_rows(loss, state, sequence_id=1)
         packets = [*packets, *finalize_perfetto_packets(state, sequence_id=1)]
 
         written: set[str] = set()

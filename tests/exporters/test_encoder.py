@@ -9,9 +9,10 @@ import pytest
 
 from gcmon.exporters.encoder import (
     ProtobufEventEncoder,
-    convert_trace_events_to_perfetto,  # noqa: F401  (used via monkeypatch.setattr)
+    draw_batch_on_process_rows,  # noqa: F401  (used via monkeypatch.setattr)
 )
-from gcmon.model.trace_event import Instant
+from gcmon.model.names import RSS
+from gcmon.model.trace_event import Counter, Instant
 from tests.helpers import proc, process_track
 
 
@@ -66,14 +67,27 @@ class TestProtobufEventEncoder:
     def test_write_events_returns_early_when_converter_produces_no_output(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
+        """Checked before ``close()``, which draws the span the event was
+        folded into."""
         enc = ProtobufEventEncoder()
         path = tmp_path / "out.perfetto"
         enc.open(path)
-        for draws_a_set_of_rows in ("convert_trace_events_to_perfetto", "draw_batch_on_run_rows"):
+        for draws_a_set_of_rows in ("draw_batch_on_process_rows", "draw_batch_on_run_rows"):
             monkeypatch.setattr(f"gcmon.exporters.encoder.{draws_a_set_of_rows}", Mock(return_value=([], [])))
 
         enc.write_events([Instant(process_track(1234), "ev", ts=1_000)])
-        enc.close()
 
         assert not path.exists()
         assert enc._has_written is False
+
+    def test_the_run_rows_draw_without_the_process_rows(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+        """The encoder runs the shared part itself, so a process the run rows
+        draw is ranked whatever the process rows do."""
+        enc = ProtobufEventEncoder()
+        path = tmp_path / "out.perfetto"
+        enc.open(path)
+        monkeypatch.setattr("gcmon.exporters.encoder.draw_batch_on_process_rows", Mock(return_value=([], [])))
+
+        enc.write_events([Counter(process_track(1234), RSS, RSS, 1_000, 1_000_000)])
+
+        assert path.stat().st_size > 0

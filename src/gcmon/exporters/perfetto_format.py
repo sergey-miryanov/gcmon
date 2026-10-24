@@ -1,12 +1,12 @@
 """Track layout policy and the GC-to-Perfetto conversion pass (ADR-0001).
 
-``convert_trace_events_to_perfetto`` maps ``TraceEvent`` objects from the
-shared ``trace_converter`` to Perfetto packets; the ``_emit_*`` helpers
-place, parent and order each track.
+``draw_batch_on_process_rows`` maps ``TraceEvent`` objects from the shared
+``trace_converter`` to the process rows' Perfetto packets; the ``_emit_*``
+helpers place, parent and order each track.
 
 The module is also the package's public face, re-exporting the enums,
-builders, ``PerfettoTrackState`` and ``finalize_perfetto_packets`` so an
-importer needs one name.
+builders, ``PerfettoTrackState``, ``fold_batch`` and
+``finalize_perfetto_packets`` so an importer needs one name.
 """
 
 from collections.abc import Sequence
@@ -37,10 +37,10 @@ from .perfetto_builders import (
 from .perfetto_process_lifetime import (
     _emit_process_descriptor,
     _emit_root_descriptor,
-    _fold_batch,
     _record_capture_totals,
     emit_retired_process_row,
     finalize_perfetto_packets,
+    fold_batch,
 )
 from .perfetto_proto import (
     ChildTracksOrdering,
@@ -72,10 +72,11 @@ __all__ = [
     "build_trace_packet",
     "build_track_descriptor",
     "build_track_event",
-    "convert_trace_events_to_perfetto",
+    "draw_batch_on_process_rows",
     "emit_retired_process_row",
     "encode_batch_args",
     "finalize_perfetto_packets",
+    "fold_batch",
 ]
 
 
@@ -323,11 +324,11 @@ def _emit_track_descriptors(
     return descriptors
 
 
-def _draw_batch_on_process_rows(
+def draw_batch_on_process_rows(
     events: Sequence[TraceEvent],
-    annotations: Sequence[list[bytes]],
     state: PerfettoTrackState,
     sequence_id: int,
+    annotations: Sequence[list[bytes]] | None = None,
 ) -> tuple[list[bytes], list[bytes]]:
     """The process rows' share of a batch: every descriptor its events need
     and the packets drawing them.
@@ -338,9 +339,20 @@ def _draw_batch_on_process_rows(
 
     Each process descriptor carries a ``sibling_order_rank`` and a
     ``process.start_timestamp_ns``, both taken from that process's first
-    event. The shared part has folded this batch in already, so a process
-    described in this batch is ranked against the events of it.
+    event. The shared part (``fold_batch``) has folded this batch in already,
+    so a process described in this batch is ranked against the events of it.
+
+    *annotations* are ``encode_batch_args(events)``, passed in when the run
+    rows draw the same batch, and encoded here when they are not.
+
+    Returns ``(descriptors, packets)``, two lists of encoded ``TracePacket``
+    bytes ready for ``build_trace``. The first call on a given *state* also
+    emits the root descriptor. A span on the ``Processes`` row goes out with
+    its process's own row, at the flush that retires it or at trace close
+    (``emit_retired_process_row``, ``finalize_perfetto_packets``).
     """
+    if annotations is None:
+        annotations = encode_batch_args(events)
     descriptors: list[bytes] = []
     packets: list[bytes] = []
 
@@ -395,29 +407,3 @@ def encode_batch_args(events: Sequence[TraceEvent]) -> list[list[bytes]]:
     """Every event's args as debug annotations, one list per event, encoded
     once for every set of rows that draws the batch."""
     return [[] if isinstance(event, Counter) else _args_to_debug_annotations(event.args) for event in events]
-
-
-def convert_trace_events_to_perfetto(
-    events: Sequence[TraceEvent],
-    state: PerfettoTrackState,
-    sequence_id: int,
-    annotations: Sequence[list[bytes]] | None = None,
-) -> tuple[list[bytes], list[bytes]]:
-    """Convert a list of ``TraceEvent`` objects to Perfetto protobuf packets:
-    the shared part folds the batch in, then the process rows draw it.
-
-    *annotations* are ``encode_batch_args(events)``, passed in when the run
-    rows draw the same batch, and encoded here when they are not.
-
-    Returns ``(descriptors, packets)``, two lists of encoded ``TracePacket``
-    bytes ready for ``build_trace``. The first call on a given *state* also
-    emits the root descriptor.
-
-    A span on the ``Processes`` row goes out with its process's own row, at
-    the flush that retires it or at trace close
-    (``emit_retired_process_row``, ``finalize_perfetto_packets``).
-    """
-    _fold_batch(events, state)
-    if annotations is None:
-        annotations = encode_batch_args(events)
-    return _draw_batch_on_process_rows(events, annotations, state, sequence_id)

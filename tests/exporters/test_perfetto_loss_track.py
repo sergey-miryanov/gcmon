@@ -23,7 +23,6 @@ from gcmon.exporters.perfetto_format import (
     _LOSS_TRACK_NAME,
     _PAUSE_TRACK_NAME,
     _interpreter_group_name,
-    convert_trace_events_to_perfetto,
     finalize_perfetto_packets,
 )
 from gcmon.exporters.perfetto_process_lifetime import _PROCESS_LIFETIME_TRACK_NAME, process_track_name
@@ -35,7 +34,7 @@ from gcmon.model.names import (
     gc_loss_slice_name,
 )
 from gcmon.model.trace_event import TraceEvent
-from tests.exporters.perfetto_helpers import pause_item
+from tests.exporters.perfetto_helpers import draw_process_rows, pause_item
 from tests.helpers import (
     create_mock_loss_item,
     gc_pause_slice_name,
@@ -65,7 +64,7 @@ def _write(events: list[TraceEvent], tmp_path: Path, name: str) -> Path:
     ``Lifetime`` bar the process row carries is drawn there, and it is what a
     misparented loss window would reshape."""
     state = PerfettoTrackState()
-    descriptors, packets = convert_trace_events_to_perfetto(events, state, SEQUENCE_ID)
+    descriptors, packets = draw_process_rows(events, state, SEQUENCE_ID)
     closeout = finalize_perfetto_packets(state, SEQUENCE_ID)
     path = tmp_path / f"{name}.pftrace"
     path.write_bytes(build_trace([*descriptors, *packets, *closeout]))

@@ -36,7 +36,7 @@ from .perfetto_proto import (
 from .perfetto_track_state import PerfettoTrackState, ProcessSpan
 from .trace_converter import duration_text
 
-__all__ = ["emit_retired_process_row", "finalize_perfetto_packets", "process_track_name"]
+__all__ = ["emit_retired_process_row", "finalize_perfetto_packets", "fold_batch", "process_track_name"]
 
 
 # Name every process's lifetime track carries. The trace processor merges
@@ -334,7 +334,7 @@ def _record_process_lifetime(
         state.update_process_lifetime(process, event.ts)
 
 
-def _fold_batch(
+def fold_batch(
     events: Sequence[TraceEvent],
     state: PerfettoTrackState,
 ) -> None:

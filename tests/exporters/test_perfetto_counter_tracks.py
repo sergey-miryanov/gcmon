@@ -2,11 +2,11 @@
 
 import pytest
 
-from gcmon.exporters.perfetto_format import convert_trace_events_to_perfetto
 from gcmon.exporters.perfetto_track_state import PerfettoTrackState
 from gcmon.model.names import CANDIDATES, COLLECTED, DURATION, HEAP_SIZE, RSS, UNCOLLECTABLE, counter_display_name
 from gcmon.model.trace_event import Counter, TraceEvent
 from tests.exporters.perfetto_helpers import (
+    draw_process_rows,
     parse_track_descriptor,
 )
 from tests.helpers import gen_counter, interpreter_track, proc, process_track
@@ -43,7 +43,7 @@ def _counter_track_y_axis_share_key(
 
 
 class TestCounterTrackYAxisShareKey:
-    """End-to-end wire tests that drive ``convert_trace_events_to_perfetto``
+    """End-to-end wire tests that drive ``draw_process_rows``
     and inspect the resulting counter track descriptors for the
     ``y_axis_share_key`` value."""
 
@@ -60,7 +60,7 @@ class TestCounterTrackYAxisShareKey:
             gen_counter(interpreter_track(TARGET_PID, 0), 2, DURATION, 1_002, 0.003),
         ]
 
-        descriptors, _ = convert_trace_events_to_perfetto(
+        descriptors, _ = draw_process_rows(
             events,
             state,
             sequence_id=1,
@@ -78,7 +78,7 @@ class TestCounterTrackYAxisShareKey:
             Counter(interpreter_track(TARGET_PID, 0), HEAP_SIZE, HEAP_SIZE, 1_000, 4096),
         ]
 
-        descriptors, _ = convert_trace_events_to_perfetto(
+        descriptors, _ = draw_process_rows(
             events,
             state,
             sequence_id=1,
@@ -94,7 +94,7 @@ class TestCounterTrackYAxisShareKey:
             gen_counter(interpreter_track(TARGET_PID, 0), 0, DURATION, 1_000, 1),
         ]
 
-        descriptors, _ = convert_trace_events_to_perfetto(
+        descriptors, _ = draw_process_rows(
             events,
             state,
             sequence_id=1,
@@ -115,7 +115,7 @@ class TestCounterTrackYAxisShareKey:
             gen_counter(interpreter_track(200, 0), 0, CANDIDATES, 1_001, 6),
         ]
 
-        descriptors, _ = convert_trace_events_to_perfetto(
+        descriptors, _ = draw_process_rows(
             events,
             state,
             sequence_id=1,
@@ -147,7 +147,7 @@ class TestRssCounterTrack:
             _rss_sample(),
         ]
 
-        descriptors, _ = convert_trace_events_to_perfetto(events, state, sequence_id=1)
+        descriptors, _ = draw_process_rows(events, state, sequence_id=1)
 
         proc_uuid = state.get_process_track_uuid(proc(TARGET_PID))
         ctr_key = (process_track(TARGET_PID), RSS)
@@ -176,7 +176,7 @@ class TestRssCounterTrack:
             Counter(process_track(TARGET_PID), RSS, RSS, 1_000, 8192),
         ]
 
-        descriptors, _ = convert_trace_events_to_perfetto(events, state, sequence_id=1)
+        descriptors, _ = draw_process_rows(events, state, sequence_id=1)
 
         ctr_key = (process_track(TARGET_PID), RSS)
         ctr_uuid = state.get_or_create_counter_track_uuid(*ctr_key)
@@ -194,7 +194,7 @@ class TestRssCounterTrack:
             _rss_sample(),
         ]
 
-        descriptors, _ = convert_trace_events_to_perfetto(events, state, sequence_id=1)
+        descriptors, _ = draw_process_rows(events, state, sequence_id=1)
 
         parsed = [td for td in map(parse_track_descriptor, descriptors) if td]
         assert RSS in [td.name for td in parsed]
@@ -206,7 +206,7 @@ class TestRssCounterTrack:
             Counter(process_track(200), RSS, RSS, 2_000, 8192),
         ]
 
-        descriptors, _ = convert_trace_events_to_perfetto(events, state, sequence_id=1)
+        descriptors, _ = draw_process_rows(events, state, sequence_id=1)
 
         rss = [td for td in map(parse_track_descriptor, descriptors) if td and td.name == RSS]
         assert [td.parent_uuid for td in rss] == [
@@ -227,7 +227,7 @@ class TestRssCounterTrack:
             gen_counter(interpreter_track(TARGET_PID, 0), 0, DURATION, 1_000, 0.005),
         ]
 
-        descriptors, _ = convert_trace_events_to_perfetto(events, state, sequence_id=1)
+        descriptors, _ = draw_process_rows(events, state, sequence_id=1)
 
         proc_uuid = state.get_process_track_uuid(proc(TARGET_PID))
         rss_key = (process_track(TARGET_PID), RSS)

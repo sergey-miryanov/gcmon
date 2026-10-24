@@ -15,7 +15,6 @@ from perfetto.protos.perfetto.trace.perfetto_trace_pb2 import (
     TrackEvent,
 )
 
-from gcmon.exporters.perfetto_format import convert_trace_events_to_perfetto
 from gcmon.exporters.perfetto_process_lifetime import (
     _PROCESS_LIFETIME_TRACK_NAME,
     _PROCESS_ROW_SLICE_NAME,
@@ -46,6 +45,7 @@ from gcmon.model.trace_event import TraceEvent
 from tests.exporters.perfetto_helpers import (
     convert_item,
     convert_items,
+    draw_process_rows,
     lifetime_slices,
     parse_track_descriptor,
     pause_item,
@@ -564,7 +564,7 @@ class TestAQuietProcessGetsARow:
             self.BUSY,
             pause_item(heap_size=1024, collected=1, candidates=1),
         )
-        descriptors, _ = convert_trace_events_to_perfetto(events, state, sequence_id=1)
+        descriptors, _ = draw_process_rows(events, state, sequence_id=1)
         for ts in (3_000, 9_000):
             state.update_process_lifetime(self.QUIET, ts)
         return state, descriptors, finalize_perfetto_packets(state, sequence_id=1)
@@ -865,7 +865,7 @@ class TestWhatGcmonReadAndMissed:
         return begins[0]
 
     def _convert(self, state: PerfettoTrackState, events: list[TraceEvent]) -> None:
-        convert_trace_events_to_perfetto(events, state, sequence_id=1)
+        draw_process_rows(events, state, sequence_id=1)
 
     def _records(self, process: Process, count: int) -> list[TraceEvent]:
         events: list[TraceEvent] = []
@@ -999,18 +999,18 @@ class TestWhatGcmonReadAndMissed:
 
 
 class TestCloseoutAtFinalize:
-    """``convert_trace_events_to_perfetto`` never closes a ``Processes``
+    """``draw_process_rows`` never closes a ``Processes``
     slice; only ``finalize_perfetto_packets`` does.
     """
 
     def test_no_closeout_emitted_during_convert(self, state: PerfettoTrackState) -> None:
-        """``convert_trace_events_to_perfetto`` never emits a
+        """``draw_process_rows`` never emits a
         ``TYPE_SLICE_END`` on a ``Processes`` track; closeout is the
         caller's job (see ``finalize_perfetto_packets``)."""
         target = proc(TARGET_PID)
         gc_events = convert_item_to_trace_format(target, pause_item())
 
-        _, packets = convert_trace_events_to_perfetto(gc_events, state, sequence_id=1)
+        _, packets = draw_process_rows(gc_events, state, sequence_id=1)
 
         row = processes_row_uuids(state, target)
         assert lifetime_slices(packets, row) == [], "a convert pass draws nothing on the Processes row"
@@ -1023,7 +1023,7 @@ class TestCloseoutAtFinalize:
         ]
 
     def test_two_batches_still_leave_the_closeout_to_finalize(self, state: PerfettoTrackState) -> None:
-        """Across two ``convert_trace_events_to_perfetto`` calls for the
+        """Across two ``draw_process_rows`` calls for the
         same pid, the convert call never emits a slice END on the
         ``Processes`` track (the END is the caller's job, and
         ``finalize_perfetto_packets`` is called exactly once at the end
@@ -1049,12 +1049,12 @@ class TestCloseoutAtFinalize:
             *convert_item_to_trace_format(proc(TARGET_PID), item2),
         ]
 
-        _, packets1 = convert_trace_events_to_perfetto(
+        _, packets1 = draw_process_rows(
             events1,
             state,
             sequence_id=1,
         )
-        _, packets2 = convert_trace_events_to_perfetto(
+        _, packets2 = draw_process_rows(
             events2,
             state,
             sequence_id=1,

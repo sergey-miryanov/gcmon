@@ -17,7 +17,6 @@ from gcmon.exporters.perfetto_format import (
     _PAUSE_TRACK_NAME,
     _UNLISTED_COUNTER_RANK,
     _interpreter_group_name,
-    convert_trace_events_to_perfetto,
 )
 from gcmon.exporters.perfetto_process_lifetime import (
     _PROCESS_ROW_SLICE_NAME,
@@ -73,6 +72,7 @@ from gcmon.model.trace_event import (
 from tests.exporters.perfetto_helpers import (
     convert_item,
     convert_items,
+    draw_process_rows,
     lifetime_slices,
     parse_track_descriptor,
     pause_item,
@@ -614,7 +614,7 @@ class TestConvertInstantToPerfettoPacket:
             Instant(process_track(TARGET_PID), START_EVENT, ts=5_000),
         ]
 
-        descriptors, _ = convert_trace_events_to_perfetto(events, state, sequence_id=1)
+        descriptors, _ = draw_process_rows(events, state, sequence_id=1)
 
         # 1 root descriptor + 1 process descriptor. The "Processes" track
         # descriptor is emitted at closeout, not here.
@@ -626,7 +626,7 @@ class TestConvertInstantToPerfettoPacket:
             Instant(process_track(TARGET_PID), START_EVENT, ts=5_000),
         ]
 
-        _, packets = convert_trace_events_to_perfetto(events, state, sequence_id=1)
+        _, packets = draw_process_rows(events, state, sequence_id=1)
 
         # One packet from the convert call: the user-provided instant on
         # the process track. This pid's whole observed span is a single
@@ -661,12 +661,12 @@ class TestConvertInstantToPerfettoPacket:
         assert instant_packet.track_event.name == START_EVENT
 
     def test_reuses_process_descriptor(self, state: PerfettoTrackState) -> None:
-        desc1, packets1 = convert_trace_events_to_perfetto(
+        desc1, packets1 = draw_process_rows(
             [Instant(process_track(TARGET_PID), START_EVENT, ts=5_000)],
             state,
             sequence_id=1,
         )
-        desc2, packets2 = convert_trace_events_to_perfetto(
+        desc2, packets2 = draw_process_rows(
             [Instant(process_track(TARGET_PID), STOP_EVENT, ts=10_000)],
             state,
             sequence_id=1,
@@ -699,7 +699,7 @@ class TestConvertInstantToPerfettoPacket:
         gc_item = pause_item()
         gc_desc, _ = convert_item(proc(TARGET_PID), gc_item, state, sequence_id=1)
 
-        inst_desc, _ = convert_trace_events_to_perfetto(
+        inst_desc, _ = draw_process_rows(
             [Instant(process_track(TARGET_PID), STOP_EVENT, ts=5_000)],
             state,
             sequence_id=1,
@@ -709,7 +709,7 @@ class TestConvertInstantToPerfettoPacket:
         assert len(inst_desc) == 0
 
     def test_counter_track_takes_the_display_name_it_was_given(self, state: PerfettoTrackState) -> None:
-        descriptors, _ = convert_trace_events_to_perfetto(
+        descriptors, _ = draw_process_rows(
             [
                 Counter(
                     interpreter_track(TARGET_PID, 0),
@@ -762,7 +762,7 @@ class TestAnInstantCanCarryArgs:
 
     def _instant_packet(self, event: Instant) -> TrackEvent:
         state = PerfettoTrackState()
-        _, packets = convert_trace_events_to_perfetto([event], state, sequence_id=1)
+        _, packets = draw_process_rows([event], state, sequence_id=1)
         for p in packets:
             packet = TracePacket()
             packet.ParseFromString(p)
@@ -825,7 +825,7 @@ class TestATrackIsDescribedOffTheEventsOnIt:
         return [td.name for td in parsed if td is not None and td.name]
 
     def test_a_gc_record_describes_the_process_and_the_interpreter(self, state: PerfettoTrackState) -> None:
-        descriptors, _ = convert_trace_events_to_perfetto(self._pid_events(100), state, sequence_id=1)
+        descriptors, _ = draw_process_rows(self._pid_events(100), state, sequence_id=1)
 
         names = self._named(descriptors)
         assert TARGET_ROW_NAME in names
@@ -835,7 +835,7 @@ class TestATrackIsDescribedOffTheEventsOnIt:
         ), f"each parent must precede its child; got {names}"
 
     def test_an_rss_only_pid_gets_a_process_row_and_its_counter_alone(self, state: PerfettoTrackState) -> None:
-        descriptors, _ = convert_trace_events_to_perfetto(
+        descriptors, _ = draw_process_rows(
             [Counter(process_track(TARGET_PID), RSS, RSS, 1_000, 4096)],
             state,
             sequence_id=1,
@@ -844,7 +844,7 @@ class TestATrackIsDescribedOffTheEventsOnIt:
         assert self._named(descriptors) == [TARGET_ROW_NAME, RSS]
 
     def test_a_mark_only_pid_gets_a_process_row_alone(self, state: PerfettoTrackState) -> None:
-        descriptors, _ = convert_trace_events_to_perfetto(
+        descriptors, _ = draw_process_rows(
             [Instant(process_track(TARGET_PID), "mark", ts=1_000)],
             state,
             sequence_id=1,
@@ -853,8 +853,8 @@ class TestATrackIsDescribedOffTheEventsOnIt:
         assert self._named(descriptors) == [TARGET_ROW_NAME]
 
     def test_every_track_is_described_exactly_once_across_batches(self, state: PerfettoTrackState) -> None:
-        first, _ = convert_trace_events_to_perfetto(self._pid_events(100), state, sequence_id=1)
-        second, _ = convert_trace_events_to_perfetto(self._pid_events(100), state, sequence_id=1)
+        first, _ = draw_process_rows(self._pid_events(100), state, sequence_id=1)
+        second, _ = draw_process_rows(self._pid_events(100), state, sequence_id=1)
 
         assert TARGET_ROW_NAME in self._named(first)
         assert _PAUSE_TRACK_NAME in self._named(first)
@@ -863,9 +863,9 @@ class TestATrackIsDescribedOffTheEventsOnIt:
     def test_a_second_interpreter_is_described_when_it_first_collects(self, state: PerfettoTrackState) -> None:
         """Its own row and its own counters, in a batch the process was
         already described in."""
-        convert_trace_events_to_perfetto(self._pid_events(100, iid=0), state, sequence_id=1)
+        draw_process_rows(self._pid_events(100, iid=0), state, sequence_id=1)
 
-        later, _ = convert_trace_events_to_perfetto(self._pid_events(100, iid=1), state, sequence_id=1)
+        later, _ = draw_process_rows(self._pid_events(100, iid=1), state, sequence_id=1)
 
         names = self._named(later)
         assert names[:2] == [_interpreter_group_name(1), _PAUSE_TRACK_NAME], (
@@ -892,7 +892,7 @@ class TestTheInterpreterGroupsAreDerived:
         return {td.name: td for td in parsed if td is not None and td.name}
 
     def test_a_record_derives_the_list_and_the_group_that_holds_it(self, state: PerfettoTrackState) -> None:
-        descriptors, _ = convert_trace_events_to_perfetto(self._events(100), state, sequence_id=1)
+        descriptors, _ = draw_process_rows(self._events(100), state, sequence_id=1)
 
         described = self._by_name(descriptors)
 
@@ -909,7 +909,7 @@ class TestTheInterpreterGroupsAreDerived:
         assert group.sibling_order_rank == 0
 
     def test_the_list_precedes_the_group_it_holds(self, state: PerfettoTrackState) -> None:
-        descriptors, _ = convert_trace_events_to_perfetto(self._events(100), state, sequence_id=1)
+        descriptors, _ = draw_process_rows(self._events(100), state, sequence_id=1)
 
         names = [td.name for td in (parse_track_descriptor(d) for d in descriptors) if td is not None and td.name]
         assert (
@@ -923,7 +923,7 @@ class TestTheInterpreterGroupsAreDerived:
         is OS-scoped (ADR-0003), and the trace processor orders them by name,
         capitals first. The name is the whole of it (ADR-0027).
         """
-        descriptors, _ = convert_trace_events_to_perfetto(self._events(100), state, sequence_id=1)
+        descriptors, _ = draw_process_rows(self._events(100), state, sequence_id=1)
 
         parsed = [td for td in (parse_track_descriptor(d) for d in descriptors) if td is not None]
         process_uuid = state.get_process_track_uuid(proc(TARGET_PID))
@@ -932,9 +932,9 @@ class TestTheInterpreterGroupsAreDerived:
         assert process_name < listing_name, f"{listing_name!r} draws above {process_name!r} in the UI"
 
     def test_a_second_interpreter_shares_the_list_and_gets_its_own_group(self, state: PerfettoTrackState) -> None:
-        convert_trace_events_to_perfetto(self._events(100, iid=0), state, sequence_id=1)
+        draw_process_rows(self._events(100, iid=0), state, sequence_id=1)
 
-        later, _ = convert_trace_events_to_perfetto(self._events(100, iid=1), state, sequence_id=1)
+        later, _ = draw_process_rows(self._events(100, iid=1), state, sequence_id=1)
 
         described = self._by_name(later)
 
@@ -945,9 +945,9 @@ class TestTheInterpreterGroupsAreDerived:
 
     def test_a_loss_row_reaches_the_same_group_as_the_collections(self, state: PerfettoTrackState) -> None:
         """One group per interpreter, not one per row it owns."""
-        convert_trace_events_to_perfetto(self._events(100, iid=0), state, sequence_id=1)
+        draw_process_rows(self._events(100, iid=0), state, sequence_id=1)
 
-        later, _ = convert_trace_events_to_perfetto(
+        later, _ = draw_process_rows(
             convert_loss_to_trace_format(proc(TARGET_PID), create_mock_loss_item(iid=0)),
             state,
             sequence_id=1,
@@ -961,7 +961,7 @@ class TestTheInterpreterGroupsAreDerived:
     def test_a_process_that_only_reported_rss_derives_neither(self, state: PerfettoTrackState) -> None:
         """A row exists because an event named it (ADR-0024), and nothing
         an interpreter owns was named here."""
-        descriptors, _ = convert_trace_events_to_perfetto(
+        descriptors, _ = draw_process_rows(
             [Counter(process_track(TARGET_PID), RSS, RSS, 1_000, 4096)],
             state,
             sequence_id=1,
@@ -991,7 +991,7 @@ class TestTheRowsInsideAnInterpreterGroupAreRanked:
         ]
 
     def test_they_draw_pauses_loss_heap_size_then_the_metrics_group(self, state: PerfettoTrackState) -> None:
-        descriptors, _ = convert_trace_events_to_perfetto(self._events(), state, sequence_id=1)
+        descriptors, _ = draw_process_rows(self._events(), state, sequence_id=1)
 
         parsed = [td for td in (parse_track_descriptor(d) for d in descriptors) if td is not None]
         group_uuid = state.get_or_create_interpreter_group_track_uuid(proc(TARGET_PID), 0)
@@ -1031,7 +1031,7 @@ class TestTheCountersInsideAMetricsGroupAreRanked:
 class TestACounterTakesItsRankFromItsMetric:
     def _counter(self, track: ProcessTrack | InterpreterTrack, metric: str) -> list[TrackDescriptor]:
         state = PerfettoTrackState()
-        descriptors, _ = convert_trace_events_to_perfetto(
+        descriptors, _ = draw_process_rows(
             [Counter(track, metric, f"G0 {metric}", 1_000, 42)],
             state,
             sequence_id=1,
@@ -1067,7 +1067,7 @@ class TestLossTrackDescriptor:
         events: list[TraceEvent] = []
         for msg in msgs:
             events.extend(convert_loss_to_trace_format(proc(pid), msg))
-        descriptors, _ = convert_trace_events_to_perfetto(events, state, 1)
+        descriptors, _ = draw_process_rows(events, state, 1)
         return descriptors
 
     def _msg(self, iid: int = 0) -> LossMsg:
@@ -1139,7 +1139,7 @@ class TestTheMissingCollectionsAnnotation:
 
     def _slice(self, msg: LossMsg) -> TrackEvent:
         events: list[TraceEvent] = [*convert_loss_to_trace_format(proc(TARGET_PID), msg)]
-        _, packets = convert_trace_events_to_perfetto(events, PerfettoTrackState(), 1)
+        _, packets = draw_process_rows(events, PerfettoTrackState(), 1)
 
         for raw in packets:
             packet = TracePacket()
