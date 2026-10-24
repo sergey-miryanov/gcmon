@@ -363,12 +363,9 @@ class TestProcessOrderingIntegration:
     with ``sibling_order_rank``) and that the existing ``process`` / ``track``
     SQL tables are not regressed by the new fields.
 
-    The trace processor does not expose ``sibling_order_rank`` as a SQL
-    column - it is a UI rendering hint consumed by the Perfetto UI at
-    render time. Therefore these tests can verify the trace is *valid*
-    and that the process tracks are still recognized, but not the
-    actual UI display order. UI ordering is verifiable only in the
-    Perfetto UI itself.
+    The order itself is readable in SQL: when the root asks for explicit
+    ordering, the trace processor gives each process its rank as the
+    ``process_sort_index_hint`` arg, which ``test_liveness.py`` reads back.
     """
 
     def test_root_descriptor_does_not_appear_as_a_track_row(

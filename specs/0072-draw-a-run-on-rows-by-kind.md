@@ -111,10 +111,8 @@ with `--format jsonl` or `stdout` logs a warning and the run goes ahead.
 a `layout` parameter, `PerfettoExporter` passes it through, and
 `EventsExporterFactory` passes the option. `combine` passes `process`.
 
-**The encoder draws in three parts.** It calls three functions today:
-`convert_trace_events_to_perfetto` per batch, `emit_retired_process_row` per
-retired process and `finalize_perfetto_packets` at close. Each one's work
-splits into three parts sharing one `PerfettoTrackState`:
+**The encoder draws in three parts.** Its work per batch, per retired process
+and at close splits into three parts sharing one `PerfettoTrackState`:
 
 - **Shared:** fold every event into its process's span, rank processes, and
   draw `Processes`: its descriptors, and its spans at retirement and at close.
@@ -124,10 +122,14 @@ splits into three parts sharing one `PerfettoTrackState`:
 - **Run rows:** a new module in `exporters`.
 
 The encoder runs the shared part, then the parts the layout names: both for
-`full`, the process rows for `process`.
+`full`, the process rows for `process`. Per batch that is `fold_batch`, then
+`draw_batch_on_process_rows` and `draw_batch_on_run_rows`.
+`emit_retired_process_row`, for a retired process, and
+`finalize_perfetto_packets`, at close, each draw the shared part's spans
+before the process rows'.
 
-Rejected: two sets of the three functions, one per set of rows, run side by
-side. Both would draw `Processes`, and the second finalizer would find
+Rejected: two sets of these functions, one per set of rows, run side by side.
+Both would draw `Processes`, and the second finalizer would find
 `has_process_lifetime_emitted` set and draw nothing at close.
 
 Rejected: a layout argument threaded through the `_emit_*` helpers in
