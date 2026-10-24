@@ -416,6 +416,23 @@ def _write_liveness_only_trace(tmp: Path) -> Path:
     return path
 
 
+# Started in an order that is not the pids' order, the first one retired.
+_STAGGERED_PIDS: tuple[int, ...] = (_SECOND_PID, DEFAULT_PID, _THIRD_PID)
+
+
+def _write_staggered_liveness_only_trace(tmp: Path) -> Path:
+    """Write a Perfetto trace with no events, its processes first seen one
+    tick apart and the first let go before close."""
+    path = tmp / "staggered_liveness_only.pb"
+    exporter = PerfettoExporter(output_path=path, flush_threshold=1000)
+    for pid, ts in zip(_STAGGERED_PIDS, _LIVE_TICKS, strict=True):
+        exporter.add_process_liveness({proc(pid)}, ts)
+    exporter.add_process_retired(proc(_STAGGERED_PIDS[0]))
+    exporter.add_process_liveness({proc(pid) for pid in _STAGGERED_PIDS[1:]}, _LIVE_TICKS[-1] + 1)
+    exporter.close()
+    return path
+
+
 _KILL_GC_START: int = 600_000_000
 
 _KILL_GC_STOP: int = 610_000_000

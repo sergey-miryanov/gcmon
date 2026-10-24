@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from perfetto.trace_processor import TraceProcessor
 
 from gcmon.exporters.perfetto_format import _PAUSE_TRACK_NAME
 from gcmon.exporters.perfetto_process_lifetime import (
     _PROCESS_LIFETIME_TRACK_NAME,
     _PROCESS_ROW_SLICE_NAME,
+    process_track_name,
 )
 from gcmon.model.names import GC_PAUSE_NAME
 from tests.conftest import DEFAULT_PID
@@ -22,9 +25,11 @@ from tests.exporters.perfetto_integration.traces import (
     _LIVE_TICKS,
     _SECOND_PID,
     _SECOND_ROW_NAME,
+    _STAGGERED_PIDS,
     _process_row_filter,
+    _write_staggered_liveness_only_trace,
 )
-from tests.helpers import misplaced_end_events
+from tests.helpers import misplaced_end_events, open_trace_processor, proc
 
 
 class TestMonitorReportedLiveness:
@@ -271,3 +276,20 @@ class TestLivenessOnlyTrace:
             _DEFAULT_ROW_NAME: span,
             _SECOND_ROW_NAME: span,
         }
+
+    def test_the_process_rows_keep_the_order_gcmon_first_saw_them_in(self, tmp_path: Path) -> None:
+        """Every descriptor goes out at close, the root one after the
+        ``Processes`` spans. The trace processor turns each row's rank into
+        ``process_sort_index_hint`` only when the root asks for explicit
+        ordering, so a missing hint means the order was lost."""
+        with open_trace_processor(_write_staggered_liveness_only_trace(tmp_path)) as tp:
+            rows = list(
+                tp.query(
+                    "SELECT name, EXTRACT_ARG(arg_set_id, 'process_sort_index_hint') AS hint "
+                    "FROM process WHERE name IS NOT NULL"
+                )
+            )
+
+        assert sorted((r.hint, r.name) for r in rows) == [
+            (rank, process_track_name(proc(pid))) for rank, pid in enumerate(_STAGGERED_PIDS)
+        ]
