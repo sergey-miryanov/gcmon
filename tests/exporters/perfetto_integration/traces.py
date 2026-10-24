@@ -422,6 +422,11 @@ _KILL_GC_STOP: int = 610_000_000
 
 _KILL_TICK: int = 650_000_000
 
+# A window the still-running process went blind for, flushed before the kill.
+_KILL_LOSS_START: int = _KILL_GC_STOP
+
+_KILL_LOSS_STOP: int = _KILL_TICK
+
 _KILL_LAST_GC_START: int = 700_000_000
 
 _KILL_LAST_GC_STOP: int = 710_000_000
@@ -436,6 +441,10 @@ def _write_killed_run_trace(tmp: Path) -> Path:
             proc(pid),
             create_mock_stats_item(gen=_GEN, iid=_IID, ts_start=_KILL_GC_START, ts_stop=_KILL_GC_STOP),
         )
+    exporter.add_loss_event(
+        proc(DEFAULT_PID),
+        create_mock_loss_item(iid=_IID, gen=_GEN, ts_start=_KILL_LOSS_START, ts_stop=_KILL_LOSS_STOP),
+    )
     exporter.add_process_liveness({proc(DEFAULT_PID), proc(_SECOND_PID)}, _KILL_TICK)
     exporter.add_process_retired(proc(_SECOND_PID))
     exporter.add_event(

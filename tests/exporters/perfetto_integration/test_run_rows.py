@@ -33,6 +33,8 @@ from tests.exporters.perfetto_integration.traces import (
     _KILL_GC_STOP,
     _KILL_LAST_GC_START,
     _KILL_LAST_GC_STOP,
+    _KILL_LOSS_START,
+    _KILL_LOSS_STOP,
     _KILL_MARK_TS,
     _MARKS,
     _OVERLAPPING_LOSSES,
@@ -376,6 +378,20 @@ def test_a_run_killed_before_close_keeps_every_flushed_pause_on_both_sets_of_row
     ]
     assert sorted((r.ts, r.dur) for r in on_run_rows) == expected
     assert sorted((r.ts, r.dur) for r in on_process_rows) == expected
+
+
+def test_a_run_killed_before_close_keeps_its_flushed_loss_window_on_both_sets_of_rows(
+    killed_run_trace_processor: TraceProcessor,
+) -> None:
+    tp = killed_run_trace_processor
+    on_run_rows = tp.query(f"SELECT ts, dur FROM slice WHERE track_id IN ({row_track_ids(tp, _LOSS_TRACK_NAME)})")
+    on_process_rows = tp.query(
+        f"SELECT s.ts, s.dur FROM slice s JOIN process_track t ON s.track_id = t.id WHERE t.name = '{_LOSS_TRACK_NAME}'"
+    )
+
+    expected = [(_KILL_LOSS_START, _KILL_LOSS_STOP - _KILL_LOSS_START)]
+    assert [(r.ts, r.dur) for r in on_run_rows] == expected
+    assert [(r.ts, r.dur) for r in on_process_rows] == expected
 
 
 def test_a_run_killed_before_close_keeps_its_flushed_mark_and_sample_on_both_sets_of_rows(tmp_path: Path) -> None:
