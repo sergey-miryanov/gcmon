@@ -91,6 +91,14 @@ class TestEveryPhaseIsShapedLikeThePhasesBesideIt:
     def test_no_two_phases_share_a_category(self) -> None:
         assert len({phase.category for phase in GC_PHASES}) == len(GC_PHASES)
 
+    def test_only_the_pause_s_category_starts_with_the_pause_s(self) -> None:
+        """The encoder tells a pause from its sub-phases by this prefix: the
+        run rows give the pause ``pid`` and ``pid_epoch``, and the
+        ``Lifetime`` slice counts it as one sampled record."""
+        assert [
+            phase.category for phase in GC_PHASES if phase is not PAUSE and phase.category.startswith(PAUSE.category)
+        ] == []
+
 
 class TestTheTableAgreesWithWhatAConversionWrites:
     """Each half is written apart from the other and nothing else makes them
