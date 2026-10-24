@@ -44,10 +44,12 @@ unaffected.
   because the poll loop holds its schedule.
 - Only PIDs that returned a successful GC poll status are sampled; no stale
   data for dead processes.
-- The counter track belongs to the process, so it is parented directly to the
-  process track, outside the `GC Metrics` group.
-- The `rss` counter track displays in the Perfetto UI with the name `"rss"`
-  and the value in bytes.
+- In both layouts the counter belongs to the process: it sits on the process
+  track, outside the `GC Metrics` group, named `rss`, in bytes.
+- A `full` trace, the default, draws it a second time under the top-level
+  `RSS` group, named for the process row with an `rss` suffix,
+  `Process 12345 rss`, one per process in the order of the process rows. See
+  [The run rows](formats.md#the-run-rows).
 - Graceful degradation: if `psutil` is not installed, `--rss` is ignored
   without crashing.
 

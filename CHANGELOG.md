@@ -13,6 +13,10 @@
 - With `--rss`, each process's RSS sits on a row of its own under `RSS`, in the order of the process rows
 - `--layout process`, or `GCMON_LAYOUT=process`, writes the rows per process alone, without the run rows
 
+### Internal
+
+- Stability, correctness and performance improvements
+
 ## Version 0.9.1 (2026-10-18)
 
 ### Bugfixes

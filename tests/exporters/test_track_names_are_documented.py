@@ -44,9 +44,10 @@ only place both halves are described together.
 Leaving a name out is a decision, so it goes on that list rather than
 passing silently. A name on the list that gcmon no longer writes fails too.
 
-``Interpreter {iid}`` and ``Process {pid}`` are absent below. Only their
-fixed part is derivable from the code, and the pages write the row with the
-placeholder, so there is nothing to match on. So are the control plane's
+``Interpreter {iid}``, ``Process {pid}`` and the run rows' ``Process {pid}
+rss`` are absent below. Only their fixed part is derivable from the code, and
+the pages write the row with a placeholder or an example PID, so there is
+nothing to match on. So are the control plane's
 `start` and `stop`, which no page describes because no page needs to: one
 module owns them and both sides import it, so there is no second copy to
 drift. What a page does describe is the pair of instants they produce.
@@ -69,10 +70,17 @@ from gcmon.exporters.perfetto_process_lifetime import (
     _PROCESS_LIFETIME_TRACK_NAME,
     _PROCESS_ROW_SLICE_NAME,
 )
+from gcmon.exporters.perfetto_run_rows import (
+    _ALL_PAUSES_GROUP_NAME,
+    _MARKS_TRACK_NAME,
+    _RSS_GROUP_NAME,
+    _generation_row_name,
+)
 from gcmon.model.names import (
     GC_LOSS_CATEGORY,
     GC_LOSS_NAME,
     GC_PHASES,
+    GENERATIONS,
     HEAP_SIZE,
     RSS,
 )
@@ -111,6 +119,10 @@ WRITTEN: tuple[str, ...] = (
     _PROCESS_LIFETIME_TRACK_NAME,
     _PROCESS_ROW_SLICE_NAME,
     RSS,
+    _ALL_PAUSES_GROUP_NAME,
+    *(_generation_row_name(gen) for gen in GENERATIONS),
+    _MARKS_TRACK_NAME,
+    _RSS_GROUP_NAME,
     GC_LOSS_NAME,
     START_EVENT,
     STOP_EVENT,

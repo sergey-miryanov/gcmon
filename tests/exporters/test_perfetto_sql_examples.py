@@ -23,6 +23,7 @@ import pytest
 from perfetto.trace_processor import TraceProcessor
 
 from gcmon.exporters import PerfettoExporter
+from gcmon.exporters.encoder import Layout
 from gcmon.exporters.perfetto_format import _LOSS_TRACK_NAME
 from gcmon.exporters.perfetto_process_lifetime import process_track_name
 from gcmon.support.vocabulary import ENCODING
@@ -52,8 +53,8 @@ def _label(sql: str) -> str:
 
 # A pid the operating system handed out twice, so `Process 12345#2` exists and
 # the examples that scope by `upid` or pair on the name have two of everything
-# to tell apart.
-REUSED_PID: int = 24680
+# to tell apart. The page's own PID, which the run-row example selects by.
+REUSED_PID: int = 12345
 FIRST_CMDLINE: tuple[str, ...] = ("python3", "-m", "first_target")
 SECOND_CMDLINE: tuple[str, ...] = ("python3", "-m", "second_target")
 
@@ -79,8 +80,8 @@ def _sub_phases_from(ts_start: int) -> dict[str, int]:
 
 
 def _write_trace(path: Path) -> None:
-    """One trace carrying something for every example on the page."""
-    exporter = PerfettoExporter(output_path=path, flush_threshold=1000)
+    """One full trace carrying something for every example on the page."""
+    exporter = PerfettoExporter(output_path=path, flush_threshold=1000, layout=Layout.FULL)
 
     first, second = proc(REUSED_PID, 1), proc(REUSED_PID, 2)
     exporter.add_process_cmdline(first, FIRST_CMDLINE)

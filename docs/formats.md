@@ -16,7 +16,11 @@ deflate capture opens on any Perfetto.
 
 *A gcmon capture in the Perfetto UI.*
 
-A trace carries these:
+`--layout` picks the rows a trace draws. `process` draws the rows below, a set
+per process. `full`, the default, draws them and the [run rows](#the-run-rows)
+beside them. A `gcmon combine` run writes `process`.
+
+Both layouts carry these:
 
 - **`GC Pauses` track**: one row per interpreter, under that interpreter's
   group, holding one **`GC Pause(gen)` slice** per GC run gcmon read, carrying
@@ -68,6 +72,32 @@ A trace carries these:
 > instrumentation. A standard build gives the top-level `GC Pause` slices and
 > the counters.
 
+### The run rows
+
+A `full` trace draws every pause, loss window, mark and RSS sample of the run
+a second time, on rows at the top level beside `Processes`, so the whole run
+reads without opening a process:
+
+- **`All GC Pauses` group**: `Gen0`, `Gen1` and `Gen2`, one row per generation
+  in that order, each holding every pause of its generation from every process
+  and interpreter, with each pause's sub-phases inside it.
+- **`GC Loss` row**: every loss window of the run.
+- **`Marks` row**: every control instant and every mark a program sent.
+- **`RSS` group**: under `--rss`, one counter per process, named for its
+  process row with an `rss` suffix, `Process 12345 rss`, in the order of the
+  process rows.
+
+A row is as tall as the most interpreters pausing, or going blind, at once,
+and a lane says nothing about whose a slice is. A pause, a loss window and a
+mark carry `pid` and `pid_epoch` annotations naming their process. A sub-phase
+carries neither; read them off the pause it sits in.
+
+**A slice on the run rows repeats one on the process rows**, so a query over
+every slice in a `full` trace counts each pause, sub-phase, loss window and
+mark twice. Scope it by row: the run rows carry no `upid` and resolve as
+neither `process_track` nor `process_counter_track`. See
+[Perfetto SQL](perfetto-sql.md#example-pauses-of-one-process-on-the-run-rows).
+
 ### The `Lifetime` slice
 
 One per process track, drawn over the interval gcmon observed that process. It
@@ -89,15 +119,17 @@ Its args say how complete the capture is for that process:
 
 **`process.pid` in SQL is not the PID the operating system gave the process.**
 gcmon numbers the rows itself, one per process. The `pid` annotation on this
-slice and on the `Processes` span carries the real PID, and so does the row's
-name.
+slice, on the `Processes` span and on the run rows carries the real PID, and
+so does the row's name.
 
 **The loss figures are the process's totals, and the `GC Loss` slices carry
 the same three names per interval.** A query summing `debug.lost_count` over
-every slice in a trace counts each loss twice. Filter on the slice name:
-`Lifetime` for the per-process figure, `GC Loss` for the per-interval one.
-Both rows resolve as `process_track`, so joining through that separates
-neither.
+every slice in a trace counts each loss twice, and three times in a `full`
+trace, whose [run rows](#the-run-rows) draw every window again. Filter on the
+slice name: `Lifetime` for the per-process figure, `GC Loss` for the
+per-interval one. Both of a process's rows resolve as `process_track`, so
+joining through that separates neither, and it is what leaves the run row's
+copy out.
 
 `sampled_count` and `lost_count` do not add up to everything the process
 collected. A record that fell out of the ring before gcmon's first poll of

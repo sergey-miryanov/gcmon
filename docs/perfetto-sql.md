@@ -175,6 +175,33 @@ WHERE p.name GLOB 'GC Pause(*'
 ORDER BY s.ts
 ```
 
+## Example: Pauses of One Process on the Run Rows
+
+A [`full` trace](formats.md#the-run-rows) draws each pause again on its
+generation's row under `All GC Pauses`, where every process's pauses share the
+row. The `debug.pid` and `debug.pid_epoch` annotations pick one process out,
+and the join on the group leaves out the loss windows and marks that carry
+them too:
+
+```sql
+-- The pauses of the second process on PID 12345, by generation
+SELECT
+    gen.name AS generation,
+    s.name,
+    s.ts,
+    s.dur,
+    EXTRACT_ARG(s.arg_set_id, 'debug.iid') AS iid
+FROM slice s
+JOIN track gen ON s.track_id = gen.id
+JOIN track g ON gen.parent_id = g.id AND g.name = 'All GC Pauses'
+WHERE EXTRACT_ARG(s.arg_set_id, 'debug.pid') = 12345
+  AND EXTRACT_ARG(s.arg_set_id, 'debug.pid_epoch') = 2
+ORDER BY s.ts
+```
+
+A sub-phase carries neither annotation. Reach it through its `parent_id`, the
+pause it sits in, as the sub-phase example above does.
+
 ## Example: Querying RSS Values
 
 Under `--rss`, samples land in the `counter` table on a track named `rss`:
