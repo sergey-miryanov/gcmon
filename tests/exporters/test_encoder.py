@@ -69,10 +69,8 @@ class TestProtobufEventEncoder:
         enc = ProtobufEventEncoder()
         path = tmp_path / "out.perfetto"
         enc.open(path)
-        monkeypatch.setattr(
-            "gcmon.exporters.encoder.convert_trace_events_to_perfetto",
-            Mock(return_value=([], [])),
-        )
+        for draws_a_set_of_rows in ("convert_trace_events_to_perfetto", "draw_batch_on_run_rows"):
+            monkeypatch.setattr(f"gcmon.exporters.encoder.{draws_a_set_of_rows}", Mock(return_value=([], [])))
 
         enc.write_events([Instant(process_track(1234), "ev", ts=1_000)])
         enc.close()

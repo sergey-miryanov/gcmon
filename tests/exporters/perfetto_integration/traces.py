@@ -663,6 +663,47 @@ def _write_overlapping_losses_trace(tmp: Path) -> Path:
     return path
 
 
+_RUN_MARK_TS: int = 1_700_000_000
+
+# The second pid starts first, with a mark, and samples second, so the order
+# its processes rank in is neither the order their names sort in nor the order
+# their first samples come in.
+_MARKS: tuple[tuple[Process, int], ...] = (
+    (proc(_SECOND_PID), _RUN_MARK_TS),
+    (proc(DEFAULT_PID), _RUN_MARK_TS),
+    (proc(_SECOND_PID), _RUN_MARK_TS + 10_000_000),
+)
+
+_RSS_SAMPLES: tuple[tuple[Process, int, int], ...] = (
+    (proc(DEFAULT_PID), _RUN_MARK_TS, _RSS_VAL_1),
+    (proc(_SECOND_PID), _RUN_MARK_TS + 5_000_000, _RSS_VAL_2),
+    (proc(DEFAULT_PID), _RUN_MARK_TS + 10_000_000, _RSS_VAL_3),
+)
+
+
+def _write_marks_and_rss_trace(tmp: Path) -> Path:
+    """Two processes' marks and RSS samples, flushed one event at a time."""
+    path = tmp / "trace_marks_and_rss.pb"
+    exporter = PerfettoExporter(output_path=path, flush_threshold=1)
+    for (marked, mark_ts), (sampled, sample_ts, rss) in zip(_MARKS, _RSS_SAMPLES, strict=True):
+        exporter.add_instant_event(marked, create_instant_msg(name=_INSTANT_NAME, ts=mark_ts))
+        exporter.add_rss_sample(sampled, rss, sample_ts)
+    exporter.close()
+    return path
+
+
+_KILL_MARK_TS: int = 1_800_000_000
+
+
+def _write_killed_marks_and_rss_trace(tmp: Path) -> Path:
+    """A mark and an RSS sample, each on its own flush, and no close()."""
+    path = tmp / "killed_marks_and_rss.pb"
+    exporter = PerfettoExporter(output_path=path, flush_threshold=1)
+    exporter.add_instant_event(proc(DEFAULT_PID), create_instant_msg(name=_INSTANT_NAME, ts=_KILL_MARK_TS))
+    exporter.add_rss_sample(proc(DEFAULT_PID), _RSS_VAL_1, _KILL_MARK_TS)
+    return path
+
+
 def _write_every_kind_trace(tmp: Path, layout: Layout) -> Path:
     """Two processes drawing every kind of event in *layout*, flushed one event
     at a time, the second retired before the first's last pauses."""

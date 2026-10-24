@@ -8,6 +8,9 @@
 - A pause under `All GC Pauses` carries `pid` and `pid_epoch`
 - Every loss window in the run sits on one `GC Loss` row at the top level
 - A loss window on the top-level `GC Loss` row carries `pid` and `pid_epoch`
+- Every mark in the run sits on one `Marks` row at the top level
+- A mark on the `Marks` row carries `pid` and `pid_epoch`
+- With `--rss`, each process's RSS sits on a row of its own under `RSS`, in the order of the process rows
 
 ## Version 0.9.1 (2026-10-18)
 

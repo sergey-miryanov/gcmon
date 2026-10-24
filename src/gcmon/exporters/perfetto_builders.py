@@ -243,6 +243,23 @@ def _make_slice_packets(
     )
 
 
+def _make_instant_packet(
+    sequence_id: int,
+    track_uuid: int,
+    name: str,
+    ts: int,
+    annotations: list[bytes],
+) -> bytes:
+    """A mark's one packet."""
+    instant = build_track_event(
+        event_type=TrackEventType.INSTANT,
+        track_uuid=track_uuid,
+        name=name,
+        debug_annotations=annotations,
+    )
+    return build_trace_packet(sequence_id, timestamp=ts, track_event=instant)
+
+
 def _make_counter_event(track_uuid: int, value: int | float) -> bytes:
     if isinstance(value, float):
         return build_track_event(

@@ -27,6 +27,7 @@ from ..model.trace_event import (
 from .perfetto_builders import (
     _args_to_debug_annotations,
     _make_counter_event,
+    _make_instant_packet,
     _make_slice_packets,
     build_trace,
     build_trace_packet,
@@ -365,18 +366,8 @@ def _draw_batch_on_process_rows(
             )
 
         elif isinstance(event, Instant):
-            proc_uuid = state.get_process_track_uuid(process)
             packets.append(
-                build_trace_packet(
-                    sequence_id,
-                    timestamp=event.ts,
-                    track_event=build_track_event(
-                        event_type=TrackEventType.INSTANT,
-                        track_uuid=proc_uuid,
-                        name=event.name,
-                        debug_annotations=encoded,
-                    ),
-                )
+                _make_instant_packet(sequence_id, state.get_process_track_uuid(process), event.name, event.ts, encoded)
             )
 
         else:

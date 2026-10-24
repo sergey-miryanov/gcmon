@@ -11,7 +11,7 @@ from collections.abc import Iterable
 from typing import NamedTuple
 
 from ..model.process import Process
-from ..model.trace_event import LossTrack, PauseTrack, Track
+from ..model.trace_event import LossTrack, PauseTrack, ProcessTrack, Track
 
 
 class ProcessSpan(NamedTuple):
@@ -61,8 +61,9 @@ class PerfettoTrackState:
         self._process_lifetime_emitted: bool = False
         self._process_rows_drawn: set[Process] = set()
         self._root_descriptor_emitted: bool = False
-        self._run_track_uuids: dict[PauseTrack | LossTrack, int] = {}
-        self._all_pauses_group_uuid: int | None = None
+        self._run_track_uuids: dict[PauseTrack | LossTrack | ProcessTrack, int] = {}
+        self._run_counter_track_uuids: dict[ProcessTrack, int] = {}
+        self._run_group_uuids: dict[str, int] = {}
         self._next_uuid: int = 1
         self._next_row_pid: int = 1
 
@@ -296,11 +297,12 @@ class PerfettoTrackState:
     def mark_root_descriptor_emitted(self) -> None:
         self._root_descriptor_emitted = True
 
-    def has_run_track(self, track: PauseTrack | LossTrack) -> bool:
+    def has_run_track(self, track: PauseTrack | LossTrack | ProcessTrack) -> bool:
         return track in self._run_track_uuids
 
-    def get_or_create_run_track_uuid(self, track: PauseTrack | LossTrack) -> int:
-        """The uuid of the track *track*'s slices draw on among the run rows.
+    def get_or_create_run_track_uuid(self, track: PauseTrack | LossTrack | ProcessTrack) -> int:
+        """The uuid of the track *track*'s pauses, loss windows or marks draw
+        on among the run rows.
 
         Keyed apart from the process rows' track, which is keyed on the same
         *track*: neither set may take the other's descriptor for its own.
@@ -309,10 +311,20 @@ class PerfettoTrackState:
             self._run_track_uuids[track] = self._alloc_uuid()
         return self._run_track_uuids[track]
 
-    def has_all_pauses_group(self) -> bool:
-        return self._all_pauses_group_uuid is not None
+    def has_run_counter_track(self, track: ProcessTrack) -> bool:
+        return track in self._run_counter_track_uuids
 
-    def get_or_create_all_pauses_group_uuid(self) -> int:
-        if self._all_pauses_group_uuid is None:
-            self._all_pauses_group_uuid = self._alloc_uuid()
-        return self._all_pauses_group_uuid
+    def get_or_create_run_counter_track_uuid(self, track: ProcessTrack) -> int:
+        """The uuid of the counter *track*'s samples draw on among the run
+        rows, which is not the track its marks draw on."""
+        if track not in self._run_counter_track_uuids:
+            self._run_counter_track_uuids[track] = self._alloc_uuid()
+        return self._run_counter_track_uuids[track]
+
+    def has_run_group(self, name: str) -> bool:
+        return name in self._run_group_uuids
+
+    def get_or_create_run_group_uuid(self, name: str) -> int:
+        if name not in self._run_group_uuids:
+            self._run_group_uuids[name] = self._alloc_uuid()
+        return self._run_group_uuids[name]

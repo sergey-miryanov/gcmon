@@ -14,27 +14,41 @@ from gcmon.exporters.perfetto_format import (
     _PAUSE_TRACK_NAME,
     _interpreter_group_name,
 )
-from gcmon.exporters.perfetto_process_lifetime import process_track_name
-from gcmon.exporters.perfetto_run_rows import _ALL_PAUSES_GROUP_NAME, _generation_row_name
+from gcmon.exporters.perfetto_process_lifetime import _PROCESS_LIFETIME_TRACK_NAME, process_track_name
+from gcmon.exporters.perfetto_run_rows import (
+    _ALL_PAUSES_GROUP_NAME,
+    _MARKS_TRACK_NAME,
+    _RSS_GROUP_NAME,
+    _generation_row_name,
+)
 from gcmon.exporters.trace_converter import convert_item_to_trace_format
-from gcmon.model.names import GENERATIONS, PID, PID_EPOCH
+from gcmon.model.names import GENERATIONS, PID, PID_EPOCH, RSS
 from gcmon.model.trace_event import Slice
+from tests.conftest import DEFAULT_PID
 from tests.exporters.perfetto_integration.traces import (
     _GEN,
+    _INSTANT_NAME,
     _KILL_GC_START,
     _KILL_GC_STOP,
     _KILL_LAST_GC_START,
     _KILL_LAST_GC_STOP,
+    _KILL_MARK_TS,
+    _MARKS,
     _OVERLAPPING_LOSSES,
     _OVERLAPPING_PAUSES,
     _PAUSE_NAME,
+    _RSS_SAMPLES,
+    _RSS_VAL_1,
+    _SECOND_PID,
     _write_every_kind_trace,
+    _write_killed_marks_and_rss_trace,
+    _write_marks_and_rss_trace,
     _write_overlapping_losses_trace,
     flat_key,
     row_track_ids,
     rows_drawn_under,
 )
-from tests.helpers import open_trace_processor
+from tests.helpers import open_trace_processor, proc
 
 type _RowPath = tuple[str, ...]
 type _Drawn = tuple[list[tuple[object, ...]], list[tuple[int, float]]]
@@ -271,6 +285,70 @@ class TestWhoseALossWindowIs:
         assert {(r.has_pid, r.has_pid_epoch) for r in drawn} == {(0, 0)}
 
 
+class TestMarks:
+    """Two processes' marks, one at the same instant as another's."""
+
+    def test_every_mark_sits_on_one_root_row(self, marks_and_rss_trace_processor: TraceProcessor) -> None:
+        tp = marks_and_rss_trace_processor
+        track_ids = row_track_ids(tp, _MARKS_TRACK_NAME)
+
+        drawn = tp.query(f"SELECT name, ts, dur FROM slice WHERE track_id IN ({track_ids})")
+
+        assert sorted((r.name, r.ts, r.dur) for r in drawn) == sorted((_INSTANT_NAME, ts, 0) for _, ts in _MARKS)
+
+    def test_a_mark_on_the_root_row_names_its_process(self, marks_and_rss_trace_processor: TraceProcessor) -> None:
+        tp = marks_and_rss_trace_processor
+        track_ids = row_track_ids(tp, _MARKS_TRACK_NAME)
+
+        drawn = tp.query(
+            f"SELECT s.ts, {_PID} AS pid, {_PID_EPOCH} AS pid_epoch FROM slice s WHERE s.track_id IN ({track_ids})"
+        )
+
+        assert sorted((r.ts, r.pid, r.pid_epoch) for r in drawn) == sorted(
+            (ts, process.pid, process.pid_epoch) for process, ts in _MARKS
+        )
+
+    def test_a_mark_still_sits_on_its_process_row_naming_nothing(
+        self, marks_and_rss_trace_processor: TraceProcessor
+    ) -> None:
+        drawn = marks_and_rss_trace_processor.query(
+            f"SELECT s.ts, p.name AS process, {_NAMES_A_PROCESS} FROM slice s "
+            "JOIN process_track t ON s.track_id = t.id JOIN process p USING (upid) "
+            f"WHERE s.name = '{_INSTANT_NAME}'"
+        )
+
+        assert sorted((r.ts, str(r.process), r.has_pid, r.has_pid_epoch) for r in drawn) == sorted(
+            (ts, process_track_name(process), 0, 0) for process, ts in _MARKS
+        )
+
+
+class TestRss:
+    """Two processes' samples, the second pid's process starting first and
+    sampling second."""
+
+    def test_holds_a_counter_per_process_in_rank_order(self, marks_and_rss_trace_processor: TraceProcessor) -> None:
+        tp = marks_and_rss_trace_processor
+        group = tp.query(
+            "SELECT EXTRACT_ARG(source_arg_set_id, 'child_ordering') AS ordering FROM track "
+            f"WHERE name = '{_RSS_GROUP_NAME}'"
+        )
+
+        assert rows_drawn_under(tp, _RSS_GROUP_NAME) == [
+            process_track_name(proc(_SECOND_PID)),
+            process_track_name(proc(DEFAULT_PID)),
+        ]
+        assert [str(r.ordering) for r in group] == ["explicit"]
+
+    def test_each_counter_holds_what_its_process_row_s_rss_does(self, tmp_path: Path) -> None:
+        _order, drawn = _every_row(_write_marks_and_rss_trace(tmp_path))
+        expected: dict[str, list[tuple[int, float]]] = {}
+        for process, ts, rss in _RSS_SAMPLES:
+            expected.setdefault(process_track_name(process), []).append((ts, rss))
+
+        assert {name: drawn[("", _RSS_GROUP_NAME, name)][1] for name in expected} == expected
+        assert {name: drawn[(name, RSS)][1] for name in expected} == expected
+
+
 def test_a_run_killed_before_close_keeps_every_flushed_pause_on_both_sets_of_rows(
     killed_run_trace_processor: TraceProcessor,
 ) -> None:
@@ -294,18 +372,52 @@ def test_a_run_killed_before_close_keeps_every_flushed_pause_on_both_sets_of_row
     assert sorted((r.ts, r.dur) for r in on_process_rows) == expected
 
 
+def test_a_run_killed_before_close_keeps_its_flushed_mark_and_sample_on_both_sets_of_rows(tmp_path: Path) -> None:
+    with open_trace_processor(_write_killed_marks_and_rss_trace(tmp_path)) as tp:
+        marks_on_run_rows = tp.query(f"SELECT ts FROM slice WHERE track_id IN ({row_track_ids(tp, _MARKS_TRACK_NAME)})")
+        marks_on_process_rows = tp.query(
+            f"SELECT s.ts FROM slice s JOIN process_track t ON s.track_id = t.id WHERE s.name = '{_INSTANT_NAME}'"
+        )
+        rss_row = row_track_ids(tp, _RSS_GROUP_NAME, process_track_name(proc(DEFAULT_PID)))
+        samples_on_run_rows = tp.query(f"SELECT ts, value FROM counter WHERE track_id IN ({rss_row})")
+        samples_on_process_rows = tp.query(
+            f"SELECT c.ts, c.value FROM counter c JOIN counter_track t ON c.track_id = t.id WHERE t.name = '{RSS}'"
+        )
+
+        assert [r.ts for r in marks_on_run_rows] == [_KILL_MARK_TS]
+        assert [r.ts for r in marks_on_process_rows] == [_KILL_MARK_TS]
+        assert [(r.ts, r.value) for r in samples_on_run_rows] == [(_KILL_MARK_TS, _RSS_VAL_1)]
+        assert [(r.ts, r.value) for r in samples_on_process_rows] == [(_KILL_MARK_TS, _RSS_VAL_1)]
+
+
+def test_the_run_rows_come_out_at_the_top_level_by_name(tmp_path: Path) -> None:
+    order, _drawn = _every_row(_write_every_kind_trace(tmp_path, Layout.FULL))
+
+    assert [row[1] for row in order if row[0] == "" and len(row) == 2] == [
+        _ALL_PAUSES_GROUP_NAME,
+        _LOSS_TRACK_NAME,
+        _MARKS_TRACK_NAME,
+        _PROCESS_LIFETIME_TRACK_NAME,
+        _RSS_GROUP_NAME,
+    ]
+
+
 def test_the_process_layout_draws_the_full_trace_less_its_run_rows(tmp_path: Path) -> None:
     """From the same events: every row in the order the UI lists it, with
     every slice and counter value on it."""
     full_order, full_drawn = _every_row(_write_every_kind_trace(tmp_path, Layout.FULL))
     process_order, process_drawn = _every_row(_write_every_kind_trace(tmp_path, Layout.PROCESS))
 
-    run_rows = [row for row in full_order if row[0] == "" and row[1] in (_ALL_PAUSES_GROUP_NAME, _LOSS_TRACK_NAME)]
+    run_rows = [row for row in full_order if row[0] == "" and row[1] != _PROCESS_LIFETIME_TRACK_NAME]
 
     assert run_rows == [
         ("", _ALL_PAUSES_GROUP_NAME),
         *(("", _ALL_PAUSES_GROUP_NAME, _generation_row_name(gen)) for gen in GENERATIONS),
         ("", _LOSS_TRACK_NAME),
+        ("", _MARKS_TRACK_NAME),
+        ("", _RSS_GROUP_NAME),
+        ("", _RSS_GROUP_NAME, process_track_name(proc(DEFAULT_PID))),
+        ("", _RSS_GROUP_NAME, process_track_name(proc(_SECOND_PID, 2))),
     ]
     assert process_order == [row for row in full_order if row not in run_rows]
     assert process_drawn == {row: drawn for row, drawn in full_drawn.items() if row not in run_rows}

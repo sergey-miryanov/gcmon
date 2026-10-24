@@ -226,9 +226,10 @@ class TestPerfettoExporter:
                 name = track_event.name
                 if name:
                     names.append(name)
-        # Only what the caller sent: the process row is kept rendered by
-        # the "Lifetime" slice, which is not an instant.
-        assert names == [START_EVENT]
+        # Only what the caller sent, once on each set of rows: the process
+        # row is kept rendered by the "Lifetime" slice, which is not an
+        # instant.
+        assert names == [START_EVENT, START_EVENT]
 
     def test_multiple_add_instant_event(self, perfetto_exporter: ExporterFactory) -> None:
         exporter, path = perfetto_exporter()
@@ -245,7 +246,8 @@ class TestPerfettoExporter:
                 event_name = track_event.name
                 if event_name:
                     names.append(event_name)
-        assert names == [START_EVENT, STOP_EVENT]
+        # The process rows' marks, then the run rows'.
+        assert names == [START_EVENT, STOP_EVENT, START_EVENT, STOP_EVENT]
 
     def test_events_have_valid_timestamps(
         self, mock_stats_item: GCStatsInfo, perfetto_exporter: ExporterFactory
@@ -418,10 +420,9 @@ class TestRssRoundTrip:
                 continue
             counter_packets.append((track_event.track_uuid, track_event.counter_value, packet.timestamp))
 
-        assert len(counter_packets) == 1, f"expected 1 counter event, got {len(counter_packets)}"
-        _, value, ts = counter_packets[0]
-        assert value == 4096
-        assert ts == 1_000_000
+        # One sample on each set of rows, each on a counter of its own.
+        assert [(value, ts) for _, value, ts in counter_packets] == [(4096, 1_000_000)] * 2
+        assert len({track_uuid for track_uuid, _, _ in counter_packets}) == 2
 
     def test_rss_uses_separate_counter_track(self, perfetto_exporter: ExporterFactory) -> None:
         """RSS counter uses a different track UUID than GC counters."""

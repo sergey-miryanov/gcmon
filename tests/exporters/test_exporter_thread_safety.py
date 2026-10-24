@@ -26,7 +26,7 @@ from gcmon.exporters.perfetto_format import (
     TrackEventType,
 )
 from gcmon.exporters.perfetto_process_lifetime import _PROCESS_ROW_SLICE_NAME
-from gcmon.exporters.perfetto_run_rows import _ALL_PAUSES_GROUP_NAME
+from gcmon.exporters.perfetto_run_rows import _ALL_PAUSES_GROUP_NAME, _MARKS_TRACK_NAME, _RSS_GROUP_NAME
 from gcmon.model.names import GC_PAUSE_NAME, LOST_COUNT, SAMPLED_COUNT, TYPE
 from gcmon.model.protocol import TGCStatsInfo, TInstantMsg
 from gcmon.support.vocabulary import ENCODING, FORMAT_JSONL, FORMAT_PERFETTO, FORMAT_STDOUT
@@ -158,7 +158,7 @@ def _get_track_event(packet: TracePacket) -> TrackEvent | None:
 
 def _off_the_run_rows(packets: list[TracePacket]) -> list[TrackEvent]:
     """The track events in *packets*, in order, less the run rows', which draw
-    every pause and loss window a second time."""
+    every pause, loss window, mark and RSS sample a second time."""
     run_rows: set[int] = set()
     events: list[TrackEvent] = []
     for packet in packets:
@@ -166,7 +166,8 @@ def _off_the_run_rows(packets: list[TracePacket]) -> list[TrackEvent]:
             desc = packet.track_descriptor
             at_the_root = not desc.HasField("parent_uuid")
             if (
-                at_the_root and desc.name in (_ALL_PAUSES_GROUP_NAME, _LOSS_TRACK_NAME)
+                at_the_root
+                and desc.name in (_ALL_PAUSES_GROUP_NAME, _LOSS_TRACK_NAME, _MARKS_TRACK_NAME, _RSS_GROUP_NAME)
             ) or desc.parent_uuid in run_rows:
                 run_rows.add(desc.uuid)
         elif packet.HasField("track_event") and packet.track_event.track_uuid not in run_rows:

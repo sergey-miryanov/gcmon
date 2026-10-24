@@ -27,7 +27,7 @@ from gcmon.exporters.perfetto_process_lifetime import (
     _PROCESS_ROW_SLICE_NAME,
     process_track_name,
 )
-from gcmon.exporters.perfetto_run_rows import _ALL_PAUSES_GROUP_NAME
+from gcmon.exporters.perfetto_run_rows import _ALL_PAUSES_GROUP_NAME, _RSS_GROUP_NAME
 from gcmon.model.names import (
     CANDIDATES,
     CLEAR_WEAKREFS,
@@ -385,7 +385,7 @@ class TestTheOrderRowsAreDrawnIn:
         """No rank reaches these: a process track is OS-scoped and the trace
         processor discards one there (ADR-0003). The name is all that places
         the interpreter list under the process row (ADR-0027), and the run
-        rows above both."""
+        rows around them."""
         drawn = rows_drawn_under(every_row_trace_processor)
 
         assert drawn == [
@@ -394,6 +394,7 @@ class TestTheOrderRowsAreDrawnIn:
             _DEFAULT_ROW_NAME,
             _PROCESS_LIFETIME_TRACK_NAME,
             _INTERPRETER_LIST_NAME,
+            _RSS_GROUP_NAME,
             RSS,
         ]
 
@@ -746,4 +747,5 @@ class TestTwoInterpretersHeapSizes:
             counter_display_name(0, DURATION),
             HEAP_SIZE,
             RSS,
+            process_track_name(proc(DEFAULT_PID)),
         }
