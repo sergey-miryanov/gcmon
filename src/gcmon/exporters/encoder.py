@@ -150,7 +150,7 @@ class ProtobufEventEncoder:
         batch = list(events)
         fold_batch(batch, self._track_state)
         annotations = encode_batch_args(batch)
-        descriptors, packets = draw_batch_on_process_rows(batch, self._track_state, self._sequence_id, annotations)
+        descriptors, packets = draw_batch_on_process_rows(batch, annotations, self._track_state, self._sequence_id)
         if self._draws_run_rows:
             run_descriptors, run_packets = draw_batch_on_run_rows(
                 batch, annotations, self._track_state, self._sequence_id

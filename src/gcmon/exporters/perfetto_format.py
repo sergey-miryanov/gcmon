@@ -326,9 +326,9 @@ def _emit_track_descriptors(
 
 def draw_batch_on_process_rows(
     events: Sequence[TraceEvent],
+    annotations: Sequence[list[bytes]],
     state: PerfettoTrackState,
     sequence_id: int,
-    annotations: Sequence[list[bytes]] | None = None,
 ) -> tuple[list[bytes], list[bytes]]:
     """The process rows' share of a batch: every descriptor its events need
     and the packets drawing them.
@@ -342,8 +342,8 @@ def draw_batch_on_process_rows(
     event. The shared part (``fold_batch``) has folded this batch in already,
     so a process described in this batch is ranked against the events of it.
 
-    *annotations* are ``encode_batch_args(events)``, passed in when the run
-    rows draw the same batch, and encoded here when they are not.
+    *annotations* are ``encode_batch_args(events)``, the same lists the run
+    rows draw the batch with.
 
     Returns ``(descriptors, packets)``, two lists of encoded ``TracePacket``
     bytes ready for ``build_trace``. The first call on a given *state* also
@@ -351,8 +351,6 @@ def draw_batch_on_process_rows(
     its process's own row, at the flush that retires it or at trace close
     (``emit_retired_process_row``, ``finalize_perfetto_packets``).
     """
-    if annotations is None:
-        annotations = encode_batch_args(events)
     descriptors: list[bytes] = []
     packets: list[bytes] = []
 

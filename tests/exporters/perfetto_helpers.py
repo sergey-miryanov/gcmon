@@ -13,7 +13,7 @@ from perfetto.protos.perfetto.trace.perfetto_trace_pb2 import (
     TrackEvent,
 )
 
-from gcmon.exporters.perfetto_format import draw_batch_on_process_rows, fold_batch
+from gcmon.exporters.perfetto_format import draw_batch_on_process_rows, encode_batch_args, fold_batch
 from gcmon.exporters.perfetto_process_lifetime import finalize_perfetto_packets
 from gcmon.exporters.perfetto_track_state import PerfettoTrackState, ProcessSpan
 from gcmon.exporters.trace_converter import convert_item_to_trace_format
@@ -49,7 +49,7 @@ def draw_process_rows(
     """One batch through the shared part and the process rows, the way a
     ``process`` trace's encoder draws it."""
     fold_batch(events, state)
-    return draw_batch_on_process_rows(events, state, sequence_id)
+    return draw_batch_on_process_rows(events, encode_batch_args(events), state, sequence_id)
 
 
 def span(pid: int, start_ts: int, end_ts: int, pid_epoch: int = 1) -> ProcessSpan:
