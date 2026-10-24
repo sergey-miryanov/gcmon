@@ -89,6 +89,8 @@ from gcmon.model.phases import (
     HeapSizeStopField,
     NewIncrementalFields,
     OldWorkField,
+    ReasonFields,
+    ThresholdFields,
 )
 from gcmon.support.vocabulary import ENCODING
 from tests.helpers import JSONL_FIELDS, SLICE_ARGS
@@ -107,6 +109,10 @@ UNDOCUMENTED: frozenset[str] = frozenset(
         NewIncrementalFields.AGING_SPACES,
         NewIncrementalFields.AGING_NEXT,
         HeapSizeStopField.HEAP_SIZE_STOP,
+        ReasonFields.GC_TYPE,
+        ThresholdFields.THRESHOLD0,
+        ThresholdFields.THRESHOLD1,
+        ThresholdFields.THRESHOLD2,
     }
 )
 

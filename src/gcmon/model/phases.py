@@ -55,8 +55,9 @@ __all__ = [
     "PauseField",
     "PausePhase",
     "Phase",
-    "ReasonField",
+    "ReasonFields",
     "SubPhase",
+    "ThresholdFields",
     "sub_phases",
     "sub_phases_and_fields",
 ]
@@ -426,21 +427,51 @@ class HeapSizeStopField:
         return {HeapSizeStopField.HEAP_SIZE_STOP: item.heap_size_stop}
 
 
-class ReasonField:
+class ReasonFields:
     REASON: Final = "reason"
+    GC_TYPE: Final = "gc_type"
 
     class _Info(Protocol):
         reason: int
+        gc_type: int
 
     Info: ClassVar[type] = _Info
 
     @staticmethod
     def check(item: object) -> TypeGuard[_Info]:
-        return getattr(item, ReasonField.REASON, None) is not None
+        return getattr(item, ReasonFields.REASON, None) is not None
 
     @staticmethod
     def args(gen: int, item: _Info) -> EventArgs:
-        return {ReasonField.REASON: item.reason}
+        return {
+            ReasonFields.REASON: item.reason,
+            ReasonFields.GC_TYPE: item.gc_type,
+        }
+
+
+class ThresholdFields:
+    THRESHOLD0: Final = "threshold0"
+    THRESHOLD1: Final = "threshold1"
+    THRESHOLD2: Final = "threshold2"
+
+    class _Info(Protocol):
+        threshold0: int
+        threshold1: int
+        threshold2: int
+
+    Info: ClassVar[type] = _Info
+
+    @staticmethod
+    def check(item: object) -> TypeGuard[_Info]:
+        return getattr(item, ThresholdFields.THRESHOLD0, None) is not None
+
+    @staticmethod
+    def args(gen: int, item: _Info) -> EventArgs:
+        return {
+            ThresholdFields.THRESHOLD0: item.threshold0,
+            ThresholdFields.THRESHOLD1: item.threshold1,
+            ThresholdFields.THRESHOLD2: item.threshold2,
+        }
 
 
 class Counters:
@@ -492,7 +523,8 @@ PAUSE_FIELDS: Final[tuple[type[PauseField], ...]] = (
     OldWorkField,
     NewIncrementalFields,
     HeapSizeStopField,
-    ReasonField,
+    ReasonFields,
+    ThresholdFields,
 )
 
 type _SubPhasesAndFields = tuple[tuple[type[SubPhase], ...], tuple[type[PauseField], ...]]
@@ -517,7 +549,8 @@ _CHECKED_FIELDS: Final = attrgetter(
     OldWorkField.OLD_WORK,
     NewIncrementalFields.AUTO_COLLECT,
     HeapSizeStopField.HEAP_SIZE_STOP,
-    ReasonField.REASON,
+    ReasonFields.REASON,
+    ThresholdFields.THRESHOLD0,
 )
 
 # Per set of checked fields present: what a msgspec record carries. A
