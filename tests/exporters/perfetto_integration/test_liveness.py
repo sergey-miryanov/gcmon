@@ -278,8 +278,8 @@ class TestLivenessOnlyTrace:
         }
 
     def test_the_process_rows_keep_the_order_gcmon_first_saw_them_in(self, tmp_path: Path) -> None:
-        """Every descriptor goes out at close, the root one after the
-        ``Processes`` spans. The trace processor turns each row's rank into
+        """Every descriptor goes out at close, the retired process's too, and
+        the root one after the ``Processes`` spans. The trace processor turns each row's rank into
         ``process_sort_index_hint`` only when the root asks for explicit
         ordering, so a missing hint means the order was lost."""
         with open_trace_processor(_write_staggered_liveness_only_trace(tmp_path)) as tp:

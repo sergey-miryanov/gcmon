@@ -422,7 +422,8 @@ _STAGGERED_PIDS: tuple[int, ...] = (_SECOND_PID, DEFAULT_PID, _THIRD_PID)
 
 def _write_staggered_liveness_only_trace(tmp: Path) -> Path:
     """Write a Perfetto trace with no events, its processes first seen one
-    tick apart and the first let go before close."""
+    tick apart and the first let go before close. With no batch to draw it,
+    the one let go is drawn at close with the others."""
     path = tmp / "staggered_liveness_only.pb"
     exporter = PerfettoExporter(output_path=path, flush_threshold=1000)
     for pid, ts in zip(_STAGGERED_PIDS, _LIVE_TICKS, strict=True):

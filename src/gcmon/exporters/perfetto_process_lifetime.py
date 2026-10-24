@@ -313,7 +313,7 @@ def emit_retired_process_row(
     """
     span, packets = _draw_retired_span(process, state, sequence_id)
     if span is None:
-        return packets
+        return []
     return [*packets, *_draw_spans_on_process_rows([span], state, sequence_id)]
 
 
