@@ -53,6 +53,7 @@ def _emit_group_descriptor(
     if state.has_run_group(name):
         return state.get_or_create_run_group_uuid(name), []
     group_uuid = state.get_or_create_run_group_uuid(name)
+    state.mark_run_group(name)
     desc = build_track_descriptor(group_uuid, name, child_ordering=ChildTracksOrdering.EXPLICIT)
     return group_uuid, [build_trace_packet(sequence_id, track_descriptor=desc)]
 
@@ -67,6 +68,7 @@ def _emit_generation_track_descriptor(
     if state.has_run_track(track):
         return []
     group_uuid, packets = _emit_group_descriptor(_ALL_PAUSES_GROUP_NAME, state, sequence_id)
+    state.mark_run_track(track)
     desc = build_track_descriptor(
         state.get_or_create_run_track_uuid(track),
         _generation_row_name(track.gen),
@@ -86,6 +88,7 @@ def _emit_root_track_descriptor(
     run rows, once, at the top level."""
     if state.has_run_track(track):
         return []
+    state.mark_run_track(track)
     desc = build_track_descriptor(state.get_or_create_run_track_uuid(track), name)
     return [build_trace_packet(sequence_id, track_descriptor=desc)]
 
@@ -102,6 +105,7 @@ def _emit_rss_counter_descriptor(
     rank = state.get_process_track_rank(track.process)
     assert rank is not None, f"{track.process} is drawn before the shared part folded it in"
     group_uuid, packets = _emit_group_descriptor(_RSS_GROUP_NAME, state, sequence_id)
+    state.mark_run_counter_track(track)
     desc = build_track_descriptor(
         state.get_or_create_run_counter_track_uuid(track),
         f"{process_track_name(track.process)} {RSS}",
@@ -112,12 +116,15 @@ def _emit_rss_counter_descriptor(
     return [*packets, build_trace_packet(sequence_id, track_descriptor=desc)]
 
 
-def _naming_its_process(process: Process, encoded: list[bytes]) -> list[bytes]:
-    return [
-        _build_debug_annotation_int(PID, process.pid),
-        _build_debug_annotation_int(PID_EPOCH, process.pid_epoch),
-        *encoded,
-    ]
+def _naming_its_process(process: Process, encoded: list[bytes], state: PerfettoTrackState) -> list[bytes]:
+    named = state.get_pid_annotations(process)
+    if named is None:
+        named = (
+            _build_debug_annotation_int(PID, process.pid),
+            _build_debug_annotation_int(PID_EPOCH, process.pid_epoch),
+        )
+        state.set_pid_annotations(process, named)
+    return [*named, *encoded]
 
 
 def draw_batch_on_run_rows(
@@ -145,7 +152,7 @@ def draw_batch_on_run_rows(
                     state.get_or_create_run_track_uuid(track),
                     event.name,
                     event.ts,
-                    _naming_its_process(track.process, encoded),
+                    _naming_its_process(track.process, encoded, state),
                 )
             )
         elif isinstance(event, Slice):
@@ -157,7 +164,7 @@ def draw_batch_on_run_rows(
                 descriptors.extend(_emit_root_track_descriptor(slice_track, _LOSS_TRACK_NAME, state, sequence_id))
                 names_its_process = True
             if names_its_process:
-                encoded = _naming_its_process(slice_track.process, encoded)
+                encoded = _naming_its_process(slice_track.process, encoded, state)
             packets.extend(
                 _make_slice_packets(
                     sequence_id,
