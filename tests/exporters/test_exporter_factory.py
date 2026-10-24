@@ -4,14 +4,17 @@ from pathlib import Path
 
 import pytest
 
+from gcmon.exporters.encoder import Layout
 from gcmon.exporters.exporter_factory import EventsExporterFactory
 from gcmon.exporters.jsonl_exporter import JsonlExporter
 from gcmon.exporters.perfetto_exporter import PerfettoExporter
+from gcmon.exporters.perfetto_run_rows import _ALL_PAUSES_GROUP_NAME
 from gcmon.exporters.stdout_exporter import StdoutExporter
 from gcmon.model.data import GCStatsInfo
 from gcmon.support.vocabulary import FORMAT_JSONL, FORMAT_PERFETTO, FORMAT_STDOUT
 from tests.conftest import DEFAULT_PID
-from tests.helpers import proc
+from tests.exporters.perfetto_integration.traces import rows_drawn_under
+from tests.helpers import open_trace_processor, proc
 
 
 class TestEventsExporterFactory:
@@ -65,3 +68,22 @@ class TestEventsExporterFactory:
         exporter.add_event(proc(DEFAULT_PID), mock_stats_item)
 
         assert len(capsys.readouterr().out.splitlines()) == 2
+
+    @pytest.mark.parametrize(("layout", "draws_run_rows"), [(None, True), (Layout.FULL, True), (Layout.PROCESS, False)])
+    def test_the_perfetto_exporter_draws_the_layout_it_was_told(
+        self, tmp_path: Path, mock_stats_item: GCStatsInfo, layout: Layout | None, draws_run_rows: bool
+    ) -> None:
+        """No layout given is the full one."""
+        path = tmp_path / "out.pb"
+        factory = (
+            EventsExporterFactory(FORMAT_PERFETTO, path, 100)
+            if layout is None
+            else EventsExporterFactory(FORMAT_PERFETTO, path, 100, layout=layout)
+        )
+        exporter = factory()
+
+        exporter.add_event(proc(DEFAULT_PID), mock_stats_item)
+        exporter.close()
+
+        with open_trace_processor(path) as tp:
+            assert (_ALL_PAUSES_GROUP_NAME in rows_drawn_under(tp)) is draws_run_rows

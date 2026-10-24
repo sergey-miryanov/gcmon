@@ -8,13 +8,14 @@ from pathlib import Path
 
 import pytest
 
-from gcmon.cli.monitor._env import ENV_FORMAT, ENV_RATE, ENV_STATS
+from gcmon.cli.monitor._env import ENV_FORMAT, ENV_LAYOUT, ENV_RATE, ENV_STATS
 from gcmon.cli.monitor.monitoring_options import (
     RSS_CAPABLE_FORMATS,
     MonitoringOptions,
     add_monitoring_options,
     get_monitoring_options,
 )
+from gcmon.exporters.encoder import Layout
 from gcmon.model.names import DURATION, RSS
 from gcmon.stats.stats_output import TOTAL_LABEL
 from gcmon.stats.views import STATS_OFF_WORDS, StatsView, TableFormat
@@ -33,6 +34,7 @@ def _make_args(**overrides: object) -> Namespace:
         "control_name": None,
         RSS: False,
         "rss_interval": 1.0,
+        "layout": None,
     }
     return Namespace(**{**defaults, **overrides})
 
@@ -262,6 +264,130 @@ class TestTheFormatEnvironmentVariable:
         self._options([CMD_MONITOR, "12345"])
 
         assert "Format: perfetto" not in caplog.text
+
+
+class TestTheLayout:
+    """`--layout` and `GCMON_LAYOUT` pick the Perfetto layout, `full` when
+    neither is set."""
+
+    def _options(self, argv: list[str]) -> MonitoringOptions | None:
+        from gcmon.cli.main import _create_parser
+
+        return get_monitoring_options(_create_parser().parse_args(argv))
+
+    @pytest.mark.parametrize("command", [[CMD_MONITOR, "12345"], [CMD_RUN, "-m", "json.tool"]])
+    def test_neither_set_gives_full(self, monkeypatch: pytest.MonkeyPatch, command: list[str]) -> None:
+        monkeypatch.delenv(ENV_LAYOUT, raising=False)
+
+        result = self._options(command)
+
+        assert result is not None
+        assert result.layout is Layout.FULL
+
+    @pytest.mark.parametrize("layout", list(Layout))
+    def test_the_flag_picks_it(self, monkeypatch: pytest.MonkeyPatch, layout: Layout) -> None:
+        monkeypatch.delenv(ENV_LAYOUT, raising=False)
+
+        result = self._options([CMD_MONITOR, "--layout", layout.value, "12345"])
+
+        assert result is not None
+        assert result.layout is layout
+
+    @pytest.mark.parametrize("layout", list(Layout))
+    def test_the_variable_picks_it(self, monkeypatch: pytest.MonkeyPatch, layout: Layout) -> None:
+        monkeypatch.setenv(ENV_LAYOUT, layout.value)
+
+        result = self._options([CMD_MONITOR, "12345"])
+
+        assert result is not None
+        assert result.layout is layout
+
+    def test_the_flag_wins(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv(ENV_LAYOUT, Layout.PROCESS.value)
+
+        result = self._options([CMD_MONITOR, "--layout", Layout.FULL.value, "12345"])
+
+        assert result is not None
+        assert result.layout is Layout.FULL
+
+    @pytest.mark.parametrize("value", ["", "  ", " Process "])
+    def test_the_variable_is_stripped_and_lowered_and_blank_reads_as_unset(
+        self, monkeypatch: pytest.MonkeyPatch, value: str
+    ) -> None:
+        monkeypatch.setenv(ENV_LAYOUT, value)
+
+        result = self._options([CMD_MONITOR, "12345"])
+
+        assert result is not None
+        assert result.layout is (Layout.PROCESS if value.strip() else Layout.FULL)
+
+    @pytest.mark.parametrize("value", ["merged", "processes", "bogus"])
+    def test_a_word_the_flag_would_refuse_fails_the_run(
+        self, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture, value: str
+    ) -> None:
+        caplog.set_level(logging.ERROR)
+        monkeypatch.setenv(ENV_LAYOUT, value)
+
+        assert self._options([CMD_MONITOR, "12345"]) is None
+        assert ENV_LAYOUT in caplog.text
+        assert value in caplog.text
+        for accepted in Layout:
+            assert f"'{accepted.value}'" in caplog.text
+
+    def test_the_flag_refuses_a_word_it_does_not_know(self, capsys: pytest.CaptureFixture[str]) -> None:
+        from gcmon.cli.main import _create_parser
+
+        with pytest.raises(SystemExit):
+            _create_parser().parse_args([CMD_MONITOR, "--layout", "bogus", "12345"])
+
+        assert "--layout" in capsys.readouterr().err
+
+
+class TestTheLayoutWithAnotherFormat:
+    """A layout only shapes a Perfetto trace. One chosen for another format
+    warns and the run goes ahead; one nobody chose says nothing."""
+
+    @pytest.mark.parametrize("output_format", [FORMAT_JSONL, FORMAT_STDOUT])
+    @pytest.mark.parametrize("layout", list(Layout))
+    def test_a_chosen_layout_warns_and_runs(
+        self, caplog: pytest.LogCaptureFixture, output_format: str, layout: Layout
+    ) -> None:
+        caplog.set_level(logging.WARNING)
+
+        result = get_monitoring_options(_make_args(format=output_format, layout=layout.value))
+
+        assert result is not None
+        assert [(r.levelno, "--layout" in r.getMessage()) for r in caplog.records] == [(logging.WARNING, True)]
+
+    @pytest.mark.parametrize("output_format", [FORMAT_JSONL, FORMAT_STDOUT])
+    def test_no_layout_chosen_says_nothing(self, caplog: pytest.LogCaptureFixture, output_format: str) -> None:
+        caplog.set_level(logging.WARNING)
+
+        result = get_monitoring_options(_make_args(format=output_format))
+
+        assert result is not None
+        assert caplog.records == []
+
+    def test_a_layout_chosen_for_perfetto_says_nothing(self, caplog: pytest.LogCaptureFixture) -> None:
+        caplog.set_level(logging.WARNING)
+
+        result = get_monitoring_options(_make_args(format=FORMAT_PERFETTO, layout=Layout.PROCESS.value))
+
+        assert result is not None
+        assert caplog.records == []
+
+    def test_a_variable_chosen_layout_warns_too(
+        self, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        from gcmon.cli.main import _create_parser
+
+        caplog.set_level(logging.WARNING)
+        monkeypatch.setenv(ENV_LAYOUT, Layout.FULL.value)
+
+        result = get_monitoring_options(_create_parser().parse_args([CMD_MONITOR, "--format", FORMAT_JSONL, "12345"]))
+
+        assert result is not None
+        assert [r.levelno for r in caplog.records] == [logging.WARNING]
 
 
 class TestTheStatsFlagCarriesTheView:

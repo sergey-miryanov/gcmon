@@ -75,6 +75,7 @@ Exactly one of `-s`/`--script` or `-m`/`--module`.
 | `-d, --duration` | both | Monitoring duration in seconds | Until interrupted / script exits |
 | `-v, --verbose` | both | Enable verbose output (`-v` for INFO, `-vv` for DEBUG) | `0` |
 | `--format` | both | Output format: `perfetto`, `jsonl` or `stdout` (see [Output formats](formats.md)) | `perfetto` |
+| `--layout` | both | Perfetto layout: `full` draws the run rows beside a row per process, `process` the rows per process alone. With another format it warns and is ignored | `full` |
 | `--flush-threshold` | both | Number of events to buffer before flushing | `100` |
 | `--stats <view>` | both | Show a statistics table at end of monitoring. The value is required: `total`, `full`, or one of `no`/`off`/`false`/`0` (see [`--stats`](#--stats)) | No table |
 | `--table-format` | both | Table format: `plain` or `markdown`/`md` | `plain` |
@@ -117,7 +118,8 @@ address down in `GCMON_CONTROL_ADDRESS`.
 
 Each variable below sets a default for its flag, and a flag on the command
 line beats it. A value a variable cannot read falls back to the default. The
-exception is `GCMON_STATS`, which stops the run.
+exceptions are `GCMON_FORMAT`, `GCMON_LAYOUT`, `GCMON_RATE` and `GCMON_STATS`,
+which stop the run.
 
 | Variable | Equivalent flag | Description | Default |
 |----------|----------------|-------------|---------|
@@ -126,6 +128,7 @@ exception is `GCMON_STATS`, which stops the run.
 | `GCMON_DURATION` | `-d, --duration` | Monitoring duration in seconds | Until interrupted / script exits |
 | `GCMON_VERBOSE` | `-v, --verbose` | Verbose level (integer or truthy value) | `0` |
 | `GCMON_FORMAT` | `--format` | Output format: `perfetto`, `jsonl`, or `stdout`. Any other value stops the run | `perfetto` |
+| `GCMON_LAYOUT` | `--layout` | Perfetto layout: `full` or `process`. Blank reads as unset; any other value stops the run | `full` |
 | `GCMON_FLUSH_THRESHOLD` | `--flush-threshold` | Number of events to buffer before flushing | `100` |
 | `GCMON_STATS` | `--stats` | Statistics table view, in the words [`--stats`](#--stats) takes. Blank reads as unset; any other value stops the run | No table |
 | `GCMON_TABLE_FORMAT` | `--table-format` | Table format: `plain`, `md`, or `markdown` | `plain` |

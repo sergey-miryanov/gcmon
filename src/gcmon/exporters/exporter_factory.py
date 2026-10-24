@@ -11,10 +11,11 @@ from .stdout_exporter import StdoutExporter
 
 
 class EventsExporterFactory:
-    def __init__(self, output_format: str, output_path: Path, flush_threshold: int):
+    def __init__(self, output_format: str, output_path: Path, flush_threshold: int, layout: Layout = Layout.FULL):
         self._output_format = output_format
         self._output_path = output_path
         self._flush_threshold = flush_threshold
+        self._layout = layout
 
     def __call__(self) -> EventsExporter:
         match self._output_format:
@@ -26,7 +27,7 @@ class EventsExporterFactory:
                 return PerfettoExporter(
                     output_path=self._output_path,
                     flush_threshold=self._flush_threshold,
-                    layout=Layout.FULL,
+                    layout=self._layout,
                 )
             case _:
                 raise ValueError(f"Unknown output format: {self._output_format}")

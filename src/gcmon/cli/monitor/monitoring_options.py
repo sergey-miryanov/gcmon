@@ -10,6 +10,7 @@ from gcmon.cli.monitor._env import (
     ENV_DURATION,
     ENV_FLUSH_THRESHOLD,
     ENV_FORMAT,
+    ENV_LAYOUT,
     ENV_OUTPUT,
     ENV_RATE,
     ENV_RSS,
@@ -21,6 +22,7 @@ from gcmon.cli.monitor._env import (
     get_env_duration,
     get_env_flush_threshold,
     get_env_format,
+    get_env_layout,
     get_env_output,
     get_env_rate,
     get_env_rss,
@@ -30,6 +32,7 @@ from gcmon.cli.monitor._env import (
     get_env_verbose,
     parse_rate,
 )
+from gcmon.exporters.encoder import Layout
 from gcmon.model.schedule import MIN_RATE_NS
 from gcmon.stats.views import STATS_OFF_WORDS, StatsView, TableFormat
 from gcmon.support.time_units import secs_to_ns
@@ -46,6 +49,8 @@ FORMATS = (FORMAT_PERFETTO, FORMAT_JSONL, FORMAT_STDOUT)
 # Formats whose exporters implement EventsExporter.add_rss_sample. The others
 # inherit the no-op base implementation and silently discard RSS samples.
 RSS_CAPABLE_FORMATS = (FORMAT_PERFETTO,)
+
+LAYOUTS = tuple(layout.value for layout in Layout)
 
 
 def _rate_argument(text: str) -> float:
@@ -103,6 +108,15 @@ def add_monitoring_options(parser: argparse.ArgumentParser) -> None:
             f"Output format: 'perfetto' for Perfetto binary protobuf, 'jsonl' for JSONL file, "
             f"'stdout' for one-line-per-event JSONL to stdout "
             f"(default: perfetto or {ENV_FORMAT} env var)"
+        ),
+    )
+    parser.add_argument(
+        "--layout",
+        choices=LAYOUTS,
+        default=get_env_layout(),
+        help=(
+            f"Perfetto layout: 'full' for the run rows beside a row per process, 'process' for "
+            f"the rows per process alone (default: full or {ENV_LAYOUT} env var)"
         ),
     )
     parser.add_argument(
@@ -167,6 +181,7 @@ class MonitoringOptions:
         table_format: TableFormat = TableFormat.PLAIN,
         rss_enabled: bool = False,
         rss_interval: float = 1.0,
+        layout: Layout = Layout.FULL,
     ) -> None:
         self.output_path = output_path
         self.rate = rate
@@ -179,6 +194,13 @@ class MonitoringOptions:
         self.table_format = table_format
         self.rss_enabled = rss_enabled
         self.rss_interval = rss_interval
+        self.layout = layout
+
+
+def _refuse_env_word(name: str, words: tuple[str, ...]) -> None:
+    logger.error(
+        "%s must be one of %s, got '%s'", name, ", ".join(f"'{word}'" for word in words), os.environ.get(name, "")
+    )
 
 
 def get_monitoring_options(
@@ -200,13 +222,12 @@ def get_monitoring_options(
     # `choices`, so the environment is the one way an unknown word reaches here
     # (ADR-0018).
     if output_format not in FORMATS:
-        logger.error(
-            "%s must be one of %s, got '%s'",
-            ENV_FORMAT,
-            ", ".join(f"'{name}'" for name in FORMATS),
-            os.environ.get(ENV_FORMAT, ""),
-        )
+        _refuse_env_word(ENV_FORMAT, FORMATS)
         return None
+    if args.layout is not None and args.layout not in LAYOUTS:
+        _refuse_env_word(ENV_LAYOUT, LAYOUTS)
+        return None
+    layout = Layout.FULL if args.layout is None else Layout(args.layout)
     flush_threshold = args.flush_threshold
     table_format = args.table_format
     rss_enabled = args.rss
@@ -215,6 +236,12 @@ def get_monitoring_options(
     if output_format != FORMAT_STDOUT:
         logger.info("Output: %s", output_path)
     logger.info("Format: %s", output_format)
+    if output_format == FORMAT_PERFETTO:
+        logger.info("Layout: %s", layout.value)
+    elif args.layout is not None:
+        logger.warning(
+            "--layout and %s are not supported for --format %s; the layout is ignored.", ENV_LAYOUT, output_format
+        )
     logger.info("Rate: %ss", rate)
     if duration is not None:
         logger.info("Duration: %ss", duration)
@@ -278,4 +305,5 @@ def get_monitoring_options(
         table_format=table_format,
         rss_enabled=rss_enabled,
         rss_interval=rss_interval,
+        layout=layout,
     )

@@ -15,6 +15,9 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from gcmon.analysis.jsonl_io import read_jsonl
+from gcmon.cli.monitor._env import ENV_LAYOUT
+from gcmon.exporters.encoder import Layout
+from gcmon.exporters.perfetto_run_rows import _ALL_PAUSES_GROUP_NAME
 from gcmon.model.names import (
     CANDIDATES,
     COLLECTED,
@@ -29,7 +32,8 @@ from gcmon.model.names import (
     UNCOLLECTABLE,
 )
 from gcmon.support.vocabulary import CMD_RUN, FORMAT_JSONL, FORMAT_PERFETTO, FORMAT_STDOUT, PROGRAM_NAME
-from tests.helpers import assert_valid_perfetto_trace
+from tests.exporters.perfetto_integration.traces import rows_drawn_under
+from tests.helpers import assert_valid_perfetto_trace, open_trace_processor
 
 # =============================================================================
 # Unit Tests for cmd_run
@@ -270,6 +274,7 @@ class TestCmdRunUnit:
             "control_name": None,
             RSS: False,
             "rss_interval": 1.0,
+            "layout": None,
         }
         return Namespace(**{**defaults, **overrides})
 
@@ -459,6 +464,40 @@ class TestRunCommandScriptMode:
             assert "Args:  ['--format', 'json', '-v', '--format', 'csv']" in result.stdout
 
             assert_valid_perfetto_trace(output_file)
+
+
+class TestRunCommandLayout:
+    """The script collects, so a full trace holds `All GC Pauses` and a
+    process-layout one does not."""
+
+    def _top_level_rows(self, tmp_path: Path, gc_args: list[str]) -> list[str]:
+        output_file = tmp_path / "trace.pftrace"
+        script_file = tmp_path / "test_script.py"
+        script_file.write_text(get_long_running_script())
+
+        result = run_script(script_file, gc_args=[*gc_args, "-o", str(output_file)])
+
+        with print_on_failure(result):
+            assert result.returncode == 0
+        with open_trace_processor(output_file) as tp:
+            return rows_drawn_under(tp)
+
+    def test_neither_flag_nor_variable_writes_a_full_trace(
+        self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+    ) -> None:
+        monkeypatch.delenv(ENV_LAYOUT, raising=False)
+
+        assert _ALL_PAUSES_GROUP_NAME in self._top_level_rows(tmp_path, [])
+
+    def test_the_process_layout_writes_no_run_row(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+        monkeypatch.delenv(ENV_LAYOUT, raising=False)
+
+        assert _ALL_PAUSES_GROUP_NAME not in self._top_level_rows(tmp_path, ["--layout", Layout.PROCESS.value])
+
+    def test_the_variable_reaches_the_trace(self, monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+        monkeypatch.setenv(ENV_LAYOUT, Layout.PROCESS.value)
+
+        assert _ALL_PAUSES_GROUP_NAME not in self._top_level_rows(tmp_path, [])
 
 
 class TestRunCommandModuleMode:

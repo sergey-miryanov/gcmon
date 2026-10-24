@@ -26,12 +26,14 @@ ENV_TABLE_FORMAT = f"{ENV_PREFIX}_TABLE_FORMAT"
 ENV_CONTROL_NAME = f"{ENV_PREFIX}_CONTROL_NAME"
 ENV_RSS = f"{ENV_PREFIX}_RSS"
 ENV_RSS_INTERVAL = f"{ENV_PREFIX}_RSS_INTERVAL"
+ENV_LAYOUT = f"{ENV_PREFIX}_LAYOUT"
 
 __all__ = [
     "ENV_CONTROL_NAME",
     "ENV_DURATION",
     "ENV_FLUSH_THRESHOLD",
     "ENV_FORMAT",
+    "ENV_LAYOUT",
     "ENV_OUTPUT",
     "ENV_PREFIX",
     "ENV_RATE",
@@ -47,6 +49,7 @@ __all__ = [
     "get_env_duration",
     "get_env_flush_threshold",
     "get_env_format",
+    "get_env_layout",
     "get_env_output",
     "get_env_rate",
     "get_env_rss",
@@ -157,10 +160,24 @@ def get_env_format() -> str:
         The GCMON_FORMAT value in lower case, or "perfetto" if it is unset or
         blank.
     """
-    format_str = os.environ.get(ENV_FORMAT)
-    if format_str and format_str.strip():
-        return format_str.strip().lower()
-    return FORMAT_PERFETTO
+    return _env_word(ENV_FORMAT) or FORMAT_PERFETTO
+
+
+def get_env_layout() -> str | None:
+    """Get the Perfetto layout from the environment, or None where it is unset
+    or blank.
+
+    ``get_monitoring_options`` refuses a word ``--layout`` would refuse, once
+    logging is configured (ADR-0018).
+    """
+    return _env_word(ENV_LAYOUT)
+
+
+def _env_word(name: str) -> str | None:
+    value = os.environ.get(name)
+    if value and value.strip():
+        return value.strip().lower()
+    return None
 
 
 def get_env_thread_id() -> int:

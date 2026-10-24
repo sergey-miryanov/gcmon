@@ -38,6 +38,7 @@ class MonitorArgsFactory:
         "control_name": None,
         RSS: False,
         "rss_interval": 1.0,
+        "layout": None,
     }
 
     def __call__(self, **overrides: object) -> Namespace:

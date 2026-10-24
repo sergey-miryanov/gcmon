@@ -11,6 +11,7 @@
 - Every mark in the run sits on one `Marks` row at the top level
 - A mark on the `Marks` row carries `pid` and `pid_epoch`
 - With `--rss`, each process's RSS sits on a row of its own under `RSS`, in the order of the process rows
+- `--layout process`, or `GCMON_LAYOUT=process`, writes the rows per process alone, without the run rows
 
 ## Version 0.9.1 (2026-10-18)
 

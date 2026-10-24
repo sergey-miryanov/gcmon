@@ -36,7 +36,7 @@ def run_monitoring_loop(
 
         with ExitStack() as stack:
             exporter_factory = EventsExporterFactory(
-                options.output_format, options.output_path, options.flush_threshold
+                options.output_format, options.output_path, options.flush_threshold, layout=options.layout
             )
             exporter = exporter_factory()
 
