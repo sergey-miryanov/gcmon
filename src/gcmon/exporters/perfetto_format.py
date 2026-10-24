@@ -148,10 +148,12 @@ def _emit_interpreter_group_descriptors(
             parent_uuid=state.get_process_track_uuid(process),
             child_ordering=ChildTracksOrdering.EXPLICIT,
         )
+        state.mark_interpreter_list_track(process)
         packets.append(build_trace_packet(sequence_id, track_descriptor=list_desc))
     if state.has_interpreter_group_track(process, track.iid):
         return state.get_or_create_interpreter_group_track_uuid(process, track.iid), packets
     group_uuid = state.get_or_create_interpreter_group_track_uuid(process, track.iid)
+    state.mark_interpreter_group_track(process, track.iid)
     group_desc = build_track_descriptor(
         group_uuid,
         _interpreter_group_name(track.iid),
@@ -225,6 +227,7 @@ def _emit_counter_group_descriptor(
     if state.has_counter_group_track(track):
         return state.get_or_create_counter_group_track_uuid(track), packets
     group_uuid = state.get_or_create_counter_group_track_uuid(track)
+    state.mark_counter_group_track(track)
     desc = build_track_descriptor(
         group_uuid,
         _COUNTER_GROUP_NAME,
@@ -260,6 +263,7 @@ def _emit_counter_track_descriptor(
         if state.has_counter_track(track, display_name):
             return state.get_or_create_counter_track_uuid(track, display_name), []
         ctr_uuid = state.get_or_create_counter_track_uuid(track, display_name)
+        state.mark_counter_track(track, display_name)
         desc = build_track_descriptor(
             ctr_uuid,
             display_name,
@@ -272,6 +276,7 @@ def _emit_counter_track_descriptor(
         if state.has_counter_track(track, display_name):
             return state.get_or_create_counter_track_uuid(track, display_name), packets
         ctr_uuid = state.get_or_create_counter_track_uuid(track, display_name)
+        state.mark_counter_track(track, display_name)
         desc = build_track_descriptor(
             ctr_uuid,
             display_name,
@@ -285,6 +290,7 @@ def _emit_counter_track_descriptor(
         ctr_uuid = state.get_or_create_counter_track_uuid(track, display_name)
         return ctr_uuid, group_packets
     ctr_uuid = state.get_or_create_counter_track_uuid(track, display_name)
+    state.mark_counter_track(track, display_name)
     desc = build_track_descriptor(
         ctr_uuid,
         display_name,

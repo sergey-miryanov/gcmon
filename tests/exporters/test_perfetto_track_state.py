@@ -76,9 +76,11 @@ class TestPerfettoTrackState:
         assert uuid1 == uuid2
 
     def test_has_counter_track(self, state: PerfettoTrackState) -> None:
+        state.get_or_create_counter_track_uuid(interpreter_track(TARGET_PID, 0), counter_display_name(0, COLLECTED))
+
         assert not state.has_counter_track(interpreter_track(TARGET_PID, 0), counter_display_name(0, COLLECTED))
 
-        state.get_or_create_counter_track_uuid(interpreter_track(TARGET_PID, 0), counter_display_name(0, COLLECTED))
+        state.mark_counter_track(interpreter_track(TARGET_PID, 0), counter_display_name(0, COLLECTED))
 
         assert state.has_counter_track(interpreter_track(TARGET_PID, 0), counter_display_name(0, COLLECTED))
         assert not state.has_counter_track(interpreter_track(TARGET_PID, 0), counter_display_name(1, COLLECTED))

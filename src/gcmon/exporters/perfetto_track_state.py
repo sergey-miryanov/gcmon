@@ -41,9 +41,13 @@ class PerfettoTrackState:
         self._described_processes: set[Process] = set()
         self._tracks: set[Track] = set()
         self._interpreter_iids: dict[Process, set[int]] = {}
-        self._counter_tracks: dict[tuple[Track, str], int] = {}
+        self._counter_tracks: set[tuple[Track, str]] = set()
+        self._counter_track_uuids: dict[tuple[Track, str], int] = {}
+        self._counter_groups: set[Track] = set()
         self._counter_group_uuids: dict[Track, int] = {}
+        self._interpreter_lists: set[Process] = set()
         self._interpreter_list_uuids: dict[Process, int] = {}
+        self._interpreter_groups: set[tuple[Process, int]] = set()
         self._interpreter_group_uuids: dict[tuple[Process, int], int] = {}
         self._process_uuids: dict[Process, int] = {}
         self._row_pids: dict[Process, int] = {}
@@ -157,14 +161,20 @@ class PerfettoTrackState:
     def has_counter_track(self, track: Track, display_name: str) -> bool:
         return (track, display_name) in self._counter_tracks
 
+    def mark_counter_track(self, track: Track, display_name: str) -> None:
+        self._counter_tracks.add((track, display_name))
+
     def get_or_create_counter_track_uuid(self, track: Track, display_name: str) -> int:
         key = (track, display_name)
-        if key not in self._counter_tracks:
-            self._counter_tracks[key] = self._alloc_uuid()
-        return self._counter_tracks[key]
+        if key not in self._counter_track_uuids:
+            self._counter_track_uuids[key] = self._alloc_uuid()
+        return self._counter_track_uuids[key]
 
     def has_counter_group_track(self, track: Track) -> bool:
-        return track in self._counter_group_uuids
+        return track in self._counter_groups
+
+    def mark_counter_group_track(self, track: Track) -> None:
+        self._counter_groups.add(track)
 
     def get_or_create_counter_group_track_uuid(self, track: Track) -> int:
         if track not in self._counter_group_uuids:
@@ -172,7 +182,10 @@ class PerfettoTrackState:
         return self._counter_group_uuids[track]
 
     def has_interpreter_list_track(self, process: Process) -> bool:
-        return process in self._interpreter_list_uuids
+        return process in self._interpreter_lists
+
+    def mark_interpreter_list_track(self, process: Process) -> None:
+        self._interpreter_lists.add(process)
 
     def get_or_create_interpreter_list_track_uuid(self, process: Process) -> int:
         if process not in self._interpreter_list_uuids:
@@ -180,7 +193,10 @@ class PerfettoTrackState:
         return self._interpreter_list_uuids[process]
 
     def has_interpreter_group_track(self, process: Process, iid: int) -> bool:
-        return (process, iid) in self._interpreter_group_uuids
+        return (process, iid) in self._interpreter_groups
+
+    def mark_interpreter_group_track(self, process: Process, iid: int) -> None:
+        self._interpreter_groups.add((process, iid))
 
     def get_or_create_interpreter_group_track_uuid(self, process: Process, iid: int) -> int:
         """The uuid of the group holding every row interpreter *iid* owns.

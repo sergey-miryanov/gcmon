@@ -1,5 +1,8 @@
 """Tests for converting trace events into Perfetto packets."""
 
+from collections.abc import Callable
+
+import pytest
 from perfetto.protos.perfetto.trace.perfetto_trace_pb2 import (
     DebugAnnotation,
     TracePacket,
@@ -51,6 +54,7 @@ from gcmon.model.names import (
     LOST_PAUSE_NS,
     MARK_ALIVE,
     OBSERVED_COUNT,
+    PAUSE,
     PID,
     PID_EPOCH,
     RSS,
@@ -67,6 +71,7 @@ from gcmon.model.trace_event import (
     Instant,
     InterpreterTrack,
     ProcessTrack,
+    Slice,
     TraceEvent,
 )
 from tests.exporters.perfetto_helpers import (
@@ -1216,3 +1221,61 @@ class TestTheMissingCollectionsAnnotation:
 
         assert top[LOST_COUNT] == 1
         assert top["seen"] == "75.0% (3 of 4)"
+
+
+_EARLY_TS = 1_000_000
+
+_EARLY_PAUSE = Slice(pause_track(TARGET_PID, 0, 0), "GC Pause(0)", PAUSE.category, _EARLY_TS, _EARLY_TS + 1_000, {})
+
+_EARLY_RSS = Counter(process_track(TARGET_PID), RSS, RSS, _EARLY_TS, 1_000_000)
+
+_EARLY_HEAP = Counter(interpreter_track(TARGET_PID, 0), HEAP_SIZE, HEAP_SIZE, _EARLY_TS, 1_000)
+
+_EARLY_COLLECTED = Counter(
+    interpreter_track(TARGET_PID, 0), COLLECTED, counter_display_name(0, COLLECTED), _EARLY_TS, 10
+)
+
+_EARLY_ASKS: dict[str, tuple[TraceEvent, Callable[[PerfettoTrackState], int]]] = {
+    "process counter": (
+        _EARLY_RSS,
+        lambda state: state.get_or_create_counter_track_uuid(_EARLY_RSS.track, _EARLY_RSS.display_name),
+    ),
+    "interpreter counter": (
+        _EARLY_HEAP,
+        lambda state: state.get_or_create_counter_track_uuid(_EARLY_HEAP.track, _EARLY_HEAP.display_name),
+    ),
+    "GC Metrics counter": (
+        _EARLY_COLLECTED,
+        lambda state: state.get_or_create_counter_track_uuid(_EARLY_COLLECTED.track, _EARLY_COLLECTED.display_name),
+    ),
+    "GC Metrics group": (
+        _EARLY_COLLECTED,
+        lambda state: state.get_or_create_counter_group_track_uuid(_EARLY_COLLECTED.track),
+    ),
+    "interpreter list": (
+        _EARLY_PAUSE,
+        lambda state: state.get_or_create_interpreter_list_track_uuid(proc(TARGET_PID)),
+    ),
+    "interpreter group": (
+        _EARLY_PAUSE,
+        lambda state: state.get_or_create_interpreter_group_track_uuid(proc(TARGET_PID), 0),
+    ),
+}
+
+
+def _descriptors_drawn(event: TraceEvent, ask_first: Callable[[PerfettoTrackState], int] | None) -> list[bytes]:
+    state = PerfettoTrackState()
+    if ask_first is not None:
+        ask_first(state)
+    descriptors, _packets = draw_process_rows([event], state)
+    return descriptors
+
+
+@pytest.mark.parametrize(("event", "ask_first"), _EARLY_ASKS.values(), ids=_EARLY_ASKS.keys())
+def test_asking_for_a_process_row_s_uuid_first_still_writes_its_descriptors(
+    event: TraceEvent, ask_first: Callable[[PerfettoTrackState], int]
+) -> None:
+    drawn = _descriptors_drawn(event, None)
+
+    assert drawn
+    assert len(_descriptors_drawn(event, ask_first)) == len(drawn)
