@@ -104,6 +104,16 @@ class TestTheJoin:
 
         assert names == {proc(2): "bench", proc(3): "bench"}
 
+    def test_a_run_no_process_overlaps_names_none(self) -> None:
+        worker = _span(proc(2), 100, 400, _WORKER_A)
+
+        assert benchmark_names([worker], [_run("one", 150, 350), _run("late", 500, 800)]) == {proc(2): "one"}
+
+    def test_a_process_without_a_command_line_keeps_the_name_its_run_gives(self) -> None:
+        unread = _span(proc(2), 100, 400)
+
+        assert benchmark_names([unread], [_run("bench", 150, 350)]) == {proc(2): "bench"}
+
 
 class TestTheCommandKey:
     def test_two_workers_of_one_benchmark_share_a_key(self) -> None:

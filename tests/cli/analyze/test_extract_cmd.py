@@ -8,11 +8,14 @@ import csv
 import hashlib
 import json
 from pathlib import Path
+from typing import override
 
 import pytest
 
 from gcmon.analysis.extract import BENCHMARK, CALIBRATION, COLUMNS
 from gcmon.analysis.pyperformance import RUN_DURATION
+from gcmon.analysis.trace_rows import TraceProcessorReader, TraceRows
+from gcmon.cli.analyze import extract_cmd
 from gcmon.cli.main import main
 from gcmon.exporters import PerfettoExporter
 from gcmon.exporters.encoder import Layout
@@ -277,6 +280,27 @@ def test_an_existing_output_stops_the_command_and_is_left_alone(
     assert _extract(str(trace)) != 0
 
     assert output.read_text(encoding=ENCODING) == "kept\n"
+    assert "--overwrite" in caplog.text
+
+
+def test_an_output_written_while_the_trace_is_read_is_left_alone(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    trace = _write_trace(tmp_path / "run.pftrace")
+    output = tmp_path / "run.csv"
+
+    class _RacedReader(TraceProcessorReader):
+        @override
+        def read(self, path: Path) -> TraceRows:
+            output.write_text("kept\n", encoding=ENCODING)
+            return super().read(path)
+
+    monkeypatch.setattr(extract_cmd, "TraceProcessorReader", _RacedReader)
+
+    assert _extract(str(trace)) != 0
+
+    assert output.read_text(encoding=ENCODING) == "kept\n"
+    assert not (tmp_path / "run.meta.json").exists()
     assert "--overwrite" in caplog.text
 
 
