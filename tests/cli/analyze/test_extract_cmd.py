@@ -20,7 +20,7 @@ from gcmon.cli.main import main
 from gcmon.exporters import PerfettoExporter
 from gcmon.exporters.encoder import Layout
 from gcmon.model.data import GCStatsInfo
-from gcmon.model.names import COLLECTED, COLLECTIONS, GENERATION, IID, PID, PID_EPOCH, TS
+from gcmon.model.names import COLLECTED, COLLECTIONS, GENERATION, IID, PID, PID_EPOCH, RSS, TS
 from gcmon.model.phases import PAUSE_ARGS, OldWorkField
 from gcmon.model.process import Process
 from gcmon.support.vocabulary import CMD_COMBINE, CMD_EXTRACT, ENCODING
@@ -73,13 +73,20 @@ def _records() -> list[GCStatsInfo]:
     return [*gen0, full]
 
 
+# The worker's one RSS sample, taken before its last record.
+_RSS_BYTES: int = 48_000_000
+
+
 def _write_trace(path: Path, layout: Layout = Layout.FULL, cmdline: str = _WORKER_CMDLINE) -> Path:
     """The worker's trace, with the results file pyperformance writes beside
     it: one run spanning the worker's records."""
     exporter = PerfettoExporter(output_path=path, layout=layout)
     exporter.add_process_cmdline(_WORKER, tuple(cmdline.split(" ")))
-    for record in _records():
+    *before, last = _records()
+    for record in before:
         exporter.add_event(_WORKER, record)
+    exporter.add_rss_sample(_WORKER, _RSS_BYTES, last.ts_start - 100_000)
+    exporter.add_event(_WORKER, last)
     exporter.close()
     _write_results(path.with_suffix(".json"))
     return path
@@ -175,6 +182,15 @@ def test_a_record_carrying_every_field_fills_every_column(tmp_path: Path) -> Non
     full = _read(tmp_path / "run.csv")[-1]
     assert list(full) == list(COLUMNS)
     assert [name for name, value in full.items() if value == ""] == []
+
+
+@pytest.mark.parametrize("layout", [Layout.FULL, Layout.PROCESS], ids=lambda layout: layout.value)
+def test_a_record_carries_the_rss_sample_before_it(tmp_path: Path, layout: Layout) -> None:
+    trace = _write_trace(tmp_path / "run.pftrace", layout)
+
+    _extract(str(trace))
+
+    assert [row[RSS] for row in _read(tmp_path / "run.csv")] == ["", "", "", str(_RSS_BYTES)]
 
 
 def test_each_row_names_the_benchmark_from_the_results_beside_the_trace(tmp_path: Path) -> None:

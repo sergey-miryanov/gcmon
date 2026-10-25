@@ -336,7 +336,9 @@ The remaining columns are the fields a `GC Pause` slice carries, named as in a
 does not carry is an empty cell, so a stock build's table has the same
 columns. `collections`, `collected`, `uncollectable`, `candidates` and
 `duration` are written as the record holds them: running totals per process,
-interpreter and generation.
+interpreter and generation. The last column, `rss`, is the pause's `rss` arg,
+empty for a pause that carries none and for every pause of a trace recorded
+without `--rss`.
 
 ### The `.meta.json` sidecar
 

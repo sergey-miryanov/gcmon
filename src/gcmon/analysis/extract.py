@@ -7,7 +7,7 @@ from collections.abc import Iterable, Mapping, Sequence, Set
 from pathlib import Path
 from typing import Any, Final
 
-from ..model.names import GENERATION, IID, PAUSE, PID, PID_EPOCH, TS
+from ..model.names import GENERATION, IID, PAUSE, PID, PID_EPOCH, RSS, TS
 from ..model.phases import PAUSE_ARGS
 from ..model.process import Process
 from ..support.vocabulary import ENCODING
@@ -30,7 +30,7 @@ __all__ = [
 BENCHMARK: Final = "benchmark"
 CALIBRATION: Final = "calibration"
 
-COLUMNS: Final[tuple[str, ...]] = (BENCHMARK, CALIBRATION, PID, PID_EPOCH, TS, *PAUSE_ARGS)
+COLUMNS: Final[tuple[str, ...]] = (BENCHMARK, CALIBRATION, PID, PID_EPOCH, TS, *PAUSE_ARGS, RSS)
 
 # pyperf's worker flags for a run that only finds the loops or warmups to use.
 CALIBRATION_FLAGS: Final = frozenset(
@@ -86,6 +86,7 @@ def record_rows(
                 process.pid_epoch,
                 ts,
                 *(args.get(name) for name in PAUSE_ARGS),
+                args.get(RSS),
             )
         )
     return table

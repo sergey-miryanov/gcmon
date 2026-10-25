@@ -66,6 +66,8 @@ tick, before the poll.
 6. As someone reading the run rows, I want a pause on `Gen0..2` to carry the
    same `rss` as its copy on the process rows, so that both sets of rows
    agree.
+7. As someone loading `gcmon extract`'s table, I want an `rss` column, so that
+   each record's RSS reaches my analysis without opening the trace.
 
 ## 4. Implementation decisions
 
@@ -100,6 +102,10 @@ a parameter.
 **The run rows need nothing.** The pause copy on `Gen0..2` reuses the
 annotations the process rows encoded, so it carries `rss` too.
 
+**`gcmon extract` writes it as the last column.** `COLUMNS` gains `RSS` after
+the pause fields, and `record_rows` reads it off the pause's args like the
+rest. A pause without one leaves an empty cell.
+
 **JSONL and `combine` are unchanged.** `JsonlExporter` discards RSS samples,
 so no record carries one, and `convert_to_trace_format` passes no `rss`.
 
@@ -119,16 +125,18 @@ each sample's time.
 ## 5. Seams and testing decisions
 
 - **Seam:** the Perfetto integration suite for the arg, read through the trace
-  processor (ADR-0014), and `MonitorLoop`'s unit tests with a recording
-  exporter for the call order. A trace shows the order only through the values
-  the arg carries.
+  processor (ADR-0014); `MonitorLoop`'s unit tests with a recording exporter
+  for the call order; and `gcmon extract` run in-process for the column. A
+  trace shows the order only through the values the arg carries.
 - **New seam needed:** none.
 - **What makes a good test here:** the `rss` arg a pause slice carries, read
   through `extract_arg`; for the loop, the order of calls on the exporter
   within a tick.
 - **Prior art:** the RSS cases in
-  `tests/exporters/perfetto_integration/test_row_contents.py`, and
-  `TestRssSamplerInLoop` in `tests/monitoring/test_monitor_loop.py`.
+  `tests/exporters/perfetto_integration/test_row_contents.py`;
+  `TestRssSamplerInLoop` in `tests/monitoring/test_monitor_loop.py`; and
+  `test_every_record_reads_back_as_one_row` in
+  `tests/cli/analyze/test_extract_cmd.py`.
 - **Cases:**
   1. Two samples of one process with a pause read after each: each pause
      carries the sample before it.
@@ -141,6 +149,8 @@ each sample's time.
   7. Within a tick, the loop samples RSS before it polls, with the same
      instant, on the live set the previous tick reported. The first tick
      samples nothing.
+  8. `gcmon extract` writes each record's `rss` in its last column, and an
+     empty cell for a record read before the first sample, in both layouts.
 
 ## 6. Out of scope
 
