@@ -13,10 +13,8 @@
     reader and `report` are analysis-subsystem code, and why `perfetto` on the
     analysis path is not the decision ADR-0001 took.
   - [ADR-0022](../docs/adr/0022-compress-each-batch-of-packets.md): a zstd
-    trace needs Perfetto v58 or newer, and the suite pins its own trace
-    processor. Amended when this lands: the analysis subsystem holds the pin,
-    the suite takes it from there, and `perfetto` is the `analysis` extra's
-    rather than a development dependency alone.
+    trace needs Perfetto v58 or newer, so gcmon pins its own trace processor,
+    and `perfetto` is the `analysis` extra's.
   - [ADR-0009](../docs/adr/0009-nanoseconds-canonical-time-unit.md):
     nanoseconds inside gcmon.
   - [ADR-0016](../docs/adr/0016-the-ring-is-the-statistics-unit.md): the ring
@@ -79,14 +77,22 @@ the file.
 ## 4. Implementation decisions
 
 **The reader is two seams, both protocols, with one implementation over
-`TraceProcessor`.** The lower seam takes a trace and yields the rows it holds:
-slices with their category, name, span and arguments, counter samples, and the
-processes those hang under. The upper seam folds those rows into records. This
-spec declares the `analysis` extra that `perfetto` and `protobuf` arrive in.
-Without it, opening a trace fails with a message naming the extra. The import
-itself succeeds, the way `stats.stats` takes `ddsketch`: `cli.main` imports
-every command's module eagerly, so a failing import would stop every command,
-not only this one.
+`TraceProcessor`.** The lower seam takes a trace and yields the rows it holds;
+the upper seam folds those rows into records.
+
+Spec 0076 landed the lower seam as `TraceReader` in `analysis.trace_rows`,
+with `TraceProcessorReader` behind it. It takes a path, opens the file once,
+and returns each slice with its track's name, its category, name, start,
+duration and arguments, and the process its track parents to, and each process
+with the pid, pid epoch and command line its span carries. The arguments are
+keyed rather than concatenated, under their own names. It launches the v58.2
+trace processor that `analysis.perfetto_prebuilt` pins, because the shell the
+`perfetto` package bundles is v57.2 and loads a zstd-batched trace as an empty
+one, with no error (ADR-0022). Without the `analysis` extra, reading a trace
+raises `MissingExtraError` naming it, and the import itself succeeds, so every
+other command still runs.
+
+This spec adds counter samples to the lower seam and writes the upper one.
 
 Two seams rather than one because the split is where the optional dependency
 stops. Below the lower seam is `TraceProcessor`, which the `analysis` extra
@@ -104,27 +110,17 @@ fold. Case 5 in section 5 asserts at the row level for that reason.
 **The lower seam takes a path, not an open trace processor.** A signature
 naming `TraceProcessor` would put the dependency in the protocol and leave a
 hand-rolled decoder unable to satisfy it, which is the reversibility the split
-exists for. One call per file opens the file once, runs the several queries
-the rows need and closes it, so no caller holds a session and the cost that
-argued for the alternative is the implementation's to pay once.
-
-**The implementation launches the v58.2 trace processor, pinned.** The
-`perfetto` package ships protos generated at v58.2 and a
-`trace_processor_shell` prebuilt at v57.2. That shell skips
-`zstd_compressed_packets`, field 133, and loads a trace gcmon wrote with
-`compression.zstd` as an empty one, with no error (ADR-0022). The pin the
-suite uses, `tests.perfetto_prebuilt`, moves into `analysis` beside the
-implementation, and the suite imports it from there. The download, the SHA-256
-check and the cache stay the package's own `get_perfetto_prebuilt`.
+exists for. Counter samples join the slices in the same call, so the file is
+still opened once.
 
 Rejected for now, and worth naming because it is close: a hand-rolled decoder
 mirroring the hand-rolled encoder, sharing the field numbers in
 `perfetto_proto` and needing no dependency at all. It reads only traces gcmon
 wrote, interning was declined in spec 0056 so there is no incremental state to
 rebuild, and `compression.zstd` and `zlib` undo ADR-0022's two batch forms.
-Against it: `perfetto` works today once its shell is pinned, and the decoder
-is a second place that has to track the wire format. The protocol above is
-what makes the choice reversible, and the round-trip test in section 5 is what
+Against it: `perfetto` works once its shell is pinned, and the decoder is a
+second place that has to track the wire format. The protocol above is what
+makes the choice reversible, and the round-trip test in section 5 is what
 would validate the replacement.
 
 **The upper seam returns `dict[int, list[TItem]]`,** the type `read_jsonl`
@@ -149,11 +145,6 @@ through a shape the trace does not use. The alternative is a second entry into
 drift [ADR-0007](../docs/adr/0007-shared-trace-converter-pipeline.md) exists
 to prevent. The fabrication is the cheaper mistake.
 
-**The lower seam keys a slice's arguments rather than concatenating them.**
-They reach it as `flat_key` and `display_value` pairs and leave it as a
-mapping. A consumer wanting one string joins them; one wanting a value does
-not parse it back out.
-
 **One join the reader has to make.** The sub-phase slices are separate slices
 inside the pause they belong to, joined by timestamp on one track. The
 cumulative `duration` that `observe_cumulative` needs is an argument on the
@@ -173,16 +164,18 @@ for metadata that cannot be known: absent rather than guessed.
 - **Seam:** the two reader protocols, and `stats_output.print_stats` above
   them. Both are unit-testable against a trace written by the encoder in the
   same test, with no subprocess and no fixture file to keep current.
-- **New seam needed:** both of them. Nothing existing reaches from a path to a
-  row or from a path to a `TItem`, and `read_jsonl` is the shape to model the
-  upper one on.
+- **New seam needed:** the upper one. Nothing reaches from a path to a
+  `TItem`, and `read_jsonl` is the shape to model it on. The lower one exists
+  and gains counter samples.
 - **What makes a good test here:** a round trip. Write a known record set
   through the encoder, read it back, and assert the records match. Per
   CONVENTIONS rule 6 this is exactly the test that a round trip alone does not
   give, so it is paired with case 2 below, which compares against a table
   built without going through the trace at all.
-- **Prior art:** `tests/exporters/` for the encoder side, and the existing
-  statistics tests for the table.
+- **Prior art:** `tests/exporters/` for the encoder side,
+  `tests/analysis/test_trace_rows.py` for the lower seam, the `extract`
+  command's tests for a command over a trace written in the test, and the
+  existing statistics tests for the table.
 - **Cases:**
   1. A trace written from a known record set reads back as that record set,
      loss records and cumulative counters included.
@@ -192,12 +185,9 @@ for metadata that cannot be known: absent rather than guessed.
      note. This is the guard the whole spec rests on.
   3. A trace from a run that lost records reports the same `Cov` and `F` as
      the session did.
-  4. Opening a trace without the extra fails with a message naming the extra,
-     and every other command still runs.
-  5. The lower seam reads back every slice, counter sample and process the
-     encoder wrote, with a slice's arguments keyed rather than concatenated.
-  6. A trace written with `compression.zstd` reads back in full, not as an
-     empty trace.
+  4. `report` without the extra fails with a message naming the extra.
+  5. The lower seam reads back every counter sample the encoder wrote, beside
+     the slices and processes it already returns.
 
 ## 6. Out of scope
 
@@ -224,8 +214,8 @@ decoder, and why the seam is where it is.
 
 Depends on spec 0059, without which the offline table cannot say which process
 held a pid and would drop a distinction the live table makes. Spec 0068 landed
-the subsystem the reader lives in; the `analysis` extra is this spec's to
-declare. Spec 0063 depends on this one.
+the subsystem the reader lives in, and spec 0076 the lower seam, the pin and
+the `analysis` extra. Spec 0063 depends on this one.
 
 Nothing here touches the hook. Spec 0064 already took the replay out of
 `pyperf/hook.py`, so this spec writes the shared implementation rather than

@@ -15,9 +15,8 @@
     `perfetto` stays out of the monitoring runtime. It arrives in the
     `analysis` extra.
   - [ADR-0022](../docs/adr/0022-compress-each-batch-of-packets.md): a zstd
-    trace needs Perfetto v58 or newer, and the suite pins its own trace
-    processor. Amended when this lands, as spec 0061 describes: the analysis
-    subsystem holds the pin and the suite takes it from there.
+    trace needs Perfetto v58 or newer, so gcmon pins its own trace processor.
+    The analysis subsystem holds the pin, and the suite takes it from there.
   - [ADR-0010](../docs/adr/0010-process-identity-cmdline-and-start-marker.md):
     the command line is a debug annotation on the process span, absent where
     gcmon could not read it. A process without one is named by the join alone.
@@ -169,9 +168,9 @@ either of them covers. Shared time alone would hand every run to the pyperf
 manager, whose span covers all of them. Containment would lose a run that
 began a few milliseconds before gcmon discovered its worker. A process the
 join misses takes the name the other processes of its command agree on. The
-command is reduced by the script's `compare_key`, which drops pipe handles,
-`parent_pid` and `--loops` and keeps `--worker-task`. A process with no name
-has an empty `benchmark` cell.
+command is reduced by the script's `compare_key`, which shortens install
+paths, drops pipe handles, `parent_pid` and `--loops`, and keeps
+`--worker-task`. A process with no name has an empty `benchmark` cell.
 
 Calibration runs join as well. The script skipped them, and here a calibration
 worker needs its name so pep848-sim can see which benchmark it calibrated.
@@ -247,15 +246,16 @@ JSONL table rather than listing them again. That keeps the fields
 - **Seam:** the `extract` command, run in-process over a trace and a results
   file written in the same test, with the CSV read back by `csv.DictReader`.
   It observes everything an operator sees. Below it, the join is a function
-  over spans and runs, tested with no trace.
-- **New seam needed:** the lower reader seam, which nothing reaches today.
-  `read_jsonl` is the shape to model it on.
+  over spans and runs, tested with no trace, and the table a function over
+  rows, tested with slices no gcmon trace holds.
+- **New seam needed:** the lower reader seam, `TraceReader`, modelled on
+  `read_jsonl`.
 - **What makes a good test here:** records written through the encoder and
   read back through the pinned trace processor, a reader gcmon did not write.
   Command lines quoted from a real pyperformance capture, not invented ones.
 - **Prior art:** `tests/exporters/` for writing a trace in the test, the
-  `combine` command's tests for the CLI, `tests/perfetto_prebuilt.py` for the
-  pin.
+  `combine` command's tests for the CLI, the suite's pin for the trace
+  processor, which moves into `analysis`.
 - **Cases:**
   1. Every record written reads back as one row, its fields as written, from a
      `full` trace and from a `process` trace alike.
@@ -291,12 +291,15 @@ JSONL table rather than listing them again. That keeps the fields
   16. Regression guard: the suite's trace-processor tests read through the
       moved pin and pass unchanged.
   17. `--drop` removes its columns and `--keep` writes only its own, both in
-      `COLUMNS` order; the two together are refused, and an unknown name or a
-      choice leaving no column stops the command naming it.
-- **Acceptance run, not a test:** on a reference-branch pyperformance trace
+      `COLUMNS` order, given repeated or as a comma-separated list; the two
+      together are refused, and an unknown name or a choice leaving no column
+      stops the command naming it.
+- **Acceptance run, not a test:** on reference-branch pyperformance traces
   with calibration workers left out, each benchmark's last rows match what SQL
   reads from its workers' last pauses, `xml_etree_parse`'s rows come from its
-  own workers, and every async_tree_io_tg worker has rows.
+  own workers, and every async_tree_io_tg worker has rows. It held on two
+  traces of async_tree_io_tg and two of the four XML benchmarks, under the
+  incremental and the legacy collector.
 
 ## 6. Out of scope
 
@@ -320,18 +323,20 @@ JSONL table rather than listing them again. That keeps the fields
 **The clock agreement is observed on Windows alone.** pyperf's `uptime` is
 `time.time()` minus the boot time. On Linux that boot time is `/proc/stat`'s
 `btime`, in whole seconds, while the trace's timestamps come from CPython's
-performance counter. The join named every async_tree_io_tg worker on two
-Windows traces. A Linux pyperformance trace through case 6's join settles
-whether an offset under a second costs it workers. If it does, the fix is an
-offset estimated from the trace, not a looser score.
+performance counter. On the four Windows traces of the acceptance run the
+overlap alone named every worker, and the `compare_key` fallback named none. A
+Linux pyperformance trace through case 6's join settles whether an offset
+under a second costs it workers. If it does, the fix is an offset estimated
+from the trace, not a looser score.
 
-This lands before 0061. 0061 then takes the lower seam, the pin and the extra
-as given, keeps the upper seam and `report`, and is rewritten to say so when
-this lands. Spec 0063's `--results` can name workers through this join rather
-than through version-specific tables, and is rewritten when picked up.
+This lands before 0061, which takes the lower seam, the pin and the extra as
+given and keeps the upper seam and `report`. Spec 0063's `--results` can name
+workers through this join rather than through version-specific tables, and is
+rewritten when picked up.
 
-Landing this earns an ADR for the join: a worker's benchmark comes from
-overlap in time with the harness's own results, not from its command line.
+[ADR-0030](../docs/adr/0030-name-a-workers-benchmark-by-overlap-in-time.md)
+records the join: a worker's benchmark comes from overlap in time with the
+harness's own results, not from its command line.
 
 #228's requirement for the thresholds and the collector beside the table is
 met by columns, since #229 landed after it was filed.
