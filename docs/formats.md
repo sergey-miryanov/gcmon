@@ -350,4 +350,3 @@ from, at the table's path with `.meta.json` in place of its suffix.
 
 A key the results file lacks is `null`. `--meta KEY=VALUE` adds a key, such as
 the gcmon version that wrote the trace, which the trace does not record.
-
