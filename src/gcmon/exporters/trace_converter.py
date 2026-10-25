@@ -10,6 +10,7 @@ from ..model.names import (
     LOST_PAUSE,
     LOST_PAUSE_NS,
     OBSERVED_COUNT,
+    RSS,
     gc_loss_slice_name,
 )
 from ..model.phases import Counters, PausePhase, Phase, sub_phases_and_fields
@@ -64,7 +65,7 @@ def _phase_parts(phases: tuple[type[Phase], ...]) -> _PhaseParts:
     return parts
 
 
-def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[TraceEvent]:
+def convert_item_to_trace_format(process: Process, item: TGCStatsInfo, *, rss: int | None = None) -> list[TraceEvent]:
     gen = item.gen
     iid = item.iid
     track = PauseTrack(process, iid, gen)
@@ -72,6 +73,8 @@ def convert_item_to_trace_format(process: Process, item: TGCStatsInfo) -> list[T
     ts_stop_ns = item.ts_stop
 
     pause_data = PausePhase.args(gen, item)
+    if rss is not None:
+        pause_data[RSS] = rss
     name, category = PausePhase.name.names[gen]
 
     events: list[TraceEvent] = []

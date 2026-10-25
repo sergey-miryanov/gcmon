@@ -163,18 +163,41 @@ class TestMonitorLoopContextManager:
 
 
 class TestRssSamplerInLoop:
-    """The sampler is driven once per tick, off the live set the report
-    carried and the instant the tick was stamped with (ADR-0013)."""
+    """The sampler is driven once per tick, before the poll, off the live set
+    the previous tick's report carried and the instant this tick was stamped
+    with (ADR-0013)."""
 
-    def test_tick_called_with_the_live_set(self, mock_monitor: MagicMock) -> None:
-        mock_monitor.tick.return_value = _report(12345, 999)
+    def test_tick_samples_the_live_set_the_previous_tick_reported(self, mock_monitor: MagicMock) -> None:
+        mock_monitor.tick.side_effect = [_report(DEFAULT_PID, 999), _report(DEFAULT_PID)]
+        rss_sampler = Mock(spec=RssSampler)
+
+        MonitorLoop(mock_monitor, _runner(2), rate=0.01, rss_sampler=rss_sampler).run()
+
+        lives = [c[0][1] for c in rss_sampler.tick.call_args_list]
+        assert lives == [frozenset(), frozenset({proc(DEFAULT_PID), proc(999)})]
+
+    def test_the_first_tick_samples_nothing(self, mock_monitor: MagicMock) -> None:
         rss_sampler = Mock(spec=RssSampler)
 
         MonitorLoop(mock_monitor, _runner(1), rate=0.01, rss_sampler=rss_sampler).run()
 
-        rss_sampler.tick.assert_called_once()
         _now, live = rss_sampler.tick.call_args[0]
-        assert live == frozenset({proc(DEFAULT_PID), proc(999)})
+        assert live == frozenset()
+
+    def test_the_sampler_runs_before_the_poll(self, mock_monitor: MagicMock) -> None:
+        calls: list[str] = []
+
+        def poll(*_: object) -> PollReport:
+            calls.append("poll")
+            return _report(DEFAULT_PID)
+
+        rss_sampler = Mock(spec=RssSampler)
+        rss_sampler.tick.side_effect = lambda *_: calls.append("sample")
+        mock_monitor.tick.side_effect = poll
+
+        MonitorLoop(mock_monitor, _runner(2), rate=0.01, rss_sampler=rss_sampler).run()
+
+        assert calls == ["sample", "poll", "sample", "poll"]
 
     def test_no_sampler_is_not_an_error(self, mock_monitor: MagicMock) -> None:
         MonitorLoop(mock_monitor, _runner(1), rate=0.01).run()
@@ -189,7 +212,7 @@ class TestRssSamplerInLoop:
         with patch("time.monotonic_ns", return_value=42_000_000_000):
             MonitorLoop(mock_monitor, _runner(1), rate=0.01, rss_sampler=rss_sampler).run()
 
-        rss_sampler.tick.assert_called_once_with(42_000_000_000, frozenset({proc(DEFAULT_PID)}))
+        rss_sampler.tick.assert_called_once_with(42_000_000_000, frozenset())
 
     def test_tick_called_each_iteration(self, mock_monitor: MagicMock) -> None:
         rss_sampler = Mock(spec=RssSampler)
@@ -204,11 +227,10 @@ class TestRssSamplerInLoop:
         mock_monitor.tick.return_value = _report()
         rss_sampler = Mock(spec=RssSampler)
 
-        MonitorLoop(mock_monitor, _runner(1), rate=0.01, rss_sampler=rss_sampler).run()
+        MonitorLoop(mock_monitor, _runner(2), rate=0.01, rss_sampler=rss_sampler).run()
 
-        rss_sampler.tick.assert_called_once()
-        _now, live = rss_sampler.tick.call_args[0]
-        assert live == frozenset()
+        lives = [c[0][1] for c in rss_sampler.tick.call_args_list]
+        assert lives == [frozenset(), frozenset()]
 
 
 class TestTheTickInstant:

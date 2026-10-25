@@ -41,6 +41,10 @@ class PerfettoExporter(EventsExporter):
         self._output_path = output_path
         self._encoder = ProtobufEventEncoder(sequence_id=sequence_id, codec=codec, layout=layout)
         self._closed = False
+        # Each process's latest RSS sample, for the pauses read after it. The
+        # monitor and the sampler both call in from the loop's thread, so it
+        # takes no lock.
+        self._last_rss: dict[Process, int] = {}
         self._encoder.open(output_path)
 
     def _enqueue(self, events: list[TraceEvent]) -> None:
@@ -58,7 +62,7 @@ class PerfettoExporter(EventsExporter):
 
     @override
     def add_event(self, process: Process, item: TGCStatsInfo) -> None:
-        self._enqueue(convert_item_to_trace_format(process, item))
+        self._enqueue(convert_item_to_trace_format(process, item, rss=self._last_rss.get(process)))
 
     @override
     def add_instant_event(self, process: Process, item: TInstantMsg) -> None:
@@ -66,6 +70,7 @@ class PerfettoExporter(EventsExporter):
 
     @override
     def add_rss_sample(self, process: Process, rss_bytes: int, ts_ns: int) -> None:
+        self._last_rss[process] = rss_bytes
         self._enqueue([Counter(ProcessTrack(process), RSS, RSS, ts_ns, rss_bytes)])
 
     @override
@@ -81,6 +86,7 @@ class PerfettoExporter(EventsExporter):
     @override
     def add_process_retired(self, process: Process) -> None:
         """Let the encoder draw *process*'s row from the next flush on."""
+        self._last_rss.pop(process, None)
         with self._io_lock:
             self._encoder.record_process_retired(process)
 

@@ -34,8 +34,9 @@ spread a soft-optional dependency across the core.
 **Sampling lives in its own class**, `RssSampler` in `monitoring`. It holds
 the exporter, the interval, and the last-sample time. Its only public method
 is `tick(now_ns, live)`, and the timer check is internal. `MonitorLoop` gains
-one optional constructor argument and one line in the loop body. It knows
-nothing about `psutil`, timers, or how a sample turns into an event.
+one optional constructor argument, one line in the loop body, and the live set
+it carries from one tick to the next. It knows nothing about `psutil`, timers,
+or how a sample turns into an event.
 
 `tick` takes the caller's instant in **nanoseconds**, which both paces the
 sampling and stamps every sample in a pass. The loop takes one **stamping**
@@ -63,10 +64,22 @@ never touch `psutil`. The constructor checks availability **once**: if the
 import fails, it disables the sampler, logs at info level, and `tick()`
 becomes a no-op. No per-sample import guard.
 
+**The sampler runs before the poll phase.** The loop calls it right after
+reading the stamping instant, so each read sits next to its stamp, and the
+pauses the poll then reads find this tick's sample waiting.
+
 **Only pids that returned `PollStatus.OK` from the most recent GC poll are
-sampled.** The live set is cleared each tick, so a pid must pass a fresh poll
-to be sampled. No stale pids, and a process that dies between the poll and the
-RSS read yields nothing.
+sampled.** Ahead of the poll phase, that poll is the previous tick's. The live
+set is rebuilt each tick, so a pid must pass a fresh poll to be sampled. No
+stale pids, and a process that dies between that poll and the RSS read yields
+nothing. The first tick has no previous poll and samples nothing.
+
+**A pause carries its process's latest sample.** `PerfettoExporter` keeps the
+last value per process and hands it to the converter, which writes it as the
+pause's `rss` arg, so a pause shows the memory behind it without the counter
+row. The converter takes it as a parameter and knows nothing of where it came
+from ([ADR-0007](0007-shared-trace-converter-pipeline.md)). Sub-phases do not
+carry it.
 
 **RSS belongs to the process and conjures no thread.** A sample names a
 `ProcessTrack(process)`
@@ -85,14 +98,23 @@ defaults to 1.0 s, independent of the 0.1 s `--rate`.
   sampling every tick, and RSS does not move fast enough for the resolution to
   matter.
 - **A sample is backdated to the start of its tick**, the price of one instant
-  per pass. The instant is read before the poll phase and `psutil` runs after
-  it, so a value lands up to a whole poll phase before it was read, and
-  earlier than every GC record from the same tick. The skew is bounded by how
-  long the polls take, which on a wide tree exceeds the 0.1 s rate. Accepted:
-  RSS moves slowly enough that tens of milliseconds change nothing a reader
-  concludes, while the per-sample read it replaced moved each span's edge on
-  the `Processes` row by hash order
-  ([ADR-0011](0011-process-lifetime-and-ordering.md)).
+  per pass. The pass runs right after the instant is read, so a value lands at
+  most one `psutil` pass before it was read. Accepted: RSS moves slowly enough
+  that tens of milliseconds change nothing a reader concludes, while the
+  per-sample read it replaced moved each span's edge on the `Processes` row by
+  hash order ([ADR-0011](0011-process-lifetime-and-ordering.md)).
+- **A reissued pid can read as the process before it.** The live set is a tick
+  old when the sampler reads it, so a pid the operating system hands on within
+  that tick gives a stranger's RSS under the old process. Sampling after the
+  poll left the same exposure, over one poll phase instead of one tick.
+- **A sample can widen its process's span by one tick.** A process whose poll
+  fails right after its sample keeps the sample, and every event widens the
+  span ([ADR-0029](0029-report-liveness-and-fold-it-into-the-span.md)).
+  `psutil` saw the pid alive at that instant.
+- **A pause's `rss` is as old as the latest sample.** With `--rss-interval`
+  equal to `--rate` it is the sample from the tick that read the pause; a
+  longer interval makes it up to one interval old. A pause read before the
+  process's first sample carries none.
 - You can unit-test `RssSampler` without `psutil` and without a monitor loop.
 - Missing `psutil`, a dead process, or a permission error each produce no
   sample and no error. `--rss` on a machine without `psutil` is ignored, with
@@ -124,6 +146,10 @@ defaults to 1.0 s, independent of the 0.1 s `--rate`.
   knowledge pushed into the core loop.
 - **Making RSS always-on.** Rejected: it requires `psutil` and adds syscalls
   to each run, for a metric most people do not need.
+- **Sampling after the poll, the pause carrying the previous tick's sample.**
+  Rejected: every pause would carry a value a tick older than its own tick's,
+  and each sample would sit a whole poll phase before its read, which on a
+  wide tree exceeds the rate.
 - **A guard-and-import at each sample.** Rejected: the availability answer
   cannot change during a run, so checking once at construction is cheaper and
   clearer.

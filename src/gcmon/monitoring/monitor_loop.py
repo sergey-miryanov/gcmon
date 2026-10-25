@@ -2,6 +2,7 @@ import threading
 import time
 from typing import Self
 
+from ..model.process import Process
 from ..model.run_report import RunReport
 from ..model.schedule import idle_to_next_position, position_of
 from ..support import set_on_exit
@@ -47,15 +48,21 @@ class MonitorLoop:
         # tick start here, everything else a tick end.
         last_ns = start_ns
         ticks_run = 0
+        live: frozenset[Process] = frozenset()
 
         with set_on_exit(self._stop_event):
             for _ in self._runner.run(self._stop_event.is_set):
                 last_ns = time.monotonic_ns()
                 ticks_run += 1
-                report = self._monitor.tick(last_ns, self._stop_event.is_set)
 
+                # Before the poll, off the previous tick's live set, so a
+                # sample is read next to the instant it is stamped with
+                # (ADR-0013).
                 if self._rss_sampler:
-                    self._rss_sampler.tick(last_ns, report.live)
+                    self._rss_sampler.tick(last_ns, live)
+
+                report = self._monitor.tick(last_ns, self._stop_event.is_set)
+                live = report.live
 
                 if not report.keep_running:
                     break

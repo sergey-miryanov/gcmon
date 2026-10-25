@@ -24,7 +24,10 @@ Both layouts carry these:
 
 - **`GC Pauses` track**: one row per interpreter, under that interpreter's
   group, holding one **`GC Pause(gen)` slice** per GC run gcmon read, carrying
-  that run's counters as args.
+  that run's counters as args. Under `--rss` it also carries `rss`, the
+  process's latest RSS sample in bytes when gcmon read the pause. With
+  `--rss-interval` longer than `--rate`, that sample can be up to one interval
+  old.
 - **Sub-phase slices** nested inside a pause, each named for its generation
   the way the pause is: `GC Mark Alive`, `GC Fill Increment`,
   `GC Deduce Unreachable`, `GC Handle Weakrefs Callbacks`,

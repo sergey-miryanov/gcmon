@@ -27,7 +27,8 @@ from gcmon.exporters.perfetto_process_lifetime import (
     _PROCESS_ROW_SLICE_NAME,
     process_track_name,
 )
-from gcmon.exporters.perfetto_run_rows import _ALL_PAUSES_GROUP_NAME, _RSS_GROUP_NAME
+from gcmon.exporters.perfetto_run_rows import _ALL_PAUSES_GROUP_NAME, _RSS_GROUP_NAME, _generation_row_name
+from gcmon.model.data import GCStatsInfo
 from gcmon.model.names import (
     CANDIDATES,
     CLEAR_WEAKREFS,
@@ -83,6 +84,7 @@ from tests.exporters.perfetto_integration.traces import (
     rows_drawn_under,
 )
 from tests.helpers import (
+    create_mock_incremental_item,
     create_mock_stats_item,
     gc_pause_slice_name,
     open_trace_processor,
@@ -664,6 +666,122 @@ class TestRssCounterTrackIntegration:
             assert RSS in counter_tracks, (
                 f"RSS counter track missing after adding RSS + GC events; got {sorted(counter_tracks)}"
             )
+
+
+class TestRssOnThePause:
+    """Under `--rss`, a pause carries the latest sample of its process, read
+    back through the trace processor."""
+
+    @staticmethod
+    def _pause_rss(tp: TraceProcessor, pid: int) -> list[int | None]:
+        return [
+            r.rss
+            for r in tp.query(
+                f"SELECT extract_arg(s.arg_set_id, '{_ARG_PREFIX}.{RSS}') AS rss FROM slice s "
+                f"{_process_filter(pid)} AND s.name = '{_PAUSE_NAME}' ORDER BY s.ts"
+            )
+        ]
+
+    @staticmethod
+    def _pause(ts_start: int) -> GCStatsInfo:
+        return create_mock_stats_item(ts_start=ts_start, ts_stop=ts_start + 5_000_000)
+
+    def test_each_pause_carries_the_sample_before_it(self, tmp_path: Path) -> None:
+        path = tmp_path / "trace.pb"
+        exporter = PerfettoExporter(output_path=path)
+        exporter.add_rss_sample(proc(DEFAULT_PID), _RSS_VAL_1, _RSS_TS_1)
+        exporter.add_event(proc(DEFAULT_PID), self._pause(_RSS_TS_1 + 1_000_000))
+        exporter.add_rss_sample(proc(DEFAULT_PID), _RSS_VAL_3, _RSS_TS_3)
+        exporter.add_event(proc(DEFAULT_PID), self._pause(_RSS_TS_3 + 1_000_000))
+        exporter.close()
+
+        with open_trace_processor(path) as tp:
+            assert self._pause_rss(tp, DEFAULT_PID) == [_RSS_VAL_1, _RSS_VAL_3]
+
+    def test_a_pause_before_the_first_sample_carries_none(self, tmp_path: Path) -> None:
+        path = tmp_path / "trace.pb"
+        exporter = PerfettoExporter(output_path=path)
+        exporter.add_event(proc(DEFAULT_PID), self._pause(_RSS_TS_1))
+        exporter.add_rss_sample(proc(DEFAULT_PID), _RSS_VAL_1, _RSS_TS_3)
+        exporter.add_event(proc(DEFAULT_PID), self._pause(_RSS_TS_3 + 1_000_000))
+        exporter.close()
+
+        with open_trace_processor(path) as tp:
+            assert self._pause_rss(tp, DEFAULT_PID) == [None, _RSS_VAL_1]
+            keys = [
+                {r.key for r in tp.query(f"SELECT key FROM args WHERE arg_set_id = {r.arg_set_id}")}
+                for r in tp.query(
+                    f"SELECT s.arg_set_id FROM slice s {_process_filter(DEFAULT_PID)} "
+                    f"AND s.name = '{_PAUSE_NAME}' ORDER BY s.ts"
+                )
+            ]
+            assert keys[0] == keys[1] - {f"{_ARG_PREFIX}.{RSS}"}
+
+    def test_each_pause_carries_its_own_process_s_sample(self, tmp_path: Path) -> None:
+        path = tmp_path / "trace.pb"
+        exporter = PerfettoExporter(output_path=path)
+        exporter.add_rss_sample(proc(_RSS_PID_1), _RSS_VAL_1, _RSS_TS_1)
+        exporter.add_rss_sample(proc(_RSS_PID_2), _RSS_VAL_3, _RSS_TS_1)
+        exporter.add_event(proc(_RSS_PID_1), self._pause(_RSS_TS_3))
+        exporter.add_event(proc(_RSS_PID_2), self._pause(_RSS_TS_3))
+        exporter.close()
+
+        with open_trace_processor(path) as tp:
+            assert self._pause_rss(tp, _RSS_PID_1) == [_RSS_VAL_1]
+            assert self._pause_rss(tp, _RSS_PID_2) == [_RSS_VAL_3]
+
+    def test_the_run_row_copy_carries_the_same_sample(self, tmp_path: Path) -> None:
+        path = tmp_path / "trace.pb"
+        exporter = PerfettoExporter(output_path=path)
+        exporter.add_rss_sample(proc(DEFAULT_PID), _RSS_VAL_1, _RSS_TS_1)
+        exporter.add_event(proc(DEFAULT_PID), self._pause(_RSS_TS_3))
+        exporter.close()
+
+        with open_trace_processor(path) as tp:
+            rows = list(
+                tp.query(
+                    f"SELECT extract_arg(s.arg_set_id, '{_ARG_PREFIX}.{RSS}') AS rss FROM slice s "
+                    f"JOIN track t ON s.track_id = t.id WHERE t.name = '{_generation_row_name(0)}' AND s.depth = 0"
+                )
+            )
+        assert [r.rss for r in rows] == [_RSS_VAL_1]
+
+    def test_no_sub_phase_carries_it(self, tmp_path: Path) -> None:
+        path = tmp_path / "trace.pb"
+        exporter = PerfettoExporter(output_path=path)
+        exporter.add_rss_sample(proc(DEFAULT_PID), _RSS_VAL_1, _RSS_TS_1)
+        exporter.add_event(proc(DEFAULT_PID), create_mock_incremental_item(gen=1))
+        exporter.close()
+
+        with open_trace_processor(path) as tp:
+            depths = [
+                r.depth
+                for r in tp.query(
+                    f"SELECT s.depth FROM slice s WHERE extract_arg(s.arg_set_id, '{_ARG_PREFIX}.{RSS}') IS NOT NULL"
+                )
+            ]
+            sub_phases = list(tp.query("SELECT COUNT(*) AS n FROM slice WHERE depth > 0"))
+        assert sub_phases[0].n > 0
+        assert depths == [0, 0], "the pause on its process row and on its run row"
+
+    def test_without_rss_no_pause_carries_it(self, tmp_path: Path) -> None:
+        path = tmp_path / "trace.pb"
+        exporter = PerfettoExporter(output_path=path)
+        exporter.add_event(proc(DEFAULT_PID), create_mock_incremental_item(gen=1))
+        exporter.close()
+
+        with open_trace_processor(path) as tp:
+            rows = list(tp.query(f"SELECT COUNT(*) AS n FROM args WHERE key = '{_ARG_PREFIX}.{RSS}'"))
+        assert rows[0].n == 0
+
+    def test_a_retired_process_leaves_no_sample_behind(self, tmp_path: Path) -> None:
+        exporter = PerfettoExporter(output_path=tmp_path / "trace.pb")
+        exporter.add_rss_sample(proc(DEFAULT_PID), _RSS_VAL_1, _RSS_TS_1)
+
+        exporter.add_process_retired(proc(DEFAULT_PID))
+        exporter.close()
+
+        assert not exporter._last_rss
 
 
 class TestTwoInterpretersHeapSizes:
