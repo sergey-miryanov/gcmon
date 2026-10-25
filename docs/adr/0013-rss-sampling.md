@@ -66,20 +66,21 @@ becomes a no-op. No per-sample import guard.
 
 **The sampler runs before the poll phase.** The loop calls it right after
 reading the stamping instant, so each read sits next to its stamp, and the
-pauses the poll then reads find this tick's sample waiting.
+pauses that poll reads carry this tick's sample.
 
 **Only pids that returned `PollStatus.OK` from the most recent GC poll are
-sampled.** Ahead of the poll phase, that poll is the previous tick's. The live
+sampled.** With the sampler first, that poll is the previous tick's. The live
 set is rebuilt each tick, so a pid must pass a fresh poll to be sampled. No
 stale pids, and a process that dies between that poll and the RSS read yields
 nothing. The first tick has no previous poll and samples nothing.
 
 **A pause carries its process's latest sample.** `PerfettoExporter` keeps the
 last value per process and hands it to the converter, which writes it as the
-pause's `rss` arg, so a pause shows the memory behind it without the counter
-row. The converter takes it as a parameter and knows nothing of where it came
-from ([ADR-0007](0007-shared-trace-converter-pipeline.md)). Sub-phases do not
-carry it.
+pause's `rss` arg, so a reader sees the process's RSS on the pause without
+opening the counter row. The converter takes it as a parameter and knows
+nothing of where it came from
+([ADR-0007](0007-shared-trace-converter-pipeline.md)). Sub-phases do not carry
+it.
 
 **RSS belongs to the process and conjures no thread.** A sample names a
 `ProcessTrack(process)`
@@ -98,19 +99,20 @@ defaults to 1.0 s, independent of the 0.1 s `--rate`.
   sampling every tick, and RSS does not move fast enough for the resolution to
   matter.
 - **A sample is backdated to the start of its tick**, the price of one instant
-  per pass. The pass runs right after the instant is read, so a value lands at
-  most one `psutil` pass before it was read. Accepted: RSS moves slowly enough
-  that tens of milliseconds change nothing a reader concludes, while the
-  per-sample read it replaced moved each span's edge on the `Processes` row by
-  hash order ([ADR-0011](0011-process-lifetime-and-ordering.md)).
+  per pass. Nothing runs between reading the instant and the pass, so a value
+  lands at most one `psutil` pass before it was read. Accepted: RSS moves
+  slowly enough that tens of milliseconds change nothing a reader concludes,
+  while the per-sample read it replaced moved each span's edge on the
+  `Processes` row by hash order
+  ([ADR-0011](0011-process-lifetime-and-ordering.md)).
 - **A reissued pid can read as the process before it.** The live set is a tick
   old when the sampler reads it, so a pid the operating system hands on within
-  that tick gives a stranger's RSS under the old process. Sampling after the
-  poll left the same exposure, over one poll phase instead of one tick.
+  that tick gives an unrelated process's RSS under the old one. Sampling after
+  the poll left the same exposure, over one poll phase instead of one tick.
 - **A sample can widen its process's span by one tick.** A process whose poll
-  fails right after its sample keeps the sample, and every event widens the
-  span ([ADR-0029](0029-report-liveness-and-fold-it-into-the-span.md)).
-  `psutil` saw the pid alive at that instant.
+  fails after its sample keeps the sample, and every event widens the span
+  ([ADR-0029](0029-report-liveness-and-fold-it-into-the-span.md)). `psutil`
+  saw the pid alive at that instant.
 - **A pause's `rss` is as old as the latest sample.** With `--rss-interval`
   equal to `--rate` it is the sample from the tick that read the pause; a
   longer interval makes it up to one interval old. A pause read before the

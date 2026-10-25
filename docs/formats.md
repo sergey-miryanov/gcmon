@@ -24,7 +24,7 @@ Both layouts carry these:
 
 - **`GC Pauses` track**: one row per interpreter, under that interpreter's
   group, holding one **`GC Pause(gen)` slice** per GC run gcmon read, carrying
-  that run's counters as args. Under `--rss` it also carries `rss`, the
+  that run's counters as args. Under `--rss` a pause also carries `rss`, the
   process's latest RSS sample in bytes when gcmon read the pause. With
   `--rss-interval` longer than `--rate`, that sample can be up to one interval
   old.

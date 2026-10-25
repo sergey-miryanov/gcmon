@@ -55,9 +55,8 @@ class MonitorLoop:
                 last_ns = time.monotonic_ns()
                 ticks_run += 1
 
-                # Before the poll, off the previous tick's live set, so a
-                # sample is read next to the instant it is stamped with
-                # (ADR-0013).
+                # Ahead of the poll, so the pauses it reads carry this tick's
+                # sample (ADR-0013).
                 if self._rss_sampler:
                     self._rss_sampler.tick(last_ns, live)
 
