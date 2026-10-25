@@ -1,5 +1,5 @@
-"""Which benchmark each process in a trace ran, by its overlap in time with
-pyperformance's results (ADR-0030)."""
+"""pyperformance's results file, and which benchmark each process in a trace
+ran by its overlap in time with the runs it holds (ADR-0030)."""
 
 import bisect
 import gzip

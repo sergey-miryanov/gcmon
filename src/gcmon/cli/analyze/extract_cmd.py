@@ -6,9 +6,9 @@ from argparse import Namespace
 from pathlib import Path
 from typing import Final
 
-from gcmon.analysis.benchmark_names import benchmark_names, read_results, runs_of
 from gcmon.analysis.extract import META_KEYS, META_SUFFIX, record_meta, record_rows, write_csv, write_meta
 from gcmon.analysis.perfetto_prebuilt import MissingExtraError
+from gcmon.analysis.pyperformance import benchmark_names, read_results, runs_of
 from gcmon.analysis.trace_rows import TraceProcessorReader
 from gcmon.cli.shared.parser_factory import ParserFactory
 

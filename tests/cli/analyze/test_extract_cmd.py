@@ -11,8 +11,8 @@ from pathlib import Path
 
 import pytest
 
-from gcmon.analysis.benchmark_names import RUN_DURATION
 from gcmon.analysis.extract import BENCHMARK, CALIBRATION, COLUMNS
+from gcmon.analysis.pyperformance import RUN_DURATION
 from gcmon.cli.main import main
 from gcmon.exporters import PerfettoExporter
 from gcmon.exporters.encoder import Layout

@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from gcmon.analysis.benchmark_names import RUN_DURATION, Run, benchmark_names, compare_key, read_runs
+from gcmon.analysis.pyperformance import RUN_DURATION, Run, benchmark_names, compare_key, read_runs
 from gcmon.analysis.trace_rows import ProcessRow
 from gcmon.model.process import Process
 from gcmon.support.vocabulary import ENCODING

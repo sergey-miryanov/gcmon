@@ -70,7 +70,7 @@ ALLOWED: dict[str, frozenset[str]] = {
     # The `perfetto` package's `sys.modules` key, not the output format.
     "tests/conftest.py": frozenset({"perfetto"}),
     # pyperf's run metadata key, not the record's field.
-    "src/gcmon/analysis/benchmark_names.py": frozenset({"duration"}),
+    "src/gcmon/analysis/pyperformance.py": frozenset({"duration"}),
 }
 
 

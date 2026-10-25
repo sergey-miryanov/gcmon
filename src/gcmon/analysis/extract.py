@@ -11,7 +11,7 @@ from ..model.names import GENERATION, IID, PAUSE, PID, PID_EPOCH, TS
 from ..model.phases import PAUSE_ARGS
 from ..model.process import Process
 from ..support.vocabulary import ENCODING
-from .benchmark_names import run_metadata
+from .pyperformance import run_metadata
 from .trace_rows import SliceRow, TraceRows
 
 __all__ = [
