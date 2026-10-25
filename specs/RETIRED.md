@@ -41,6 +41,7 @@ rows.
 | 0070 | **Superseded** by 0071 | S | Workers forked in one loop each ran for seconds and were drawn microseconds wide on the `Processes` track. It would have snapped near-equal starts together so the fan-out nested instead of clipping, moving each start by up to a chosen tolerance. 0071 removed the clip the snap worked around, so no start has to move |
 | 0071 | **Landed** 2026-09-20 (enhancement) | M | Two processes whose lifetimes crossed could not both keep their width on the `Processes` row, and `dur` there was not a duration gcmon observed. Every process draws its span on a track of its own now, merged into one row by the shared name, and a span that overlaps another sits in a lane of it. [ADR-0011](../docs/adr/0011-process-lifetime-and-ordering.md) |
 | 0074 | **Landed** 2026-10-18 (reporting) | XS | Without the `[stats]` extra a row's percentiles covered its latest 1024 values while `Count`, `Sum` and `Avg` covered all of them, and nothing said so. A footer note says so now. [ADR-0016](../docs/adr/0016-the-ring-is-the-statistics-unit.md) |
+| 0076 | **Landed** 2026-10-26 (enhancement) | M | Getting a pyperformance trace's records out as a table took a pinned trace processor, SQL against the track layout and a benchmark-name join gcmon did not ship. `gcmon extract` writes them as CSV now. [ADR-0030](../docs/adr/0030-name-a-workers-benchmark-by-overlap-in-time.md) |
 
 ## Gaps
 

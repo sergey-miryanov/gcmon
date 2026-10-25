@@ -1,7 +1,7 @@
 # ADR-0030: Name a worker's benchmark by its overlap in time with the harness's results
 
 - **Status:** Accepted
-- **Date:** 2026-10-25
+- **Date:** 2026-10-26
 - **Modules:** analysis
 
 ## Context

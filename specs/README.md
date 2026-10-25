@@ -40,7 +40,6 @@ This file holds the open set and the order to take it in. The other two:
 | [0072](0072-draw-a-run-on-rows-by-kind.md) | Feature (enhancement) | M | On a wide tree a process's pauses sit two groups down in one of thousands of rows, and nothing draws the run's pauses, loss and processes on a few rows |
 | [0073](0073-convert-a-merged-trace-to-the-process-layout.md) | Feature (enhancement) | M | A trace recorded with `--layout merged` cannot become the process layout, so its counter charts and per-process rows cost a rerun |
 | [0075](0075-draw-a-run-without-its-process-rows.md) | Feature (enhancement) | S | A trace of a wide tree holds thousands of process rows beside its run rows and draws each pause twice, with no way to keep the run rows alone |
-| [0076](0076-extract-a-traces-records-into-a-csv-file.md) | Feature (enhancement) | M | A trace holds every record of a pyperformance run, and getting them out as a table takes a pinned trace processor, SQL against the track layout and a join to the benchmark names that gcmon does not ship |
 
 Every row here has a file. A missing number either retired or never became
 one; [RETIRED.md](RETIRED.md) says which.
@@ -62,8 +61,7 @@ one; [RETIRED.md](RETIRED.md) says which.
 | 0073 | Constrained: after 0075 |
 | 0051 | Unblocked: 0039 landed, and `StreamingStats` is in the module it will keep |
 | 0060 | Smallest of the comparison set and depends on none of it |
-| 0076 | Lands the reader 0061 builds on |
-| 0061 | Unblocked: 0059 landed, and a trace now says which process held a pid |
+| 0061 | Unblocked: 0059 and 0076 landed, so a trace says which process held a pid and the reader exists |
 | 0062 | |
 | 0063 | Constrained: after 0060, 0061 and 0062 |
 
@@ -84,7 +82,6 @@ the position. A blank cell means no recorded reason, so that row can move.
 
 | First | Then | Why |
 |-------|------|-----|
-| 0076 | 0061 | 0061 folds the rows the reader 0076 lands yields |
 | 0060, 0061, 0062 | 0063 | 0063 builds two of the tables those three produce and diffs them; it computes no statistic of its own |
 | 0072 | 0075 | 0075 draws the run rows 0072 builds, without the process rows |
 | 0075 | 0073 | 0073 reads the merged trace 0075 writes |
