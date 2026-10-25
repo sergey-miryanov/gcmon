@@ -476,9 +476,9 @@ def test_an_unknown_column_stops_the_command_naming_it(
 ) -> None:
     trace = _write_trace(tmp_path / "run.pftrace")
 
-    assert _extract(str(trace), flag, "colected") != 0
+    assert _extract(str(trace), flag, "collected") != 0
 
-    assert "colected" in caplog.text
+    assert "collected" in caplog.text
     assert not (tmp_path / "run.csv").exists()
 
 
