@@ -180,6 +180,8 @@ gcmon extract run.pftrace -o records.csv --results suite.json --overwrite \
 | `-o, --output` | Output CSV path | The trace's path with `.csv` in place of its suffix |
 | `--results` | pyperformance's results file for the run, plain or `.gz`. A missing one stops the command | The trace's path with `.json` in place of its suffix |
 | `--benchmark NAME` | Keep only the rows of the benchmark the results file calls *NAME*; repeat for more. A name the results file lacks stops the command | Every process's rows |
+| `--drop COLUMN[,COLUMN...]` | Leave these columns out of the table; repeat for more. Not with `--keep`. An unknown column, or dropping them all, stops the command | Every column |
+| `--keep COLUMN[,COLUMN...]` | Write only these columns; repeat for more. The columns keep the table's order whatever order they are given in. Not with `--drop`. An unknown column stops the command | Every column |
 | `--meta KEY=VALUE` | Add *KEY* to the `.meta.json`; repeat for more. A key gcmon derives stops the command | - |
 | `--overwrite` | Replace an existing output and its `.meta.json`. Without it, either one existing stops the command, and both are left as they were | `False` |
 

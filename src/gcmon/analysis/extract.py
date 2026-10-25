@@ -91,13 +91,17 @@ def record_rows(
     return table
 
 
-def write_csv(path: Path, table: Iterable[Sequence[Cell]], *, overwrite: bool) -> None:
-    """Write *table* under a `COLUMNS` header. Without *overwrite*, an existing
-    *path* raises `FileExistsError` and is left as it was."""
+def write_csv(
+    path: Path, table: Iterable[Sequence[Cell]], *, overwrite: bool, columns: Sequence[str] = COLUMNS
+) -> None:
+    """Write *table*'s *columns*, a subset of `COLUMNS` in its order, under a
+    header naming them. Without *overwrite*, an existing *path* raises
+    `FileExistsError` and is left as it was."""
+    indices = [COLUMNS.index(name) for name in columns]
     with path.open("w" if overwrite else "x", encoding=ENCODING, newline="") as handle:
         writer = csv.writer(handle)
-        writer.writerow(COLUMNS)
-        writer.writerows(table)
+        writer.writerow(columns)
+        writer.writerows([row[index] for index in indices] for row in table)
 
 
 # The sidecar beside a table: `run.csv` gets `run.meta.json`.

@@ -438,3 +438,80 @@ def test_overwrite_replaces_the_table_and_its_sidecar(tmp_path: Path) -> None:
 
     assert len(_read(tmp_path / "run.csv")) == len(_records())
     assert _meta(tmp_path / "run.meta.json")["trace"] == "run.pftrace"
+
+
+def _header(path: Path) -> list[str]:
+    with path.open(encoding=ENCODING, newline="") as handle:
+        return next(csv.reader(handle))
+
+
+def test_drop_removes_its_columns_and_keeps_the_rest_in_order(tmp_path: Path) -> None:
+    trace = _write_trace(tmp_path / "run.pftrace")
+
+    assert _extract(str(trace), "--drop", COLLECTED, "--drop", BENCHMARK) == 0
+
+    assert _header(tmp_path / "run.csv") == [name for name in COLUMNS if name not in {COLLECTED, BENCHMARK}]
+
+
+def test_keep_writes_only_its_columns_in_their_table_order(tmp_path: Path) -> None:
+    trace = _write_trace(tmp_path / "run.pftrace")
+
+    assert _extract(str(trace), "--keep", COLLECTED, "--keep", PID, "--keep", BENCHMARK) == 0
+
+    rows = _read(tmp_path / "run.csv")
+    assert _header(tmp_path / "run.csv") == [BENCHMARK, PID, COLLECTED]
+    assert [row[COLLECTED] for row in rows] == [str(record.collected) for record in _records()]
+
+
+def test_drop_and_keep_together_are_refused(tmp_path: Path) -> None:
+    trace = _write_trace(tmp_path / "run.pftrace")
+
+    with pytest.raises(SystemExit):
+        _extract(str(trace), "--drop", COLLECTED, "--keep", PID)
+
+
+@pytest.mark.parametrize("flag", ["--drop", "--keep"])
+def test_an_unknown_column_stops_the_command_naming_it(
+    tmp_path: Path, flag: str, caplog: pytest.LogCaptureFixture
+) -> None:
+    trace = _write_trace(tmp_path / "run.pftrace")
+
+    assert _extract(str(trace), flag, "colected") != 0
+
+    assert "colected" in caplog.text
+    assert not (tmp_path / "run.csv").exists()
+
+
+def test_dropping_every_column_stops_the_command(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
+    trace = _write_trace(tmp_path / "run.pftrace")
+    argv = [str(trace)]
+    for name in COLUMNS:
+        argv += ["--drop", name]
+
+    assert _extract(*argv) != 0
+
+    assert not (tmp_path / "run.csv").exists()
+    assert not (tmp_path / "run.meta.json").exists()
+
+
+def test_keep_takes_a_comma_separated_list(tmp_path: Path) -> None:
+    trace = _write_trace(tmp_path / "run.pftrace")
+
+    assert _extract(str(trace), "--keep", f"{COLLECTED},{PID}", "--keep", BENCHMARK) == 0
+
+    assert _header(tmp_path / "run.csv") == [BENCHMARK, PID, COLLECTED]
+
+
+def test_drop_takes_a_comma_separated_list(tmp_path: Path) -> None:
+    trace = _write_trace(tmp_path / "run.pftrace")
+
+    assert _extract(str(trace), "--drop", f"{COLLECTED},{BENCHMARK}") == 0
+
+    assert _header(tmp_path / "run.csv") == [name for name in COLUMNS if name not in {COLLECTED, BENCHMARK}]
+
+
+def test_an_empty_name_in_a_list_is_refused(tmp_path: Path) -> None:
+    trace = _write_trace(tmp_path / "run.pftrace")
+
+    with pytest.raises(SystemExit):
+        _extract(str(trace), "--keep", f"{COLLECTED},,{PID}")

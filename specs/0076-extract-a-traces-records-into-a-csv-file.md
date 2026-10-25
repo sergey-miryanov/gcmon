@@ -113,6 +113,8 @@ file names, the run's date, and whatever `--meta` added.
     so that I never get a table with no benchmark names.
 14. As a maintainer adding a field to the record, I want it to reach the CSV
     the way it reaches the pause, so that no second list falls behind.
+15. As a pep848-sim maintainer, I want to drop the columns I do not read, or
+    keep only those I do, so that committed files stay small.
 
 ## 4. Implementation decisions
 
@@ -207,6 +209,14 @@ never by a plain rerun. gcmon has no overwrite flag elsewhere to match, and
 with a pause has rows. A name the results file does not hold stops the command
 with an error naming it.
 
+**`--drop` and `--keep` choose the columns, by name.** Each takes a
+comma-separated list and repeats, and the two exclude each other. `--drop`
+removes the columns named, so a field a later record gains still reaches the
+table. `--keep` writes only the columns named, a set that holds across gcmon
+versions. Either way the columns keep `COLUMNS` order, so two tables cut from
+different traces line up. A name `COLUMNS` does not hold, or a choice that
+leaves no column, stops the command before anything is written.
+
 **The sidecar is JSON, at the output's path with `.meta.json` in place of its
 suffix.** `trace` and `trace_sha256` come from the file. `python_version`,
 `performance_version` and `perf_version` come from the results file's
@@ -280,6 +290,9 @@ JSONL table rather than listing them again. That keeps the fields
       `--overwrite`, both are replaced.
   16. Regression guard: the suite's trace-processor tests read through the
       moved pin and pass unchanged.
+  17. `--drop` removes its columns and `--keep` writes only its own, both in
+      `COLUMNS` order; the two together are refused, and an unknown name or a
+      choice leaving no column stops the command naming it.
 - **Acceptance run, not a test:** on a reference-branch pyperformance trace
   with calibration workers left out, each benchmark's last rows match what SQL
   reads from its workers' last pauses, `xml_etree_parse`'s rows come from its

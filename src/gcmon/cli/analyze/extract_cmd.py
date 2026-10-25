@@ -6,7 +6,7 @@ from argparse import Namespace
 from pathlib import Path
 from typing import Final
 
-from gcmon.analysis.extract import META_KEYS, META_SUFFIX, record_meta, record_rows, write_csv, write_meta
+from gcmon.analysis.extract import COLUMNS, META_KEYS, META_SUFFIX, record_meta, record_rows, write_csv, write_meta
 from gcmon.analysis.perfetto_prebuilt import MissingExtraError
 from gcmon.analysis.pyperformance import benchmark_names, read_results, runs_of
 from gcmon.analysis.trace_rows import TraceProcessorReader
@@ -27,6 +27,14 @@ def _meta_pair(text: str) -> tuple[str, str]:
     if not separator or not key:
         raise argparse.ArgumentTypeError(f"expected KEY=VALUE, got {text!r}")
     return key, value
+
+
+def _column_list(text: str) -> list[str]:
+    """`a,b,c` as its names. An empty one is refused rather than skipped."""
+    names = text.split(",")
+    if not all(names):
+        raise argparse.ArgumentTypeError(f"empty column name in {text!r}")
+    return names
 
 
 def add_parser(parser_factory: ParserFactory) -> argparse.ArgumentParser:
@@ -68,6 +76,21 @@ def add_parser(parser_factory: ParserFactory) -> argparse.ArgumentParser:
         metavar="KEY=VALUE",
         help="Add KEY to the .meta.json; repeat for more. A key gcmon derives stops the command",
     )
+    columns = parser.add_mutually_exclusive_group()
+    columns.add_argument(
+        "--drop",
+        action="extend",
+        type=_column_list,
+        metavar="COLUMN[,COLUMN...]",
+        help="Leave these columns out of the table; repeat for more",
+    )
+    columns.add_argument(
+        "--keep",
+        action="extend",
+        type=_column_list,
+        metavar="COLUMN[,COLUMN...]",
+        help="Write only these columns, with any other --keep; the table's own order holds",
+    )
     parser.add_argument("--overwrite", action="store_true", help="Replace an existing output and its .meta.json")
     parser.add_argument(
         "-v",
@@ -102,6 +125,18 @@ def cmd_extract(args: Namespace) -> int:
     if derived:
         logger.error("gcmon derives %s; --meta cannot set it", ", ".join(derived))
         return 1
+    chosen = set(args.drop or args.keep or ())
+    unknown_columns = sorted(chosen - set(COLUMNS))
+    if unknown_columns:
+        logger.error("No such column: %s", ", ".join(unknown_columns))
+        return 1
+    if args.keep is not None:
+        columns = [name for name in COLUMNS if name in chosen]
+    else:
+        columns = [name for name in COLUMNS if name not in chosen]
+    if not columns:
+        logger.error("--drop leaves no column to write")
+        return 1
 
     try:
         document = read_results(results)
@@ -123,7 +158,7 @@ def cmd_extract(args: Namespace) -> int:
         return 1
     table = record_rows(rows, benchmark_names(rows.processes, runs), only)
     try:
-        write_csv(output, table, overwrite=args.overwrite)
+        write_csv(output, table, overwrite=args.overwrite, columns=columns)
         write_meta(sidecar, {**record_meta(trace, document), **extra}, overwrite=args.overwrite)
     except FileExistsError as error:
         logger.error("%s exists; pass --overwrite to replace it", error.filename)
