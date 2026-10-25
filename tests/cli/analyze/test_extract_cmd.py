@@ -352,9 +352,9 @@ def test_without_benchmark_every_process_has_rows(tmp_path: Path) -> None:
 def test_an_unknown_benchmark_stops_the_command_naming_it(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
     trace = _write_two_benchmarks(tmp_path / "run.pftrace")
 
-    assert _extract(str(trace), "--benchmark", "second", "--benchmark", "second") != 0
+    assert _extract(str(trace), "--benchmark", "second", "--benchmark", "third") != 0
 
-    assert "second" in caplog.text
+    assert "third" in caplog.text
     assert not (tmp_path / "run.csv").exists()
 
 
@@ -476,9 +476,9 @@ def test_an_unknown_column_stops_the_command_naming_it(
 ) -> None:
     trace = _write_trace(tmp_path / "run.pftrace")
 
-    assert _extract(str(trace), flag, "collected") != 0
+    assert _extract(str(trace), flag, "no_such_column") != 0
 
-    assert "collected" in caplog.text
+    assert "no_such_column" in caplog.text
     assert not (tmp_path / "run.csv").exists()
 
 
