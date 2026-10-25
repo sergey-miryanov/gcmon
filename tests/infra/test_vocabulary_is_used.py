@@ -67,6 +67,10 @@ ALLOWED: dict[str, frozenset[str]] = {
     "tests/exporters/test_perfetto_proto.py": frozenset({"cmdline", "pid"}),
     # A parameter of `MonitorLoop.__init__`, not the subcommand.
     "tests/monitoring/test_monitor_loop.py": frozenset({"monitor"}),
+    # The `perfetto` package's `sys.modules` key, not the output format.
+    "tests/conftest.py": frozenset({"perfetto"}),
+    # pyperf's run metadata key, not the record's field.
+    "src/gcmon/analysis/benchmark_names.py": frozenset({"duration"}),
 }
 
 

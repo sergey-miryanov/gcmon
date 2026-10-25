@@ -4,7 +4,7 @@ and what it annotates; and the fields that annotate the pause alone."""
 from collections.abc import Mapping
 from functools import partial
 from operator import attrgetter
-from typing import Any, ClassVar, Final, Protocol, TypeGuard
+from typing import Any, ClassVar, Final, Protocol, TypeGuard, get_type_hints
 
 from .names import (
     CANDIDATES,
@@ -36,6 +36,7 @@ from .protocol import (
 from .trace_event import EventArgs
 
 __all__ = [
+    "PAUSE_ARGS",
     "PAUSE_FIELDS",
     "PHASES",
     "SUB_PHASES",
@@ -101,6 +102,18 @@ class PauseField(Protocol):
 
 class PausePhase:
     type Info = TGCStatsInfo
+
+    class _Args(Protocol):
+        iid: int
+        collections: int
+        collected: int
+        uncollectable: int
+        candidates: int
+        heap_size: int
+        duration: float
+
+    # The fields `args` reads. `generation` comes from `gen`.
+    Args: ClassVar[type] = _Args
 
     name: ClassVar[PhaseName] = PAUSE
 
@@ -525,6 +538,13 @@ PAUSE_FIELDS: Final[tuple[type[PauseField], ...]] = (
     HeapSizeStopField,
     ReasonFields,
     ThresholdFields,
+)
+
+# Every argument a pause can carry, in the order the converter writes them.
+PAUSE_ARGS: Final[tuple[str, ...]] = (
+    GENERATION,
+    *get_type_hints(PausePhase.Args),
+    *(name for field in PAUSE_FIELDS for name in get_type_hints(field.Info)),
 )
 
 type _SubPhasesAndFields = tuple[tuple[type[SubPhase], ...], tuple[type[PauseField], ...]]

@@ -1184,11 +1184,12 @@ version = "0.58.2"
 description = "Python APIs and bindings for Perfetto (perfetto.dev)"
 optional = false
 python-versions = "*"
-groups = ["dev"]
+groups = ["main", "dev"]
 files = [
     {file = "perfetto-0.58.2-py3-none-any.whl", hash = "sha256:024d37db3e1938a0247311337daf419c7204af757fb303cdc1dca46fa8d83cfe"},
     {file = "perfetto-0.58.2.tar.gz", hash = "sha256:54e0e8616dcd9fc1e087914d747370375aeb2f8dacf68ae7ead8c3c5e596a0c7"},
 ]
+markers = {main = "extra == \"analysis\""}
 
 [package.dependencies]
 protobuf = "*"
@@ -1251,7 +1252,7 @@ version = "7.35.1"
 description = ""
 optional = false
 python-versions = ">=3.10"
-groups = ["dev"]
+groups = ["main", "dev"]
 files = [
     {file = "protobuf-7.35.1-cp310-abi3-macosx_10_9_universal2.whl", hash = "sha256:24f857477359a85c0c235261b8ba905fd51b2562f4a64ca1df5473f29850cbf6"},
     {file = "protobuf-7.35.1-cp310-abi3-manylinux2014_aarch64.whl", hash = "sha256:11d6b0ec246892d85215b0a13ca6e0233cf5284b68f0ac02646427f4ff88a799"},
@@ -1262,6 +1263,7 @@ files = [
     {file = "protobuf-7.35.1-py3-none-any.whl", hash = "sha256:4bc97768d8fe4ad6743c8a19403e314511ed9f6d13205b687e52421c023ac1b9"},
     {file = "protobuf-7.35.1.tar.gz", hash = "sha256:ce115a26fe0c39a2c29973d914d327e516a6455464489fe3cd1e51a1b354f81a"},
 ]
+markers = {main = "extra == \"analysis\""}
 
 [[package]]
 name = "psutil"
@@ -1849,10 +1851,11 @@ platformdirs = ">=3.9.1,<5"
 python-discovery = ">=1.4.2"
 
 [extras]
+analysis = ["perfetto", "protobuf"]
 cmdline = ["psutil"]
 stats = ["ddsketch"]
 
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.15"
-content-hash = "59f4b5246e7ac808981b1f7919f817401accebed2629d9a8424416bcc5db7b77"
+content-hash = "558f3da33a9c302481ff73cc78e93827ad0b15f6ed53f606510b777a49809406"

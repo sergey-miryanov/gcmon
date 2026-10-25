@@ -2,12 +2,14 @@ from __future__ import annotations
 
 import logging
 import subprocess
+import sys
 import types
 from collections.abc import Callable, Generator
 from unittest.mock import Mock
 
 import pytest
 
+from gcmon.analysis.perfetto_prebuilt import trace_processor_bin
 from gcmon.model.data import GCStatsInfo, InstantMsg
 from gcmon.model.protocol import TGCStatsInfo, TMapping, to_mapping
 from gcmon.monitoring.monitor import EventsMonitor
@@ -228,3 +230,16 @@ def incremental_dict(incremental_item: GCStatsInfo) -> TMapping:
 @pytest.fixture
 def instant_dict(instant_item: InstantMsg) -> TMapping:
     return to_mapping(instant_item)
+
+
+@pytest.fixture
+def without_perfetto(monkeypatch: pytest.MonkeyPatch) -> None:
+    """An install without the `analysis` extra.
+
+    An import finds a submodule already in `sys.modules` without asking for
+    its package, so every `perfetto` entry goes, not only the top one.
+    """
+    for name in [name for name in sys.modules if name == "perfetto" or name.startswith("perfetto.")]:
+        monkeypatch.setitem(sys.modules, name, None)
+    monkeypatch.setitem(sys.modules, "perfetto", None)
+    trace_processor_bin.cache_clear()

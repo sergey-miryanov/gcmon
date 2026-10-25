@@ -315,3 +315,39 @@ one line per [control instant](#perfetto-output):
 Tell the record types apart by field presence: a GC record has `collections`,
 a loss record has `gens`, an instant event has `type`. Line order carries no
 meaning.
+
+## Records table
+
+`gcmon extract` writes a trace's records as a CSV table under a header row,
+one row per record. See the [CLI reference](cli.md#extract) for the command.
+
+| Column | Description |
+|--------|-------------|
+| `benchmark` | The benchmark the record's process ran; empty where none is named |
+| `calibration` | `1` where the process's command line carries one of pyperf's calibration flags, `--calibrate-loops`, `--recalibrate-loops`, `--calibrate-warmups` or `--recalibrate-warmups`; `0` otherwise |
+| `pid`, `pid_epoch` | The process the record belongs to: its pid, and which of the processes to hold that pid it was, from 1 |
+| `ts` | When the run started (nanoseconds), the record's `ts_start` |
+
+The remaining columns are the fields a `GC Pause` slice carries, named as in a
+[JSONL record](#jsonl-output), with `generation` for `gen`. A field the record
+does not carry is an empty cell, so a stock build's table has the same
+columns. `collections`, `collected`, `uncollectable`, `candidates` and
+`duration` are written as the record holds them: running totals per process,
+interpreter and generation.
+
+### The `.meta.json` sidecar
+
+Beside the table, `gcmon extract` writes a JSON object saying where it came
+from, at the table's path with `.meta.json` in place of its suffix.
+
+| Key | Description |
+|-----|-------------|
+| `trace` | The trace's file name |
+| `trace_sha256` | The trace's SHA-256, in hex |
+| `python_version` | The interpreter pyperformance ran, as its results file names it; a development build's carries its revision |
+| `performance_version`, `perf_version` | The pyperformance and pyperf versions, from the results file |
+| `date` | When the earliest run in the results file ran |
+
+A key the results file lacks is `null`. `--meta KEY=VALUE` adds a key, such as
+the gcmon version that wrote the trace, which the trace does not record.
+

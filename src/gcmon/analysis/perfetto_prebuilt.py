@@ -1,4 +1,4 @@
-"""The trace processor the suite drives, pinned to Perfetto v58.2.
+"""The trace processor gcmon reads a trace with, pinned to Perfetto v58.2.
 
 The ``perfetto`` package ships two halves rolled at different releases: protos
 generated at v58.2, and a ``trace_processor_shell`` prebuilt still at v57.2. A
@@ -10,11 +10,12 @@ The entries below are the shape ``get_perfetto_prebuilt`` takes, so the
 download, the SHA-256 check and the cache are the package's own. A platform
 absent from the list raises rather than falling back, since the fallback is
 the reader this module exists to avoid.
+
+``perfetto`` is the ``analysis`` extra's, so this module imports without it
+and only asking for the shell needs it.
 """
 
 from functools import cache
-
-from perfetto.prebuilts.perfetto_prebuilts import get_perfetto_prebuilt
 
 _BASE = "https://commondatastorage.googleapis.com/perfetto-luci-artifacts/v58.2"
 
@@ -58,7 +59,18 @@ TRACE_PROCESSOR_SHELL_MANIFEST = [
 ]
 
 
+class MissingExtraError(RuntimeError):
+    """Reading a trace was asked of an install without the ``analysis`` extra."""
+
+    def __init__(self) -> None:
+        super().__init__("Reading a trace needs the analysis extra: pip install gcmon[analysis]")
+
+
 @cache
 def trace_processor_bin() -> str:
     """Path to the pinned binary, fetched and verified once per machine."""
+    try:
+        from perfetto.prebuilts.perfetto_prebuilts import get_perfetto_prebuilt
+    except ImportError as error:
+        raise MissingExtraError from error
     return str(get_perfetto_prebuilt(TRACE_PROCESSOR_SHELL_MANIFEST))

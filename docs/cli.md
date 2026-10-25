@@ -156,6 +156,37 @@ gcmon combine trace1.jsonl --output-format jsonl -o combined.jsonl
 | `--output-format` | Output format: `perfetto` or `jsonl` | `perfetto` |
 | `-n, --normalize` | Normalize timestamps so each timeline starts at 0. The scope differs by output: per input file for `perfetto`, per PID across the whole merge for `jsonl` | `False` |
 
+## extract
+
+Write a trace of pyperformance as a CSV table, one row per record, naming the
+benchmark each record's process ran from pyperformance's results file. A
+`.meta.json` beside the table says where it came from. It needs the `analysis`
+extra.
+
+```bash
+pip install gcmon[analysis]
+
+# Reads run.json and writes run.csv and run.meta.json, all beside the trace
+gcmon extract run.pftrace
+
+gcmon extract run.pftrace -o records.csv --results suite.json --overwrite \
+    --benchmark async_tree_io_tg --benchmark xml_etree_parse \
+    --meta gcmon_version=0.9.1
+```
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `trace` (required) | A trace gcmon wrote | - |
+| `-o, --output` | Output CSV path | The trace's path with `.csv` in place of its suffix |
+| `--results` | pyperformance's results file for the run, plain or `.gz`. A missing one stops the command | The trace's path with `.json` in place of its suffix |
+| `--benchmark NAME` | Keep only the rows of the benchmark the results file calls *NAME*; repeat for more. A name the results file lacks stops the command | Every process's rows |
+| `--meta KEY=VALUE` | Add *KEY* to the `.meta.json`; repeat for more. A key gcmon derives stops the command | - |
+| `--overwrite` | Replace an existing output and its `.meta.json`. Without it, either one existing stops the command, and both are left as they were | `False` |
+
+The first run downloads Perfetto's v58.2 trace processor and keeps it for
+later runs. [Records table](formats.md#records-table) describes the columns
+and the `.meta.json`.
+
 ## --version
 
 ```bash

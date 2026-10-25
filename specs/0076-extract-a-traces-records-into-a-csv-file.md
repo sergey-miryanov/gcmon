@@ -139,11 +139,13 @@ merged layout draws only the run-row copy, and the key holds there too.
 
 **The columns are fixed, and the pause's come from the groups that draw it.**
 First `benchmark`, `calibration`, `pid`, `pid_epoch` and `ts`, then every
-argument a pause can carry, in `PHASES` order: `PausePhase`'s, then each
-`PAUSE_FIELDS` group's. Each group names the arguments it writes in one tuple
-that its `args` is built from, and the header reads those tuples. A field the
-record lacks is an empty cell, so a stock build's rows have the same columns
-with `old_work` and its neighbours empty.
+argument a pause can carry, in the order the converter writes them:
+`PausePhase`'s, then each `PAUSE_FIELDS` group's. The header reads them off
+the `Info` protocols, which already name the fields each group's `args` reads,
+and `PausePhase` gains one for its own; `generation` comes from `gen`. `args`
+keeps its literal dict: building it from a list of names was measured slower
+on the converter's path. A field the record lacks is an empty cell, so a stock
+build's rows have the same columns with `old_work` and its neighbours empty.
 
 Rejected: a column list in the extract module. #228 was written before #229
 added five fields to the pause, and a list taken from it would have missed all
@@ -252,9 +254,9 @@ JSONL table rather than listing them again. That keeps the fields
   3. Each worker's last row per `iid` and `generation` holds the record's
      lifetime totals.
   4. A trace written with `compression.zstd` reads back in full.
-  5. The header is `PausePhase`'s and the `PAUSE_FIELDS` groups' names after
-     the identity columns, and a record carrying every field fills every
-     column.
+  5. The header is the identity columns and then the names the `Info`
+     protocols give, in the order `args` writes them, and a record carrying
+     every field fills every column.
   6. The join: a run goes to its worker over a manager whose span covers every
      run; a run starting a few milliseconds before its worker's span still
      goes to it; a worker the join misses takes its command's agreed name, and

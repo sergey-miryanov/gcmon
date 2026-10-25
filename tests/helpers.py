@@ -13,6 +13,7 @@ import msgspec
 from perfetto.protos.perfetto.trace.perfetto_trace_pb2 import Trace, TracePacket
 from perfetto.trace_processor import TraceProcessor, TraceProcessorConfig
 
+from gcmon.analysis.perfetto_prebuilt import trace_processor_bin
 from gcmon.exporters.exporter import EventsExporter
 from gcmon.model.data import GCStatsInfo, GenLoss, InstantMsg, LossMsg
 from gcmon.model.names import (
@@ -61,7 +62,6 @@ from gcmon.monitoring.monitor import EventsMonitor
 from gcmon.monitoring.process_registry import ProcessRegistry
 from gcmon.stats.views import TableFormat
 from gcmon.support.vocabulary import ENCODING
-from tests.perfetto_prebuilt import trace_processor_bin
 
 zstd: ModuleType | None
 try:
@@ -589,7 +589,7 @@ def open_trace_processor(path: Path | str) -> Iterator[TraceProcessor]:
     """Load *path* into a trace processor, closed when the caller is done.
 
     The one place the suite says which processor it drives, pinned by
-    `tests.perfetto_prebuilt` rather than taken from the `perfetto` package.
+    `gcmon.analysis.perfetto_prebuilt` rather than taken from the `perfetto` package.
     """
     config = TraceProcessorConfig(bin_path=trace_processor_bin(), load_timeout=_TRACE_PROCESSOR_TIMEOUT)
     tp = TraceProcessor(trace=str(path), config=config)

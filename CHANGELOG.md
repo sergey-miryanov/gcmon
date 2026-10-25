@@ -13,6 +13,7 @@
 - With `--rss`, each process's RSS sits on a row of its own under `RSS`, in the order of the process rows
 - `--layout process`, or `GCMON_LAYOUT=process`, writes the rows per process alone, without the run rows
 - A `GC Pause` slice carries `reason`, `gc_type`, `threshold0`, `threshold1` and `threshold2` where the record carries them
+- With the `[analysis]` extra, `gcmon extract` writes a trace's records as a CSV table, one row per record
 
 ### Internal
 

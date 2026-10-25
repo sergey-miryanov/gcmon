@@ -2,7 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-08-25
-- **Modules:** exporters
+- **Modules:** analysis, exporters
 
 ## Context
 
@@ -69,12 +69,14 @@ flush, and the highest cannot run there.
   is there, and it inflates to the packets.
 - **The trace stops being greppable.** `strings gcmon.pftrace` says nothing
   now. It was never a documented property.
-- **The suite pins its own trace processor.** The `perfetto` package ships
-  protos and prebuilt binary from different releases, and its prebuilt does
-  not read field 133. Left to the package, the suite would load every zstd
-  batch as an empty trace and report no error.
-- `perfetto` stays a development dependency, and both codecs come from the
-  stdlib: `compression.zstd` and `zlib`.
+- **gcmon pins its own trace processor.** The `perfetto` package ships protos
+  and prebuilt binary from different releases, and its prebuilt does not read
+  field 133. Left to the package, gcmon and its suite would load every zstd
+  batch as an empty trace and report no error. The analysis subsystem holds
+  the pin, and the suite takes it from there.
+- `perfetto` is the `analysis` extra's and never reaches the monitoring
+  runtime, and both codecs come from the stdlib: `compression.zstd` and
+  `zlib`.
 - **The trace format depends on the interpreter that wrote it.** Two people on
   one gcmon version can produce different files, and neither names the codec
   that wrote it. The reader takes both.
@@ -94,7 +96,7 @@ flush, and the highest cannot run there.
   simplicity and buys nothing.
 - **Deflate everywhere, which every Perfetto generation reads.** Rejected:
   what argued for it was the empty timeline an older reader draws, never the
-  codec, and v58.2 ships a trace processor for field 133 that the suite pins.
+  codec, and v58.2 ships a trace processor for field 133 that gcmon pins.
   Deflate is the fallback, not the format.
 - **Writing both fields, so that an old reader takes 50 and a new one takes
   133.** Rejected: a reader that knows both expands both and draws every slice

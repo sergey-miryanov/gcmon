@@ -5,7 +5,7 @@ import pytest
 
 from gcmon.model.data import GCStatsInfo
 from gcmon.model.names import GEN, GENERATION, IID, TS_START, TS_STOP
-from gcmon.model.phases import PAUSE_FIELDS, SUB_PHASES, Counters, PausePhase, sub_phases_and_fields
+from gcmon.model.phases import PAUSE_ARGS, PAUSE_FIELDS, SUB_PHASES, Counters, PausePhase, sub_phases_and_fields
 from tests.helpers import create_mock_incremental_item, create_mock_stats_item
 
 _OPTIONAL_FIELDS = [field.name for field in msgspec.structs.fields(GCStatsInfo) if field.default is None]
@@ -51,6 +51,17 @@ def test_every_field_nothing_else_reads_annotates_the_pause() -> None:
     rest = {field for field in _RECORD_FIELDS if not field.startswith("ts_")} - _INFO_FIELDS - {GEN, IID}
 
     assert rest | {GENERATION, IID} <= set(pause_args)
+
+
+def test_pause_args_names_what_a_pause_carries_in_the_order_it_is_written() -> None:
+    item = create_mock_incremental_item(gen=1)
+    assert sub_phases_and_fields(item)[1] == PAUSE_FIELDS
+
+    written = list(PausePhase.args(1, item))
+    for field in PAUSE_FIELDS:
+        written += field.args(1, item)
+
+    assert written == list(PAUSE_ARGS)
 
 
 def test_a_pause_emits_its_counters_in_the_order_they_draw() -> None:

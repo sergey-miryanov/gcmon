@@ -37,6 +37,8 @@ python = ">=3.15"
 msgspec = ">=0.21.1"
 ddsketch = { version = ">=3.0.1", optional = true }
 psutil = { version = ">=7.2", optional = true }
+perfetto = { version = ">=0.58", optional = true }
+protobuf = { version = "^7.35", optional = true }
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=9,<10"
@@ -155,3 +157,4 @@ quote-style = "double"
 [tool.poetry.extras]
 cmdline = ["psutil"]
 stats = ["ddsketch"]
+analysis = ["perfetto", "protobuf"]

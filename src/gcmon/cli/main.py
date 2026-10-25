@@ -8,7 +8,7 @@ from typing import Any
 
 from ..support.vocabulary import CMD_RUN, PROGRAM_NAME
 from ._version import installed_version
-from .analyze import add_combine_parser
+from .analyze import add_combine_parser, add_extract_parser
 from .monitor import (
     add_monitor_parser,
     add_run_parser,
@@ -52,6 +52,7 @@ def _create_parser() -> argparse.ArgumentParser:
 
     add_monitor_parser(subparsers.add_parser)
     add_combine_parser(subparsers.add_parser)
+    add_extract_parser(subparsers.add_parser)
     add_run_parser(subparsers.add_parser)
 
     return parser

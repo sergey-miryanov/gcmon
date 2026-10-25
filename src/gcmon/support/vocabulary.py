@@ -10,6 +10,7 @@ from typing import Final
 
 __all__ = [
     "CMD_COMBINE",
+    "CMD_EXTRACT",
     "CMD_MONITOR",
     "CMD_RUN",
     "DEFAULT_JSONL_FILE",
@@ -39,6 +40,7 @@ DEFAULT_JSONL_FILE: Final = f"{PROGRAM_NAME}.jsonl"
 CMD_MONITOR: Final = "monitor"
 CMD_RUN: Final = "run"
 CMD_COMBINE: Final = "combine"
+CMD_EXTRACT: Final = "extract"
 
 # Every file gcmon writes and reads back. JSONL is UTF-8 by specification,
 # and a capture written on one machine is opened on another.

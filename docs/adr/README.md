@@ -98,7 +98,7 @@ module is neither.
 | [0019](0019-schedule-tick-starts-on-a-fixed-grid.md) | Schedule tick starts on a fixed grid, and skip the positions a slow tick misses | Accepted | cli, model, monitoring, stats |
 | [0020](0020-attach-to-a-process-once.md) | Attach to a process once, and let go the moment a read fails | Accepted | monitoring |
 | [0021](0021-write-one-trace-format.md) | Write one trace format, and read only JSONL back | Accepted | cli, exporters |
-| [0022](0022-compress-each-batch-of-packets.md) | Compress each batch into one `TracePacket.zstd_compressed_packets` field | Accepted | exporters |
+| [0022](0022-compress-each-batch-of-packets.md) | Compress each batch into one `TracePacket.zstd_compressed_packets` field | Accepted | analysis, exporters |
 | [0023](0023-the-pyperf-hook-annotates-and-does-not-drive.md) | Mark the benchmark from the pyperf hook, and drive nothing | Accepted | model, pyperf |
 | [0024](0024-an-event-names-the-track-it-is-drawn-on.md) | An event names the track it is drawn on | Accepted | exporters, model |
 | [0025](0025-create-every-process-in-one-place.md) | Create every process in one place, and carry it instead of a pid | Accepted | cli, control, exporters, model, monitoring |
@@ -106,3 +106,4 @@ module is neither.
 | [0027](0027-group-every-row-an-interpreter-owns.md) | Group every row an interpreter owns under one track | Accepted | exporters |
 | [0028](0028-draw-every-process-a-row-of-its-own.md) | Draw every process a row of its own, under a pid gcmon counts | Accepted | exporters |
 | [0029](0029-report-liveness-and-fold-it-into-the-span.md) | Report liveness once a tick, and fold it into a process's span | Accepted | exporters, monitoring |
+| [0030](0030-name-a-workers-benchmark-by-overlap-in-time.md) | Name a worker's benchmark by its overlap in time with the harness's results | Accepted | analysis |
