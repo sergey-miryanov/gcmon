@@ -12,6 +12,7 @@ from gcmon.model.data import (
 )
 from gcmon.model.names import GEN, GENS, IID, LOST_COUNT, OBSERVED_COUNT, PID, TS_START, TS_STOP
 from gcmon.model.phases import (
+    AllocatedField,
     DeduceUnreachableSubPhase,
     FillIncrementSubPhase,
     IncrementSizeField,
@@ -100,7 +101,7 @@ class TestFromMapping:
         assert result == record
         assert NewIncrementalFields.check(result)
 
-    def test_the_reason_and_threshold_fields_survive_a_capture_of_a_struct_sequence(self) -> None:
+    def test_the_reason_threshold_and_allocated_fields_survive_a_capture_of_a_struct_sequence(self) -> None:
         """A live capture writes the struct sequence's fields, and reading
         it back has to keep them for a later conversion."""
         record = create_mock_incremental_item(gen=1)
@@ -110,6 +111,7 @@ class TestFromMapping:
         assert result == record
         assert ReasonFields.check(result)
         assert ThresholdFields.check(result)
+        assert AllocatedField.check(result)
 
     def test_from_mapping_returns_instant_msg(self, instant_dict: TMapping) -> None:
         result = from_mapping(instant_dict)

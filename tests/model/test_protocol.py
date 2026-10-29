@@ -26,6 +26,7 @@ from gcmon.model.names import (
     UNCOLLECTABLE,
 )
 from gcmon.model.phases import (
+    AllocatedField,
     ClearWeakrefsSubPhase,
     DeduceUnreachableSubPhase,
     DeleteGarbageSubPhase,
@@ -100,6 +101,7 @@ class TestChecks:
         (NewIncrementalFields, {NewIncrementalFields.AUTO_COLLECT: 1}),
         (ReasonFields, {ReasonFields.REASON: 0}),
         (ThresholdFields, {ThresholdFields.THRESHOLD0: 2000}),
+        (AllocatedField, {AllocatedField.ALLOCATED: 4096}),
         (FillIncrementSubPhase, {FillIncrementSubPhase.TS_FILL_INCREMENT_START: 100}),
         (MarkAliveSubPhase, {MarkAliveSubPhase.ALIVE_SIZE: 300}),
         (DeduceUnreachableSubPhase, {DeduceUnreachableSubPhase.TS_DEDUCE_UNREACHABLE_START: 100}),

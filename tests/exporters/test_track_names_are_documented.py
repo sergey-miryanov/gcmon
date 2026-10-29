@@ -85,6 +85,7 @@ from gcmon.model.names import (
     RSS,
 )
 from gcmon.model.phases import (
+    AllocatedField,
     Counters,
     HeapSizeStopField,
     NewIncrementalFields,
@@ -113,6 +114,7 @@ UNDOCUMENTED: frozenset[str] = frozenset(
         ThresholdFields.THRESHOLD0,
         ThresholdFields.THRESHOLD1,
         ThresholdFields.THRESHOLD2,
+        AllocatedField.ALLOCATED,
     }
 )
 

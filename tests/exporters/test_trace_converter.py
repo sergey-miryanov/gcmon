@@ -19,6 +19,7 @@ from gcmon.model.names import (
 )
 from gcmon.model.phases import (
     SUB_PHASES,
+    AllocatedField,
     ClearWeakrefsSubPhase,
     FinalizeGarbageSubPhase,
     HandleResurrectedSubPhase,
@@ -194,6 +195,7 @@ class TestTheIncrementalFields:
         ThresholdFields.THRESHOLD0,
         ThresholdFields.THRESHOLD1,
         ThresholdFields.THRESHOLD2,
+        AllocatedField.ALLOCATED,
     )
 
     def test_the_pause_carries_them(self) -> None:

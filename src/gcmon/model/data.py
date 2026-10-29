@@ -47,6 +47,7 @@ class GCStatsInfo(msgspec.Struct, omit_defaults=True):
     threshold0: int | None = None
     threshold1: int | None = None
     threshold2: int | None = None
+    allocated: int | None = None
 
 
 class InstantMsg(msgspec.Struct):

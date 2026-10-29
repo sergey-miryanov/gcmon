@@ -38,6 +38,7 @@ from gcmon.model.names import (
     counter_display_name,
 )
 from gcmon.model.phases import (
+    AllocatedField,
     ClearWeakrefsSubPhase,
     DeduceUnreachableSubPhase,
     DeleteGarbageSubPhase,
@@ -472,6 +473,7 @@ SUB_PHASES: Final[dict[str, int]] = {
     ThresholdFields.THRESHOLD0: 2000,
     ThresholdFields.THRESHOLD1: 10,
     ThresholdFields.THRESHOLD2: 20,
+    AllocatedField.ALLOCATED: 268435456,
 }
 """Every sub-phase a record can carry, in collector order, inside the
 pause `create_mock_stats_item` draws by default."""

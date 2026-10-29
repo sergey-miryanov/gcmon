@@ -40,6 +40,7 @@ __all__ = [
     "PAUSE_FIELDS",
     "PHASES",
     "SUB_PHASES",
+    "AllocatedField",
     "ClearWeakrefsSubPhase",
     "Counters",
     "DeduceUnreachableSubPhase",
@@ -487,6 +488,23 @@ class ThresholdFields:
         }
 
 
+class AllocatedField:
+    ALLOCATED: Final = "allocated"
+
+    class _Info(Protocol):
+        allocated: int
+
+    Info: ClassVar[type] = _Info
+
+    @staticmethod
+    def check(item: object) -> TypeGuard[_Info]:
+        return getattr(item, AllocatedField.ALLOCATED, None) is not None
+
+    @staticmethod
+    def args(gen: int, item: _Info) -> EventArgs:
+        return {AllocatedField.ALLOCATED: item.allocated}
+
+
 class Counters:
     """The counters one pause draws: per generation, then the heap size as
     it starts and stops."""
@@ -538,6 +556,7 @@ PAUSE_FIELDS: Final[tuple[type[PauseField], ...]] = (
     HeapSizeStopField,
     ReasonFields,
     ThresholdFields,
+    AllocatedField,
 )
 
 # Every argument a pause can carry, in the order the converter writes them.
@@ -571,6 +590,7 @@ _CHECKED_FIELDS: Final = attrgetter(
     HeapSizeStopField.HEAP_SIZE_STOP,
     ReasonFields.REASON,
     ThresholdFields.THRESHOLD0,
+    AllocatedField.ALLOCATED,
 )
 
 # Per set of checked fields present: what a msgspec record carries. A
