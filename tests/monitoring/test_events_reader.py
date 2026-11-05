@@ -249,10 +249,56 @@ class TestTheExceptionTaxonomy:
             remote_reader.read(7)
 
 
+def always_contended(spy: SpyMonitor) -> RuntimeError:
+    """Script more contended reads than any retry bound, and hand back the error."""
+    error = RuntimeError(CONTENDED)
+    spy.read_errors = [error] * 64
+    return error
+
+
 class TestAContendedRead:
-    def test_it_is_not_an_unavailable_target(self, remote_reader: RemoteEventsReader, spy: SpyMonitor) -> None:
-        error = RuntimeError(CONTENDED)
-        spy.read_errors = [error]
+    @pytest.fixture(autouse=True)
+    def sleeps(self, monkeypatch: pytest.MonkeyPatch) -> list[float]:
+        """The pauses the reader asked for, without waiting them out."""
+        pauses: list[float] = []
+        monkeypatch.setattr("gcmon.monitoring.events_reader.time.sleep", pauses.append)
+        return pauses
+
+    def test_a_read_that_answers_after_it_returns_the_records(
+        self, remote_reader: RemoteEventsReader, spy: SpyMonitor
+    ) -> None:
+        spy.records = [create_mock_stats_item(gen=1, collections=3)]
+        spy.read_errors = [RuntimeError(CONTENDED)]
+
+        records = remote_reader.read(7)
+
+        assert [(r.gen, r.collections) for r in records] == [(1, 3)]
+
+    def test_a_read_that_answers_after_it_keeps_the_attachment(
+        self, remote_reader: RemoteEventsReader, spy: SpyMonitor
+    ) -> None:
+        spy.read_errors = [RuntimeError(CONTENDED)]
+
+        remote_reader.read(7)
+        remote_reader.read(7)
+
+        assert attached_pids(spy) == [7]
+
+    def test_it_waits_before_reading_again(
+        self, remote_reader: RemoteEventsReader, spy: SpyMonitor, sleeps: list[float]
+    ) -> None:
+        """CPython's own two attempts are microseconds apart and can land inside
+        one collection, so another read straight after them could too."""
+        spy.read_errors = [RuntimeError(CONTENDED)]
+
+        remote_reader.read(7)
+
+        assert sleeps
+
+    def test_contended_on_every_attempt_is_not_an_unavailable_target(
+        self, remote_reader: RemoteEventsReader, spy: SpyMonitor
+    ) -> None:
+        error = always_contended(spy)
 
         with pytest.raises(ReadContended) as caught:
             remote_reader.read(7)
@@ -262,7 +308,7 @@ class TestAContendedRead:
     def test_the_message_carries_the_pid_and_the_cause(
         self, remote_reader: RemoteEventsReader, spy: SpyMonitor
     ) -> None:
-        spy.read_errors = [RuntimeError(CONTENDED)]
+        always_contended(spy)
 
         with pytest.raises(ReadContended) as caught:
             remote_reader.read(7)
@@ -270,16 +316,35 @@ class TestAContendedRead:
         assert "7" in str(caught.value)
         assert CONTENDED in str(caught.value)
 
-    def test_the_next_read_attaches_again(self, remote_reader: RemoteEventsReader, spy: SpyMonitor) -> None:
+    def test_the_read_after_the_retries_ran_out_attaches_again(
+        self, remote_reader: RemoteEventsReader, spy: SpyMonitor
+    ) -> None:
         remote_reader.read(7)
-        spy.read_errors = [RuntimeError(CONTENDED)]
+        always_contended(spy)
 
         with pytest.raises(ReadContended):
             remote_reader.read(7)
 
+        spy.read_errors = []
         remote_reader.read(7)
 
         assert attached_pids(spy) == [7, 7]
+
+    def test_a_target_dying_during_the_retries_is_unavailable(
+        self, remote_reader: RemoteEventsReader, spy: SpyMonitor
+    ) -> None:
+        spy.read_errors = [RuntimeError(CONTENDED), ProcessLookupError(3, "No such process")]
+
+        with pytest.raises(TargetUnavailable):
+            remote_reader.read(7)
+
+    def test_any_other_runtime_error_is_not_retried(self, remote_reader: RemoteEventsReader, spy: SpyMonitor) -> None:
+        spy.read_errors = [RuntimeError("Failed to read GC state")]
+
+        with pytest.raises(TargetUnavailable):
+            remote_reader.read(7)
+
+        assert spy.reads == [7]
 
     @pytest.mark.skipif(not hasattr(_remote_debugging, "__file__"), reason="the module is built into the interpreter")
     def test_cpython_still_words_it_this_way(self) -> None:
