@@ -113,31 +113,27 @@ rebuild the windows from a JSONL capture.
 
 ## Consequences
 
-- **gcmon trusts the target to publish a record last.** CPython orders a
-  record's stores so that a remote reader never selects a half-written one
-  ([spec 0024](../../specs/0024-cpython-report-remote-readable-gc-stats.md)).
-  A read can still land on a slot twice over, or on one still being filled,
-  with nothing in the data marking either; gcmon's two filters exist for that.
-- **gcmon trusts one poll's records for one ring to be contiguous**, without
-  checking. A ring holds consecutive records, so a gap can only sit at the
-  seam between two polls. A hole inside one poll's records would still leave
-  the counts right, since a count subtracts two end counters, but no gap would
-  carry the hole's pause and the invariant would break in silence.
+- **gcmon trusts the target's sequence counter for a coherent read.** CPython
+  holds `update_seq` odd across every ring update, and `_remote_debugging`
+  raises rather than return a copy the counter does not bracket. A read that
+  returns holds no half-written record and no slot twice over. gcmon's two
+  filters stay: one drops a slot never written or stamped by a failed clock
+  read, and the other diffs one poll against the last.
+- **The same counter makes one poll's records for one ring contiguous**, and
+  gcmon relies on that without checking. A ring holds consecutive records, so
+  a gap can only sit at the seam between two polls. A hole inside one poll's
+  records would still leave the counts right, since a count subtracts two end
+  counters, but no gap would carry the hole's pause and the invariant would
+  break in silence.
 - **gcmon trusts `duration` and the timestamps to share a clock**
   ([The clock a GC record is stamped from](../internals/gc-record-clock.md)).
   One is a floating-point total and the others are integer timestamps, and the
   arithmetic subtracts one from the other. The invariant tests it, and a
   failure there means the whole reconstruction is unsound.
-- **Two hazards break the first two, and gcmon mitigates neither.** A torn
-  read returns one poll's records with a hole in them. Store reordering
-  returns a record holding the previous run's `ts_start` against this one's
-  `ts_stop` under a fresh counter, which both filters pass and which reports a
-  pause too long by the interval between the two runs. Spec 0024 catalogues
-  both for an upstream report, and
-  [spec 0044](../../specs/0044-torn-reads-and-reordered-publishes.md) settles
-  the reader's side: gcmon waits for the target to synchronize rather than
-  guessing, since one of the two leaves no signature a reader can trust and
-  the other is invisible from Python entirely.
+- **A read that loses to a collection costs at worst a loss window.** The poll
+  is skipped ([ADR-0020](0020-attach-to-a-process-once.md)) and the cursors
+  are kept, so a ring that wrapped meanwhile opens an ordinary window at the
+  next read that returns.
 - **Lifetime totals rest on none of this.** `collections` and `duration` run
   cumulative from interpreter start, and CPython takes each record's running
   totals from its immediate predecessor rather than from the slot about to be

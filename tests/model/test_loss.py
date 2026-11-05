@@ -220,19 +220,3 @@ class TestIngestingARunAtOnce:
 
         assert entry.lost_count == 7
         assert batched == fold_singly(events[:5] + events[12:])
-
-    def test_a_hole_inside_a_run_goes_unnoticed(self) -> None:
-        """Pinning an accepted risk, not a wanted behaviour. A run is trusted
-        to be contiguous because a ring holds consecutive records; only a read
-        torn by two collections landing inside one ~1 KB copy could break that.
-        The ends still give the right counts, but nothing carries the hole's
-        pause, so ADR-0015's invariant does not hold."""
-        events = build_run(10)
-        torn = events[:4] + events[6:]
-        batched = RingAccumulator()
-
-        entry = batched.ingest(torn)
-
-        assert entry.lost_count == 0
-        assert batched.exact_count - batched.sampled_count == 2
-        assert batched.exact_pause_ns > batched.sampled_pause_ns

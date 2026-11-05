@@ -56,7 +56,7 @@ class RingAccumulator(msgspec.Struct):
         *events* is what :meth:`unseen` returned, ordered by ``collections``
         and not empty. A ring holds consecutive records, so only the first of
         them can sit across a gap and only the last settles the cursor.
-        Contiguity it trusts without checking, see ADR-0015.
+        CPython's sequence check keeps a read contiguous, see ADR-0015.
 
         Returns the generation's entry for the poll, ready for a ``LossMsg``
         as it stands.
