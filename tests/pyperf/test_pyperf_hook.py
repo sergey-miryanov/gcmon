@@ -10,7 +10,7 @@ import subprocess
 import sys
 import time
 from collections.abc import Generator, Sequence
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from pathlib import Path
 from typing import NamedTuple, override
 from unittest.mock import patch
@@ -405,8 +405,10 @@ def _read_a_record_stamped_after(
     says what is wrong with it.
     """
     deadline = time.monotonic() + timeout
+    records: Sequence[TGCStatsInfo] = ()
     while True:
-        records = reader.read(pid)
+        with suppress(ReadContended):
+            records = reader.read(pid)
         if any(record.ts_stop > instant for record in records) or time.monotonic() >= deadline:
             return records
         time.sleep(0.01)
