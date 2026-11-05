@@ -2,6 +2,10 @@
 
 ## WIP
 
+### Breaking changes
+
+- gcmon requires CPython 3.15.1 or newer
+
 ### Features
 
 - Every pause in the run sits on its generation's row under `All GC Pauses`

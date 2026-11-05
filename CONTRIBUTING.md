@@ -6,7 +6,7 @@ your changes in your own words.
 
 ## Getting set up
 
-gcmon needs CPython 3.15 or newer, both for the process it watches and for
+gcmon needs CPython 3.15.1 or newer, both for the process it watches and for
 itself; it will not install below that.
 
 ```bash
