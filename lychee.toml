@@ -1,0 +1,8 @@
+include_fragments = "anchor-only"
+include_verbatim = true
+no_progress = true
+max_retries = 2
+timeout = 5
+
+# DeepWiki repeatedly return HTTP 429
+exclude = ['^https://deepwiki\.com(?:/|$)']
