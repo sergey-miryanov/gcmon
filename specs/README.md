@@ -28,7 +28,7 @@ This file holds the open set and the order to take it in. The other two:
 | [0037](0037-one-format-dispatch-for-live-and-combined-traces.md) | Feature (cleanup) | S | Two call sites decide what a format name means, so a format can be supported live and missing offline |
 | [0040](0040-derive-the-monitoring-options-from-one-table.md) | Feature (cleanup) | M | gcmon declares every monitoring option three times, and echoes a rejected configuration to the log as though it had accepted it |
 | [0042](0042-name-the-process-session-for-its-role.md) | Feature (cleanup) | S | The monitored-process seam carries the name of a role it does not fill, and its two adapters do not have the same shape |
-| [0044](0044-torn-reads-and-reordered-publishes.md) | Bug (correctness) | S | **Blocked on upstream.** A pause slice can read one inter-collection interval too long, and a hole inside one poll's records reaches no loss window; both are races in the target that every filter gcmon has passes |
+| [0044](0044-torn-reads-and-reordered-publishes.md) | Bug (availability) | S | A read landing on a collection ends the run: `gcmon run` terminates a healthy target, and in a process tree a live process is retired and its unread records reach no loss window |
 | [0050](0050-name-the-poll-interval-for-what-it-is.md) | Feature (ergonomics) | S | `--rate` is a duration in seconds under a name that means a frequency, and gcmon echoes `Rate: 0.1s` back |
 | [0051](0051-key-the-running-rings-by-process.md) | Feature (efficiency) | S | Asking `StreamingStats` about one process walks every process's rings; `low_coverage` does it once per polled process per tick, and on a healthy run it never stops |
 | [0052](0052-a-recycled-pid-can-be-read-through-a-stale-attachment.md) | Bug (correctness) | S | A pid the OS reissues between two ticks is read through the attachment gcmon still holds, so an unrelated process's memory reaches the trace as plausible records; only Linux is exposed |
@@ -73,8 +73,8 @@ the position. A blank cell means no recorded reason, so that row can move.
 - **0024** is the owner's to file, and depends on nothing here.
 - **0033** wants a real capture in front of you before anyone can judge it
   worth a fourth row.
-- **0044** waits on CPython synchronizing the ring. Its section 4 states the
-  one measurement that would put it back in play sooner.
+- **0044** is a live bug on every supported CPython, so it does not wait for
+  the run.
 - **0054** was found in CPython's source and not in a run. Nobody should size
   it until the ports have been counted on a Mac.
 

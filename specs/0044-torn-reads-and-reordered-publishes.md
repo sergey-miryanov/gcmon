@@ -1,199 +1,181 @@
-# 0044: Close the two unsynchronized-read hazards, once CPython synchronizes the ring
+# 0044: Keep monitoring through a contended read
 
-- **Status:** Blocked (`upstream: the publish/read synchronization proposed in
-  [0024](0024-cpython-report-remote-readable-gc-stats.md) sections 3.3 and 3.5
-  has to land in CPython first`)
-- **Kind:** bug (correctness)
-- **Effort:** S once unblocked; see section 7 for the M-sized alternative that
-  does not wait
-- **Origin:** the loss-window working set, itself from the trust bullets in
-  ADR-0015's Consequences, which name both hazards and mitigate neither
+- **Status:** Not started
+- **Kind:** bug (availability)
+- **Effort:** S
+- **Origin:** [#251](https://github.com/sergey-miryanov/gcmon/issues/251), a
+  CodSpeed failure on CPython 3.15.1
 - **Respects:**
-  - [ADR-0015](../docs/adr/0015-gc-loss-spans-on-their-own-track.md): what
-    gcmon reconstructs from an incomplete sample.
+  - [ADR-0020](../docs/adr/0020-attach-to-a-process-once.md): a failed read
+    lets go of the attachment, and the reader owns `_remote_debugging`'s error
+    vocabulary. Both hold. Amended when this lands: the consequence forbidding
+    "a retry that keeps the old attachment", and the sentence giving cursors
+    and attachment one lifetime.
+  - [ADR-0017](../docs/adr/0017-monitor-owns-the-pid-lifecycle.md): cursors,
+    policy and process share a lifetime and one prune. A contended poll prunes
+    nothing.
+  - [ADR-0015](../docs/adr/0015-gc-loss-spans-on-their-own-track.md): the
+    retained cursors turn a skipped poll into an ordinary loss window. Amended
+    when this lands: the trust bullets naming the two hazards.
+  - [ADR-0025](../docs/adr/0025-create-every-process-in-one-place.md): a
+    process retires when it departs, and a contended poll is not a departure.
+  - [ADR-0029](../docs/adr/0029-report-liveness-and-fold-it-into-the-span.md):
+    liveness is stamped from reads that returned, so a contended poll reports
+    none.
   - [0024](0024-cpython-report-remote-readable-gc-stats.md): the upstream
-    report both hazards come from.
+    report. Section 4's rows for 3.3 and 3.5 change with ADR-0015.
 
 ## 1. Problem
 
-Two wrong numbers can reach an operator with nothing marking either.
+`gcmon run` can kill a healthy workload. A read that lands on a collection
+ends the run: gcmon terminates the target it started, writes a shortened trace
+and exits 0, and nothing at default verbosity names the cause. `gcmon monitor`
+stops early the same way and leaves its target running.
 
-A `GC Pause` slice can be one inter-collection interval too long. The operator
-reads a 40 ms pause where the target took 4 ms, and the record around it looks
-ordinary: it has a fresh `collections`, its `ts_start` is less than its
-`ts_stop`, and it sits in counter order beside its neighbours.
-
-A loss window can be short of what it should carry. The `--stats` table's
-`Count` and `Sum` stay right, since both are subtractions of end counters, but
-the pause of the runs inside a hole is attributed to no window at all, so the
-exact pause sum under-reports and `Cov` claims a completeness the capture does
-not have.
-
-Neither shows up as an anomaly. Every filter gcmon has passes both, and
-re-running the capture gives a different answer with no way to tell which run
-was the wrong one.
+In a process tree the run survives and the trace is wrong. A live process is
+retired and comes back as a new epoch, so `--stats` reports two processes. The
+records stamped between its last good read and the contended one reach no
+slice and no loss window.
 
 ## 2. Evidence
 
-Both hazards come from reading a live ring with no barrier between the writer
-and the reader. [0024](0024-cpython-report-remote-readable-gc-stats.md)
-sections 3.3 and 3.5 write them up against CPython 3.15.0b3
-(`tags/v3.15.0b3-dirty:cf16a33fad1`) with the sources cited there; this
-section covers only what they do to gcmon.
+**Upstream.** gh-155811 added `update_seq` to `struct gc_stats`, first
+released in v3.15.1, the version gcmon requires. `add_stats` in `Python/gc.c`
+and `gc_collect_main` in `Python/gc_free_threading.c` hold it odd across every
+ring write. `get_gc_stats_from_interpreter_state` in
+`Modules/_remote_debugging/gc_stats.c` brackets its copy with two reads of it,
+tries twice with no pause, and then raises:
 
-**Store reordering (0024 section 3.3).** `add_stats` in `Python/gc.c`
-publishes `ts_stop` last so a remote reader never selects a half-written
-record, and the stores implementing that contract are plain. Delivered out of
-order, a slot holds the previous run's `ts_start` against this run's `ts_stop`
-under a fresh counter. gcmon's two filters both pass it:
-`monitor._is_complete` tests `ts_start < ts_stop`, which holds, and
-`RingAccumulator.unseen` keys on `collections`, which is fresh. The record
-then reaches `RingAccumulator.ingest`, which adds its span to
-`sampled_pause_ns`, and reaches the exporter as a slice.
+```c
+PyErr_SetString(PyExc_RuntimeError,
+                "GC stats changed while being read; retry later");
+```
 
-**Straddled read (0024 section 3.5).** `_remote_debugging.get_gc_stats` copies
-the whole `struct gc_stats` out of the target in one cross-process read with
-nothing holding the target still. A collection finishing partway through
-advances the write cursor across a region already copied, so one poll can
-return slots from two generations of the ring: sorted on `collections`,
-consecutive at both ends with a hole in the middle. `RingAccumulator.ingest`
-says what it does with that in its own docstring, *"A ring holds consecutive
-records, so only the first of them can sit across a gap and only the last
-settles the cursor. Contiguity it trusts without checking, see ADR-0015."*,
-and `_gen_loss` is only ever called on `events[0]`, so a hole after it opens
-no window.
+The error aborts `iterate_interpreters`, so one contended interpreter discards
+the records of every interpreter in that read.
 
-ADR-0015 records the same two in its Consequences, under **"Two hazards break
-the first two, and gcmon mitigates neither."**
+**The path through gcmon.** `RemoteEventsReader.read` translates the error
+into `TargetUnavailable`, and `EventsMonitor._poll` answers
+`PollStatus.INVALID_PROCESS`. `StartupTimeoutPolicy.wait` reads that as death
+once it has seen the pid alive. `EventsMonitor.tick` then calls `_forget`.
+
+With no other pid holding the run open, `MonitorLoop.run` breaks.
+`run_monitoring_loop` waits two seconds for the subprocess, reads a
+`returncode` of `None` as 0, and `ChildProcessRunner.__exit__` terminates the
+target.
+
+With another pid holding it open, `_forget` has dropped the cursors, so the
+next read seeds them and opens no gap. `_ingest` then finds the records dated
+inside the retired epoch, takes them for re-reads and drops them, though that
+epoch never exported them.
+
+**The two hazards.** The same counter closes the two in 0024 sections 3.3 and
+3.5. `add_stats` is the only writer of the ring, so a snapshot that passes the
+check holds no half-written record and no hole. gcmon has neither left to
+handle, subject to the live check in section 4.
 
 ## 3. Scope
 
-**Affected.** Every command that reads a live target (`gcmon monitor`,
-`gcmon run`, and the pyperf hook's live path) on every `--format`. Both
-hazards are in the read, so a wrong number is already wrong before any
-exporter sees it.
+**Affected.** `gcmon monitor` and `gcmon run`, on every `--format` and every
+platform, on GIL and free-threaded builds.
 
-**Not affected.** `gcmon combine` and the pyperf hook's `_replay`, which read
-a JSONL capture: replay reproduces faithfully whatever the live run recorded,
-so it neither introduces these nor repairs them. Free-threaded builds cannot
-form the straddled read at all: `GC_YOUNG_STATS_SIZE` is 1 there, so a poll
-returns at most one record per generation and there is no interior slot to
-straddle. Lifetime totals rest on neither hazard: `collections` and `duration`
-are cumulative from interpreter start, so a reordered or straddled read of the
-ring leaves them intact.
+**Not affected.** `gcmon combine`, which reads a capture. A target that has
+exited, which raises a different error and stays `TargetUnavailable`.
 
-**Why the suite does not catch it.** Both are races inside the target, and
-every fixture in `tests/captures.py` is synthesized from complete, consecutive
-records, so neither shape is generated, so no assertion can fail on one. This
-is also why a fix needs the ground-truth captures named in section 5 rather
-than a unit test alone.
+**Why the suite does not catch it.** Test doubles for the reader raise
+`TargetUnavailable`, and no double raises this error. The tests reading a real
+target make few reads, and only CodSpeed's simulation mode has been seen
+losing the race.
 
 ## 4. Proposed change
 
-**The decision is to wait, and the reason is that gcmon cannot see the seam
-for one of the two.**
-
-1. **Build no mitigation while the target is unsynchronized.** For the
-   straddled read, gcmon never performs the cross-process copy itself:
-   `_remote_debugging.get_gc_stats` does it and hands back a snapshot, so the
-   moment the ring moved under the read is not observable from Python at all.
-   A retry belongs in `Modules/_remote_debugging/gc_stats.c`, which is what
-   0024 section 3.5 asks for. For the reordering, gcmon does receive the
-   fields, but the two it would compare are exactly the two the reordering
-   makes inconsistent, and a record that survived a reorder is
-   byte-indistinguishable from a genuine one.
-2. **When CPython synchronizes the publish and the read, gcmon inherits it
-   without a code change.** A seqlock applied in `gc_stats.c` retries inside
-   the module gcmon already calls, so the snapshot that reaches
-   `EventsMonitor._ingest` is coherent by construction. Confirm this against
-   the first version carrying the fix rather than assuming it: if the retry is
-   exposed to the caller instead of handled internally, this step becomes a
-   real change and this spec grows.
-3. **Version-gate the caveat.** ADR-0015's Consequences and 0024 section 4's
-   handling table both state "not handled" unconditionally. Once a fixed
-   CPython exists the statement is version-dependent, and the docs have to say
-   which side of the line a capture was taken on; an operator holding a trace
-   needs to know whether the caveat applies to it.
-4. **Re-verify with ground truth** per section 5 before either caveat is
-   relaxed. "The hazard is fixed upstream" is a claim about the target, and
-   the property gcmon should assert is its own: the records one poll returns
-   for a ring are consecutive.
-
-**What would settle acting sooner instead:** the interior-hole check in
-section 7 firing on no genuine record across the ground-truth captures. That
-is a measurement, not an argument, and until someone runs it the check stays
-unbuilt.
+1. **Name the outcome.** `events_reader` gains `ReadContended` beside
+   `TargetUnavailable`, and not a subclass of it: a handler of
+   `TargetUnavailable` would take it for a missing target.
+2. **Retry in the reader.** `RemoteEventsReader.read` recognises the error by
+   its message, since it is a bare `RuntimeError`. It makes up to three more
+   reads on the same attachment, 1 ms apart. CPython's two attempts are
+   microseconds apart and can land inside one collection. A read that returns
+   keeps the attachment. Neither figure is measured; a wrong one only changes
+   how often step 3 runs.
+3. **Skip the poll when the retries run out.** The reader drops the
+   attachment, as for any failed read, and raises `ReadContended`. `_poll`
+   catches it and answers a new `PollStatus.CONTENDED`, logged at debug level
+   once per pid and reason as `TargetUnavailable` is. `tick` does not ask the
+   policy, sets `keep_running` and prunes nothing. The next read that returns
+   diffs against the retained cursors, so a ring that wrapped meanwhile opens
+   a loss window.
+4. **Take the race out of the benchmarks.** `test_bench_events_reader` reads a
+   target that fills its rings, signals, and stops collecting. A read's cost
+   does not depend on what the target is doing, and a retry would otherwise
+   land in the instruction count.
+5. **Check it live.** On a 3.15.1 build, against a target collecting as fast
+   as it can: the run survives, and the records one poll returns for a ring
+   are consecutive on `collections`.
+6. **Delete what pinned the old shapes**, once step 5 passes:
+   `test_a_hole_inside_a_run_goes_unnoticed` and `TestATornRead`. Rewrite the
+   ADR-0015 trust bullets and 0024 section 4 to say the target's seqcount
+   provides the contiguity gcmon relies on.
 
 ## 5. Seams and testing decisions
 
-- **Seam:** `RingAccumulator.ingest`. It already receives exactly one poll's
-  records for one ring, in counter order, and already owns the arithmetic that
-  turns a gap into a window, so it is the highest place a hole is both visible
-  and repairable. `EventsMonitor._ingest` sits above it and would work too,
-  but it holds every ring of a pid at once and would have to re-group.
+- **Seam:** `EventsMonitor.tick`, through `FakeEventsReader` and the real
+  `StartupTimeoutPolicy`, for what a contended poll does to a run. The reader
+  through `SpyMonitor` for retries and attachment lifetime.
 - **New seam needed:** none.
-- **What makes a good test here:** external behavior only: the reconstructed
-  exact count, the exact pause sum, and the loss window's
-  `lost_from`/`lost_count`/`lost_pause_ns`. Assert on the reconstruction,
-  never on whether a detector fired; a detector that fires and repairs nothing
-  is the outcome section 7 argues against.
-- **Prior art:** `tests/model/test_loss.py` for the per-ring arithmetic and
-  `tests/captures.py` for building a poll's record set with a known ground
-  truth. `tests/monitoring/test_loss_replay.py` is the model for asserting
-  that two paths agree on one capture.
+- **What makes a good test here:** the report, the exported records, the loss
+  windows, the retired processes and the attach count. Not how many retries
+  fired.
+- **Prior art:** `_drive` in `tests/monitoring/test_monitor.py`, and
+  `SpyMonitor` in `tests/monitoring/test_events_reader.py`.
 - **Cases:**
-  1. One poll's records for a ring carrying an interior hole: today the hole's
-     pause reaches no window, and `exact_pause_ns` is short by it.
-  2. A record holding its predecessor's `ts_start` against its own `ts_stop`:
-     today its span is added to `sampled_pause_ns` whole.
-  3. The regression guard: an ordinary poll, with consecutive records and the
-     mid-write slot at the head, produces byte-identical numbers to today.
+  1. A single process with one contended poll: the run keeps going.
+  2. A child with one contended poll: one epoch, nothing retired, and the
+     records stamped across the skipped tick are exported under it.
+  3. A ring that wraps across the skipped tick: a loss window with the right
+     counts.
+  4. A contended poll followed by a dead target: the ordinary end of a run.
+  5. The reader, contended and then answering: one attach, and the records
+     returned.
+  6. The reader, contended on every attempt: `ReadContended`, and the next
+     read attaches again.
+  7. The regression guard: any other `RuntimeError` stays `TargetUnavailable`
+     with no retry.
+  8. The message the reader matches is present in `_remote_debugging`'s
+     binary, where the module is a file, so a rewording fails CI.
+- **Real targets:** the probe loops in `running_target` and
+  `_collecting_target` catch `ReadContended` too.
 
 ## 6. Out of scope
 
-- **The other three findings in 0024.** The ring sizes (section 3.1) are what
-  loss reconstruction exists for; exposing `index` (section 3.2) would replace
-  a sort, not a correctness gap; the duplicate twin (section 3.4) is already
-  handled by `RingAccumulator.unseen`, which keys a dict on `collections`.
-- **Filing the upstream report.** That is 0024's own lifecycle, and this spec
-  is downstream of it landing rather than of it being filed.
-- **Anything on the exporter or trace side.** Both hazards are settled before
-  a record reaches an exporter, and no trace-side change can distinguish a
-  wrong record from a right one.
-- **Free-threaded builds.** The straddled read cannot form there, and the
-  one-slot ring is 0024 section 3.1's problem, not this one's.
+- **A dedicated exception type in CPython.** It would replace the message
+  match, and it is an upstream request gcmon does not need to wait for.
+- **`monitor._is_complete` and `RingAccumulator.unseen`.** The first still
+  drops empty slots, and the second is how one poll is diffed against the
+  last.
+- **Repairing a hole inside one poll's records.** The floor removes the shape.
+- **Reporting how many polls were contended.** A skipped poll costs at worst a
+  loss window, which the trace and `--stats` already show.
+- **Other failures read as death.** `StartupTimeoutPolicy` treats every
+  `TargetUnavailable` after the first good read as final, and this is the only
+  transient one known.
+- **The other three findings in 0024.** None of them ends a run.
+- **A recycled pid behind a stale attachment**, which
+  [0052](0052-a-recycled-pid-can-be-read-through-a-stale-attachment.md) owns.
 
 ## 7. Further notes
 
-**The alternative this spec defers, and why it is not dead.** The two hazards
-are not equally opaque, and the difference is worth writing down because the
-obvious reading, "neither is detectable from the reader", is only true of one
-of them.
+**Alternatives.**
 
-The straddled read *does* leave a signature. One poll returns every slot of
-the ring, so the records it yields for a ring should be consecutive on
-`collections`; a hole in the middle of that set means the cursor crossed the
-read. The two shapes that could produce a false positive both sit at the head
-rather than the middle: a mid-write slot, which `monitor._is_complete` already
-drops, and the section 3.4 twin, which is a duplicate rather than a gap. And
-an interior hole is not merely detectable but repairable:
-`RingAccumulator._gen_loss` already converts a counter gap into a window from
-the cumulative `duration` delta, and applying it at an interior hole rather
-than only at `events[0]` would attribute the pause that is lost today.
+- **Retry alone.** Any bound can run out, and running out would still end the
+  run.
+- **Skip alone.** Correct, and the next tick is a natural retry. A ring holds
+  few slots, so on a fast target a skipped poll costs records that a few
+  milliseconds of retry keeps.
+- **Keep the attachment when the retries run out.** A stale attachment reading
+  unrelated memory can fail the sequence check on every read, and the pid
+  would stay contended forever. Attaching again ends that.
+- **Ask the wait policy.** Both policies would need a new answer for a poll
+  that says nothing about the process, and `tick` can state that once.
 
-That is an M-sized change and it is deferred, not rejected, on two grounds:
-the upstream fix deletes the shape entirely, so the code would exist to handle
-a case that stops occurring; and the false-positive cost is asymmetric: a
-check that fires on a genuine record discards it and widens a gap, which is
-worse than the hazard, since loss is already reconstructed. Section 4's
-measured condition is what would reopen it.
-
-The reordering has no equivalent. Every fingerprint it leaves is one a genuine
-record can also leave, so any client-side test for it is a heuristic over
-plausible pause lengths, and that is a detector that eventually drops a real
-long pause, the one record an operator most wants.
-
-**Where the answer goes.** The trust bullets in ADR-0015's Consequences are
-the statement of record and are amended when this lands, per
-[CONVENTIONS.md](CONVENTIONS.md) rule 4. 0024 section 4's handling table
-carries the same two rows and stays in step with it.
+`Read Time` carries the retries, as it carries the attach.
