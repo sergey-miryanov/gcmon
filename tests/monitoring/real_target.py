@@ -21,6 +21,22 @@ _TARGET = "\n".join(
     ]
 )
 
+# A target that fills its rings, says so and never collects again, so no read
+# after the line can lose to a collection. 16 is more than any ring holds.
+_QUIET_TARGET = "\n".join(
+    [
+        "import gc",
+        "import time",
+        "gc.disable()",
+        "for generation in range(3):",
+        "    for _ in range(16):",
+        "        gc.collect(generation)",
+        "print('ready', flush=True)",
+        "while True:",
+        "    time.sleep(60)",
+    ]
+)
+
 
 def target_executable() -> str:
     """The interpreter a target is spawned with.
@@ -75,3 +91,19 @@ def running_target(timeout: float = 20.0) -> Generator[Target]:
         if proc.poll() is None:
             proc.kill()
             proc.wait()
+
+
+@contextmanager
+def quiet_target() -> Generator[Target]:
+    with subprocess.Popen(
+        [target_executable(), "-c", _QUIET_TARGET],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+    ) as proc:
+        try:
+            assert proc.stdout is not None
+            if not proc.stdout.readline():
+                raise AssertionError(f"target {proc.pid} exited before its rings were full")
+            yield Target(proc)
+        finally:
+            proc.kill()

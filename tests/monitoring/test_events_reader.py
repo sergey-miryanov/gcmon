@@ -9,6 +9,7 @@ nothing else proves the adapter matches the API it adapts.
 """
 
 import _remote_debugging
+import time
 from _remote_debugging import GCMonitor
 from collections.abc import Sequence
 from pathlib import Path
@@ -18,7 +19,7 @@ import pytest
 from gcmon.model.protocol import TGCStatsInfo
 from gcmon.monitoring.events_reader import ReadContended, RemoteEventsReader, TargetUnavailable
 from tests.helpers import create_mock_stats_item
-from tests.monitoring.real_target import running_target
+from tests.monitoring.real_target import quiet_target, running_target
 
 # A pid no process holds. Only used where the reader must fail before it
 # reaches the operating system at all.
@@ -420,6 +421,17 @@ class TestAgainstARealProcess:
         assert records, "a collecting target has rings to read"
         assert {r.gen for r in records} == {0, 1, 2}
         assert all(r.iid >= 0 for r in records)
+
+    def test_a_quiet_target_reads_full_rings_that_stop_moving(self, remote_reader: RemoteEventsReader) -> None:
+        """What keeps a collection out of a benchmark's measured read, which
+        the default run deselects and CodSpeed only fails by chance."""
+        with quiet_target() as target:
+            first = remote_reader.read(target.pid)
+            time.sleep(0.2)
+            second = remote_reader.read(target.pid)
+
+        assert all(r.ts_stop for r in first), "a row no collection has written"
+        assert second == first
 
     def test_a_dead_target_raises_a_type_the_reader_translates(self) -> None:
         """Evidence for the narrowed catch, gathered on each platform CI runs.
