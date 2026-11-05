@@ -26,7 +26,6 @@ jobs:
         run: git ls-files '*.md' > "$RUNNER_TEMP/docs-link-inputs.txt"
 
       - name: Check links
-        uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2
+        uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
         with:
-          lycheeVersion: v0.24.2
           args: --files-from "$RUNNER_TEMP/docs-link-inputs.txt"
