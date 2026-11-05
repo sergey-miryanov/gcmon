@@ -21,7 +21,7 @@ from ..model.process import Process
 from ..model.protocol import TGCStatsInfo
 from ..stats.streaming_stats import StreamingStats
 from ..support.vocabulary import PROGRAM_NAME
-from .events_reader import EventsReader, TargetUnavailable
+from .events_reader import EventsReader, ReadContended, TargetUnavailable
 from .process_registry import ProcessRegistry
 from .target_process import TargetProcess
 from .wait_policy import WaitPolicy, WaitPolicyFactory
@@ -155,6 +155,11 @@ class EventsMonitor:
                 policy = self._policies[pid] = self._wait_policy_factory()
 
             status, process = self._poll(pid)
+            if status is PollStatus.CONTENDED:
+                # No evidence either way, so no policy verdict and no prune.
+                keep_running = True
+                continue
+
             keep_waiting = policy.wait(status)
             keep_running = keep_running or keep_waiting
             if process is not None:
@@ -219,7 +224,7 @@ class EventsMonitor:
 
             self._unreadable.pop(pid, None)
             return PollResult(PollStatus.OK, process)
-        except TargetUnavailable as exc:
+        except (TargetUnavailable, ReadContended) as exc:
             # The ordinary end of a run reaches here, so it stays at debug
             # level: a warning would put a traceback on stderr every time a
             # target exits. ADR-0020.
@@ -234,7 +239,8 @@ class EventsMonitor:
             if reason not in reported:
                 reported.add(reason)
                 logger.debug("Error while polling PID %s (child PID=%s): %s", self._process.pid, pid, exc)
-            return PollResult(PollStatus.INVALID_PROCESS, None)
+            status = PollStatus.CONTENDED if isinstance(exc, ReadContended) else PollStatus.INVALID_PROCESS
+            return PollResult(status, None)
         except Exception as exc:
             logger.warning("Monitor for PID %s (child PID=%s) encountered error", self._process.pid, pid, exc_info=exc)
             return PollResult(PollStatus.FAIL, None)

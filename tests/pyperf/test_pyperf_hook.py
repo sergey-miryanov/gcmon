@@ -23,7 +23,7 @@ from gcmon.model.marks import Mark, Side, parse_mark
 from gcmon.model.names import NAME
 from gcmon.model.process import Process
 from gcmon.model.protocol import TGCStatsInfo, TInstantMsg
-from gcmon.monitoring.events_reader import RemoteEventsReader, TargetUnavailable
+from gcmon.monitoring.events_reader import ReadContended, RemoteEventsReader, TargetUnavailable
 from gcmon.pyperf.hook import (
     ENV_PYPERF_HOOK_CONTROL_TIMEOUT,
     ENV_PYPERF_HOOK_VERBOSE,
@@ -386,7 +386,7 @@ def _collecting_target(timeout: float = 20.0) -> Generator[tuple[RemoteEventsRea
             try:
                 reader.read(proc.pid)
                 break
-            except TargetUnavailable:
+            except TargetUnavailable, ReadContended:
                 if time.monotonic() >= deadline:
                     raise AssertionError(f"target {proc.pid} never became readable") from None
                 time.sleep(0.05)

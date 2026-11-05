@@ -9,11 +9,11 @@ from gcmon.model.data import GCStatsInfo
 from gcmon.model.poll_status import PollStatus
 from gcmon.model.process import Process
 from gcmon.model.protocol import TGCStatsInfo
-from gcmon.monitoring.events_reader import TargetUnavailable
+from gcmon.monitoring.events_reader import ReadContended, TargetUnavailable
 from gcmon.monitoring.monitor import EventsMonitor, PollReport
 from gcmon.monitoring.process_registry import ProcessRegistry
 from gcmon.monitoring.target_process import ExternalProcess
-from gcmon.monitoring.wait_policy import WaitPolicy, WaitPolicyFactory, no_wait_policy
+from gcmon.monitoring.wait_policy import StartupTimeoutPolicy, WaitPolicy, WaitPolicyFactory, no_wait_policy
 from gcmon.stats.streaming_stats import StreamingStats
 from gcmon.support.vocabulary import PROGRAM_NAME
 from tests.conftest import DEFAULT_PID
@@ -1270,3 +1270,92 @@ class TestTheConstructorRefusesToPickAReader:
     ) -> None:
         with pytest.raises(TypeError):
             EventsMonitor(process, exporter, stats)  # type: ignore[call-arg]
+
+
+def _startup_policy() -> WaitPolicy:
+    """The policy `gcmon run` and `gcmon monitor` build."""
+    return StartupTimeoutPolicy(2)
+
+
+class TestAContendedPoll:
+    """A read that lost to a collection says nothing about the process."""
+
+    def test_the_run_keeps_going(self, exporter: MockExporter) -> None:
+        reports = _drive(
+            _monitor(exporter, wait_policy_factory=_startup_policy),
+            listings=[[], [], []],
+            rings={12345: [_ring(1), ReadContended("contended"), _ring(1, 2)]},
+        )
+
+        assert [report.keep_running for report in reports] == [True, True, True]
+
+    def test_a_child_stays_one_process(self, exporter: MockExporter) -> None:
+        reports = _drive(
+            _monitor(exporter, wait_policy_factory=_startup_policy),
+            listings=[[999], [999], [999]],
+            rings={
+                12345: [_ring(1), _ring(1), _ring(1)],
+                999: [_ring(1, 2), ReadContended("contended"), _ring(1, 2, 3)],
+            },
+        )
+
+        assert exporter.retired == []
+        assert [process.pid_epoch for report in reports for process in report.live if process.pid == 999] == [1, 1]
+
+    def test_the_records_across_the_skipped_tick_are_exported(self, exporter: MockExporter) -> None:
+        """Dated between the last good read and the contended one, which is
+        where a retired process would have taken them for re-reads."""
+        early = _ring(1, 2, ts_base=TICK_NS // 2)
+        during = _ring(3, 4, ts_base=TICK_NS + TICK_NS // 2)
+        later = _ring(5, ts_base=2 * TICK_NS + TICK_NS // 2)
+
+        _drive(
+            _monitor(exporter, wait_policy_factory=_startup_policy),
+            listings=[[999], [999], [999]],
+            rings={
+                12345: [_ring(1), _ring(1), _ring(1)],
+                999: [early, ReadContended("contended"), early + during + later],
+            },
+        )
+
+        assert [event.collections for event in exporter.events_by_pid[999]] == [1, 2, 3, 4, 5]
+
+    def test_a_ring_that_wrapped_across_it_opens_a_loss_window(self, exporter: MockExporter) -> None:
+        _drive(
+            _monitor(exporter, wait_policy_factory=_startup_policy),
+            listings=[[], [], []],
+            rings={12345: [_ring(1, 2), ReadContended("contended"), _ring(8, 9)]},
+        )
+
+        _, window = exporter.loss_events[0]
+        assert (window.ts_start, window.ts_stop) == (TICK_NS, 3 * TICK_NS)
+        assert (window.gens[0].lost_from, window.gens[0].lost_count) == (3, 5)
+
+    def test_a_dead_target_after_it_is_the_ordinary_end_of_a_run(self, exporter: MockExporter) -> None:
+        reports = _drive(
+            _monitor(exporter, wait_policy_factory=_startup_policy),
+            listings=[[], [], []],
+            rings={12345: [_ring(1), ReadContended("contended"), TargetUnavailable("gone")]},
+        )
+
+        assert [report.keep_running for report in reports] == [True, True, False]
+        assert [process.pid for process in exporter.retired] == [12345]
+
+    def test_it_reports_no_liveness(self, exporter: MockExporter) -> None:
+        reports = _drive(
+            _monitor(exporter, wait_policy_factory=_startup_policy),
+            listings=[[]],
+            rings={12345: [ReadContended("contended")]},
+        )
+
+        assert reports[0].live == frozenset()
+
+    def test_it_is_reported_once(self, exporter: MockExporter, caplog: pytest.LogCaptureFixture) -> None:
+        with caplog.at_level(logging.DEBUG, logger=PROGRAM_NAME):
+            _drive(
+                _monitor(exporter, wait_policy_factory=_startup_policy),
+                listings=[[], []],
+                rings={12345: [ReadContended("contended"), ReadContended("contended")]},
+            )
+
+        assert len(_polling_errors(caplog)) == 1

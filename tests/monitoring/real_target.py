@@ -7,7 +7,7 @@ from collections.abc import Generator
 from contextlib import contextmanager
 from typing import Any
 
-from gcmon.monitoring.events_reader import RemoteEventsReader, TargetUnavailable
+from gcmon.monitoring.events_reader import ReadContended, RemoteEventsReader, TargetUnavailable
 
 # A target that collects, so its rings are not empty.
 _TARGET = "\n".join(
@@ -66,7 +66,7 @@ def running_target(timeout: float = 20.0) -> Generator[Target]:
             try:
                 probe.read(target.pid)
                 break
-            except TargetUnavailable:
+            except TargetUnavailable, ReadContended:
                 if time.monotonic() >= deadline:
                     raise AssertionError(f"target {target.pid} never became readable") from None
                 time.sleep(0.05)

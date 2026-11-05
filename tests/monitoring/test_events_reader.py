@@ -8,19 +8,24 @@ set drives the real ``_remote_debugging`` against real subprocesses, because
 nothing else proves the adapter matches the API it adapts.
 """
 
+import _remote_debugging
 from _remote_debugging import GCMonitor
 from collections.abc import Sequence
+from pathlib import Path
 
 import pytest
 
 from gcmon.model.protocol import TGCStatsInfo
-from gcmon.monitoring.events_reader import RemoteEventsReader, TargetUnavailable
+from gcmon.monitoring.events_reader import ReadContended, RemoteEventsReader, TargetUnavailable
 from tests.helpers import create_mock_stats_item
 from tests.monitoring.real_target import running_target
 
 # A pid no process holds. Only used where the reader must fail before it
 # reaches the operating system at all.
 MISSING_PID = 999_999
+
+# What CPython raises, in full, when a collection beats both of its attempts.
+CONTENDED = "GC stats changed while being read; retry later"
 
 
 class SpyMonitor:
@@ -242,6 +247,46 @@ class TestTheExceptionTaxonomy:
 
         with pytest.raises(type(error)):
             remote_reader.read(7)
+
+
+class TestAContendedRead:
+    def test_it_is_not_an_unavailable_target(self, remote_reader: RemoteEventsReader, spy: SpyMonitor) -> None:
+        error = RuntimeError(CONTENDED)
+        spy.read_errors = [error]
+
+        with pytest.raises(ReadContended) as caught:
+            remote_reader.read(7)
+
+        assert caught.value.__cause__ is error
+
+    def test_the_message_carries_the_pid_and_the_cause(
+        self, remote_reader: RemoteEventsReader, spy: SpyMonitor
+    ) -> None:
+        spy.read_errors = [RuntimeError(CONTENDED)]
+
+        with pytest.raises(ReadContended) as caught:
+            remote_reader.read(7)
+
+        assert "7" in str(caught.value)
+        assert CONTENDED in str(caught.value)
+
+    def test_the_next_read_attaches_again(self, remote_reader: RemoteEventsReader, spy: SpyMonitor) -> None:
+        remote_reader.read(7)
+        spy.read_errors = [RuntimeError(CONTENDED)]
+
+        with pytest.raises(ReadContended):
+            remote_reader.read(7)
+
+        remote_reader.read(7)
+
+        assert attached_pids(spy) == [7, 7]
+
+    @pytest.mark.skipif(not hasattr(_remote_debugging, "__file__"), reason="the module is built into the interpreter")
+    def test_cpython_still_words_it_this_way(self) -> None:
+        """The error is a bare `RuntimeError`, so its words are all that marks
+        it, and no fixture can make a real read lose to a collection on demand.
+        A rewording would turn every contended read back into a dead target."""
+        assert CONTENDED.encode() in Path(_remote_debugging.__file__).read_bytes()
 
 
 class TestPruning:
