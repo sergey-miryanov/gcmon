@@ -174,10 +174,10 @@ identity. If the answer stays no, it belongs to the reader.
   reject some fabricated records and some real ones, and it would leave gcmon
   unable to say which. The problem is that gcmon read the wrong process, and
   the fix is to know that, not to grade the output.
-- **Torn reads and reordered publishes**, which
-  [0044](0044-torn-reads-and-reordered-publishes.md) owns. Those are races
-  inside a target gcmon is correctly attached to. This is the opposite: a
-  correct read of the wrong process.
+- **Torn reads and reordered publishes**, which the target's sequence counter
+  closes ([ADR-0015](../docs/adr/0015-gc-loss-spans-on-their-own-track.md)).
+  Those were races inside a target gcmon is correctly attached to. This is the
+  opposite: a correct read of the wrong process.
 - **The version-mismatch classification** 0048 section 6 also left open. It
   shares a cause with this, both wanting a failure gcmon can tell apart from
   "not started yet", but it wants `debug=False`, which means arguing against
