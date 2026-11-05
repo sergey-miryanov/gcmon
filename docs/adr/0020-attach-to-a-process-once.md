@@ -58,7 +58,8 @@ A stale cursor makes a number wrong; a stale attachment invents the data.
 - **Reconstructing an attachment after a failed read looks wasteful and is
   deliberate.** It costs one attach on a tick that already failed, which is
   what attaching per poll costs on every tick. Do not "optimise" it into a
-  retry that keeps the old attachment.
+  retry that keeps the old attachment. A contended read, below, is not this
+  failure.
 
 - **gcmon cannot notice a pid recycled between two successful reads.**
   [Spec 0052](../../specs/0052-a-recycled-pid-can-be-read-through-a-stale-attachment.md)
@@ -92,7 +93,8 @@ A stale cursor makes a number wrong; a stale attachment invents the data.
 - **A contended read is neither of those.** The read reached the target and
   lost to a collection, so it says nothing about whether the target lives, and
   taking it for death ended healthy runs. CPython raises it as a bare
-  `RuntimeError`, so the reader recognises its message and raises
+  `RuntimeError`, so the reader recognises its message, and reads again on the
+  same attachment a few times. When the retries run out it raises
   `ReadContended`. The monitor skips that poll and keeps the cursors; the
   attachment goes, as for any failed read.
 

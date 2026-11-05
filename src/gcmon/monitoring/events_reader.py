@@ -3,6 +3,7 @@
 Read ADR-0020 for more.
 """
 
+import time
 from _remote_debugging import GCMonitor
 from collections.abc import Sequence, Set
 from typing import Protocol, override, runtime_checkable
@@ -13,6 +14,9 @@ __all__ = ["EventsReader", "ReadContended", "RemoteEventsReader", "TargetUnavail
 
 # All that marks the error: CPython raises it as a bare RuntimeError.
 _CONTENDED = "GC stats changed while being read"
+# Neither is measured. A wrong value only changes how often a poll is skipped.
+_CONTENDED_RETRIES = 3
+_CONTENDED_PAUSE_S = 0.001
 
 
 class TargetUnavailable(Exception):
@@ -49,6 +53,22 @@ class EventsReader(Protocol):
         ...
 
 
+def _read_records(monitor: GCMonitor) -> Sequence[TGCStatsInfo]:
+    """Read *monitor*, pausing and reading again while a collection beats it.
+
+    CPython's own two attempts are microseconds apart, so both can land inside
+    one collection.
+    """
+    for _ in range(_CONTENDED_RETRIES):
+        try:
+            return monitor.get_gc_stats(all_interpreters=True)
+        except RuntimeError as exc:
+            if _CONTENDED not in str(exc):
+                raise
+        time.sleep(_CONTENDED_PAUSE_S)
+    return monitor.get_gc_stats(all_interpreters=True)
+
+
 class RemoteEventsReader(EventsReader):
     """An :class:`EventsReader` backed by ``_remote_debugging.GCMonitor``."""
 
@@ -68,7 +88,7 @@ class RemoteEventsReader(EventsReader):
                 # log level; the free get_gc_stats function hardcoded it, so
                 # gcmon catches and logs what it always did.
                 monitor = GCMonitor(pid, debug=True)
-            records = monitor.get_gc_stats(all_interpreters=True)
+            records = _read_records(monitor)
         except (RuntimeError, ProcessLookupError, PermissionError) as exc:
             if _CONTENDED in str(exc):
                 raise ReadContended(f"PID {pid} was not read: {exc}") from exc
