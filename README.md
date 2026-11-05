@@ -3,10 +3,10 @@
 [![PyPI](https://img.shields.io/pypi/v/gcmon.svg)](https://pypi.org/project/gcmon/)
 [![CI](https://github.com/sergey-miryanov/gcmon/actions/workflows/ci.yml/badge.svg)](https://github.com/sergey-miryanov/gcmon/actions/workflows/ci.yml)
 [![Python Version](https://img.shields.io/badge/python-3.15+-blue.svg)](https://pypi.org/project/gcmon/)
-[![codecov](https://codecov.io/gh/sergey-miryanov/gcmon/branch/main/graph/badge.svg?token=ZHH7R72OC0)](https://codecov.io/gh/sergey-miryanov/gcmon)
+[![codecov](https://codecov.io/gh/sergey-miryanov/gcmon/branch/main/graph/badge.svg?token=ZHH7R72OC0)](https://app.codecov.io/gh/sergey-miryanov/gcmon)
 [![CodSpeed](https://img.shields.io/endpoint?url=https://codspeed.io/badge.json)](https://app.codspeed.io/sergey-miryanov/gcmon?utm_source=badge)
 [![PyPI Downloads](https://static.pepy.tech/personalized-badge/gcmon?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLACK&right_color=GREEN&left_text=downloads)](https://pepy.tech/projects/gcmon)
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/sergey-miryanov/gcmon)
+[![Ask DeepWiki](https://img.shields.io/badge/ask-deepwiki-blue)](https://deepwiki.com/sergey-miryanov/gcmon)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 gcmon watches a running Python process's garbage collector from **outside**
