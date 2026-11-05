@@ -25,11 +25,11 @@ detaches, and a `GCMonitor` object that attaches once and reads many times.
 **Attachment is state, so it has one owner and one prune.** It lives behind
 `EventsReader` in `monitoring`, and the monitor drops it in the same pass that
 drops that pid's cursors and streaming statistics.
-[ADR-0017](0017-monitor-owns-the-pid-lifecycle.md)'s rule extends to it
-unchanged: cursors and attachment share a lifetime, and nothing prunes either
-one anywhere else. Child discovery stays outside the reader: it is stateless,
-caches nothing, and answers a question about the process tree rather than
-about a ring.
+[ADR-0017](0017-monitor-owns-the-pid-lifecycle.md)'s rule extends to it: no
+attachment outlives its pid's cursors, and nothing prunes either one anywhere
+else, except that a failed read lets go of the attachment alone. Child
+discovery stays outside the reader: it is stateless, caches nothing, and
+answers a question about the process tree rather than about a ring.
 
 **`debug=True` is passed explicitly, and it selects an exception type rather
 than a log level.** Under `debug=False` a dead target surfaces as
@@ -88,6 +88,13 @@ A stale cursor makes a number wrong; a stale attachment invents the data.
   `PollStatus.FAIL` with a traceback, where they were before this change.
   Widening the translation to swallow either would turn a bug into a silent
   "target unavailable" and burn the startup timeout hiding it.
+
+- **A contended read is neither of those.** The read reached the target and
+  lost to a collection, so it says nothing about whether the target lives, and
+  taking it for death ended healthy runs. CPython raises it as a bare
+  `RuntimeError`, so the reader recognises its message and raises
+  `ReadContended`. The monitor skips that poll and keeps the cursors; the
+  attachment goes, as for any failed read.
 
 - **The gap the decision rests on is measured**, a held read against a fresh
   attach, so a change that reattaches per poll fails a benchmark rather than

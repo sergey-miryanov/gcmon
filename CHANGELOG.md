@@ -21,6 +21,11 @@
 - With `--rss`, a `GC Pause` slice carries `rss`, its process's latest RSS sample in bytes
 - A `GC Pause` slice carries `allocated`, the bytes its interpreter had allocated for GC objects when the run started, where the record carries it
 
+### Bugfixes
+
+- A read landing on a collection no longer ends the run, which under `gcmon run` terminated the target
+- A read landing on a collection no longer retires a live process in a tree, or loses its records since the last read
+
 ### Internal
 
 - Stability, correctness and performance improvements
