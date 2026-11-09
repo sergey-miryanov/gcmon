@@ -8,19 +8,25 @@ set drives the real ``_remote_debugging`` against real subprocesses, because
 nothing else proves the adapter matches the API it adapts.
 """
 
+import _remote_debugging
+import time
 from _remote_debugging import GCMonitor
 from collections.abc import Sequence
+from pathlib import Path
 
 import pytest
 
 from gcmon.model.protocol import TGCStatsInfo
-from gcmon.monitoring.events_reader import RemoteEventsReader, TargetUnavailable
+from gcmon.monitoring.events_reader import ReadContended, RemoteEventsReader, TargetUnavailable
 from tests.helpers import create_mock_stats_item
-from tests.monitoring.real_target import running_target
+from tests.monitoring.real_target import quiet_target, running_target
 
 # A pid no process holds. Only used where the reader must fail before it
 # reaches the operating system at all.
 MISSING_PID = 999_999
+
+# What CPython raises, in full, when a collection beats both of its attempts.
+CONTENDED = "GC stats changed while being read; retry later"
 
 
 class SpyMonitor:
@@ -244,6 +250,111 @@ class TestTheExceptionTaxonomy:
             remote_reader.read(7)
 
 
+def always_contended(spy: SpyMonitor) -> RuntimeError:
+    """Script more contended reads than any retry bound, and hand back the error."""
+    error = RuntimeError(CONTENDED)
+    spy.read_errors = [error] * 64
+    return error
+
+
+class TestAContendedRead:
+    @pytest.fixture(autouse=True)
+    def sleeps(self, monkeypatch: pytest.MonkeyPatch) -> list[float]:
+        """The pauses the reader asked for, without waiting them out."""
+        pauses: list[float] = []
+        monkeypatch.setattr("gcmon.monitoring.events_reader.time.sleep", pauses.append)
+        return pauses
+
+    def test_a_read_that_answers_after_it_returns_the_records(
+        self, remote_reader: RemoteEventsReader, spy: SpyMonitor
+    ) -> None:
+        spy.records = [create_mock_stats_item(gen=1, collections=3)]
+        spy.read_errors = [RuntimeError(CONTENDED)]
+
+        records = remote_reader.read(7)
+
+        assert [(r.gen, r.collections) for r in records] == [(1, 3)]
+
+    def test_a_read_that_answers_after_it_keeps_the_attachment(
+        self, remote_reader: RemoteEventsReader, spy: SpyMonitor
+    ) -> None:
+        spy.read_errors = [RuntimeError(CONTENDED)]
+
+        remote_reader.read(7)
+        remote_reader.read(7)
+
+        assert attached_pids(spy) == [7]
+
+    def test_it_waits_before_reading_again(
+        self, remote_reader: RemoteEventsReader, spy: SpyMonitor, sleeps: list[float]
+    ) -> None:
+        """CPython's own two attempts are microseconds apart and can land inside
+        one collection, so another read straight after them could too."""
+        spy.read_errors = [RuntimeError(CONTENDED)]
+
+        remote_reader.read(7)
+
+        assert sleeps
+
+    def test_contended_on_every_attempt_is_not_an_unavailable_target(
+        self, remote_reader: RemoteEventsReader, spy: SpyMonitor
+    ) -> None:
+        error = always_contended(spy)
+
+        with pytest.raises(ReadContended) as caught:
+            remote_reader.read(7)
+
+        assert caught.value.__cause__ is error
+
+    def test_the_message_carries_the_pid_and_the_cause(
+        self, remote_reader: RemoteEventsReader, spy: SpyMonitor
+    ) -> None:
+        always_contended(spy)
+
+        with pytest.raises(ReadContended) as caught:
+            remote_reader.read(7)
+
+        assert "7" in str(caught.value)
+        assert CONTENDED in str(caught.value)
+
+    def test_the_read_after_the_retries_ran_out_attaches_again(
+        self, remote_reader: RemoteEventsReader, spy: SpyMonitor
+    ) -> None:
+        remote_reader.read(7)
+        always_contended(spy)
+
+        with pytest.raises(ReadContended):
+            remote_reader.read(7)
+
+        spy.read_errors = []
+        remote_reader.read(7)
+
+        assert attached_pids(spy) == [7, 7]
+
+    def test_a_target_dying_during_the_retries_is_unavailable(
+        self, remote_reader: RemoteEventsReader, spy: SpyMonitor
+    ) -> None:
+        spy.read_errors = [RuntimeError(CONTENDED), ProcessLookupError(3, "No such process")]
+
+        with pytest.raises(TargetUnavailable):
+            remote_reader.read(7)
+
+    def test_any_other_runtime_error_is_not_retried(self, remote_reader: RemoteEventsReader, spy: SpyMonitor) -> None:
+        spy.read_errors = [RuntimeError("Failed to read GC state")]
+
+        with pytest.raises(TargetUnavailable):
+            remote_reader.read(7)
+
+        assert spy.reads == [7]
+
+    @pytest.mark.skipif(not hasattr(_remote_debugging, "__file__"), reason="the module is built into the interpreter")
+    def test_cpython_still_words_it_this_way(self) -> None:
+        """The error is a bare `RuntimeError`, so its words are all that marks
+        it, and no fixture can make a real read lose to a collection on demand.
+        A rewording would turn every contended read back into a dead target."""
+        assert CONTENDED.encode() in Path(_remote_debugging.__file__).read_bytes()
+
+
 class TestPruning:
     def test_forget_drops_the_attachment(self, remote_reader: RemoteEventsReader, spy: SpyMonitor) -> None:
         remote_reader.read(7)
@@ -310,6 +421,17 @@ class TestAgainstARealProcess:
         assert records, "a collecting target has rings to read"
         assert {r.gen for r in records} == {0, 1, 2}
         assert all(r.iid >= 0 for r in records)
+
+    def test_a_quiet_target_reads_full_rings_that_stop_moving(self, remote_reader: RemoteEventsReader) -> None:
+        """What keeps a collection out of a benchmark's measured read, which
+        the default run deselects and CodSpeed only fails by chance."""
+        with quiet_target() as target:
+            first = remote_reader.read(target.pid)
+            time.sleep(0.2)
+            second = remote_reader.read(target.pid)
+
+        assert all(r.ts_stop for r in first), "a row no collection has written"
+        assert second == first
 
     def test_a_dead_target_raises_a_type_the_reader_translates(self) -> None:
         """Evidence for the narrowed catch, gathered on each platform CI runs.

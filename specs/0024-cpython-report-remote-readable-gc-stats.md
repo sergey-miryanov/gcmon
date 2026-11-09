@@ -204,16 +204,14 @@ handling in rows 1, 2 and 4 is the subject of
 | :------ | :--------------- |
 | 3.1 ring size | Reconstructs the exact count and pause sum from `Δcollections` and `Δduration`, and draws the unobserved intervals as explicit gaps. Recovers the aggregates; the individual records stay lost. Reads the capacity by counting the slots one poll returns, so the sizes above are not hardcoded. |
 | 3.2 write cursor | Sorts by `collections` per `(iid, gen)`. Works, costs a sort per poll. |
-| 3.3 publish ordering | Not handled. A reordered record passes both of gcmon's filters and reports a pause too long by one inter-collection interval. |
+| 3.3 publish ordering | Nothing to handle. The target's sequence counter keeps a half-published record out of any read that returns. |
 | 3.4 duplicate slot | Deduplicates on `collections`. |
-| 3.5 straddled read | Not handled. gcmon assumes one poll's records for a ring are contiguous and folds only the two ends, so a hole leaves its counts right and its pause unattributed. |
+| 3.5 straddled read | Nothing to handle. The same counter provides the contiguity gcmon relies on when it folds only the two ends of one poll's records. |
 
-Rows 3.3 and 3.5 stay unhandled by decision rather than by omission.
-[Spec 0044](0044-torn-reads-and-reordered-publishes.md) took them from the
-reader's side and concluded that gcmon waits: 3.3 leaves no fingerprint a
-genuine record cannot also leave, and 3.5's seam is inside this module's own
-cross-process copy, so it is not observable from Python at all. A reader could
-only ever detect these; section 3.3's suggested fix removes them.
+Rows 3.3 and 3.5 rest on `update_seq`, which gh-155811 added and CPython
+3.15.1, gcmon's floor, carries. What it leaves a reader is a read that can
+fail with `GC stats changed while being read`, which
+[ADR-0020](../docs/adr/0020-attach-to-a-process-once.md) handles.
 
 The reconstruction in the first row is only possible because `collections` and
 `duration` are both cumulative and monotonic. That is a genuinely good

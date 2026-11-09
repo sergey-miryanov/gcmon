@@ -2,7 +2,7 @@
 
 [![PyPI](https://img.shields.io/pypi/v/gcmon.svg)](https://pypi.org/project/gcmon/)
 [![CI](https://github.com/sergey-miryanov/gcmon/actions/workflows/ci.yml/badge.svg)](https://github.com/sergey-miryanov/gcmon/actions/workflows/ci.yml)
-[![Python Version](https://img.shields.io/badge/python-3.15+-blue.svg)](https://pypi.org/project/gcmon/)
+[![Python Version](https://img.shields.io/badge/python-3.15.1+-blue.svg)](https://pypi.org/project/gcmon/)
 [![codecov](https://codecov.io/gh/sergey-miryanov/gcmon/branch/main/graph/badge.svg?token=ZHH7R72OC0)](https://app.codecov.io/gh/sergey-miryanov/gcmon)
 [![CodSpeed](https://img.shields.io/endpoint?url=https://codspeed.io/badge.json)](https://app.codspeed.io/sergey-miryanov/gcmon?utm_source=badge)
 [![PyPI Downloads](https://static.pepy.tech/personalized-badge/gcmon?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLACK&right_color=GREEN&left_text=downloads)](https://pepy.tech/projects/gcmon)
@@ -13,7 +13,7 @@ gcmon watches a running Python process's garbage collector from **outside**
 the process: no code changes, no callbacks, no in-process overhead. Export to
 Perfetto or JSONL; query with PerfettoSQL.
 
-> **Requires CPython 3.15+** for the monitored process and the `gcmon`
+> **Requires CPython 3.15.1+** for the monitored process and the `gcmon`
 > process, built from the same source. See [Limitations](#limitations) for
 > details.
 
@@ -91,7 +91,7 @@ integrate GC metrics into benchmarks.
 | APM agents (Datadog, New Relic, Dynatrace) | Varies⁴ | Agent required | Moderate | Distributed tracing |
 | [OpenTelemetry runtime metrics](https://opentelemetry-python-contrib.readthedocs.io/en/latest/instrumentation/system_metrics/system_metrics.html) | No (counts only⁵) | Wrapper or SDK | Low | Fleet-wide GC counters |
 
-¹ Requires CPython 3.15+ on both sides, built from the same source. See
+¹ Requires CPython 3.15.1+ on both sides, built from the same source. See
 [Limitations](#limitations).
 
 ² Stdlib from CPython 3.15 on; austin covers older interpreters.
@@ -200,7 +200,7 @@ Prometheus node exporters, or eBPF tooling for that.
 
 ## Requirements
 
-- **Python**: CPython 3.15 or newer is required for both the monitoring and
+- **Python**: CPython 3.15.1 or newer is required for both the monitoring and
   the monitored process.
 - **Operating systems**: Linux, macOS, and Windows are supported (the test
   matrix runs on `ubuntu-latest`, `macos-latest`, and `windows-latest`).

@@ -33,7 +33,7 @@ gcmon = "gcmon.cli.main:main"
 gcmon = "gcmon.pyperf.hook:gcmon_hook"
 
 [tool.poetry.dependencies]
-python = ">=3.15"
+python = ">=3.15.1"
 msgspec = ">=0.21.1"
 ddsketch = { version = ">=3.0.1", optional = true }
 psutil = { version = ">=7.2", optional = true }

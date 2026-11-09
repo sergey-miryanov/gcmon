@@ -137,6 +137,13 @@ way, measured. `tests/monitoring/test_events_reader.py` records what the other
 two do, on every CI run across `ubuntu-latest`, `macos-latest` and
 `windows-latest`.
 
+A read can also fail with no OS error, on every platform. At CPython 3.15.1,
+`Modules/_remote_debugging/gc_stats.c` reads `update_seq` from
+`struct gc_stats` before and after its copy, and the writer holds it odd
+across a ring update. When a collection beats both of its attempts, it raises
+a bare `RuntimeError`, `GC stats changed while being read; retry later`, and
+the whole read is lost, every interpreter included.
+
 [win32-pid]: https://learn.microsoft.com/en-us/windows/win32/procthread/process-handles-and-identifiers
 [posix-reuse]: https://pubs.opengroup.org/onlinepubs/9799919799/basedefs/V1_chap04.html#tag_04_17
 [linux-wait]: https://man7.org/linux/man-pages/man2/wait.2.html

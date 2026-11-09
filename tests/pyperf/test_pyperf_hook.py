@@ -10,7 +10,7 @@ import subprocess
 import sys
 import time
 from collections.abc import Generator, Sequence
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 from pathlib import Path
 from typing import NamedTuple, override
 from unittest.mock import patch
@@ -23,7 +23,7 @@ from gcmon.model.marks import Mark, Side, parse_mark
 from gcmon.model.names import NAME
 from gcmon.model.process import Process
 from gcmon.model.protocol import TGCStatsInfo, TInstantMsg
-from gcmon.monitoring.events_reader import RemoteEventsReader, TargetUnavailable
+from gcmon.monitoring.events_reader import ReadContended, RemoteEventsReader, TargetUnavailable
 from gcmon.pyperf.hook import (
     ENV_PYPERF_HOOK_CONTROL_TIMEOUT,
     ENV_PYPERF_HOOK_VERBOSE,
@@ -386,7 +386,7 @@ def _collecting_target(timeout: float = 20.0) -> Generator[tuple[RemoteEventsRea
             try:
                 reader.read(proc.pid)
                 break
-            except TargetUnavailable:
+            except TargetUnavailable, ReadContended:
                 if time.monotonic() >= deadline:
                     raise AssertionError(f"target {proc.pid} never became readable") from None
                 time.sleep(0.05)
@@ -405,8 +405,10 @@ def _read_a_record_stamped_after(
     says what is wrong with it.
     """
     deadline = time.monotonic() + timeout
+    records: Sequence[TGCStatsInfo] = ()
     while True:
-        records = reader.read(pid)
+        with suppress(ReadContended):
+            records = reader.read(pid)
         if any(record.ts_stop > instant for record in records) or time.monotonic() >= deadline:
             return records
         time.sleep(0.01)

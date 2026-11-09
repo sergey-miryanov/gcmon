@@ -147,7 +147,7 @@ def ring_at(records: Sequence[GCStatsInfo], gen: int, size: int, ts: int) -> lis
 
 
 def poll_batches(
-    per_gen: dict[int, list[GCStatsInfo]], sizes: dict[int, int], interval_ns: int, skew_ns: int = 0
+    per_gen: dict[int, list[GCStatsInfo]], sizes: dict[int, int], interval_ns: int
 ) -> Iterator[tuple[int, list[GCStatsInfo]]]:
     """One ``(wake, batch)`` per tick of a clock running every *interval_ns*.
 
@@ -159,14 +159,6 @@ def poll_batches(
     The first wake lands on the first collection in the capture, so the run
     starts against a ring holding something. The last lands past the final
     collection, so no record goes unread for want of a poll to read it.
-
-    *skew_ns* tears the read. One `ReadRemoteMemory` copies the whole
-    `struct gc_stats` without stopping the target, so the rings in it can
-    reflect different instants; `struct gc_stats` holds gen 0 first, so a copy
-    running up through memory takes the older generations later. Each ring is
-    read `skew_ns` after the one below it. Zero is the untorn read, and the
-    direction is a model of one plausible copy and not a guarantee: nothing
-    below rests on which ring comes out newer, only on their disagreeing.
     """
     last = max(record.ts_stop for records in per_gen.values() for record in records)
 
@@ -174,7 +166,7 @@ def poll_batches(
     while ts <= last + interval_ns:
         batch: list[GCStatsInfo] = []
         for gen in sorted(per_gen):
-            batch.extend(ring_at(per_gen[gen], gen, sizes[gen], ts + skew_ns * gen))
+            batch.extend(ring_at(per_gen[gen], gen, sizes[gen], ts))
         yield ts, batch
         ts += interval_ns
 
@@ -226,10 +218,10 @@ class Replay:
         return sum(by_counter[c].ts_stop - by_counter[c].ts_start for c in collections)
 
 
-def replay(interval_ms: float, sizes: dict[int, int] = RING_SIZES, skew_ms: float = 0) -> Replay:
+def replay(interval_ms: float, sizes: dict[int, int] = RING_SIZES) -> Replay:
     """Poll the capture through a ring of *sizes* every *interval_ms*."""
     truth = capture_records()
-    batches = list(poll_batches(truth, sizes, int(interval_ms * MS), int(skew_ms * MS)))
+    batches = list(poll_batches(truth, sizes, int(interval_ms * MS)))
 
     recorder = Recorder()
     stats = StreamingStats()
@@ -483,76 +475,6 @@ class TestTheSpansTileTheTimeline:
         run = lossy[interval_ms]
 
         assert len({(loss.iid, loss.ts_start) for loss in run.recorder.losses}) == len(run.recorder.losses)
-
-
-class TestATornRead:
-    """A read whose rings disagree about when "now" is, and what it costs.
-
-    The read is one copy of the whole `struct gc_stats` taken while the target
-    runs, so a poll can take gen 1 later than gen 0. Under the old geometry
-    that was expensive: a window's left edge was the newest record any ring
-    returned, so a torn read could set it past the record that closed the
-    window, and the span had to be held back with `--stats` counting a loss
-    the trace never showed.
-
-    Bounding a span by the two reads instead costs it nothing. The edges are
-    the monitor's own clock, which no tear can invert, and the counts were
-    never at risk: `lost_count` and `lost_from` subtract the ring's cumulative
-    counters and carry no timestamp at all.
-    """
-
-    # Found by sweeping the capture: a poll period the ring survives almost
-    # every time, so the one window that does open is a single collection wide
-    # and a read taken 20 ms apart across the rings is enough to invert it.
-    # A wider window has room for the skew and draws normally.
-    INTERVAL_MS = 330
-    SKEW_MS = 20
-
-    @pytest.fixture(scope="class")
-    @classmethod
-    def torn(cls) -> Replay:
-        return replay(cls.INTERVAL_MS, skew_ms=cls.SKEW_MS)
-
-    @pytest.fixture(scope="class")
-    @classmethod
-    def untorn(cls) -> Replay:
-        return replay(cls.INTERVAL_MS)
-
-    def test_the_same_run_read_whole_draws_a_span(self, untorn: Replay) -> None:
-        """The control that makes this a test of the tear and not of the poll
-        period: read without skew, the same loss draws one span."""
-        assert untorn.stats.pause_totals(proc(PID), 0, 0).lost_count == 1
-        assert len(untorn.recorder.losses) == 1
-
-    def test_the_torn_read_draws_one_too(self, torn: Replay) -> None:
-        """What the change bought. The tear moves which records a poll sees;
-        it cannot move the instants the poll happened at, so there is no
-        geometry left for it to break."""
-        assert len(torn.recorder.losses) == 1
-
-    def test_the_span_still_bounds_an_interval(self, torn: Replay) -> None:
-        span = torn.recorder.losses[0]
-
-        assert span.ts_start < span.ts_stop
-        assert (span.ts_start, span.ts_stop) in set(pairwise(torn.wakes))
-
-    def test_the_count_is_kept_anyway(self, torn: Replay) -> None:
-        """`--stats` covers every collection whether or not a bar came of it."""
-        assert torn.stats.pause_totals(proc(PID), 0, 0).lost_count == 1
-        assert torn.stats.pause_totals(proc(PID), 0, 0).exact_count == len(torn.span(0))
-
-    def test_the_lost_pause_is_kept_anyway(self, torn: Replay) -> None:
-        missing = set(torn.span(0)) - torn.read(0)
-
-        assert torn.stats.pause_totals(proc(PID), 0, 0).lost_pause_ns == torn.truth_pause_ns(0, missing)
-
-    def test_the_totals_still_match_the_target(self, torn: Replay) -> None:
-        for gen in (0, 1, 2):
-            truth = torn.truth_pause_ns(gen, torn.span(gen))
-            assert torn.stats.pause_totals(proc(PID), 0, gen).exact_pause_ns == pytest.approx(truth, abs=1_000)
-
-    def test_coverage_is_unmoved_by_the_tear(self, torn: Replay) -> None:
-        assert torn.stats.pause_totals(proc(PID), 0, 0).coverage == pytest.approx(len(torn.read(0)) / len(torn.span(0)))
 
 
 class TestAMidWriteSlot:

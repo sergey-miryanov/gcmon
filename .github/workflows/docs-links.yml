@@ -28,4 +28,9 @@ jobs:
       - name: Check links
         uses: lycheeverse/lychee-action@e7477775783ea5526144ba13e8db5eec57747ce8 # v2.9.0
         with:
-          args: --files-from "$RUNNER_TEMP/docs-link-inputs.txt"
+          # Check this repository's own URLs against the checkout, so a pull
+          # request is judged on its own files and not on what main holds.
+          args: >-
+            --files-from "$RUNNER_TEMP/docs-link-inputs.txt"
+            --remap "^https://github\.com/sergey-miryanov/gcmon/blob/main/(.*) file://$GITHUB_WORKSPACE/\$1"
+            --remap "^https://raw\.githubusercontent\.com/sergey-miryanov/gcmon/main/(.*) file://$GITHUB_WORKSPACE/\$1"
