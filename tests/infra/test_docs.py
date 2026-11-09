@@ -7,6 +7,8 @@ from pathlib import Path
 from typing import override
 from urllib.parse import urlsplit
 
+from gcmon.support.vocabulary import ENCODING
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -39,6 +41,6 @@ def test_documentation_build(tmp_path: Path) -> None:
     assert (site / "LICENSE").read_bytes() == (REPO_ROOT / "LICENSE").read_bytes()
     assert not [p for p in site.rglob("*") if p.suffix == ".py"]
     parser = PageLinks()
-    parser.feed((site / "index.html").read_text(encoding="utf-8"))
+    parser.feed((site / "index.html").read_text(encoding=ENCODING))
     parser.close()
     assert not parser.github_doc_links, parser.github_doc_links
