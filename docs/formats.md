@@ -12,7 +12,7 @@ deflate capture opens on any Perfetto.
 
 ## Perfetto output
 
-<img src="images/chrome-trace-example.png" alt="Perfetto Trace Example" width="800">
+![Perfetto Trace Example](images/chrome-trace-example.png)
 
 *A gcmon capture in the Perfetto UI.*
 

@@ -1,0 +1,49 @@
+site_name: gcmon
+repo_url: https://github.com/sergey-miryanov/gcmon
+edit_uri: ""  # disable edit button
+docs_dir: .  # start from root
+strict: true
+
+plugins:
+  - search
+  - same-dir
+
+hooks:
+  - .github/scripts/docs_hooks.py
+
+# Use negated patterns (!) in exclude_docs to define an allowlist.
+# Some documents are included in the build but omitted from navigation.
+exclude_docs: |
+  *
+  !/README.md
+  !/CONTRIBUTING.md
+  !/CHANGELOG.md
+  !/CONTEXT.md
+  !/CLAUDE.md
+  !/LICENSE
+  !/docs/**/*.md
+  !/docs/images/*.png
+  !/specs/**/*.md
+  !/.github/**/*.md
+
+nav:
+  - User Guide:
+      - Overview: docs/README.md
+      - CLI: docs/cli.md
+      - Monitoring: docs/monitoring.md
+      - Statistics: docs/statistics.md
+      - Output formats: docs/formats.md
+      - RSS: docs/rss.md
+      - Pyperf: docs/pyperf.md
+      - Perfetto SQL: docs/perfetto-sql.md
+      - Control plane: docs/control-plane.md
+      - Testing: docs/testing.md
+      - Releases: docs/RELEASE.md
+  - Developer Guide:
+      - Overview: CONTRIBUTING.md
+      - Architecture decisions: docs/adr/README.md
+      - Specifications: specs/README.md
+      - Internals:
+        - Remote memory reads: docs/internals/remote-reads.md
+        - GC record clock: docs/internals/gc-record-clock.md
+  - Changelog: CHANGELOG.md
