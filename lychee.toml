@@ -4,5 +4,6 @@ no_progress = true
 max_retries = 2
 timeout = 5
 
-# DeepWiki repeatedly return HTTP 429
-exclude = ['^https://deepwiki\.com(?:/|$)']
+# DeepWiki repeatedly return HTTP 429; app.codspeed.io sits behind a Vercel
+# bot challenge that answers every non-browser client with 429
+exclude = ['^https://deepwiki\.com(?:/|$)', '^https://app\.codspeed\.io(?:/|$)']
