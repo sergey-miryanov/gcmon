@@ -18,10 +18,10 @@ exclude_docs: |
   !/README.md
   !/CONTRIBUTING.md
   !/CHANGELOG.md
-  !/CONTEXT.md
-  !/CLAUDE.md
   !/LICENSE
-  !/docs/**/*.md
+  !/docs/*.md
+  !/docs/adr/*.md
+  !/docs/internals/*.md
   !/docs/images/*.png
   !/specs/**/*.md
   !/.github/**/*.md
@@ -37,8 +37,6 @@ nav:
       - Pyperf: docs/pyperf.md
       - Perfetto SQL: docs/perfetto-sql.md
       - Control plane: docs/control-plane.md
-      - Testing: docs/testing.md
-      - Releases: docs/RELEASE.md
   - Developer Guide:
       - Overview: CONTRIBUTING.md
       - Architecture decisions: docs/adr/README.md
@@ -46,4 +44,6 @@ nav:
       - Internals:
         - Remote memory reads: docs/internals/remote-reads.md
         - GC record clock: docs/internals/gc-record-clock.md
+      - Testing: docs/testing.md
+      - Releases: docs/RELEASE.md
   - Changelog: CHANGELOG.md

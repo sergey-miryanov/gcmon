@@ -1,7 +1,7 @@
 from html import escape
 from html.parser import HTMLParser
 from typing import override
-from urllib.parse import unquote, urlsplit, urlunsplit
+from urllib.parse import quote, unquote, urlsplit, urlunsplit
 
 from mkdocs.config.defaults import MkDocsConfig
 from mkdocs.structure.files import File, Files, InclusionLevel
@@ -26,13 +26,19 @@ def on_files(files: Files, *, config: MkDocsConfig) -> Files:
     return files
 
 
-# Rewrite doc links within this repo to local links.
+# Rewrite GitHub links to docs in this repository as local links
+# Rewrite local links to excluded docs as GitHub links
 class Parser(HTMLParser):
     def __init__(self, html: str, repo_url: str, page: Page, files: Files) -> None:
         super().__init__(convert_charrefs=False)
         self.prefix = repo_url.rstrip("/") + "/blob/main/"
         self.page = page
         self.files = files
+        self.excluded_sources = {
+            file.url_relative_to(page.file): file.src_uri
+            for file in files
+            if file.inclusion == InclusionLevel.EXCLUDED and file.is_documentation_page()
+        }
         self.offsets = [0]
         for line in html.split("\n"):
             self.offsets.append(self.offsets[-1] + len(line) + 1)
@@ -45,7 +51,7 @@ class Parser(HTMLParser):
         href = dict(attrs).get("href")
         if not href:
             return
-        replacement = self.to_local_link(href)
+        replacement = self.to_local_link(href) if href.startswith(self.prefix) else self.to_github_link(href)
         if replacement == href:
             return
         attributes = []
@@ -66,8 +72,6 @@ class Parser(HTMLParser):
         self.replacements.append((start, end, f"<a{attributes_str}>"))
 
     def to_local_link(self, href: str) -> str:
-        if not href.startswith(self.prefix):
-            return href
         parts = urlsplit(href[len(self.prefix) :])
         target = self.files.get_file_from_path(unquote(parts.path))
         if target and target.is_documentation_page() and target.inclusion == InclusionLevel.INCLUDED:
@@ -75,6 +79,13 @@ class Parser(HTMLParser):
             return urlunsplit(("", "", relative, parts.query, parts.fragment))
         else:
             return href
+
+    def to_github_link(self, href: str) -> str:
+        parts = urlsplit(href)
+        source = self.excluded_sources.get(parts.path)
+        if source and not parts.scheme and not parts.netloc:
+            return self.prefix + urlunsplit(("", "", quote(source), parts.query, parts.fragment))
+        return href
 
 
 def on_page_content(html: str, *, page: Page, config: MkDocsConfig, files: Files) -> str:
