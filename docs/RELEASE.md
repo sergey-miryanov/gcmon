@@ -2,10 +2,10 @@
 
 Releases are driven by git tags through GitHub Actions. Pushing a `vX.Y.Z` tag
 to `main` triggers
-[`.github/workflows/release.yml`](../.github/workflows/release.yml), which
-builds the distribution, validates it with `twine`, publishes to PyPI via OIDC
-trusted publishing, and creates a GitHub Release with the wheel, sdist, and
-changelog body attached.
+[`.github/workflows/release.yml`](https://github.com/sergey-miryanov/gcmon/blob/main/.github/workflows/release.yml),
+which builds the distribution, validates it with `twine`, publishes to PyPI
+via OIDC trusted publishing, and creates a GitHub Release with the wheel,
+sdist, and changelog body attached.
 
 ## Pre-release checklist
 

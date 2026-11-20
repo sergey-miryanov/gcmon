@@ -73,6 +73,10 @@ typecheck-pyrefly:
 build:
     poetry build
 
+# Build the documentation site; warnings fail the build
+docs:
+    poetry run mkdocs build --strict
+
 # Validate the built distribution
 check-dist:
     poetry run twine check dist/*

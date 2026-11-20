@@ -60,6 +60,11 @@ rust-just = ">=1.58"
 markdown-it-py = ">=4,<5"
 packaging = ">=26,<27"
 
+[tool.poetry.group.docs.dependencies]
+mkdocs = "1.6.1"
+mkdocs-same-dir = "0.1.3"
+pymdown-extensions = ">=10,<11"
+
 [tool.poetry.urls]
 Homepage = "https://github.com/sergey-miryanov/gcmon"
 Documentation = "https://github.com/sergey-miryanov/gcmon/blob/main/docs/README.md"
