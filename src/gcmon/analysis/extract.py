@@ -11,6 +11,7 @@ from ..model.names import GENERATION, IID, PAUSE, PID, PID_EPOCH, RSS, TS
 from ..model.phases import PAUSE_ARGS
 from ..model.process import Process
 from ..support.vocabulary import ENCODING
+from .progress import iter_with_progress
 from .pyperformance import run_metadata
 from .trace_rows import SliceRow, TraceRows
 
@@ -67,7 +68,7 @@ def record_rows(
     """
     cmdlines = {row.process: row.cmdline for row in rows.processes}
     pauses: dict[tuple[Process, int, int, int], SliceRow] = {}
-    for slice_ in rows.slices:
+    for slice_ in iter_with_progress("Stage4: Matching pauses", rows.slices):
         gen, iid = slice_.args.get(GENERATION), slice_.args.get(IID)
         if not isinstance(gen, int) or not isinstance(iid, int) or slice_.name != PAUSE.names[gen][0]:
             continue
@@ -75,7 +76,7 @@ def record_rows(
         if process is not None and (only is None or benchmarks.get(process) in only):
             pauses.setdefault((process, slice_.ts, iid, gen), slice_)
     table: list[tuple[Cell, ...]] = []
-    for key in sorted(pauses):
+    for key in iter_with_progress("Stage4: Matching pauses", sorted(pauses), offset=len(rows.slices)):
         process, ts = key[0], key[1]
         args = pauses[key].args
         table.append(

@@ -20,6 +20,7 @@
 - With the `[analysis]` extra, `gcmon extract` writes a trace's records as a CSV table, one row per record
 - With `--rss`, a `GC Pause` slice carries `rss`, its process's latest RSS sample in bytes
 - A `GC Pause` slice carries `allocated`, the bytes its interpreter had allocated for GC objects when the run started, where the record carries it
+- At a terminal, `gcmon extract` shows its progress
 
 ### Bugfixes
 
