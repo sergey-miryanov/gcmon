@@ -8,11 +8,13 @@ import csv
 import hashlib
 import json
 import sys
+from itertools import count
 from pathlib import Path
 from typing import override
 
 import pytest
 
+from gcmon.analysis import progress
 from gcmon.analysis.extract import BENCHMARK, CALIBRATION, COLUMNS
 from gcmon.analysis.pyperformance import RUN_DURATION
 from gcmon.analysis.trace_rows import TraceProcessorReader, TraceRows
@@ -570,6 +572,8 @@ def test_extract_progress(
 ) -> None:
     trace = _write_two_benchmarks(tmp_path / "run.pftrace")
     monkeypatch.setattr(sys.stderr, "isatty", lambda: terminal)
+    clock = count(step=0.5)
+    monkeypatch.setattr(progress, "monotonic", lambda: next(clock))
 
     assert _extract(str(trace), "--benchmark", "second", *(["-v"] if verbose else [])) == 0
 
