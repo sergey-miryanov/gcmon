@@ -12,6 +12,7 @@ from ..exporters.perfetto_process_lifetime import process_track_name
 from ..model.names import CMDLINE, PID, PID_EPOCH
 from ..model.process import Process
 from .perfetto_prebuilt import MissingExtraError, trace_processor_bin
+from .progress import iter_with_progress, report_progress
 
 __all__ = ["ProcessRow", "SliceRow", "TraceProcessorReader", "TraceReader", "TraceRows"]
 
@@ -87,9 +88,10 @@ class TraceProcessorReader:
         except ImportError as error:
             raise MissingExtraError from error
         config = TraceProcessorConfig(bin_path=trace_processor_bin(), load_timeout=_LOAD_TIMEOUT_S)
+        report_progress("Stage1: Running query")
         tp = TraceProcessor(trace=str(path), config=config)
         try:
-            drawn = _read_slices(tp.query(_SLICES_QUERY))
+            drawn = _read_slices(iter_with_progress("Stage2: Reading query rows", tp.query(_SLICES_QUERY)))
         finally:
             tp.close()
         return _resolve(drawn)
@@ -149,7 +151,7 @@ def _span_process(slice_: _Drawn) -> Process | None:
 def _resolve(drawn: list[_Drawn]) -> TraceRows:
     processes: list[ProcessRow] = []
     by_name: dict[str, Process] = {}
-    for slice_ in drawn:
+    for slice_ in iter_with_progress("Stage3: Resolving tracks", drawn):
         process = _span_process(slice_)
         if process is None:
             continue
@@ -166,6 +168,6 @@ def _resolve(drawn: list[_Drawn]) -> TraceRows:
             slice_.args,
             None if slice_.process_name is None else by_name.get(slice_.process_name),
         )
-        for slice_ in drawn
+        for slice_ in iter_with_progress("Stage3: Resolving tracks", drawn, offset=len(drawn))
     ]
     return TraceRows(processes, slices)

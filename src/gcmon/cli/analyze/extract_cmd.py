@@ -8,6 +8,7 @@ from typing import Final
 
 from gcmon.analysis.extract import COLUMNS, META_KEYS, META_SUFFIX, record_meta, record_rows, write_csv, write_meta
 from gcmon.analysis.perfetto_prebuilt import MissingExtraError
+from gcmon.analysis.progress import iter_with_progress
 from gcmon.analysis.pyperformance import benchmark_names, read_results, runs_of
 from gcmon.analysis.trace_rows import TraceProcessorReader
 from gcmon.cli.shared.parser_factory import ParserFactory
@@ -158,7 +159,7 @@ def cmd_extract(args: Namespace) -> int:
         return 1
     table = record_rows(rows, benchmark_names(rows.processes, runs), only)
     try:
-        write_csv(output, table, overwrite=args.overwrite, columns=columns)
+        write_csv(output, iter_with_progress("Stage5: Writing CSV", table), overwrite=args.overwrite, columns=columns)
         write_meta(sidecar, {**record_meta(trace, document), **extra}, overwrite=args.overwrite)
     except FileExistsError as error:
         logger.error("%s exists; pass --overwrite to replace it", error.filename)

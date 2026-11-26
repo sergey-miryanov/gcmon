@@ -7,11 +7,14 @@ read back with `csv.DictReader`, as a loader outside gcmon reads it.
 import csv
 import hashlib
 import json
+import sys
+from itertools import count
 from pathlib import Path
 from typing import override
 
 import pytest
 
+from gcmon.analysis import progress
 from gcmon.analysis.extract import BENCHMARK, CALIBRATION, COLUMNS
 from gcmon.analysis.pyperformance import RUN_DURATION
 from gcmon.analysis.trace_rows import TraceProcessorReader, TraceRows
@@ -555,3 +558,27 @@ def test_an_empty_name_in_a_list_is_refused(tmp_path: Path) -> None:
 
     with pytest.raises(SystemExit):
         _extract(str(trace), "--keep", f"{COLLECTED},,{PID}")
+
+
+@pytest.mark.parametrize("terminal", [False, True])
+@pytest.mark.parametrize("verbose", [False, True])
+def test_extract_progress(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    caplog: pytest.LogCaptureFixture,
+    terminal: bool,
+    verbose: bool,
+) -> None:
+    trace = _write_two_benchmarks(tmp_path / "run.pftrace")
+    monkeypatch.setattr(sys.stderr, "isatty", lambda: terminal)
+    clock = count(step=0.5)
+    monkeypatch.setattr(progress, "monotonic", lambda: next(clock))
+
+    assert _extract(str(trace), "--benchmark", "second", *(["-v"] if verbose else [])) == 0
+
+    stderr = capsys.readouterr().err
+    for stage in ("Running query", "Reading query rows", "Resolving tracks", "Matching pauses", "Writing CSV"):
+        assert (stage in stderr) == terminal
+    assert ("Stage5: Writing CSV (2 done)\n" in stderr) == terminal
+    assert caplog.text.count("Wrote ") == int(verbose)
